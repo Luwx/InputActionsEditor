@@ -1,0 +1,109 @@
+part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
+
+// ---------------------------------------------------------------------------
+// Flat list builder
+// ---------------------------------------------------------------------------
+
+List<_FlatItem> _buildFlatList(
+  Config config,
+  DeviceType? deviceFilter,
+  Set<String> collapsedGroups,
+) {
+  if (deviceFilter != null) {
+    final gestures = config.gesturesForDevice(deviceFilter);
+    final groups = config.groupsForDevice(deviceFilter);
+    final groupIdSet = groups.map((group) => group.id).toSet();
+
+    final grouped = <String, List<(int, Object)>>{};
+    final ungrouped = <(int, Object)>[];
+
+    for (final (index, gesture) in gestures.indexed) {
+      final groupId = gestureCommon(gesture as Object).groupId;
+      if (groupId != null && groupIdSet.contains(groupId)) {
+        grouped.putIfAbsent(groupId, () => []).add((index, gesture));
+      } else {
+        ungrouped.add((index, gesture));
+      }
+    }
+
+    final items = <_FlatItem>[];
+    for (final group in groups) {
+      final groupGestures = grouped[group.id] ?? [];
+      final isCollapsed = collapsedGroups.contains(group.id);
+      items.add(
+        _GroupHeaderItem(
+          group: group,
+          device: deviceFilter,
+          isCollapsed: isCollapsed,
+          gestureCount: groupGestures.length,
+        ),
+      );
+
+      for (final (localIndex, entry) in groupGestures.indexed) {
+        final (index, gesture) = entry;
+        items.add(
+          _GestureRowItem(
+            device: deviceFilter,
+            configIndex: index,
+            gesture: gesture,
+            localGroupIndex: localIndex,
+            isLastInGroup: localIndex == groupGestures.length - 1,
+            isVisible: !isCollapsed,
+          ),
+        );
+      }
+    }
+
+    for (final (index, gesture) in ungrouped) {
+      items.add(
+        _GestureRowItem(
+          device: deviceFilter,
+          configIndex: index,
+          gesture: gesture,
+        ),
+      );
+    }
+    return items;
+  }
+
+  return [
+    for (final (index, gesture) in config.mouseGestures.indexed)
+      _GestureRowItem(
+        device: DeviceType.mouse,
+        configIndex: index,
+        gesture: gesture,
+      ),
+    for (final (index, gesture) in config.keyboardGestures.indexed)
+      _GestureRowItem(
+        device: DeviceType.keyboard,
+        configIndex: index,
+        gesture: gesture,
+      ),
+    for (final (index, gesture) in config.pointerGestures.indexed)
+      _GestureRowItem(
+        device: DeviceType.pointer,
+        configIndex: index,
+        gesture: gesture,
+      ),
+    for (final (index, gesture) in config.touchpadGestures.indexed)
+      _GestureRowItem(
+        device: DeviceType.touchpad,
+        configIndex: index,
+        gesture: gesture,
+      ),
+    for (final (index, gesture) in config.touchscreenGestures.indexed)
+      _GestureRowItem(
+        device: DeviceType.touchscreen,
+        configIndex: index,
+        gesture: gesture,
+      ),
+  ];
+}
+
+String _generateGroupId() {
+  final random = math.Random();
+  return List.generate(
+    10,
+    (_) => random.nextInt(36).toRadixString(36),
+  ).join();
+}

@@ -1,0 +1,302 @@
+# Comprehensive InputActions config fixture for codec round-trip tests.
+# Designed to be normalization-stable: gestures are flat, condition leaves
+# come before nested groups, and no decode-only sugar (untyped groups,
+# nested sub-gestures, single-element list conditions, raw actions) is used.
+
+autoreload: false
+external_variable_access: false
+emergency_combination: [backspace, enter, space]
+
+notifications:
+  config_error: false
+
+# Unknown top-level key: must survive a round-trip untouched (Config.extra).
+my_custom_extension:
+  foo: bar
+  count: 3
+
+device_rules:
+  - conditions: $name == Synaptics TM3276-022
+    pressure_ranges:
+      thumb: 75
+      palm: 140
+
+  - conditions:
+      any:
+        - $name contains Logitech
+        - $mouse
+    ignore: false
+
+  - conditions: $mouse
+    grab: true
+    motion_timeout: 200
+    motion_threshold: 1.5
+    press_timeout: 300
+    swipe:
+      angle_tolerance: 25.0
+    unblock_buttons_on_timeout: false
+    buttonpad: true
+    click_timeout: 50
+    handle_evdev_events: true
+    motion_threshold_2: 2.5
+    motion_threshold_3: 3.5
+    pressure_ranges:
+      finger: 10
+      thumb: 20
+      palm: 30
+
+  - ignore: true
+
+mouse:
+  speed:
+    events: 4
+    swipe_threshold: 20.0
+
+  groups:
+    - id: grp_nav
+      name: Navigation
+    - id: grp_media
+      name: Media
+      enabled: false
+
+  gestures:
+    - type: stroke
+      name: Draw circle
+      id: stroke_circle
+      mouse_buttons: [right]
+      strokes:
+        - OAMAAUkEBRZZEgwkYCARMmA6GUBSViRPQGMrYyNkNLAOVT3DAzhH0AUdUOkYC1j2OQBkAA==
+      actions:
+        - plasma_shortcut: kwin,Window Close
+
+    - type: swipe
+      name: Meta + Swipe up
+      group: grp_nav
+      direction: up
+      mouse_buttons: [left]
+      speed: fast
+      lock_pointer: true
+      block_events: false
+      clear_modifiers: true
+      resume_timeout: 500
+      set_last_trigger: false
+      accelerated: true
+      threshold: 50
+      conditions: $keyboard_modifiers == meta
+      end_conditions: $window_fullscreen == false
+      actions:
+        - on: begin
+          input:
+            - keyboard: [leftctrl+home]
+
+    - type: circle
+      name: Volume circle
+      group: grp_media
+      direction: clockwise
+      mouse_buttons: [middle]
+      actions:
+        - on: update
+          interval: 3
+          conflicting: false
+          command: xdotool key XF86AudioRaiseVolume
+          wait: true
+
+    - type: press
+      name: Instant back
+      mouse_buttons: [right, left]
+      mouse_buttons_exact_order: true
+      instant: true
+      enabled: false
+      threshold: 100-200
+      conditions: $keyboard_modifiers == meta
+      actions:
+        - on: begin
+          id: press_back
+          limit: 1
+          input:
+            - mouse: [back]
+            - keyboard: [+leftctrl, +f10, -f10, -leftctrl]
+
+    - type: wheel
+      name: Wheel volume
+      direction: up_down
+      conditions:
+        - $pointer_position_screen_percentage_x >= 0.99
+        - any:
+            - $window_maximized == true
+            - $window_fullscreen == true
+      actions:
+        - on: update
+          interval: '+'
+          input:
+            - keyboard: [volumedown]
+        - on: update
+          interval: '-'
+          input:
+            - keyboard: [volumeup]
+
+keyboard:
+  gestures:
+    - type: shortcut
+      name: Copy
+      shortcut: [leftctrl, c]
+      actions:
+        - command: xdotool key ctrl+c
+    - type: shortcut
+      name: Type signature
+      shortcut: [leftctrl, leftalt, s]
+      actions:
+        - on: begin
+          input:
+            - keyboard:
+                - text: hello world
+
+pointer:
+  gestures:
+    - type: hover
+      name: Hover top-left
+      conditions: $pointer_position_screen_percentage <= 0.01,0.01
+      actions:
+        - command: dolphin
+
+touchpad:
+  speed:
+    events: 3
+    swipe_threshold: 15.0
+    pinch_in_threshold: 0.04
+    pinch_out_threshold: 0.08
+    rotate_threshold: 5.0
+
+  gestures:
+    - type: swipe
+      name: Swipe 3 drag
+      fingers: 3
+      direction: any
+      resume_timeout: 500
+      accelerated: true
+      actions:
+        - on: begin
+          input:
+            - keyboard: [+leftmeta]
+            - mouse: [+left]
+        - on: update
+          input:
+            - mouse: [move_by_delta]
+        - on: end_cancel
+          input:
+            - keyboard: [-leftmeta]
+            - mouse: [-left]
+
+    - type: swipe
+      name: Angle swipe
+      fingers: 4
+      angle: 30.0-60.0
+      bidirectional: true
+      speed: slow
+      actions:
+        - command: echo angle
+
+    - type: pinch
+      name: Pinch 2 in
+      fingers: 2
+      direction: in
+      actions:
+        - plasma_shortcut: kwin,Window Close
+
+    - type: rotate
+      name: Rotate 2
+      fingers: 2
+      direction: counterclockwise
+      actions:
+        - on: update
+          interval: -10
+          input:
+            - keyboard: [volumedown]
+
+    - type: circle
+      name: Circle 2
+      fingers: 2
+      direction: any
+      actions:
+        - sleep: 500
+
+    - type: tap
+      name: Tap 3
+      fingers: 3
+      actions:
+        - command: echo tap
+
+    - type: click
+      name: Click 2
+      fingers: 2
+      actions:
+        - command: echo click
+
+    - type: hold
+      name: Hold 2
+      fingers: 2
+      conditions:
+        - $finger_1_position_percentage_x between 0.4;0.6
+        - $finger_2_position_percentage_x < 0.5
+      actions:
+        - on: begin
+          input:
+            - keyboard: [a]
+
+    - type: stroke
+      name: Touchpad stroke
+      fingers: 3
+      strokes:
+        - OAMAAUkEBRZZEgwkYCARMmA6GUBSViRPQGMrYyNkNLAOVT3DAzhH0AUdUOkYC1j2OQBkAA==
+      actions:
+        - command: echo stroke
+
+touchscreen:
+  gestures:
+    - type: swipe
+      name: TS swipe 2
+      fingers: 2
+      direction: left
+      actions:
+        - command: echo ts-swipe
+
+    - type: pinch
+      name: TS pinch
+      fingers: 2
+      direction: out
+      actions:
+        - command: echo ts-pinch
+
+    - type: rotate
+      name: TS rotate
+      fingers: 2
+      direction: clockwise
+      actions:
+        - command: echo ts-rotate
+
+    - type: circle
+      name: TS circle
+      fingers: 2
+      direction: any
+      actions:
+        - command: echo ts-circle
+
+    - type: tap
+      name: TS tap
+      fingers: 1
+      actions:
+        - command: echo ts-tap
+
+    - type: hold
+      name: TS hold
+      fingers: 2
+      actions:
+        - command: echo ts-hold
+
+    - type: stroke
+      name: TS stroke
+      fingers: 3
+      strokes:
+        - OAMAAUkEBRZZEgwkYCARMmA6GUBSViRPQGMrYyNkNLAOVT3DAzhH0AUdUOkYC1j2OQBkAA==
+      actions:
+        - command: echo ts-stroke
