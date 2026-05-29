@@ -1,4 +1,8 @@
-# input_actions_editor
+# Input Actions Editor
+
+# WIP
+
+![screenshot](https://github.com/Luwx/InputActionsEditor/blob/main/screenshot.png)
 
 A new Flutter project.
 
