@@ -50,7 +50,6 @@ class AddGestureButton extends StatelessWidget {
   Future<void> _showDeviceThenTypePicker(BuildContext context) async {
     await showFDialog<void>(
       context: context,
-      useRootNavigator: true,
       builder: (ctx, style, animation) => AppDialog(
         animation: animation,
         title: const Text('Add gesture'),
@@ -107,7 +106,6 @@ class AddGestureButton extends StatelessWidget {
     final availableTypes = types ?? _triggerTypesFor(device);
     await showFDialog<void>(
       context: context,
-      useRootNavigator: true,
       builder: (ctx, style, animation) => AppDialog(
         animation: animation,
         title: Text('Add ${_deviceTitle(device)} gesture'),

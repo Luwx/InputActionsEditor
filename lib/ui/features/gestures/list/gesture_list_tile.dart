@@ -61,6 +61,7 @@ class GestureListTile extends ConsumerWidget {
     final showAccent = effectiveSelected;
 
     final hasAddedMarker = newlyAddedMarkerId != null;
+
     return Opacity(
       opacity: isDisabled ? 0.45 : 1.0,
       child: Material(
@@ -75,7 +76,7 @@ class GestureListTile extends ConsumerWidget {
                 ? const Duration(milliseconds: 1200)
                 : Duration.zero,
             curve: Curves.easeOutCubic,
-            builder: (context, addedOpacity, _) {
+            builder: (context, addedOpacity, child) {
               final selectedOpacity = effectiveSelected ? 0.08 : 0.0;
               final tileOpacity = math.min(
                 0.26,
@@ -97,76 +98,77 @@ class GestureListTile extends ConsumerWidget {
                       : null,
                 ),
                 padding: EdgeInsets.fromLTRB(showAccent ? 12 : 14, 8, 12, 8),
-                child: Row(
-                  children: [
-                    if (isMultiSelectMode)
-                      SizedBox(
-                        width: 42,
-                        height: 42,
-                        child: Center(
-                          child: FCheckbox(
-                            value: isMultiSelected,
-                            onChange: (_) => onTap(),
-                          ),
-                        ),
-                      )
-                    else
-                      _GestureTypeIcon(
-                        gesture: gesture,
-                        isSelected: isSelected,
-                      ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          UnsavedLabel(
-                            isDirty: isDirty,
-                            child: Flexible(
-                              child: Text(
-                                nameText,
-                                style: typography.sm.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color.lerp(
-                                    colors.primary,
-                                    colors.foreground,
-                                    effectiveSelected ? 0.5 : 1,
-                                  ),
-                                  decoration: isDisabled
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                          if (summaryText.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              summaryText,
-                              style: typography.xs.copyWith(
-                                color: colors.mutedForeground,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          if (firstAction.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              firstAction,
-                              style: typography.xs.copyWith(
-                                color: colors.mutedForeground,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: child,
               );
             },
+            child: Row(
+              children: [
+                if (isMultiSelectMode)
+                  SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Center(
+                      child: FCheckbox(
+                        value: isMultiSelected,
+                        onChange: (_) => onTap(),
+                      ),
+                    ),
+                  )
+                else
+                  _GestureTypeIcon(
+                    gesture: gesture,
+                    isSelected: isSelected,
+                  ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      UnsavedLabel(
+                        isDirty: isDirty,
+                        child: Flexible(
+                          child: Text(
+                            nameText,
+                            style: typography.sm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Color.lerp(
+                                colors.primary,
+                                colors.foreground,
+                                effectiveSelected ? 0.5 : 1,
+                              ),
+                              decoration: isDisabled
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      if (summaryText.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          summaryText,
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (firstAction.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          firstAction,
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

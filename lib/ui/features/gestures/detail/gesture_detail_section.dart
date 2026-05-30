@@ -56,7 +56,7 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     super.dispose();
   }
 
-  void _enableSelected(Set<GestureSelection> selected) {
+  void _enableSelected(Set<GestureKey> selected) {
     final notifier = ref.read(configControllerProvider.notifier);
     for (final s in selected) {
       notifier.updateGestureCommonForDevice(
@@ -67,7 +67,7 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     }
   }
 
-  void _disableSelected(Set<GestureSelection> selected) {
+  void _disableSelected(Set<GestureKey> selected) {
     final notifier = ref.read(configControllerProvider.notifier);
     for (final s in selected) {
       notifier.updateGestureCommonForDevice(
@@ -78,7 +78,7 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     }
   }
 
-  void _deleteSelected(Set<GestureSelection> selected) {
+  void _deleteSelected(Set<GestureKey> selected) {
     final byDevice = <DeviceType, List<int>>{};
     for (final s in selected) {
       byDevice.putIfAbsent(s.device, () => []).add(s.index);

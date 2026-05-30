@@ -15,6 +15,7 @@ import 'package:input_actions_editor/state/collapsed_groups_provider.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/conflict_provider.dart';
 import 'package:input_actions_editor/state/multi_select_controller.dart';
+import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
@@ -191,26 +192,29 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(appLocationProvider, (previous, next) {
-      final openedGestures =
-          previous?.view != AppView.gestures && next.view == AppView.gestures;
-      final changedFilter =
-          previous?.view == AppView.gestures && previous?.filter != next.filter;
-
-      if (next.view != AppView.gestures) {
-        _clearQueuedAutoSelect();
-        return;
-      }
-
-      if (next.device != null && next.index != null) {
-        _clearQueuedAutoSelect();
-        return;
-      }
-
-      if (openedGestures || changedFilter) {
-        _queueAutoSelectFirstGesture(next.filter);
-      }
-    });
+    ref
+      ..listen(currentViewProvider, (prevView, nextView) {
+        if (nextView != AppView.gestures) {
+          _clearQueuedAutoSelect();
+        } else if (prevView != AppView.gestures) {
+          // Opened gestures view — auto-select if nothing is open.
+          if (ref.read(selectedGestureProvider) == null) {
+            _queueAutoSelectFirstGesture(ref.read(deviceFilterProvider));
+          }
+        }
+      })
+      ..listen(deviceFilterProvider, (prevFilter, nextFilter) {
+        if (ref.read(currentViewProvider) != AppView.gestures) return;
+        if (prevFilter == nextFilter) return;
+        if (ref.read(selectedGestureProvider) == null) {
+          _queueAutoSelectFirstGesture(nextFilter);
+        } else {
+          _clearQueuedAutoSelect();
+        }
+      })
+      ..listen(selectedGestureProvider, (_, next) {
+        if (next != null) _clearQueuedAutoSelect();
+      });
 
     final configAsync = ref.watch(configControllerProvider);
     final selection = ref.watch(selectedGestureProvider);
@@ -509,16 +513,12 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                                   item.device,
                                   item.configIndex,
                                 );
-                                if (isSelected) {
-                                  context.clearGestureSelection();
-                                } else if (selection != null &&
-                                    selection.device == item.device &&
-                                    selection.index > item.configIndex) {
-                                  context.selectGesture(
-                                    item.device,
-                                    selection.index - 1,
-                                  );
-                                }
+                                ref
+                                    .read(navProvider.notifier)
+                                    .onGestureDeleted(
+                                      item.device,
+                                      item.configIndex,
+                                    );
                               },
                             ),
                           ),

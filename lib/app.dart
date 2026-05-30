@@ -1,9 +1,11 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
-import 'package:input_actions_editor/state/app_router.dart';
 import 'package:input_actions_editor/state/local_settings_provider.dart';
+import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
+import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 
 class App extends ConsumerWidget {
@@ -23,7 +25,7 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(localSettingsProvider).themeMode;
-    final router = ref.watch(routerProvider);
+    final delegate = ref.watch(appRouterDelegateProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -37,8 +39,18 @@ class App extends ConsumerWidget {
         pageTransitionsTheme: _pageTransitionsTheme,
       ),
       themeMode: themeMode,
-      routerConfig: router,
-      builder: (context, child) => _ThemedShell(child: child!),
+      routerDelegate: delegate,
+      backButtonDispatcher: RootBackButtonDispatcher(),
+      builder: (context, child) => Listener(
+        onPointerDown: (e) {
+          if (e.buttons & kBackMouseButton != 0) {
+            ref.read(navProvider.notifier).back();
+          } else if (e.buttons & kForwardMouseButton != 0) {
+            ref.read(navProvider.notifier).forward();
+          }
+        },
+        child: _ThemedShell(child: child!),
+      ),
     );
   }
 }
@@ -75,9 +87,6 @@ FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
   );
 }
 
-/// Wraps the router's output in the app's [FTheme]. Lives in the
-/// [MaterialApp.router] builder so the theme sits above the navigator (and
-/// therefore above root-navigator dialogs).
 class _ThemedShell extends ConsumerWidget {
   const _ThemedShell({required this.child});
 

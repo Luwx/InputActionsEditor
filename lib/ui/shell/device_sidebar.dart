@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/app_router.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 
 class DeviceSidebar extends ConsumerStatefulWidget {
@@ -29,65 +29,18 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
     super.dispose();
   }
 
-  // TODO(me): hacky af, remove
-  /// Computes the first visible gesture for [filter] in the same order as the
-  /// flat gesture list (groups first, then ungrouped; All view: mouse,
-  ///  keyboard, pointer, touchpad, touchscreen).
-  ({DeviceType device, int index})? _firstGestureForFilter(
-    Config config,
-    DeviceType? filter,
-  ) {
-    if (filter != null) {
-      final gestures = config.gesturesForDevice(filter);
-      if (gestures.isEmpty) return null;
-
-      final groups = config.groupsForDevice(filter);
-      final groupIdSet = {for (final g in groups) g.id};
-
-      final grouped = <String, List<int>>{};
-      final ungrouped = <int>[];
-
-      for (final (index, gesture) in gestures.indexed) {
-        final groupId = gestureCommon(gesture as Object).groupId;
-        if (groupId != null && groupIdSet.contains(groupId)) {
-          grouped.putIfAbsent(groupId, () => []).add(index);
-        } else {
-          ungrouped.add(index);
-        }
-      }
-
-      for (final group in groups) {
-        final indices = grouped[group.id];
-        if (indices != null && indices.isNotEmpty) {
-          return (device: filter, index: indices.first);
-        }
-      }
-
-      if (ungrouped.isNotEmpty) return (device: filter, index: ungrouped.first);
-      return null;
-    }
-
-    // All view: flat list order matches mouse, keyboard, pointer,
-    // touchpad, touchscreen
-    for (final device in DeviceType.values) {
-      if (config.gesturesForDevice(device).isNotEmpty) {
-        return (device: device, index: 0);
-      }
-    }
-    return null;
-  }
-
-  /// Navigates to [device] filter, selecting the first gesture directly so
-  /// there is no intermediate frame with an empty selection.
+  /// Navigates to [device] filter, auto-selecting the first gesture so there
+  /// is no intermediate frame with an empty selection.
   void _goToDevice(DeviceType? device) {
-    final location = ref.read(appLocationProvider);
+    final currentView = ref.read(currentViewProvider);
+    final currentFilter = ref.read(deviceFilterProvider);
     final changingFilter =
-        location.view != AppView.gestures || location.filter != device;
+        currentView != AppView.gestures || currentFilter != device;
 
     if (changingFilter) {
       final config = ref.read(configControllerProvider).value;
       if (config != null) {
-        final first = _firstGestureForFilter(config, device);
+        final first = firstGestureForFilter(config, device);
         if (first != null) {
           context.goToGesturesSelectFirst(
             filter: device,
@@ -122,12 +75,8 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
                 children: [
-                  // const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.only(
-                      top: 2,
-                      left: 16,
-                    ),
+                    padding: const EdgeInsets.only(top: 2, left: 16),
                     child: Row(
                       children: [
                         Column(
@@ -191,55 +140,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // const FDivider(
-                  //   style: .delta(
-                  //     padding: .value(
-                  //       EdgeInsets.symmetric(horizontal: 16),
-                  //     ),
-                  //   ),
-                  // ),
                   const SizedBox(height: 8),
-                  // Padding(
-                  //   padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                  //   child: Row(
-                  //     // mainAxisAlignment: MainAxisAlignment.start,
-                  //     children: [
-                  //       FTooltip(
-                  //         tipBuilder: (_, _) => const Text('Load from file'),
-                  //         child: FButton.icon(
-                  //           variant: .ghost,
-                  //           size: .lg,
-                  //           onPress: () => ref
-                  //               .read(configControllerProvider.notifier)
-                  //               .loadFromPicker(),
-                  //           child: const Icon(FLucideIcons.folderOpen),
-                  //         ),
-                  //       ),
-                  //       FTooltip(
-                  //         tipBuilder: (_, _) => const Text('Save to file'),
-                  //         child: FButton.icon(
-                  //           variant: .ghost,
-                  //           size: .lg,
-                  //           onPress: () => ref
-                  //               .read(configControllerProvider.notifier)
-                  //               .save(),
-                  //           child: const Icon(FLucideIcons.save),
-                  //         ),
-                  //       ),
-                  //       FTooltip(
-                  //         tipBuilder: (_, _) => const Text('Reset'),
-                  //         child: FButton.icon(
-                  //           variant: .ghost,
-                  //           size: .lg,
-                  //           onPress: () => ref
-                  //               .read(configControllerProvider.notifier)
-                  //               .reload(),
-                  //           child: const Icon(FLucideIcons.refreshCw),
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
                   const SizedBox(height: 4),
                   FSidebarGroup(
                     label: const Text('Device Gestures'),
@@ -303,9 +204,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                 icon: const Icon(FLucideIcons.cog),
                 label: const Text('Settings'),
                 selected: currentView == AppView.settings,
-                onPress: () async {
-                  await context.pushSettings();
-                },
+                onPress: context.openSettings,
               ),
             ],
           ),

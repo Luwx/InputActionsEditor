@@ -1,31 +1,24 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:go_router/go_router.dart';
 import 'package:input_actions_editor/state/app_router.dart';
 import 'package:input_actions_editor/state/device_settings_section_provider.dart';
+import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 
-class SettingsListSection extends StatefulWidget {
+class SettingsListSection extends ConsumerWidget {
   const SettingsListSection({super.key});
 
   @override
-  State<SettingsListSection> createState() => _SettingsListSectionState();
-}
-
-class _SettingsListSectionState extends State<SettingsListSection> {
-  @override
-  Widget build(BuildContext context) {
-    final location = AppLocation.parse(GoRouterState.of(context).uri);
-    final settingsSection =
-        location.settingsSection ?? SettingsSection.deviceSettings;
-    final deviceSection = location.section ?? DeviceSettingsSection.mouse;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsSection = ref.watch(currentSettingsSectionProvider);
+    final deviceSection = ref.watch(deviceSettingsSectionProvider);
     final isDeviceSettings = settingsSection == SettingsSection.deviceSettings;
-    final navigator = Navigator.of(context);
 
-    void pushReplacementIfNeeded(String location, {required bool isActive}) {
-      if (isActive) return;
-      context.pushReplacement(location);
-    }
+    void goSection(
+      SettingsSection section, {
+      DeviceSettingsSection? device,
+    }) => context.goToSettingsSection(section, device: device);
 
     return ScrollbarMediaPadding(
       topInset: SliverFrostedAppBar.maxHeight,
@@ -38,13 +31,7 @@ class _SettingsListSectionState extends State<SettingsListSection> {
               padding: const EdgeInsets.only(left: 8),
               child: FButton.icon(
                 variant: .ghost,
-                onPress: () {
-                  if (navigator.canPop()) {
-                    navigator.pop();
-                    return;
-                  }
-                  context.goToGestures();
-                },
+                onPress: context.closeSettings,
                 child: const Icon(FLucideIcons.chevronLeft),
               ),
             ),
@@ -62,30 +49,19 @@ class _SettingsListSectionState extends State<SettingsListSection> {
                       label: const Text('Effect'),
                       selected:
                           settingsSection == SettingsSection.effectSettings,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.effectSettings,
-                        isActive:
-                            settingsSection == SettingsSection.effectSettings,
-                      ),
+                      onPress: () => goSection(SettingsSection.effectSettings),
                     ),
                     FSidebarItem(
                       icon: const Icon(FLucideIcons.appWindowMac),
                       label: const Text('Interface'),
                       selected: settingsSection == SettingsSection.appearance,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.appearance,
-                        isActive: settingsSection == SettingsSection.appearance,
-                      ),
+                      onPress: () => goSection(SettingsSection.appearance),
                     ),
                     FSidebarItem(
                       icon: const Icon(FLucideIcons.listTree),
                       label: const Text('Device Rules'),
                       selected: settingsSection == SettingsSection.deviceRules,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.deviceRules,
-                        isActive:
-                            settingsSection == SettingsSection.deviceRules,
-                      ),
+                      onPress: () => goSection(SettingsSection.deviceRules),
                     ),
                   ],
                 ),
@@ -98,13 +74,9 @@ class _SettingsListSectionState extends State<SettingsListSection> {
                       selected:
                           isDeviceSettings &&
                           deviceSection == DeviceSettingsSection.mouse,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.deviceSettings(
-                          DeviceSettingsSection.mouse,
-                        ),
-                        isActive:
-                            isDeviceSettings &&
-                            deviceSection == DeviceSettingsSection.mouse,
+                      onPress: () => goSection(
+                        SettingsSection.deviceSettings,
+                        device: DeviceSettingsSection.mouse,
                       ),
                     ),
                     FSidebarItem(
@@ -113,13 +85,9 @@ class _SettingsListSectionState extends State<SettingsListSection> {
                       selected:
                           isDeviceSettings &&
                           deviceSection == DeviceSettingsSection.keyboard,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.deviceSettings(
-                          DeviceSettingsSection.keyboard,
-                        ),
-                        isActive:
-                            isDeviceSettings &&
-                            deviceSection == DeviceSettingsSection.keyboard,
+                      onPress: () => goSection(
+                        SettingsSection.deviceSettings,
+                        device: DeviceSettingsSection.keyboard,
                       ),
                     ),
                     FSidebarItem(
@@ -128,13 +96,9 @@ class _SettingsListSectionState extends State<SettingsListSection> {
                       selected:
                           isDeviceSettings &&
                           deviceSection == DeviceSettingsSection.touchpad,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.deviceSettings(
-                          DeviceSettingsSection.touchpad,
-                        ),
-                        isActive:
-                            isDeviceSettings &&
-                            deviceSection == DeviceSettingsSection.touchpad,
+                      onPress: () => goSection(
+                        SettingsSection.deviceSettings,
+                        device: DeviceSettingsSection.touchpad,
                       ),
                     ),
                     FSidebarItem(
@@ -143,13 +107,9 @@ class _SettingsListSectionState extends State<SettingsListSection> {
                       selected:
                           isDeviceSettings &&
                           deviceSection == DeviceSettingsSection.touchscreen,
-                      onPress: () => pushReplacementIfNeeded(
-                        AppLocation.deviceSettings(
-                          DeviceSettingsSection.touchscreen,
-                        ),
-                        isActive:
-                            isDeviceSettings &&
-                            deviceSection == DeviceSettingsSection.touchscreen,
+                      onPress: () => goSection(
+                        SettingsSection.deviceSettings,
+                        device: DeviceSettingsSection.touchscreen,
                       ),
                     ),
                   ],

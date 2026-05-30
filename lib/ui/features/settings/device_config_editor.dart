@@ -3,7 +3,6 @@ import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:go_router/go_router.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -123,8 +122,8 @@ class DeviceConfigEditor extends ConsumerWidget {
                     section: section,
                     properties: currentProps,
                     onChanged: updateProps,
-                    onDeviceRulesPress: () => context.pushReplacement(
-                      AppLocation.deviceRules,
+                    onDeviceRulesPress: () => context.goToSettingsSection(
+                      SettingsSection.deviceRules,
                     ),
                     colors: colors,
                     typography: typography,
