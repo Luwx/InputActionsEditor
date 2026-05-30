@@ -84,10 +84,9 @@ class _GestureListHeader extends StatelessWidget {
               ],
             ),
           ),
-          const FDivider(
-            style: .delta(
-              padding: .value(EdgeInsets.zero),
-            ),
+          Divider(
+            height: 1,
+            color: colors.border,
           ),
         ],
       ),

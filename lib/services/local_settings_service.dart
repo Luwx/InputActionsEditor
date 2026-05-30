@@ -11,7 +11,8 @@ enum FColorTheme {
   red,
   rose,
   violet,
-  yellow;
+  yellow,
+  kde;
 
   static FColorTheme fromString(String? value) =>
       FColorTheme.values.where((v) => v.name == value).firstOrNull ??

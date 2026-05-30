@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 class AppearanceSettingsScreen extends ConsumerWidget {
   const AppearanceSettingsScreen({super.key});
@@ -14,7 +15,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
     'System': ThemeMode.system,
   };
 
-  static const Map<String, FColorTheme> _colorThemes = {
+  static const Map<String, FColorTheme> _baseColorThemes = {
     'Neutral': FColorTheme.neutral,
     'Zinc': FColorTheme.zinc,
     'Slate': FColorTheme.slate,
@@ -31,6 +32,22 @@ class AppearanceSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(localSettingsProvider);
     final notifier = ref.read(localSettingsProvider.notifier);
+
+    final kdeAvailable = KdeglobalsParser.isAvailable();
+
+    // KDE System appears first only when kdeglobals is present on this machine.
+    final colorThemes = {
+      if (kdeAvailable) 'KDE System': FColorTheme.kde,
+      ..._baseColorThemes,
+    };
+
+    // If KDE was previously selected but is no longer available (e.g. the user
+    // moved the app to a non-KDE system), silently fall back to the displayed
+    // initial value so the selector doesn't show a blank entry.
+    final effectiveColorTheme =
+        (!kdeAvailable && settings.colorTheme == FColorTheme.kde)
+        ? FColorTheme.zinc
+        : settings.colorTheme;
 
     return ScrollbarMediaPadding(
       topInset: SliverFrostedAppBar.maxHeight,
@@ -94,10 +111,10 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                         suffix: SizedBox(
                           width: 120,
                           child: FSelect<FColorTheme>(
-                            key: ValueKey(settings.colorTheme),
-                            items: _colorThemes,
+                            key: ValueKey(effectiveColorTheme),
+                            items: colorThemes,
                             control: FSelectManagedControl<FColorTheme>(
-                              initial: settings.colorTheme,
+                              initial: effectiveColorTheme,
                               onChange: (value) {
                                 if (value != null) {
                                   notifier.setColorTheme(value);

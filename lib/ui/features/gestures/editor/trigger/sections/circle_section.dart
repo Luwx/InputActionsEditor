@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -28,6 +29,17 @@ class CircleSection extends StatelessWidget {
         child: FSelect<CircleDirection>(
           key: ValueKey(direction),
           items: _directions,
+          // TODO(me): add icons
+          // prefixBuilder: (context, style, variants) {
+          //   return direction == CircleDirection.any
+          //       ? const Icon(Icons.autorenew, size: 16)
+          //       : Icon(
+          //           direction == CircleDirection.clockwise
+          //               ? FLucideIcons.rotateCw
+          //               : FLucideIcons.rotateCcw,
+          //           size: 16,
+          //         );
+          // },
           control: FSelectManagedControl<CircleDirection>(
             initial: direction,
             onChange: (v) {

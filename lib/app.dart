@@ -11,6 +11,9 @@ import 'package:input_actions_editor/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
+// Cached once at startup — kdeglobals either exists or it doesn't.
+final bool _kdeAvailable = KdeglobalsParser.isAvailable();
+
 class App extends ConsumerWidget {
   const App({super.key});
 
@@ -107,7 +110,7 @@ class _ThemedShell extends ConsumerWidget {
     final brightness = Theme.of(context).brightness;
 
     final FThemeData themeData;
-    if (settings.colorTheme == FColorTheme.kde) {
+    if (settings.colorTheme == FColorTheme.kde && _kdeAvailable) {
       final kde =
           ref.watch(kdeColorSchemeProvider).value ?? KdeColorScheme.fallback;
       themeData = buildKdeThemeData(kde);

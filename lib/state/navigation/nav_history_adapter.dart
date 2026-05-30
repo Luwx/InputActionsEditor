@@ -25,19 +25,10 @@ class NavHistoryAdapter extends ChangeNotifier
   AppDestination get current => _ref.read(navProvider).current;
 
   @override
-  int get cursor => _ref.read(navProvider).cursor;
-
-  @override
   bool get canBack => _ref.read(navProvider).canBack;
 
   @override
-  bool get canForward => _ref.read(navProvider).canForward;
-
-  @override
   void back() => _ref.read(navProvider.notifier).back();
-
-  @override
-  void forward() => _ref.read(navProvider.notifier).forward();
 
   @override
   void dispose() {

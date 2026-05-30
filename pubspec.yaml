@@ -53,6 +53,8 @@ dependencies:
   shared_preferences: ^2.3.3
   kde_blur:
     path: ../../flutter_pkg/kde_blur
+  kde_color_scheme:
+    path: ../../flutter_pkg/kde_color_scheme
   flutter_animate: ^4.5.2
   window_manager: ^0.5.1
   equatable: ^2.0.8

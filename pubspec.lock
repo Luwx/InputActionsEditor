@@ -389,6 +389,13 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
+  kde_color_scheme:
+    dependency: "direct main"
+    description:
+      path: "../../flutter_pkg/kde_color_scheme"
+      relative: true
+    source: path
+    version: "0.1.0"
   leak_tracker:
     dependency: transitive
     description:

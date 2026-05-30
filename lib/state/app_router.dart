@@ -9,29 +9,54 @@ import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 // Type alias kept for multi_select_controller.dart and gesture_detail_section.
 typedef GestureKey = OpenGesture;
 
-/// Current device-type filter; null means "All".
-final deviceFilterProvider = Provider<DeviceType?>((ref) {
-  return switch (ref.watch(navProvider).current) {
-    GesturesDestination(:final filter) => filter,
-    _ => null,
-  };
-});
+
+class DeviceFilterController extends Notifier<DeviceType?> {
+  @override
+  DeviceType? build() {
+    ref.listen(navProvider, (_, next) {
+      if (next.current case GesturesDestination(:final filter)) {
+        state = filter;
+      }
+    });
+    return switch (ref.read(navProvider).current) {
+      GesturesDestination(:final filter) => filter,
+      _ => null,
+    };
+  }
+}
+
+final deviceFilterProvider =
+    NotifierProvider<DeviceFilterController, DeviceType?>(
+      DeviceFilterController.new,
+    );
 
 /// Currently open gesture in the detail panel; null when nothing is selected.
-final selectedGestureProvider = Provider<GestureKey?>((ref) {
-  return switch (ref.watch(navProvider).current) {
-    GesturesDestination(:final open) => open,
-    _ => null,
-  };
-});
+class SelectedGestureController extends Notifier<GestureKey?> {
+  @override
+  GestureKey? build() {
+    ref.listen(navProvider, (_, next) {
+      if (next.current case GesturesDestination(:final open)) {
+        state = open;
+      }
+    });
+    return switch (ref.read(navProvider).current) {
+      GesturesDestination(:final open) => open,
+      _ => null,
+    };
+  }
+}
+
+final selectedGestureProvider =
+    NotifierProvider<SelectedGestureController, GestureKey?>(
+      SelectedGestureController.new,
+    );
 
 class GestureListWidthController extends Notifier<double> {
   @override
   double build() => 0.3;
 
-  double get fraction => state;
-
-  set fraction(double value) => state = value;
+  @override
+  set state(double value) => super.state = value;
 }
 
 final gestureListWidthProvider =

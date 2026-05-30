@@ -1,6 +1,4 @@
-import 'dart:async' show unawaited;
-
-import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/material.dart' show Durations, Easing, Icons;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -69,9 +67,14 @@ class AddGestureButton extends StatelessWidget {
               for (final device in DeviceType.values)
                 _DeviceTile(
                   device: device,
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(ctx).pop();
-                    unawaited(_showTypePickerOrAdd(context, device));
+                    await Future<void>.delayed(
+                      Durations.short4,
+                    );
+                    if (context.mounted) {
+                      await _showTypePickerOrAdd(context, device);
+                    }
                   },
                 ),
             ],
@@ -111,9 +114,8 @@ class AddGestureButton extends StatelessWidget {
         title: Text('Add ${_deviceTitle(device)} gesture'),
         body: Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
+            shrinkWrap: true,
             children: [
               Text(
                 'Select a gesture template'
@@ -146,9 +148,6 @@ class AddGestureButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Trigger type descriptors per device
-// ---------------------------------------------------------------------------
 
 typedef _TriggerEntry = ({
   String label,
@@ -400,21 +399,38 @@ class _OptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
+    final hoveredNotifier = ValueNotifier(false);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: FTile(
-        onPress: onTap,
-        title: Text(title),
-        subtitle: Text(description),
-        prefix: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: colors.secondary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 16, color: colors.secondaryForeground),
-        ),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: hoveredNotifier,
+        builder: (context, hovered, _) {
+          return FTile(
+            onPress: onTap,
+            onHoverChange: (hovering) => hoveredNotifier.value = hovering,
+            title: Text(title),
+            subtitle: Text(description),
+            prefix: AnimatedContainer(
+              duration: Durations.short2,
+              curve: Easing.standard,
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  colors.secondary,
+                  colors.primary,
+                  hovered ? 0.12 : 0,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 16,
+                color: colors.secondaryForeground,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
-import 'package:input_actions_editor/routing/mini_router/shell_switcher.dart';
+import 'package:input_actions_editor/routing/mini_router/mini_router.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
@@ -77,10 +77,15 @@ void main() {
     );
   }
 
-  /// Whether the shell identified by [shellId] is currently non-interactive.
-  bool gateIgnoring(WidgetTester tester, Object shellId) => tester
+  // Branch indices in the route table: main = 0, settings = 1.
+  const mainBranch = 0;
+  const settingsBranch = 1;
+
+  /// Whether the branch at [index] is currently non-interactive. Looks through
+  /// offstage layers so a parked (kept-alive) branch is still found.
+  bool gateIgnoring(WidgetTester tester, int index) => tester
       .widget<IgnorePointer>(
-        find.byKey(ShellSwitcher.gateKey(shellId)),
+        find.byKey(branchGateKey(index), skipOffstage: false),
       )
       .ignoring;
 
@@ -123,7 +128,7 @@ void main() {
       );
 
       // Offstage but never disposed — still findable.
-      expect(find.byType(MainShell), findsOneWidget);
+      expect(find.byType(MainShell, skipOffstage: false), findsOneWidget);
       await disposeTree(tester);
     });
 
@@ -134,7 +139,7 @@ void main() {
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
-      expect(gateIgnoring(tester, 'main'), false);
+      expect(gateIgnoring(tester, mainBranch), false);
     });
 
     testWidgets('MainShell is non-interactive while settings is open', (
@@ -150,7 +155,7 @@ void main() {
         const SettingsDestination(SettingsSection.deviceSettings),
       );
 
-      expect(gateIgnoring(tester, 'main'), true);
+      expect(gateIgnoring(tester, mainBranch), true);
       await disposeTree(tester);
     });
 
@@ -169,7 +174,7 @@ void main() {
       container.read(navProvider.notifier).closeSettings();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(gateIgnoring(tester, 'main'), false);
+      expect(gateIgnoring(tester, mainBranch), false);
       await disposeTree(tester);
     });
 
@@ -208,8 +213,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Kept alive (offstage) so its state survives.
-      expect(find.byType(SettingsShell), findsOneWidget);
-      expect(gateIgnoring(tester, 'settings'), true);
+      expect(find.byType(SettingsShell, skipOffstage: false), findsOneWidget);
+      expect(gateIgnoring(tester, settingsBranch), true);
       await disposeTree(tester);
     });
 
@@ -226,8 +231,8 @@ void main() {
         const SettingsDestination(SettingsSection.deviceSettings),
       );
 
-      expect(gateIgnoring(tester, 'settings'), false);
-      expect(gateIgnoring(tester, 'main'), true);
+      expect(gateIgnoring(tester, settingsBranch), false);
+      expect(gateIgnoring(tester, mainBranch), true);
       await disposeTree(tester);
     });
   });

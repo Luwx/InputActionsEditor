@@ -78,6 +78,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                   Padding(
                     padding: const EdgeInsets.only(top: 2, left: 16),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Column(
                           mainAxisSize: MainAxisSize.min,
