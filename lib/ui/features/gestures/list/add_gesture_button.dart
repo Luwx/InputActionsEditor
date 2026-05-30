@@ -148,7 +148,6 @@ class AddGestureButton extends StatelessWidget {
   }
 }
 
-
 typedef _TriggerEntry = ({
   String label,
   String description,

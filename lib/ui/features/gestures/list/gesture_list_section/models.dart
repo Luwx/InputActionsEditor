@@ -13,13 +13,6 @@ final class _GestureDragData {
   final int configIndex;
 }
 
-final class _GroupDragData {
-  const _GroupDragData({required this.device, required this.groupId});
-
-  final DeviceType device;
-  final String groupId;
-}
-
 final class _GroupHeaderItem extends _FlatItem {
   _GroupHeaderItem({
     required this.group,

@@ -34,7 +34,7 @@ final class _GestureListViewModel {
       countLabel: isMultiSelectMode
           ? null
           : '$gestureCount gesture${gestureCount == 1 ? '' : 's'}',
-      reorderEnabled: deviceFilter != null && !isMultiSelectMode,
+      reorderEnabled: deviceFilter != null,
       deviceFilter: deviceFilter,
     );
   }

@@ -576,6 +576,57 @@ class ConfigController extends AsyncNotifier<Config> {
     }
   }
 
+  /// Reorders gestures for [device] and updates group ids for every moved
+  /// gesture keyed by its old config index.
+  void reorderAndUpdateGroupsForDevice(
+    DeviceType device,
+    List<int> newOrder,
+    Map<int, String?> changedGroupIdsByOldConfigIdx,
+  ) {
+    switch (device) {
+      case DeviceType.mouse:
+        _reorderAndUpdateGroups<MouseGesture>(
+          (c) => c.mouseGestures,
+          (c, l) => c.copyWith(mouseGestures: l),
+          (g, gid) => g.withCommon(g.common.copyWith(groupId: gid)),
+          newOrder,
+          changedGroupIdsByOldConfigIdx,
+        );
+      case DeviceType.keyboard:
+        _reorderAndUpdateGroups<KeyboardGesture>(
+          (c) => c.keyboardGestures,
+          (c, l) => c.copyWith(keyboardGestures: l),
+          (g, gid) => g.withCommon(g.common.copyWith(groupId: gid)),
+          newOrder,
+          changedGroupIdsByOldConfigIdx,
+        );
+      case DeviceType.pointer:
+        _reorderAndUpdateGroups<PointerGesture>(
+          (c) => c.pointerGestures,
+          (c, l) => c.copyWith(pointerGestures: l),
+          (g, gid) => g.withCommon(g.common.copyWith(groupId: gid)),
+          newOrder,
+          changedGroupIdsByOldConfigIdx,
+        );
+      case DeviceType.touchpad:
+        _reorderAndUpdateGroups<TouchpadGesture>(
+          (c) => c.touchpadGestures,
+          (c, l) => c.copyWith(touchpadGestures: l),
+          (g, gid) => g.withCommon(g.common.copyWith(groupId: gid)),
+          newOrder,
+          changedGroupIdsByOldConfigIdx,
+        );
+      case DeviceType.touchscreen:
+        _reorderAndUpdateGroups<TouchscreenGesture>(
+          (c) => c.touchscreenGestures,
+          (c, l) => c.copyWith(touchscreenGestures: l),
+          (g, gid) => g.withCommon(g.common.copyWith(groupId: gid)),
+          newOrder,
+          changedGroupIdsByOldConfigIdx,
+        );
+    }
+  }
+
   void _reorderAndUpdateGroup<T>(
     List<T> Function(Config) getList,
     Config Function(Config, List<T>) setList,
@@ -592,6 +643,26 @@ class ConfigController extends AsyncNotifier<Config> {
         l.add(
           oldIdx == changedOldIdx ? updateGroupId(item, newGroupId) : item,
         );
+      }
+    });
+  }
+
+  void _reorderAndUpdateGroups<T>(
+    List<T> Function(Config) getList,
+    Config Function(Config, List<T>) setList,
+    T Function(T, String?) updateGroupId,
+    List<int> newOrder,
+    Map<int, String?> changedGroupIdsByOldConfigIdx,
+  ) {
+    _modifyList(getList, setList, (l) {
+      final original = List<T>.of(l);
+      l.clear();
+      for (final oldIdx in newOrder) {
+        var item = original[oldIdx];
+        if (changedGroupIdsByOldConfigIdx.containsKey(oldIdx)) {
+          item = updateGroupId(item, changedGroupIdsByOldConfigIdx[oldIdx]);
+        }
+        l.add(item);
       }
     });
   }

@@ -6,47 +6,62 @@ final class _GestureListController {
   final WidgetRef ref;
   final BuildContext context;
 
-  void moveGestureToFlatIndex(
-    int draggedConfigIndex,
+  void moveGesturesToFlatIndex(
+    List<GestureKey> draggedKeys,
     int targetFlatIndex,
     List<_FlatItem> fullFlatItems,
     DeviceType device, {
     String? forcedGroupId,
     bool useForcedGroupId = false,
   }) {
-    final oldFlatIndex = fullFlatItems.indexWhere(
-      (item) =>
-          item is _GestureRowItem &&
+    final draggedConfigIndices = draggedKeys
+        .where((key) => key.device == device)
+        .map((key) => key.index)
+        .toSet();
+    if (draggedConfigIndices.isEmpty) return;
+
+    final oldFlatIndices = <int>[];
+    final oldItems = <_GestureRowItem>[];
+    for (final (index, item) in fullFlatItems.indexed) {
+      if (item is _GestureRowItem &&
           item.device == device &&
-          item.configIndex == draggedConfigIndex,
+          draggedConfigIndices.contains(item.configIndex)) {
+        oldFlatIndices.add(index);
+        oldItems.add(item);
+      }
+    }
+    if (oldItems.isEmpty) return;
+
+    final newFlat = [
+      for (final item in fullFlatItems)
+        if (item is! _GestureRowItem ||
+            item.device != device ||
+            !draggedConfigIndices.contains(item.configIndex))
+          item,
+    ];
+    final removedBeforeTarget = oldFlatIndices
+        .where((index) => index < targetFlatIndex)
+        .length;
+    final insertAt = (targetFlatIndex - removedBeforeTarget).clamp(
+      0,
+      newFlat.length,
     );
-    if (oldFlatIndex < 0) return;
-
-    final oldItem = fullFlatItems[oldFlatIndex] as _GestureRowItem;
-
-    final newFlat = List<_FlatItem>.of(fullFlatItems)..removeAt(oldFlatIndex);
-    final insertAt =
-        (targetFlatIndex > oldFlatIndex ? targetFlatIndex - 1 : targetFlatIndex)
-            .clamp(0, newFlat.length);
-    newFlat.insert(insertAt, oldItem);
 
     final newGroupId = useForcedGroupId
         ? forcedGroupId
         : inferGroupIdForInsertion(newFlat, insertAt);
+    newFlat.insertAll(insertAt, oldItems);
 
     final newOrder = [
       for (final item in newFlat)
         if (item is _GestureRowItem) item.configIndex,
     ];
 
-    ref
-        .read(configControllerProvider.notifier)
-        .reorderAndUpdateGroupForDevice(
-          device,
-          newOrder,
-          draggedConfigIndex,
-          newGroupId,
-        );
+    ref.read(configControllerProvider.notifier).reorderAndUpdateGroupsForDevice(
+      device,
+      newOrder,
+      {for (final item in oldItems) item.configIndex: newGroupId},
+    );
 
     final selection = ref.read(selectedGestureProvider);
     if (selection != null && selection.device == device) {
@@ -55,6 +70,34 @@ final class _GestureListController {
         context.selectGesture(device, newIndex);
       }
     }
+
+    final multiSelect = ref.read(multiSelectControllerProvider);
+    if (multiSelect != null) {
+      ref.read(multiSelectControllerProvider.notifier).selection = {
+        for (final key in multiSelect)
+          key.device == device
+              ? (device: key.device, index: newOrder.indexOf(key.index))
+              : key,
+      }.where((key) => key.index >= 0).toSet();
+    }
+  }
+
+  void moveGestureToFlatIndex(
+    int draggedConfigIndex,
+    int targetFlatIndex,
+    List<_FlatItem> fullFlatItems,
+    DeviceType device, {
+    String? forcedGroupId,
+    bool useForcedGroupId = false,
+  }) {
+    moveGesturesToFlatIndex(
+      [(device: device, index: draggedConfigIndex)],
+      targetFlatIndex,
+      fullFlatItems,
+      device,
+      forcedGroupId: forcedGroupId,
+      useForcedGroupId: useForcedGroupId,
+    );
   }
 
   String? inferGroupIdForInsertion(List<_FlatItem> flatItems, int insertAt) {
@@ -112,6 +155,22 @@ final class _GestureListController {
     );
   }
 
+  void appendGesturesToGroup(
+    List<GestureKey> data,
+    String groupId,
+    List<_FlatItem> fullFlatItems,
+    DeviceType device,
+  ) {
+    moveGesturesToFlatIndex(
+      data,
+      flatIndexForGroupAppend(fullFlatItems, groupId),
+      fullFlatItems,
+      device,
+      forcedGroupId: groupId,
+      useForcedGroupId: true,
+    );
+  }
+
   void moveGestureBeforeGesture(
     _GestureDragData data,
     int targetConfigIndex,
@@ -132,6 +191,22 @@ final class _GestureListController {
     );
   }
 
+  void moveGesturesBeforeGesture(
+    List<GestureKey> data,
+    int targetConfigIndex,
+    List<_FlatItem> fullFlatItems,
+    DeviceType device,
+  ) {
+    final targetFlatIndex = flatIndexBeforeGesture(
+      fullFlatItems,
+      targetConfigIndex,
+      device,
+    );
+    if (targetFlatIndex < 0) return;
+
+    moveGesturesToFlatIndex(data, targetFlatIndex, fullFlatItems, device);
+  }
+
   void moveGestureToUngroupedEnd(
     _GestureDragData data,
     List<_FlatItem> fullFlatItems,
@@ -141,6 +216,20 @@ final class _GestureListController {
       fullFlatItems.length,
       fullFlatItems,
       data.device,
+      useForcedGroupId: true,
+    );
+  }
+
+  void moveGesturesToUngroupedEnd(
+    List<GestureKey> data,
+    List<_FlatItem> fullFlatItems,
+    DeviceType device,
+  ) {
+    moveGesturesToFlatIndex(
+      data,
+      fullFlatItems.length,
+      fullFlatItems,
+      device,
       useForcedGroupId: true,
     );
   }

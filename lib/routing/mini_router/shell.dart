@@ -88,10 +88,10 @@ class _StatefulNavigationShellState extends State<StatefulNavigationShell> {
 /// An animated, state-preserving "indexed stack" of branches.
 ///
 /// Keeps every visited branch mounted (Offstage) so its state survives, and
-/// animates swaps itself. 
+/// animates swaps itself.
 /// One controller runs `0 ⇒ from shown … 1 ⇒ to shown`; a swap back
-/// to the branch we just left **reverses** it. 
-/// 
+/// to the branch we just left **reverses** it.
+///
 /// The curve is applied to the controller value
 /// in both directions, matching Flutter route transitions; using a flipped
 /// reverse curve would remap the value at the moment of reversal and visibly

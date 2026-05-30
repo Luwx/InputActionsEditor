@@ -6,6 +6,7 @@ class MultiSelectController extends Notifier<Set<GestureKey>?> {
   Set<GestureKey>? build() => null;
 
   bool get isActive => state != null;
+  Set<GestureKey>? get selection => state;
 
   void enter(GestureKey initial) {
     state = {initial};
@@ -18,6 +19,8 @@ class MultiSelectController extends Notifier<Set<GestureKey>?> {
     if (!next.remove(item)) next.add(item);
     state = next;
   }
+
+  set selection(Set<GestureKey>? items) => state = items;
 
   void exit() => state = null;
 }

@@ -153,7 +153,6 @@ Widget _leaf({required LocalKey key, required Widget child}) {
   );
 }
 
-
 Widget _branchTransition(
   BuildContext context,
   Animation<double> animation,

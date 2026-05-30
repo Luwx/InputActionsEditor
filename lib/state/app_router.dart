@@ -9,7 +9,6 @@ import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 // Type alias kept for multi_select_controller.dart and gesture_detail_section.
 typedef GestureKey = OpenGesture;
 
-
 class DeviceFilterController extends Notifier<DeviceType?> {
   @override
   DeviceType? build() {
