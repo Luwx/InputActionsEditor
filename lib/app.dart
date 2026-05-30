@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/state/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
+import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -67,7 +70,13 @@ FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
     FColorTheme.rose => FThemes.rose,
     FColorTheme.violet => FThemes.violet,
     FColorTheme.yellow => FThemes.yellow,
+    FColorTheme.kde => null,
   };
+
+  if (colorPair == null) {
+    // KDE theme is handled separately via kdeColorSchemeProvider
+    return FThemes.zinc.dark.desktop;
+  }
 
   final baseTheme = switch (settings.themeMode) {
     ThemeMode.dark => colorPair.dark.desktop,
@@ -97,8 +106,17 @@ class _ThemedShell extends ConsumerWidget {
     final settings = ref.watch(localSettingsProvider);
     final brightness = Theme.of(context).brightness;
 
+    final FThemeData themeData;
+    if (settings.colorTheme == FColorTheme.kde) {
+      final kde =
+          ref.watch(kdeColorSchemeProvider).value ?? KdeColorScheme.fallback;
+      themeData = buildKdeThemeData(kde);
+    } else {
+      themeData = buildAppFThemeData(settings, brightness);
+    }
+
     return FTheme(
-      data: buildAppFThemeData(settings, brightness),
+      data: themeData,
       child: FToaster(child: child),
     );
   }
