@@ -746,6 +746,12 @@ class ConfigController extends AsyncNotifier<Config> {
   // Persist
   // ---------------------------------------------------------------------------
 
+  void discardChanges() {
+    final saved = _savedConfig;
+    if (saved == null || !isDirty) return;
+    state = AsyncData(saved);
+  }
+
   Future<void> save() async {
     try {
       final config = state.value;

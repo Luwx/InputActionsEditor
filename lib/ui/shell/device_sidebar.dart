@@ -60,6 +60,10 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
     final deviceFilter = ref.watch(deviceFilterProvider);
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
+    ref.watch(configControllerProvider);
+    final canDiscard =
+        ref.read(configControllerProvider.notifier).isDirty &&
+        ref.read(configControllerProvider.notifier).savedConfig != null;
 
     return FSidebar.raw(
       style: const .delta(
@@ -125,6 +129,22 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                                         .read(configControllerProvider.notifier)
                                         .save();
                                   },
+                                ),
+                                .item(
+                                  prefix: const Icon(FLucideIcons.undo2),
+                                  title: const Text('Discard changes'),
+                                  enabled: canDiscard,
+                                  onPress: canDiscard
+                                      ? () async {
+                                          await controller.hide();
+                                          ref
+                                              .read(
+                                                configControllerProvider
+                                                    .notifier,
+                                              )
+                                              .discardChanges();
+                                        }
+                                      : null,
                                 ),
                               ],
                             ),
