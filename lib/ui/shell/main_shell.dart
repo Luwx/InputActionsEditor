@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/recognition_history_provider.dart';
+import 'package:input_actions_editor/state/window_title_provider.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// Persistent app shell: device sidebar + content area.
 ///
@@ -24,13 +27,19 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    ref.read(recognitionHistoryProvider.notifier);
+    ref
+      // listens to dbus events and updates the history list
+      ..read(recognitionHistoryProvider.notifier)
+      // update window title with '*'
+      ..listenManual<String>(
+        windowTitleProvider,
+        (_, title) => unawaited(windowManager.setTitle(title)),
+        fireImmediately: true,
+      );
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(configControllerProvider);
-
     return FScaffold(
       sidebar: const DeviceSidebar(),
       childPad: false,

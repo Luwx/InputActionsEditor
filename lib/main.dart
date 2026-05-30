@@ -13,6 +13,7 @@ import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
   final settings = LocalSettingsService(prefs).load();
@@ -33,8 +34,6 @@ void main() async {
 // Initializes window_manager and registers org.inputactions.ui on D-Bus so
 // the daemon can focus this window and enforce single-instance behaviour.
 Future<void> _setupTrayMode() async {
-  await windowManager.ensureInitialized();
-
   final dbusClient = DBusClient.session();
 
   // Single-instance check: forward to the existing window and exit.
