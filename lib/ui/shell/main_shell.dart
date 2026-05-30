@@ -2,21 +2,18 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/navigation/nav_transition.dart';
 import 'package:input_actions_editor/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
-import 'package:input_actions_editor/ui/shell/nav_surface.dart';
 
-/// Persistent app shell: device sidebar + animated content area.
+/// Persistent app shell: device sidebar + content area.
 ///
-/// Always kept alive in the widget tree (behind a settings overlay when
+/// Kept alive in the widget tree (offstage behind the settings shell when
 /// settings is open) so scroll position and other state survive view switches.
-/// The child is wrapped in a [NavSurface] so content transitions
-/// (gestures ↔ history) animate vertically while the sidebar stays fixed.
+/// The [child] is the animated content surface MiniRouter supplies; this shell
+/// only provides the surrounding chrome.
 class MainShell extends ConsumerStatefulWidget {
-  const MainShell({required this.contentSpec, required this.child, super.key});
+  const MainShell({required this.child, super.key});
 
-  final TransitionConfig contentSpec;
   final Widget child;
 
   @override
@@ -37,10 +34,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     return FScaffold(
       sidebar: const DeviceSidebar(),
       childPad: false,
-      child: NavSurface(
-        spec: widget.contentSpec,
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 }

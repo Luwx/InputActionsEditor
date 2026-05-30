@@ -1,4 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:input_actions_editor/state/device_settings_section_provider.dart';
+import 'package:input_actions_editor/state/navigation/app_destination.dart';
 
 enum NavAxis { vertical, horizontal }
 
@@ -15,4 +17,61 @@ class TransitionConfig extends Equatable {
 
   @override
   List<Object?> get props => [axis, sign, amount];
+}
+
+/// Order of the top-level views in the device sidebar.
+int _mainSlot(AppDestination d) => switch (d) {
+  GesturesDestination() => 0,
+  HistoryDestination() => 1,
+  SettingsDestination() => 2,
+};
+
+/// Order of the settings sub-sections in the settings sidebar.
+int _settingsSlot(SettingsDestination d) {
+  const deviceOrder = [
+    DeviceSettingsSection.mouse,
+    DeviceSettingsSection.pointer,
+    DeviceSettingsSection.keyboard,
+    DeviceSettingsSection.touchpad,
+    DeviceSettingsSection.touchscreen,
+  ];
+  return switch (d.section) {
+    SettingsSection.deviceSettings => deviceOrder.indexOf(
+      d.device ?? DeviceSettingsSection.mouse,
+    ),
+    SettingsSection.deviceRules => deviceOrder.length,
+    SettingsSection.effectSettings => deviceOrder.length + 1,
+    SettingsSection.appearance => deviceOrder.length + 2,
+  };
+}
+
+/// Derives the motion for a navigation from [from] to [to] — the single place
+/// the app decides axis/direction. MiniRouter never sees this; the app's
+/// transition builder calls it and maps the result onto its transition widget.
+///
+/// Within a shell the slide is vertical and follows sidebar order; crossing
+/// into/out of settings slides horizontally.
+TransitionConfig navTransition(AppDestination? from, AppDestination? to) {
+  return switch ((from, to)) {
+    (null, _) || (_, null) => const TransitionConfig(NavAxis.vertical, 1),
+    (
+      final SettingsDestination fromSettings,
+      final SettingsDestination toSettings,
+    ) =>
+      TransitionConfig(
+        NavAxis.vertical,
+        _settingsSlot(toSettings) >= _settingsSlot(fromSettings) ? 1.0 : -1.0,
+        amount: 0.15,
+      ),
+    (SettingsDestination(), _) => const TransitionConfig(
+      NavAxis.horizontal,
+      -1,
+    ),
+    (_, SettingsDestination()) => const TransitionConfig(NavAxis.horizontal, 1),
+    (final AppDestination fromMain, final AppDestination toMain) =>
+      TransitionConfig(
+        NavAxis.vertical,
+        _mainSlot(toMain) >= _mainSlot(fromMain) ? 1.0 : -1.0,
+      ),
+  };
 }
