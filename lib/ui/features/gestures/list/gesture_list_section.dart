@@ -23,6 +23,7 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
+import 'package:input_actions_editor/ui/widgets/reorderable_groupable_controller.dart';
 import 'package:input_actions_editor/ui/widgets/reorderable_groupable_list.dart';
 
 part 'gesture_list_section/dialogs/rename_dialog.dart';
@@ -120,7 +121,6 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
     });
   }
 
-  // TODO(me): refactor out of here
   void _tryAutoSelectFirstGesture({
     required Config config,
     required Set<String> collapsedGroups,
@@ -423,38 +423,16 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                         count == 1 ? 'Move gesture' : 'Move $count gestures',
                     groupDragLabelBuilder: (group) =>
                         groupItemsById[group.id]?.group.name ?? 'Move group',
-                    onMoveItemsToEnd: (itemIds) =>
-                        _listController.moveGesturesToUngroupedEnd(
-                          itemIds,
-                          viewModel.fullFlatItems,
+                    onItemsReordered: (result) =>
+                        _listController.applyItemsReorder(
                           viewModel.deviceFilter!,
+                          result,
                         ),
-                    onMoveItemsBeforeItem: (itemIds, targetItemId) =>
-                        _listController.moveGesturesBeforeGesture(
-                          itemIds,
-                          targetItemId.index,
-                          viewModel.fullFlatItems,
+                    onGroupReordered: (from, to) =>
+                        _listController.applyGroupReorder(
                           viewModel.deviceFilter!,
-                        ),
-                    onMoveItemsIntoGroup: (itemIds, groupId) =>
-                        _listController.appendGesturesToGroup(
-                          itemIds,
-                          groupId,
-                          viewModel.fullFlatItems,
-                          viewModel.deviceFilter!,
-                        ),
-                    onMoveGroupToEnd: (groupId) =>
-                        _listController.reorderGroupToEnd(
-                          viewModel.deviceFilter!,
-                          groupId,
-                          config,
-                        ),
-                    onMoveGroupBeforeGroup: (draggedGroupId, targetGroupId) =>
-                        _listController.reorderGroupBefore(
-                          viewModel.deviceFilter!,
-                          draggedGroupId,
-                          targetGroupId,
-                          config,
+                          from,
+                          to,
                         ),
                     groupBuilder: (context, groupEntry, reorderHandle) {
                       final flatItem = groupItemsById[groupEntry.id]!;

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/widgets/reorderable_groupable_controller.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
 
 sealed class ReorderableGroupableListEntry<I, G> {
@@ -56,16 +57,11 @@ typedef ReorderableGroupableGroupBuilder<I, G> =
 typedef ReorderableGroupableItemOverlayBuilder<I, G> =
     Widget? Function(BuildContext context, ReorderableGroupableItem<I, G> item);
 
-typedef ReorderableGroupableItemsCallback<I> = void Function(List<I> itemIds);
+typedef ReorderableGroupableItemsReorderedCallback<I, G> =
+    void Function(ReorderableItemsResult<I, G> result);
 
-typedef ReorderableGroupableItemsBeforeCallback<I> =
-    void Function(List<I> itemIds, I targetItemId);
-
-typedef ReorderableGroupableItemsIntoGroupCallback<I, G> =
-    void Function(List<I> itemIds, G targetGroupId);
-
-typedef ReorderableGroupableGroupBeforeCallback<G> =
-    void Function(G draggedGroupId, G targetGroupId);
+typedef ReorderableGroupableGroupReorderedCallback =
+    void Function(int fromIndex, int toIndex);
 
 class ReorderableGroupableList<I, G> extends StatefulWidget {
   const ReorderableGroupableList({
@@ -74,11 +70,8 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     required this.groupBuilder,
     required this.scrollController,
     required this.borderColor,
-    required this.onMoveItemsToEnd,
-    required this.onMoveItemsBeforeItem,
-    required this.onMoveItemsIntoGroup,
-    required this.onMoveGroupToEnd,
-    required this.onMoveGroupBeforeGroup,
+    required this.onItemsReordered,
+    required this.onGroupReordered,
     this.reorderEnabled = true,
     this.selectedItemIds = const {},
     this.itemOverlayBuilder,
@@ -101,11 +94,8 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   final String Function(ReorderableGroupableGroup<I, G> group)?
   groupDragLabelBuilder;
   final bool showTrailingDropZone;
-  final ReorderableGroupableItemsCallback<I> onMoveItemsToEnd;
-  final ReorderableGroupableItemsBeforeCallback<I> onMoveItemsBeforeItem;
-  final ReorderableGroupableItemsIntoGroupCallback<I, G> onMoveItemsIntoGroup;
-  final ValueChanged<G> onMoveGroupToEnd;
-  final ReorderableGroupableGroupBeforeCallback<G> onMoveGroupBeforeGroup;
+  final ReorderableGroupableItemsReorderedCallback<I, G> onItemsReordered;
+  final ReorderableGroupableGroupReorderedCallback onGroupReordered;
 
   @override
   State<ReorderableGroupableList<I, G>> createState() =>
@@ -117,6 +107,8 @@ class _ReorderableGroupableListState<I, G>
   static const _autoScrollEdge = 64.0;
   static const _autoScrollMaxStep = 18.0;
   static const _autoScrollFrame = Duration(milliseconds: 16);
+
+  final _controller = ReorderableGroupableController<I, G>();
 
   Set<I> _activeItemDragIds = const {};
   Timer? _autoScrollTimer;
@@ -190,6 +182,43 @@ class _ReorderableGroupableListState<I, G>
     _autoScrollTimer = null;
   }
 
+  void _moveItemsBeforeItem(List<I> itemIds, I targetItemId) {
+    final result = _controller.moveItemsBeforeItem(
+      widget.entries,
+      itemIds.toSet(),
+      targetItemId,
+    );
+    if (result != null) widget.onItemsReordered(result);
+  }
+
+  void _moveItemsIntoGroup(List<I> itemIds, G groupId) {
+    final result = _controller.moveItemsIntoGroup(
+      widget.entries,
+      itemIds.toSet(),
+      groupId,
+    );
+    if (result != null) widget.onItemsReordered(result);
+  }
+
+  void _moveItemsToEnd(List<I> itemIds) {
+    final result = _controller.moveItemsToEnd(widget.entries, itemIds.toSet());
+    if (result != null) widget.onItemsReordered(result);
+  }
+
+  void _moveGroupBeforeGroup(G draggedGroupId, G targetGroupId) {
+    final move = _controller.moveGroupBeforeGroup(
+      widget.entries,
+      draggedGroupId,
+      targetGroupId,
+    );
+    if (move != null) widget.onGroupReordered(move.from, move.to);
+  }
+
+  void _moveGroupToEnd(G draggedGroupId) {
+    final move = _controller.moveGroupToEnd(widget.entries, draggedGroupId);
+    if (move != null) widget.onGroupReordered(move.from, move.to);
+  }
+
   @override
   Widget build(BuildContext context) {
     final childCount =
@@ -201,8 +230,8 @@ class _ReorderableGroupableListState<I, G>
         if (index >= widget.entries.length) {
           return _TrailingDropZone<I, G>(
             borderColor: widget.borderColor,
-            onItemsAccept: widget.onMoveItemsToEnd,
-            onGroupAccept: widget.onMoveGroupToEnd,
+            onItemsAccept: _moveItemsToEnd,
+            onGroupAccept: _moveGroupToEnd,
           );
         }
 
@@ -245,13 +274,13 @@ class _ReorderableGroupableListState<I, G>
     return DragTarget<_ItemDragData<I>>(
       onWillAcceptWithDetails: (_) => true,
       onAcceptWithDetails: (details) =>
-          widget.onMoveItemsIntoGroup(details.data.itemIds, group.id),
+          _moveItemsIntoGroup(details.data.itemIds, group.id),
       builder: (context, itemCandidates, _) {
         return DragTarget<_GroupDragData<G>>(
           onWillAcceptWithDetails: (details) =>
               details.data.groupId != group.id,
           onAcceptWithDetails: (details) =>
-              widget.onMoveGroupBeforeGroup(details.data.groupId, group.id),
+              _moveGroupBeforeGroup(details.data.groupId, group.id),
           builder: (context, groupCandidates, _) => _GroupDropState(
             isItemDropActive: itemCandidates.isNotEmpty,
             isGroupDropActive: groupCandidates.isNotEmpty,
@@ -312,7 +341,7 @@ class _ReorderableGroupableListState<I, G>
       onWillAcceptWithDetails: (details) =>
           item.isVisible && !details.data.itemIds.contains(item.id),
       onAcceptWithDetails: (details) =>
-          widget.onMoveItemsBeforeItem(details.data.itemIds, item.id),
+          _moveItemsBeforeItem(details.data.itemIds, item.id),
       builder: (context, candidateData, _) => _ItemDropState(
         isActive: candidateData.isNotEmpty,
         child: visibleRow,
@@ -613,7 +642,7 @@ class _TrailingDropZone<I, G> extends StatelessWidget {
   });
 
   final Color borderColor;
-  final ReorderableGroupableItemsCallback<I> onItemsAccept;
+  final void Function(List<I> itemIds) onItemsAccept;
   final ValueChanged<G> onGroupAccept;
 
   @override

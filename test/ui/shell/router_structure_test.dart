@@ -9,12 +9,14 @@ import 'package:input_actions_editor/model/recognition_event.dart';
 import 'package:input_actions_editor/routing/mini_router/mini_router.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/device_settings_section_provider.dart';
+import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/shell/main_shell.dart';
 import 'package:input_actions_editor/ui/shell/settings_shell.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // Stubs — override providers that touch external systems (DBus, file system).
@@ -33,12 +35,17 @@ class _StubConfigNotifier extends ConfigController {
 }
 
 void main() {
-  ProviderContainer makeContainer() => ProviderContainer(
-    overrides: [
-      recognitionHistoryProvider.overrideWith(_StubHistoryNotifier.new),
-      configControllerProvider.overrideWith(_StubConfigNotifier.new),
-    ],
-  );
+  Future<ProviderContainer> makeContainer() async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    return ProviderContainer(
+      overrides: [
+        recognitionHistoryProvider.overrideWith(_StubHistoryNotifier.new),
+        configControllerProvider.overrideWith(_StubConfigNotifier.new),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+  }
 
   Future<void> pumpApp(
     WidgetTester tester,
@@ -106,7 +113,7 @@ void main() {
 
   group('MiniRouter shell structure', () {
     testWidgets('MainShell is present on the gestures view', (tester) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -117,7 +124,7 @@ void main() {
     testWidgets('MainShell stays mounted after navigating to settings', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -135,7 +142,7 @@ void main() {
     testWidgets('MainShell is interactive on the gestures view', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -145,7 +152,7 @@ void main() {
     testWidgets('MainShell is non-interactive while settings is open', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -162,7 +169,7 @@ void main() {
     testWidgets('MainShell becomes interactive again after closing settings', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -181,7 +188,7 @@ void main() {
     testWidgets('settings shell mounts lazily — absent until first visit', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -200,7 +207,7 @@ void main() {
     testWidgets('settings shell stays mounted after closing settings', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 
@@ -221,7 +228,7 @@ void main() {
     testWidgets('settings shell is interactive while settings is open', (
       tester,
     ) async {
-      final container = makeContainer();
+      final container = await makeContainer();
       addTearDown(container.dispose);
       await pumpApp(tester, container);
 

@@ -1,17 +1,6 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-// ---------------------------------------------------------------------------
-// Flat list item types
-// ---------------------------------------------------------------------------
-
 sealed class _FlatItem {}
-
-final class _GestureDragData {
-  const _GestureDragData({required this.device, required this.configIndex});
-
-  final DeviceType device;
-  final int configIndex;
-}
 
 final class _GroupHeaderItem extends _FlatItem {
   _GroupHeaderItem({
