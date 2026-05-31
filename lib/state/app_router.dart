@@ -50,6 +50,24 @@ final selectedGestureProvider =
       SelectedGestureController.new,
     );
 
+class GestureRedirectTargetController extends Notifier<GestureKey?> {
+  @override
+  GestureKey? build() => null;
+
+  GestureKey? get target => state;
+
+  set target(GestureKey target) => state = target;
+
+  void clear() => state = null;
+}
+
+/// One-shot target used for programmatic gesture redirects that should bring
+/// the corresponding list row into view.
+final gestureRedirectTargetProvider =
+    NotifierProvider<GestureRedirectTargetController, GestureKey?>(
+      GestureRedirectTargetController.new,
+    );
+
 class GestureListWidthController extends Notifier<double> {
   @override
   double build() => 0.3;
@@ -83,6 +101,14 @@ extension AppNavigation on BuildContext {
             filter: _currentFilter,
           ),
         );
+  }
+
+  void redirectToGesture(DeviceType device, int index) {
+    _container.read(gestureRedirectTargetProvider.notifier).target = (
+      device: device,
+      index: index,
+    );
+    selectGesture(device, index);
   }
 
   /// Clears the open gesture without adding a history entry.

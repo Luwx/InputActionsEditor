@@ -15,6 +15,12 @@ class CollapsedGroupsNotifier extends Notifier<Set<String>> {
   }
 
   bool isCollapsed(String groupId) => state.contains(groupId);
+
+  void expand(String groupId) {
+    if (!state.contains(groupId)) return;
+    final next = Set<String>.of(state)..remove(groupId);
+    state = next;
+  }
 }
 
 final collapsedGroupsProvider =
