@@ -12,6 +12,8 @@ class StrokePreview extends StatelessWidget {
     this.size = 60,
     this.strokeWidth = 2,
     this.showSamplePoints = false,
+    this.pathPadding,
+    this.dottedBackground = false,
     super.key,
   });
 
@@ -23,6 +25,8 @@ class StrokePreview extends StatelessWidget {
   final double size;
   final double strokeWidth;
   final bool showSamplePoints;
+  final double? pathPadding;
+  final bool dottedBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +40,8 @@ class StrokePreview extends StatelessWidget {
       size: size,
       lineWidth: strokeWidth,
       showSamplePoints: showSamplePoints,
+      pathPadding: pathPadding,
+      dottedBackground: dottedBackground,
       borderRadius: BorderRadius.circular(6),
       empty: Center(
         child: Text(

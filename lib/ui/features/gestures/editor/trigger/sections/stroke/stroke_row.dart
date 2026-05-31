@@ -44,50 +44,79 @@ class StrokeRow extends StatelessWidget {
                     endColor: colors.primary,
                     surface: colors.secondary,
                     border: colors.border,
+                    strokeWidth: 3,
+                    pathPadding: 12,
+                    dottedBackground: true,
                   ),
                 ),
               ),
               Positioned(
                 right: 4,
                 bottom: 4,
-                child: Icon(
-                  FLucideIcons.maximize2,
-                  size: 11,
-                  color: colors.mutedForeground,
-                ),
-              ),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: FButton(
-                  variant: .ghost,
-                  size: .sm,
-                  onPress: onDelete,
-                  child: const Icon(FLucideIcons.trash),
+                child: IgnorePointer(
+                  child: Icon(
+                    FLucideIcons.maximize2,
+                    size: 11,
+                    color: colors.mutedForeground,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            'Stroke ${index + 1}',
-            style: typography.sm.copyWith(fontWeight: FontWeight.w500),
+          SizedBox(
+            width: 150,
+
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(width: 2),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Stroke ${index + 1}',
+                        style: typography.sm.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      if (data != null) ...[
+                        Text(
+                          '${data.pointCount} sample points',
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                        Text(
+                          strokeAspect(data.points),
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                      ] else
+                        Text(
+                          'Invalid stroke data',
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                FButton(
+                  variant: .ghost,
+                  size: .sm,
+                  onPress: onDelete,
+                  child: const Icon(FLucideIcons.trash),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 2),
-          if (data != null) ...[
-            Text(
-              '${data.pointCount} sample points',
-              style: typography.xs.copyWith(color: colors.mutedForeground),
-            ),
-            Text(
-              strokeAspect(data.points),
-              style: typography.xs.copyWith(color: colors.mutedForeground),
-            ),
-          ] else
-            Text(
-              'Invalid stroke data',
-              style: typography.xs.copyWith(color: colors.mutedForeground),
-            ),
         ],
       ),
     );
@@ -123,6 +152,8 @@ class StrokeRow extends StatelessWidget {
                   border: colors.border,
                   showSamplePoints: true,
                   strokeWidth: 3,
+                  pathPadding: 22,
+                  dottedBackground: true,
                 );
               },
             ),

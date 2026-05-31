@@ -62,7 +62,7 @@ class TriggerEditor extends ConsumerWidget {
             conflicts: conflicts,
             focus: (device: device, index: gestureIndex),
             onJump: (target) =>
-                context.selectGesture(target.device, target.index),
+                context.redirectToGesture(target.device, target.index),
           ).appearToggle(
             visible: conflicts.isNotEmpty,
             duration: Durations.short3,

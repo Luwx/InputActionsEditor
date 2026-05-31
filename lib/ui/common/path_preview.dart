@@ -12,7 +12,9 @@ class PathPreview extends StatelessWidget {
     this.shape = BoxShape.rectangle,
     this.borderRadius,
     this.padding = 6,
+    this.pathPadding,
     this.paddingFactor,
+    this.dottedBackground = false,
     this.lineWidth = 2,
     this.startPointRadius = 3,
     this.endPointRadius = 3.5,
@@ -32,7 +34,9 @@ class PathPreview extends StatelessWidget {
   final BoxShape shape;
   final BorderRadius? borderRadius;
   final double padding;
+  final double? pathPadding;
   final double? paddingFactor;
+  final bool dottedBackground;
   final double lineWidth;
   final double startPointRadius;
   final double endPointRadius;
@@ -51,8 +55,9 @@ class PathPreview extends StatelessWidget {
         border: border,
         showSamplePoints: showSamplePoints,
         shape: shape,
-        padding: padding,
+        padding: pathPadding ?? padding,
         paddingFactor: paddingFactor,
+        dottedBackground: dottedBackground,
         lineWidth: lineWidth,
         startPointRadius: startPointRadius,
         endPointRadius: endPointRadius,
@@ -92,6 +97,7 @@ class PathPreviewPainter extends CustomPainter {
     this.showSamplePoints = false,
     this.padding = 6,
     this.paddingFactor,
+    this.dottedBackground = false,
     this.lineWidth = 2,
     this.startPointRadius = 3,
     this.endPointRadius = 3.5,
@@ -108,6 +114,7 @@ class PathPreviewPainter extends CustomPainter {
   final bool showSamplePoints;
   final double padding;
   final double? paddingFactor;
+  final bool dottedBackground;
   final double lineWidth;
   final double startPointRadius;
   final double endPointRadius;
@@ -130,6 +137,18 @@ class PathPreviewPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1,
         );
+    }
+
+    if (dottedBackground) {
+      final dotPaint = Paint()
+        ..color = border.withValues(alpha: 0.16)
+        ..style = PaintingStyle.fill;
+      const dotSpacing = 16.0;
+      for (var x = dotSpacing; x < size.width; x += dotSpacing) {
+        for (var y = dotSpacing; y < size.height; y += dotSpacing) {
+          canvas.drawRect(Rect.fromLTWH(x, y, 1, 1), dotPaint);
+        }
+      }
     }
 
     if (points.length < 2) return;
@@ -166,6 +185,24 @@ class PathPreviewPainter extends CustomPainter {
     );
 
     final count = points.length;
+    for (var index = 0; index < count - 1; index++) {
+      final t = index / (count - 1);
+      canvas.drawLine(
+        toCanvas(points[index]),
+        toCanvas(points[index + 1]),
+        Paint()
+          ..color = Color.lerp(
+            startColor,
+            endColor,
+            t,
+          )!.withValues(alpha: 0.08)
+          ..strokeWidth = lineWidth + 4
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+      );
+    }
+
     for (var index = 0; index < count - 1; index++) {
       final t = index / (count - 1);
       canvas.drawLine(
@@ -236,6 +273,7 @@ class PathPreviewPainter extends CustomPainter {
       old.shape != shape ||
       old.padding != padding ||
       old.paddingFactor != paddingFactor ||
+      old.dottedBackground != dottedBackground ||
       old.lineWidth != lineWidth ||
       old.startPointRadius != startPointRadius ||
       old.endPointRadius != endPointRadius ||
