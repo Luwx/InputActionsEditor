@@ -5,6 +5,11 @@ import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/nav_state.dart';
 
 class NavController extends Notifier<NavState> {
+  SettingsDestination _lastSettingsDestination = const SettingsDestination(
+    SettingsSection.deviceSettings,
+    device: DeviceSettingsSection.mouse,
+  );
+
   @override
   NavState build() => const NavState(
     history: [GesturesDestination()],
@@ -18,16 +23,31 @@ class NavController extends Notifier<NavState> {
   /// appends a new entry and drops any forward entries (flat browser model).
   void go(AppDestination d, {bool replace = false}) {
     if (state.current == d) return;
+    if (d case final SettingsDestination settings) {
+      _lastSettingsDestination = settings;
+    }
     final kept = state.history.sublist(0, state.cursor + (replace ? 0 : 1));
     state = NavState(history: [...kept, d], cursor: kept.length);
   }
 
   void back() {
-    if (state.canBack) state = state.copyWith(cursor: state.cursor - 1);
+    if (!state.canBack) return;
+    state = state.copyWith(cursor: state.cursor - 1);
+    _rememberCurrentSettings();
   }
 
   void forward() {
-    if (state.canForward) state = state.copyWith(cursor: state.cursor + 1);
+    if (!state.canForward) return;
+    state = state.copyWith(cursor: state.cursor + 1);
+    _rememberCurrentSettings();
+  }
+
+  void openSettings() => go(_lastSettingsDestination);
+
+  void _rememberCurrentSettings() {
+    if (state.current case final SettingsDestination settings) {
+      _lastSettingsDestination = settings;
+    }
   }
 
   /// Patches all history entries after a gesture is deleted at [deletedIndex]

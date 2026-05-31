@@ -14,6 +14,9 @@ import 'package:kde_color_scheme/kde_color_scheme.dart';
 // Cached once at startup — kdeglobals either exists or it doesn't.
 final bool _kdeAvailable = KdeglobalsParser.isAvailable();
 
+const _appSidebarWidth = 180.0;
+const _appSidebarBlendWidth = 20.0;
+
 class App extends ConsumerWidget {
   const App({super.key});
 
@@ -90,10 +93,48 @@ FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
           : colorPair.light.desktop,
   };
 
+  return _withAppChromeStyle(
+    baseTheme,
+    transparentSidebar: settings.transparentSidebar,
+  );
+}
+
+FThemeData _withAppChromeStyle(
+  FThemeData baseTheme, {
+  required bool transparentSidebar,
+}) {
+  final colors = baseTheme.colors;
+  final selectedColor = colors.primary.withValues(alpha: 0.18);
+  final pressedSelectedColor = colors.primary.withValues(alpha: 0.24);
+
   return baseTheme.copyWith(
-    sidebarStyle: const .delta(
+    scaffoldStyle: transparentSidebar
+        ? const .delta(
+            backgroundColor: Colors.transparent,
+            sidebarBackgroundColor: Colors.transparent,
+          )
+        : null,
+    sidebarStyle: .delta(
+      decoration: transparentSidebar
+          ? const .boxDelta(color: Colors.transparent)
+          : null,
       groupStyle: .delta(
-        padding: .delta(left: 12, right: 12),
+        padding: const .delta(left: 12, right: 12),
+        itemStyle: transparentSidebar
+            ? .delta(
+                backgroundColor: FVariants(
+                  Colors.transparent,
+                  variants: {
+                    [.selected]: selectedColor,
+                    [
+                      .selected.and(.hovered),
+                      .selected.and(.pressed),
+                    ]: pressedSelectedColor,
+                    [.disabled]: Colors.transparent,
+                  },
+                ),
+              )
+            : null,
       ),
     ),
   );
@@ -113,14 +154,69 @@ class _ThemedShell extends ConsumerWidget {
     if (settings.colorTheme == FColorTheme.kde && _kdeAvailable) {
       final kde =
           ref.watch(kdeColorSchemeProvider).value ?? KdeColorScheme.fallback;
-      themeData = buildKdeThemeData(kde);
+      themeData = _withAppChromeStyle(
+        buildKdeThemeData(kde),
+        transparentSidebar: settings.transparentSidebar,
+      );
     } else {
       themeData = buildAppFThemeData(settings, brightness);
     }
 
-    return FTheme(
-      data: themeData,
-      child: FToaster(child: child),
+    return _AppChromeBackground(
+      color: themeData.colors.background,
+      transparentSidebar: settings.transparentSidebar,
+      child: FTheme(
+        data: themeData,
+        child: FToaster(child: RepaintBoundary(child: child)),
+      ),
+    );
+  }
+}
+
+class _AppChromeBackground extends StatelessWidget {
+  const _AppChromeBackground({
+    required this.color,
+    required this.transparentSidebar,
+    required this.child,
+  });
+
+  final Color color;
+  final bool transparentSidebar;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!transparentSidebar) {
+      return ColoredBox(color: color, child: child);
+    }
+
+    final sidebarColor = color.withValues(alpha: 0.80);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Row(
+          textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ColoredBox(
+              color: sidebarColor,
+              child: const SizedBox(width: _appSidebarWidth),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
+                  colors: [sidebarColor, color],
+                ),
+              ),
+              child: const SizedBox(width: _appSidebarBlendWidth),
+            ),
+            Expanded(child: ColoredBox(color: color)),
+          ],
+        ),
+        child,
+      ],
     );
   }
 }

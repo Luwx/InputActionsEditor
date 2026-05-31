@@ -205,6 +205,25 @@ void main() {
 
       expect(_state(container).current, const GesturesDestination());
     });
+
+    test('openSettings returns to the last settings destination', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      _controller(container)
+        ..openSettings()
+        ..go(
+          const SettingsDestination(SettingsSection.appearance),
+          replace: true,
+        )
+        ..closeSettings()
+        ..openSettings();
+
+      expect(
+        _state(container).current,
+        const SettingsDestination(SettingsSection.appearance),
+      );
+    });
   });
 
   group('NavState computed getters', () {
@@ -364,6 +383,13 @@ void main() {
     });
 
     group('navTransition within settings', () {
+      const settingsDeviceRules = SettingsDestination(
+        SettingsSection.deviceRules,
+      );
+      const settingsAppearance = SettingsDestination(
+        SettingsSection.appearance,
+      );
+
       test('mouse→keyboard has positive sign (keyboard is later in order)', () {
         expect(navTransition(settings, settingsKeyboard).sign, 1.0);
       });
@@ -374,6 +400,13 @@ void main() {
 
       test('settings sub-section amount is 0.15', () {
         expect(navTransition(settings, settingsKeyboard).amount, 0.15);
+      });
+
+      test('interface→device rules has positive sign (lower in sidebar)', () {
+        expect(
+          navTransition(settingsAppearance, settingsDeviceRules).sign,
+          1.0,
+        );
       });
     });
 

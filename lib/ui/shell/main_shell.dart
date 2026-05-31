@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/state/window_title_provider.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
+import 'package:kde_blur/kde_blur.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Persistent app shell: device sidebar + content area.
@@ -40,10 +43,22 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final transparent = ref.watch(
+      localSettingsProvider.select((s) => s.transparentSidebar),
+    );
     return FScaffold(
-      sidebar: const DeviceSidebar(),
+      sidebar: Blurred(
+        disabled: !transparent,
+        expand: const EdgeInsets.only(right: 30),
+        child: const DeviceSidebar(),
+      ),
       childPad: false,
-      child: widget.child,
+      child: transparent
+          ? ColoredBox(
+              color: context.theme.colors.background,
+              child: widget.child,
+            )
+          : widget.child,
     );
   }
 }

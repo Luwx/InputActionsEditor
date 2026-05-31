@@ -31,6 +31,17 @@ class SettingsDestination extends AppDestination {
   final SettingsSection section;
   final DeviceSettingsSection? device;
 
+  int get settingsSidebarOrder {
+    const sectionStride = 100;
+    final sectionOrder = section.settingsSidebarOrder * sectionStride;
+    return switch (section) {
+      SettingsSection.deviceSettings =>
+        sectionOrder +
+            (device ?? DeviceSettingsSection.mouse).settingsSidebarOrder,
+      _ => sectionOrder,
+    };
+  }
+
   @override
   List<Object?> get props => [section, device];
 

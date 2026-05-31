@@ -68,7 +68,6 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
     return FSidebar.raw(
       style: const .delta(
         constraints: BoxConstraints(maxWidth: 180),
-        decoration: .boxDelta(color: Colors.transparent),
       ),
       child: Column(
         children: [

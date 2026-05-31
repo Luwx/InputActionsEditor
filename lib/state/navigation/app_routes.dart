@@ -140,15 +140,13 @@ MiniRouter<AppDestination> buildAppRouter(
   );
 }
 
-/// A branch leaf: its [key] identifies the leaf to [CoupledLeafSwitcher] (so a
-/// content-only change doesn't slide), and the [ColoredBox] backs it with the
-/// surface colour so nothing shows through while it slides.
+/// A branch leaf: its [key] identifies the leaf to [CoupledLeafSwitcher] so a
+/// content-only change doesn't slide.
 Widget _leaf({required LocalKey key, required Widget child}) {
   return KeyedSubtree(
     key: key,
     child: Builder(
-      builder: (context) =>
-          ColoredBox(color: context.theme.colors.background, child: child),
+      builder: (context) => child,
     ),
   );
 }
@@ -163,7 +161,7 @@ Widget _branchTransition(
     animation: animation,
     secondaryAnimation: secondaryAnimation,
     axis: Axis.horizontal,
-    backgroundColor: context.theme.colors.background,
+    backgroundColor: Colors.transparent,
     child: child,
   );
 }

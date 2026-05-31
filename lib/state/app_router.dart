@@ -119,14 +119,7 @@ extension AppNavigation on BuildContext {
   void goToHistory() =>
       _container.read(navProvider.notifier).go(const HistoryDestination());
 
-  void openSettings() => _container
-      .read(navProvider.notifier)
-      .go(
-        const SettingsDestination(
-          SettingsSection.deviceSettings,
-          device: DeviceSettingsSection.mouse,
-        ),
-      );
+  void openSettings() => _container.read(navProvider.notifier).openSettings();
 
   void closeSettings() => _container.read(navProvider.notifier).closeSettings();
 

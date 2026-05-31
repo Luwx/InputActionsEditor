@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
 
 enum NavAxis { vertical, horizontal }
@@ -26,25 +25,6 @@ int _mainSlot(AppDestination d) => switch (d) {
   SettingsDestination() => 2,
 };
 
-/// Order of the settings sub-sections in the settings sidebar.
-int _settingsSlot(SettingsDestination d) {
-  const deviceOrder = [
-    DeviceSettingsSection.mouse,
-    DeviceSettingsSection.pointer,
-    DeviceSettingsSection.keyboard,
-    DeviceSettingsSection.touchpad,
-    DeviceSettingsSection.touchscreen,
-  ];
-  return switch (d.section) {
-    SettingsSection.deviceSettings => deviceOrder.indexOf(
-      d.device ?? DeviceSettingsSection.mouse,
-    ),
-    SettingsSection.deviceRules => deviceOrder.length,
-    SettingsSection.effectSettings => deviceOrder.length + 1,
-    SettingsSection.appearance => deviceOrder.length + 2,
-  };
-}
-
 /// Derives the motion for a navigation from [from] to [to] — the single place
 /// the app decides axis/direction. MiniRouter never sees this; the app's
 /// transition builder calls it and maps the result onto its transition widget.
@@ -60,14 +40,21 @@ TransitionConfig navTransition(AppDestination? from, AppDestination? to) {
     ) =>
       TransitionConfig(
         NavAxis.vertical,
-        _settingsSlot(toSettings) >= _settingsSlot(fromSettings) ? 1.0 : -1.0,
+        toSettings.settingsSidebarOrder >= fromSettings.settingsSidebarOrder
+            ? 1.0
+            : -1.0,
         amount: 0.15,
       ),
     (SettingsDestination(), _) => const TransitionConfig(
       NavAxis.horizontal,
       -1,
+      amount: 0.02,
     ),
-    (_, SettingsDestination()) => const TransitionConfig(NavAxis.horizontal, 1),
+    (_, SettingsDestination()) => const TransitionConfig(
+      NavAxis.horizontal,
+      1,
+      amount: 0.02,
+    ),
     (final AppDestination fromMain, final AppDestination toMain) =>
       TransitionConfig(
         NavAxis.vertical,

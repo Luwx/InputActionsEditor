@@ -26,80 +26,68 @@ class StrokeRow extends StatelessWidget {
     final data = decodeStrokeDetailed(stroke);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 8, right: 8),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => unawaited(_showDetail(context)),
-              child: Stack(
-                children: [
-                  StrokePreview(
+          Stack(
+            children: [
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => unawaited(_showDetail(context)),
+                  child: StrokePreview(
                     strokeBase64: stroke,
                     size: 150,
-                    // startColor: FThemes.violet.dark.desktop.colors.primary,
-                    // endColor: FThemes.zinc.dark.desktop.colors.primary,
                     startColor: colors.mutedForeground,
                     endColor: colors.primary,
                     surface: colors.secondary,
                     border: colors.border,
-                    // showSamplePoints: false,
                   ),
-                  Positioned(
-                    right: 4,
-                    bottom: 4,
-                    child: Icon(
-                      FLucideIcons.maximize2,
-                      size: 11,
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Stroke ${index + 1}',
-                  style: typography.sm.copyWith(fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 3),
-                if (data != null) ...[
-                  Text(
-                    '${data.pointCount} sample points',
-                    style: typography.xs.copyWith(
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    strokeAspect(data.points),
-                    style: typography.xs.copyWith(
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-                ] else
-                  Text(
-                    'Invalid stroke data',
-                    style: typography.xs.copyWith(
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-              ],
+              ),
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: Icon(
+                  FLucideIcons.maximize2,
+                  size: 11,
+                  color: colors.mutedForeground,
+                ),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: FButton(
+                  variant: .ghost,
+                  size: .sm,
+                  onPress: onDelete,
+                  child: const Icon(FLucideIcons.trash),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Stroke ${index + 1}',
+            style: typography.sm.copyWith(fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 2),
+          if (data != null) ...[
+            Text(
+              '${data.pointCount} sample points',
+              style: typography.xs.copyWith(color: colors.mutedForeground),
             ),
-          ),
-          FButton(
-            variant: .ghost,
-            size: .sm,
-            onPress: onDelete,
-            child: const Icon(FLucideIcons.trash),
-          ),
+            Text(
+              strokeAspect(data.points),
+              style: typography.xs.copyWith(color: colors.mutedForeground),
+            ),
+          ] else
+            Text(
+              'Invalid stroke data',
+              style: typography.xs.copyWith(color: colors.mutedForeground),
+            ),
         ],
       ),
     );

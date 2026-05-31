@@ -81,15 +81,19 @@ class StrokesField extends ConsumerWidget {
               ),
             )
           else
-            for (final (i, stroke) in strokes.indexed)
-              StrokeRow(
-                stroke: stroke,
-                index: i,
-                onDelete: () {
-                  final updated = List<String>.of(strokes)..removeAt(i);
-                  onStrokesChanged(updated);
-                },
-              ),
+            Wrap(
+              children: [
+                for (final (i, stroke) in strokes.indexed)
+                  StrokeRow(
+                    stroke: stroke,
+                    index: i,
+                    onDelete: () {
+                      final updated = List<String>.of(strokes)..removeAt(i);
+                      onStrokesChanged(updated);
+                    },
+                  ),
+              ],
+            ),
           const SizedBox(height: 8),
           FButton(
             variant: .outline,
