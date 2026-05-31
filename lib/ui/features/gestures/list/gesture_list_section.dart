@@ -15,6 +15,7 @@ import 'package:input_actions_editor/state/collapsed_groups_provider.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/conflict_provider.dart';
 import 'package:input_actions_editor/state/multi_select_controller.dart';
+import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
@@ -51,9 +52,11 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
   bool _pendingAutoSelect = false;
   DeviceType? _pendingAutoSelectFilter;
 
-  /// A just-added gesture that should be scrolled into view, and the key
-  /// attached to its row so we can locate it after the next layout pass.
+  /// A gesture that should be scrolled into view, and the key attached to its
+  /// row so we can locate it after the next layout pass.
   ({DeviceType device, int index})? _scrollTarget;
+  int? _scrollTargetFlatIndex;
+  bool _scrollTargetQueued = false;
   final GlobalKey _scrollTargetKey = GlobalKey();
 
   _GestureListController get _listController =>
@@ -67,6 +70,54 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
   void _clearQueuedAutoSelect() {
     _pendingAutoSelect = false;
     _pendingAutoSelectFilter = null;
+  }
+
+  void _queueScrollToGesture(({DeviceType device, int index}) target) {
+    setState(() {
+      _scrollTarget = target;
+      _scrollTargetFlatIndex = null;
+      _scrollTargetQueued = false;
+    });
+  }
+
+  void _prepareScrollTarget(_GestureListViewModel viewModel) {
+    final target = _scrollTarget;
+    if (target == null) return;
+
+    final flatIndex = viewModel.flatItems.indexWhere(
+      (item) =>
+          item is _GestureRowItem &&
+          item.device == target.device &&
+          item.configIndex == target.index,
+    );
+    if (flatIndex < 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _clearScrollTarget());
+      return;
+    }
+
+    final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
+    final groupId = item.groupId;
+    if (!item.isVisible && groupId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(collapsedGroupsProvider.notifier).expand(groupId);
+      });
+      return;
+    }
+
+    _scrollTargetFlatIndex = flatIndex;
+    if (_scrollTargetQueued) return;
+    _scrollTargetQueued = true;
+    _scrollToTarget();
+  }
+
+  void _clearScrollTarget() {
+    if (!mounted) return;
+    setState(() {
+      _scrollTarget = null;
+      _scrollTargetFlatIndex = null;
+      _scrollTargetQueued = false;
+    });
   }
 
   // TODO(me): refactor out of here
@@ -136,7 +187,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
         if (attempt < 12) {
           _scrollToTarget(attempt + 1);
         } else {
-          setState(() => _scrollTarget = null);
+          _clearScrollTarget();
         }
         return;
       }
@@ -150,15 +201,29 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
           duration: Durations.medium2,
           curve: Curves.easeOutCubic,
         );
-        if (mounted) setState(() => _scrollTarget = null);
+        _clearScrollTarget();
         return;
       }
 
-      // The row is below the viewport and the lazy SliverList hasn't built it
-      // yet, so its key has no context. Drive the scroll toward the bottom so
-      // the new (last) row gets built, then retry to align it precisely.
+      // The target row may not be built yet. Move near its estimated list
+      // position first, then retry with ensureVisible once Flutter builds it.
       final position = _scrollController.position;
-      if (attempt < 12 && position.pixels < position.maxScrollExtent - 1) {
+      final flatIndex = _scrollTargetFlatIndex;
+      if (attempt < 12 && flatIndex != null) {
+        final viewport = position.viewportDimension;
+        final targetOffset =
+            GestureListSection._headerHeight + flatIndex * 62.0 - viewport / 3;
+        await _scrollController.animateTo(
+          targetOffset.clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          ),
+          duration: Durations.short3,
+          curve: Curves.easeOut,
+        );
+        _scrollToTarget(attempt + 1);
+      } else if (attempt < 12 &&
+          position.pixels < position.maxScrollExtent - 1) {
         await _scrollController.animateTo(
           position.maxScrollExtent,
           duration: Durations.short3,
@@ -166,7 +231,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
         );
         _scrollToTarget(attempt + 1);
       } else if (mounted) {
-        setState(() => _scrollTarget = null);
+        _clearScrollTarget();
       }
     });
   }
@@ -212,6 +277,22 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
       })
       ..listen(selectedGestureProvider, (_, next) {
         if (next != null) _clearQueuedAutoSelect();
+      })
+      ..listen(gestureRedirectTargetProvider, (_, next) {
+        if (next == null) return;
+        _queueScrollToGesture(next);
+        ref.read(gestureRedirectTargetProvider.notifier).clear();
+      })
+      ..listen(navProvider, (prev, next) {
+        if (prev == null) return;
+        final isHistoryCursorMove =
+            prev.history.length == next.history.length &&
+            prev.cursor != next.cursor;
+        if (!isHistoryCursorMove) return;
+
+        if (next.current case GesturesDestination(open: final open?)) {
+          _queueScrollToGesture(open);
+        }
       });
 
     final configAsync = ref.watch(configControllerProvider);
@@ -253,6 +334,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
             isMultiSelectMode: isMultiSelectMode,
             selectedCount: multiSelect?.length ?? 0,
           );
+          _prepareScrollTarget(viewModel);
           final reorderEntries =
               <ReorderableGroupableListEntry<GestureKey, String>>[];
           final gestureItemsByKey = <GestureKey, _GestureRowItem>{};
