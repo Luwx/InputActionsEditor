@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 512 512"
+   width="100%"
+   height="100%"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="logo (1).svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5" />
+  <sodipodi:namedview
+     id="namedview5"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.91753152"
+     inkscape:cx="-196.17855"
+     inkscape:cy="275.19491"
+     inkscape:window-width="2560"
+     inkscape:window-height="1368"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
+  <!-- Pure minimalist dark squircle background -->
+  <rect
+     width="512"
+     height="512"
+     rx="112"
+     fill="#0E0F11"
+     id="rect1" />
+  <!-- Extremely faint structural circle to hint at the original target boundary -->
+  <circle
+     cx="254.36519"
+     cy="254.91013"
+     r="181.60902"
+     fill="none"
+     stroke="#ffffff"
+     stroke-width="1"
+     opacity="0.08"
+     id="circle1"
+     style="stroke-width:26.8521;stroke-dasharray:none" />
+  <!-- 4 cardinal axis lines stripped of all complex styling -->
+  <!-- Flat ends (butt cap) for maximum geometric sharpness -->
+  <g
+     stroke="#ffffff"
+     stroke-width="2"
+     opacity="0.35"
+     id="g4"
+     transform="matrix(1.2972073,0,0,1.2972073,-77.719892,-77.174949)">
+    <!-- Top -->
+    <line
+       x1="256"
+       y1="106"
+       x2="256"
+       y2="126"
+       id="line1"
+       style="fill:#ededed;fill-opacity:0.392182;stroke:#ffffff;stroke-width:4;stroke-dasharray:none;stroke-opacity:1" />
+    <!-- Bottom -->
+    <line
+       x1="256"
+       y1="386"
+       x2="256"
+       y2="406"
+       id="line2"
+       style="stroke-width:4;stroke-dasharray:none" />
+    <!-- Left -->
+    <line
+       x1="106"
+       y1="256"
+       x2="126"
+       y2="256"
+       id="line3"
+       style="stroke-width:4;stroke-dasharray:none" />
+    <!-- Right -->
+    <line
+       x1="386"
+       y1="256"
+       x2="406"
+       y2="256"
+       id="line4"
+       style="stroke-width:4;stroke-dasharray:none" />
+  </g>
+  <!-- Hyper-minimal tail-less geometric pointer -->
+  <!-- No shadows, perfectly 45-degree angles, crisp points -->
+  <g
+     transform="matrix(4.1089396,-1.91603,1.91603,4.1089396,311.18737,179.99127)"
+     id="g5">
+    <!--
+    Mathematically perfect dart polygon:
+    - Left edge is completely straight
+    - Bottom and right outer edges are exact 45-degree slopes
+    - Inner cut is perfectly horizontal
+    -->
+    <path
+       d="m -1.8727643,17.271573 c 1.34805387,0.08817 2.02219056,0.132624 2.32865659,-0.106539 C 0.72113872,16.957833 0.86764905,16.633145 0.84689172,16.297143 0.82484869,15.909192 0.3431075,15.433696 -0.61640773,14.48263 L -25.088538,-9.7741813 c -0.784975,-0.7781047 -1.177481,-1.1671207 -1.535416,-1.2041147 -0.311168,-0.03306 -0.619986,0.08009 -0.837694,0.304923 -0.250551,0.258266 -0.300882,0.8087439 -0.402241,1.9093696 l -3.154889,34.3122164 c -0.123805,1.345299 -0.185525,2.017967 0.04519,2.330567 0.200221,0.270758 0.520831,0.425496 0.857421,0.413557 0.388428,-0.01469 0.876305,-0.481117 1.852352,-1.415247 0,0 9.540193,-9.453065 10.563271,-10.112055 1.023078,-0.65899 10.7931655,0.176502 15.8277797,0.506538 z"
+       stroke="currentColor"
+       stroke-width="4.08196"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       id="path1"
+       inkscape:transform-center-x="-557.67638"
+       inkscape:transform-center-y="25.982333"
+       style="fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:4.08222;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4.6;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       sodipodi:nodetypes="cccccccccccczc" />
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Input Actions Editor
+GenericName=Input Actions Configurator
+Comment=Configure input action shortcuts and bindings
+Exec=input_actions_editor
+Icon=dev.luwx.input_actions_editor
+Type=Application
+Categories=Settings;Qt;KDE;
+Keywords=input;actions;kwin;shortcuts;bindings;
+StartupNotify=true
+StartupWMClass=input_actions_editor

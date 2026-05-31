@@ -8,7 +8,7 @@ import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/state/window_title_provider.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
-import 'package:kde_blur/kde_blur.dart';
+import 'package:kwin_blur/kwin_blur.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Persistent app shell: device sidebar + content area.

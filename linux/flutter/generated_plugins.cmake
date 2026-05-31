@@ -3,7 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  kde_blur
+  kwin_blur
   screen_retriever_linux
   window_manager
 )

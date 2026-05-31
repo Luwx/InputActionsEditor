@@ -29,6 +29,7 @@ static void my_application_activate(GApplication *application)
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
   gtk_window_set_title(window, "Input Actions Editor");
+  gtk_window_set_icon_name(GTK_WINDOW(window), APPLICATION_ID);
 
   gtk_window_set_default_size(window, 1080, 640);
 

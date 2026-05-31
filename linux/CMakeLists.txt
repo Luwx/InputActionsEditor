@@ -126,3 +126,16 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Desktop entry.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/dev.luwx.input_actions_editor.desktop"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
+  COMPONENT Runtime)
+
+# XDG icon theme (hicolor).
+foreach(icon_size 16 32 48 64 128 256 512)
+  install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/icons/${icon_size}x${icon_size}/apps/dev.luwx.input_actions_editor.png"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/${icon_size}x${icon_size}/apps"
+    COMPONENT Runtime)
+endforeach()

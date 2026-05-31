@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  APP_ID: dev.luwx.input_actions_editor
+  APP_NAME: input-actions-editor
+  BINARY_NAME: input_actions_editor
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get install -y --no-install-recommends ruby-dev rpm
+          sudo gem install --no-document fpm
+          wget -qO /usr/local/bin/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /usr/local/bin/appimagetool
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build
+        run: flutter build linux --release
+
+      - name: Stage FHS layout
+        run: |
+          BUNDLE=build/linux/x64/release/bundle
+          STAGE=packaging/stage
+
+          mkdir -p "$STAGE/opt/$APP_NAME"
+          cp -r "$BUNDLE"/. "$STAGE/opt/$APP_NAME/"
+
+          mkdir -p "$STAGE/usr/bin"
+          {
+            echo '#!/bin/sh'
+            printf 'exec /opt/%s/%s "$@"\n' "$APP_NAME" "$BINARY_NAME"
+          } > "$STAGE/usr/bin/$BINARY_NAME"
+          chmod +x "$STAGE/usr/bin/$BINARY_NAME"
+
+          mkdir -p "$STAGE/usr/share/applications"
+          cp "linux/$APP_ID.desktop" "$STAGE/usr/share/applications/"
+
+          for size in 16 32 48 64 128 256 512; do
+            mkdir -p "$STAGE/usr/share/icons/hicolor/${size}x${size}/apps"
+            cp "linux/icons/${size}x${size}/apps/$APP_ID.png" \
+               "$STAGE/usr/share/icons/hicolor/${size}x${size}/apps/"
+          done
+
+      - name: Build .deb
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          fpm -s dir -t deb \
+            --name "$APP_NAME" \
+            --version "$VERSION" \
+            --architecture amd64 \
+            --description "Input Actions configurator for managing shortcuts and input bindings." \
+            --maintainer "Luwx" \
+            --depends "libgtk-3-0 (>= 3.24)" \
+            --depends libglib2.0-0 \
+            --depends libstdc++6 \
+            --deb-compression xz \
+            --package "packaging/${APP_NAME}_${VERSION}_amd64.deb" \
+            -C packaging/stage \
+            .
+
+      - name: Build .rpm
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          fpm -s dir -t rpm \
+            --name "$APP_NAME" \
+            --version "$VERSION" \
+            --architecture x86_64 \
+            --description "Input Actions configurator for managing shortcuts and input bindings." \
+            --maintainer "Luwx" \
+            --depends gtk3 \
+            --depends glib2 \
+            --depends libstdc++ \
+            --package "packaging/${APP_NAME}-${VERSION}-x86_64.rpm" \
+            -C packaging/stage \
+            .
+
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          BUNDLE=build/linux/x64/release/bundle
+          APPDIR=packaging/AppDir
+
+          mkdir -p "$APPDIR/bundle"
+          cp -r "$BUNDLE"/. "$APPDIR/bundle/"
+
+          {
+            echo '#!/bin/bash'
+            echo 'SELF=$(readlink -f "$0")'
+            echo 'HERE=${SELF%/*}'
+            printf 'exec "$HERE/bundle/%s" "$@"\n' "$BINARY_NAME"
+          } > "$APPDIR/AppRun"
+          chmod +x "$APPDIR/AppRun"
+
+          cp "linux/$APP_ID.desktop" "$APPDIR/"
+          cp "linux/icons/256x256/apps/$APP_ID.png" "$APPDIR/$APP_ID.png"
+
+          appimagetool "$APPDIR" \
+            "packaging/${APP_NAME}-${VERSION}-x86_64.AppImage"
+
+      - name: Build tarball
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          tar -czf \
+            "packaging/${APP_NAME}-${VERSION}-linux-x86_64.tar.gz" \
+            -C build/linux/x64/release \
+            bundle
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packaging/*.deb
+            packaging/*.rpm
+            packaging/*.AppImage
+            packaging/*.tar.gz
+          generate_release_notes: true

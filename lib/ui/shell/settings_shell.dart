@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/ui/features/settings/settings_list_section.dart';
-import 'package:kde_blur/kde_blur.dart';
+import 'package:kwin_blur/kwin_blur.dart';
 
 /// Settings shell: settings sidebar + content area.
 ///
