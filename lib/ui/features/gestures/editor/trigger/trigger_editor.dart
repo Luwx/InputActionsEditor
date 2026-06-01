@@ -10,8 +10,8 @@ import 'package:input_actions_editor/state/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
-import 'package:input_actions_editor/ui/widgets/section_card.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class TriggerEditor extends ConsumerWidget {
   const TriggerEditor({

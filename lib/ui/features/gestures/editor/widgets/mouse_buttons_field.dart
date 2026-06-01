@@ -5,8 +5,8 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class MouseButtonsField extends ConsumerWidget {
   const MouseButtonsField({

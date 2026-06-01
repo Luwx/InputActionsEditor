@@ -6,8 +6,8 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_alt.dart';
-import 'package:input_actions_editor/ui/widgets/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 
 const ValueKey<String> _viewportKey = ValueKey('action-list-viewport');
 const ValueKey<String> _targetRowFooterKey = ValueKey('action-footer-4');
@@ -117,7 +117,7 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
                             : null,
                         child: ScrollAnchorScope(
                           controller: _anchor,
-                          child: ActionsEditorAlt(
+                          child: ActionListEditor(
                             gestureLocation: const GestureLocation(
                               device: DeviceType.mouse,
                               index: 0,

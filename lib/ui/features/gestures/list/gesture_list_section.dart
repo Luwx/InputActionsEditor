@@ -23,8 +23,8 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
-import 'package:input_actions_editor/ui/widgets/reorderable_groupable_controller.dart';
-import 'package:input_actions_editor/ui/widgets/reorderable_groupable_list.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 
 part 'gesture_list_section/dialogs/rename_dialog.dart';
 part 'gesture_list_section/flat_list.dart';

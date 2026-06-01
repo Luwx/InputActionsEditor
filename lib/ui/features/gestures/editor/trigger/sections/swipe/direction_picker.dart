@@ -5,7 +5,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/direction_utils.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/direction_wheel_painter.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 class DirectionPicker extends StatefulWidget {
   const DirectionPicker({

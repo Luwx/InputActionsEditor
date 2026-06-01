@@ -14,7 +14,7 @@ import 'package:input_actions_editor/state/device_settings_section_provider.dart
 import 'package:input_actions_editor/state/dirty/dirty_semantics.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class DeviceConfigEditor extends ConsumerWidget {
   const DeviceConfigEditor({required this.section, super.key});

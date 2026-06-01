@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:input_actions_editor/ui/common/resize_divider.dart';
-import 'package:input_actions_editor/ui/features/gestures/detail/gesture_detail_section.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
 class GestureSplitLayout extends StatelessWidget {

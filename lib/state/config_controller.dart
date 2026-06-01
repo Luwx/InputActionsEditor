@@ -12,11 +12,14 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/state/edit/config_edit.dart';
+import 'package:input_actions_editor/state/edit/lens.dart';
 import 'package:input_actions_editor/state/gesture_undo_controller.dart';
 
 class ConfigController extends AsyncNotifier<Config> {
   String _originalText = '';
   Config? _savedConfig;
+  final Map<Object?, _EditStack> _editStacks = {};
 
   /// True while applying an undo/redo restore, so the restore itself is not
   /// recorded as a new history step.
@@ -57,8 +60,47 @@ class ConfigController extends AsyncNotifier<Config> {
     if (current == null) return;
     final list = List<T>.of(getList(current));
     action(list);
-    state = AsyncData(assignEditIds(setList(current, list)));
+    _applyConfig(setList(current, list));
   }
+
+  void _applyConfig(Config config) {
+    state = AsyncData(assignEditIds(config));
+  }
+
+  void dispatch(ConfigEdit edit, {Object? scope}) {
+    final before = state.value;
+    if (before == null) return;
+    final applied = edit.apply(before);
+    final inverse = edit.inverse(before);
+    _applyConfig(applied);
+    _editStacks.putIfAbsent(scope, _EditStack.new).push(edit, inverse);
+  }
+
+  void undoEdit({Object? scope}) {
+    final before = state.value;
+    if (before == null) return;
+    final edit = _editStacks[scope]?.popUndo();
+    if (edit == null) return;
+    _applyConfig(edit.apply(before));
+  }
+
+  void redoEdit({Object? scope}) {
+    final before = state.value;
+    if (before == null) return;
+    final edit = _editStacks[scope]?.popRedo();
+    if (edit == null) return;
+    _applyConfig(edit.apply(before));
+  }
+
+  void revert<T>(Lens<T> lens, {Object? scope}) {
+    final saved = savedConfig;
+    if (saved == null) return;
+    dispatch(SetLens<T>(lens, lens.get(saved)), scope: scope);
+  }
+
+  bool canUndoEdit({Object? scope}) => _editStacks[scope]?.canUndo ?? false;
+
+  bool canRedoEdit({Object? scope}) => _editStacks[scope]?.canRedo ?? false;
 
   /// Edits the gesture at [i], recording its pre-edit snapshot to the
   /// per-gesture undo history (unless we're currently restoring one).
@@ -703,7 +745,7 @@ class ConfigController extends AsyncNotifier<Config> {
   void replaceDeviceRules(List<DeviceRule> rules) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(
+    _applyConfig(
       current.copyWith(deviceRules: List<DeviceRule>.of(rules)),
     );
   }
@@ -715,19 +757,19 @@ class ConfigController extends AsyncNotifier<Config> {
   void updateMouseSpeed(SpeedSettings? speed) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(current.copyWith(mouseSpeed: speed));
+    _applyConfig(current.copyWith(mouseSpeed: speed));
   }
 
   void updateTouchpadSpeed(SpeedSettings? speed) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(current.copyWith(touchpadSpeed: speed));
+    _applyConfig(current.copyWith(touchpadSpeed: speed));
   }
 
   void updateTouchscreenSpeed(SpeedSettings? speed) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(current.copyWith(touchscreenSpeed: speed));
+    _applyConfig(current.copyWith(touchscreenSpeed: speed));
   }
 
   // ---------------------------------------------------------------------------
@@ -737,7 +779,7 @@ class ConfigController extends AsyncNotifier<Config> {
   void updateGlobalSettings(GlobalSettings Function(GlobalSettings) m) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(
+    _applyConfig(
       current.copyWith(globalSettings: m(current.globalSettings)),
     );
   }
@@ -863,6 +905,40 @@ class ConfigController extends AsyncNotifier<Config> {
 
 final configControllerProvider =
     AsyncNotifierProvider<ConfigController, Config>(ConfigController.new);
+
+class _EditStack {
+  final List<_EditEntry> _undo = [];
+  final List<_EditEntry> _redo = [];
+
+  bool get canUndo => _undo.isNotEmpty;
+  bool get canRedo => _redo.isNotEmpty;
+
+  void push(ConfigEdit edit, ConfigEdit inverse) {
+    _undo.add(_EditEntry(edit: edit, inverse: inverse));
+    _redo.clear();
+  }
+
+  ConfigEdit? popUndo() {
+    if (_undo.isEmpty) return null;
+    final entry = _undo.removeLast();
+    _redo.add(entry);
+    return entry.inverse;
+  }
+
+  ConfigEdit? popRedo() {
+    if (_redo.isEmpty) return null;
+    final entry = _redo.removeLast();
+    _undo.add(entry);
+    return entry.edit;
+  }
+}
+
+class _EditEntry {
+  const _EditEntry({required this.edit, required this.inverse});
+
+  final ConfigEdit edit;
+  final ConfigEdit inverse;
+}
 
 int _editIdSequence = 0;
 int _nextEditId() => ++_editIdSequence;

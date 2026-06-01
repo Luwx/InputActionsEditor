@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 class RotateSection extends StatelessWidget {
   const RotateSection({

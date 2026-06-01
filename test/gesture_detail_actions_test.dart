@@ -3,7 +3,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/ui/features/gestures/detail/gesture_detail_actions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
 void main() {
   group('gesture detail actions', () {

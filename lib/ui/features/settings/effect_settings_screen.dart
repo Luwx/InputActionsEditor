@@ -7,8 +7,8 @@ import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
-import 'package:input_actions_editor/ui/widgets/section_card.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class EffectSettingsScreen extends ConsumerWidget {
   const EffectSettingsScreen({super.key});

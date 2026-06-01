@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/field/conditions_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 
 Widget _host({
   required Condition? condition,
@@ -15,7 +15,7 @@ Widget _host({
         body: SizedBox(
           width: 900,
           child: SingleChildScrollView(
-            child: ConditionsField.generic(
+            child: ConditionEditor.generic(
               condition: condition,
               onConditionChanged: onChanged ?? (_) {},
             ),

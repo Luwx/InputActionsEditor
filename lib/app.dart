@@ -7,7 +7,7 @@ import 'package:input_actions_editor/state/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/theme/kde_theme.dart';
+import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 

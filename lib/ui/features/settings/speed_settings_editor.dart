@@ -4,7 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class SpeedSettingsEditor extends ConsumerWidget {
   const SpeedSettingsEditor({

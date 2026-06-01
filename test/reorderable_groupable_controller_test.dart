@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/ui/widgets/reorderable_groupable_controller.dart';
-import 'package:input_actions_editor/ui/widgets/reorderable_groupable_list.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 
 /// Builds entries with terse helpers so the test layout reads like the list.
 ReorderableGroupableGroup<int, String> _group(String id) =>

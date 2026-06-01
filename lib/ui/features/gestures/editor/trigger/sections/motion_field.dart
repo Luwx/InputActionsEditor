@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 /// Speed + lock-pointer fields for motion-based triggers
 /// (swipe, pinch, rotate, circle, stroke).

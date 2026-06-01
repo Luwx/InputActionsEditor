@@ -7,7 +7,7 @@ import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/state/stroke_recording_provider.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_row.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 /// Reusable stroke list field
 /// used by mouse, touchpad, and touchscreen editors.

@@ -14,7 +14,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({

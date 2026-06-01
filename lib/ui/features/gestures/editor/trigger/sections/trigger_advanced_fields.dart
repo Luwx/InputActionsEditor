@@ -6,9 +6,9 @@ import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/field/conditions_field.dart';
-import 'package:input_actions_editor/ui/widgets/label_with_tooltip.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class TriggerAdvancedFields extends ConsumerWidget {
   const TriggerAdvancedFields({
@@ -326,7 +326,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ConditionsField(
+        ConditionEditor(
           common: common,
           onCommonChanged: onChanged,
           bodyBackgroundColor: conditionsBodyBackgroundColor,
@@ -338,7 +338,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 ),
         ),
         const SizedBox(height: 12),
-        ConditionsField.generic(
+        ConditionEditor.generic(
           title: 'End conditions',
           dirtyState: ref.watch(
             gestureCommonFieldDirtyStateProvider(

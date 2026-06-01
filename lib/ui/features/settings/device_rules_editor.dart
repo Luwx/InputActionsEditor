@@ -8,9 +8,9 @@ import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/device_variable_catalog.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/field/conditions_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rule_properties_form.dart';
-import 'package:input_actions_editor/ui/widgets/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class DeviceRulesEditor extends ConsumerWidget {
   const DeviceRulesEditor({super.key});
@@ -186,7 +186,7 @@ class _DeviceRuleCard extends StatelessWidget {
           // Conditions
           Padding(
             padding: const EdgeInsets.all(14),
-            child: ConditionsField.generic(
+            child: ConditionEditor.generic(
               condition: rule.conditions,
               onConditionChanged: (c) =>
                   onChanged(rule.copyWith(conditions: c)),

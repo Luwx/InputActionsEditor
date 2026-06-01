@@ -14,6 +14,8 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/state/edit/config_edit.dart';
+import 'package:input_actions_editor/state/edit/lens.dart';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -56,6 +58,17 @@ const _rule2 = DeviceRule(properties: DeviceRuleProperties(grab: false));
 
 const _speed1 = SpeedSettings(events: 4);
 const _speed2 = SpeedSettings(events: 8);
+
+const _mouseSpeedLens = Lens<SpeedSettings?>(
+  get: _getMouseSpeed,
+  set: _setMouseSpeed,
+  name: 'mouseSpeed',
+);
+
+SpeedSettings? _getMouseSpeed(Config config) => config.mouseSpeed;
+
+Config _setMouseSpeed(Config config, SpeedSettings? value) =>
+    config.copyWith(mouseSpeed: value);
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -615,6 +628,46 @@ void main() {
         // Should not throw.
         notifier.updateGlobalSettings((s) => s.copyWith(autoreload: true));
       }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('ConfigEdit dispatch', () {
+    test('dispatch applies edit and scoped undo/redo restores it', () async {
+      final c = _makeContainer(const Config());
+      await c.read(configControllerProvider.future);
+      final notifier = _notifier(c);
+
+      notifier.dispatch(
+        SetLens<SpeedSettings?>(_mouseSpeedLens, _speed1),
+        scope: 'settings',
+      );
+
+      expect(_config(c).mouseSpeed?.events, 4);
+      expect(notifier.canUndoEdit(scope: 'settings'), isTrue);
+      expect(notifier.canUndoEdit(scope: 'other'), isFalse);
+
+      notifier.undoEdit(scope: 'settings');
+      expect(_config(c).mouseSpeed, isNull);
+      expect(notifier.canRedoEdit(scope: 'settings'), isTrue);
+
+      notifier.redoEdit(scope: 'settings');
+      expect(_config(c).mouseSpeed?.events, 4);
+    });
+
+    test('revert dispatches a saved-value edit', () async {
+      final c = _makeContainer(const Config(mouseSpeed: _speed1));
+      await c.read(configControllerProvider.future);
+      final notifier = _notifier(c);
+
+      notifier.dispatch(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
+      expect(_config(c).mouseSpeed?.events, 8);
+
+      notifier.revert(_mouseSpeedLens);
+      expect(_config(c).mouseSpeed?.events, 4);
+
+      notifier.undoEdit();
+      expect(_config(c).mouseSpeed?.events, 8);
     });
   });
 }
