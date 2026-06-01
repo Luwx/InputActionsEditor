@@ -2,7 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/motion_field.dart';
@@ -28,8 +33,12 @@ class TouchscreenGestureEditor extends ConsumerWidget {
     TouchscreenGesture Function(TouchscreenGesture) mutator,
   ) {
     ref
-        .read(configControllerProvider.notifier)
-        .updateTouchscreenGesture(index, mutator);
+        .read(
+          gestureEditorProvider(
+            GestureLocation(device: DeviceType.touchscreen, index: index),
+          ).notifier,
+        )
+        .updateTouchscreen(mutator);
   }
 
   @override
@@ -47,143 +56,149 @@ class TouchscreenGestureEditor extends ConsumerWidget {
             ),
             TouchscreenTriggerSection(
               gesture: gesture,
-              onUpdate: (mutator) => _update(ref, mutator),
             ),
           ],
         ),
       ],
       common: gesture.common,
-      onCommonChanged: (c) => _update(ref, (g) => g.withCommon(c)),
     );
   }
 }
 
-class TouchscreenTriggerSection extends StatelessWidget {
+class TouchscreenTriggerSection extends ConsumerWidget {
   const TouchscreenTriggerSection({
     required this.gesture,
-    required this.onUpdate,
     super.key,
   });
 
   final TouchscreenGesture gesture;
-  final void Function(TouchscreenGesture Function(TouchscreenGesture)) onUpdate;
 
   @override
-  Widget build(BuildContext context) => switch (gesture) {
-    TouchscreenSwipeGesture(:final mode, :final motion) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SwipeModeSelector(
-          mode: mode,
-          onModeChanged: (nextMode) => onUpdate(
-            (current) =>
-                (current as TouchscreenSwipeGesture).copyWith(mode: nextMode),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = context.gestureLocation;
+    final motionField = ref.field(
+      touchscreenMotionLens(location),
+      fallbackValue: () => switch (gesture) {
+        TouchscreenSwipeGesture(:final motion) => motion,
+        TouchscreenPinchGesture(:final motion) => motion,
+        TouchscreenRotateGesture(:final motion) => motion,
+        TouchscreenCircleGesture(:final motion) => motion,
+        TouchscreenStrokeGesture(:final motion) => motion,
+        _ => const MotionCommon(),
+      },
+      scope: location,
+    );
+
+    return switch (gesture) {
+      TouchscreenSwipeGesture(:final mode) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Builder(
+            builder: (context) {
+              final modeField = ref.field(
+                touchscreenSwipeModeLens(location),
+                fallbackValue: () => mode,
+                scope: location,
+              );
+              return SwipeModeSelector(
+                mode: modeField.value,
+                onModeChanged: modeField.onChanged,
+              );
+            },
           ),
-        ),
-        MotionField(
-          motion: motion,
-          onChanged: (nextMotion) => onUpdate(
-            (current) => (current as TouchscreenSwipeGesture).copyWith(
-              motion: nextMotion,
-            ),
+          MotionField(
+            motion: motionField.value,
+            onChanged: motionField.onChanged,
           ),
-        ),
-      ],
-    ),
-    TouchscreenPinchGesture(:final direction, :final motion) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PinchSection(
-          direction: direction,
-          onDirectionChanged: (nextDirection) => onUpdate(
-            (current) => (current as TouchscreenPinchGesture).copyWith(
-              direction: nextDirection,
-            ),
+        ],
+      ),
+      TouchscreenPinchGesture(:final direction) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Builder(
+            builder: (context) {
+              final directionField = ref.field(
+                touchscreenPinchDirectionLens(location),
+                fallbackValue: () => direction,
+                scope: location,
+              );
+              return PinchSection(
+                direction: directionField.value,
+                onDirectionChanged: directionField.onChanged,
+              );
+            },
           ),
-        ),
-        MotionField(
-          motion: motion,
-          onChanged: (nextMotion) => onUpdate(
-            (current) => (current as TouchscreenPinchGesture).copyWith(
-              motion: nextMotion,
-            ),
+          MotionField(
+            motion: motionField.value,
+            onChanged: motionField.onChanged,
           ),
-        ),
-      ],
-    ),
-    TouchscreenRotateGesture(:final direction, :final motion) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RotateSection(
-          direction: direction,
-          onDirectionChanged: (nextDirection) => onUpdate(
-            (current) => (current as TouchscreenRotateGesture).copyWith(
-              direction: nextDirection,
-            ),
+        ],
+      ),
+      TouchscreenRotateGesture(:final direction) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Builder(
+            builder: (context) {
+              final directionField = ref.field(
+                touchscreenRotateDirectionLens(location),
+                fallbackValue: () => direction,
+                scope: location,
+              );
+              return RotateSection(
+                direction: directionField.value,
+                onDirectionChanged: directionField.onChanged,
+              );
+            },
           ),
-        ),
-        MotionField(
-          motion: motion,
-          onChanged: (nextMotion) => onUpdate(
-            (current) => (current as TouchscreenRotateGesture).copyWith(
-              motion: nextMotion,
-            ),
+          MotionField(
+            motion: motionField.value,
+            onChanged: motionField.onChanged,
           ),
-        ),
-      ],
-    ),
-    TouchscreenCircleGesture(:final direction, :final motion) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleSection(
-          direction: direction,
-          onDirectionChanged: (nextDirection) => onUpdate(
-            (current) => (current as TouchscreenCircleGesture).copyWith(
-              direction: nextDirection,
-            ),
+        ],
+      ),
+      TouchscreenCircleGesture(:final direction) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleSection(direction: direction),
+          MotionField(
+            motion: motionField.value,
+            onChanged: motionField.onChanged,
           ),
-        ),
-        MotionField(
-          motion: motion,
-          onChanged: (nextMotion) => onUpdate(
-            (current) => (current as TouchscreenCircleGesture).copyWith(
-              motion: nextMotion,
-            ),
+        ],
+      ),
+      TouchscreenTapGesture() => const InfoSection(
+        title: 'Tap',
+        description:
+            'Activates when the specified number of fingers tap the screen.',
+      ),
+      TouchscreenHoldGesture() => const InfoSection(
+        title: 'Hold',
+        description:
+            'Activates while the specified number of fingers are held on the '
+            'screen.',
+      ),
+      TouchscreenStrokeGesture(:final strokes) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Builder(
+            builder: (context) {
+              final strokesField = ref.field(
+                touchscreenStrokeStrokesLens(location),
+                fallbackValue: () => strokes,
+                scope: location,
+              );
+              return StrokesField(
+                strokes: strokesField.value,
+                onStrokesChanged: strokesField.onChanged,
+              );
+            },
           ),
-        ),
-      ],
-    ),
-    TouchscreenTapGesture() => const InfoSection(
-      title: 'Tap',
-      description:
-          'Activates when the specified number of fingers tap the screen.',
-    ),
-    TouchscreenHoldGesture() => const InfoSection(
-      title: 'Hold',
-      description:
-          'Activates while the specified number of fingers are held on the '
-          'screen.',
-    ),
-    TouchscreenStrokeGesture(:final strokes, :final motion) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StrokesField(
-          strokes: strokes,
-          onStrokesChanged: (nextStrokes) => onUpdate(
-            (current) => (current as TouchscreenStrokeGesture).copyWith(
-              strokes: nextStrokes,
-            ),
+          MotionField(
+            motion: motionField.value,
+            onChanged: motionField.onChanged,
           ),
-        ),
-        MotionField(
-          motion: motion,
-          onChanged: (nextMotion) => onUpdate(
-            (current) => (current as TouchscreenStrokeGesture).copyWith(
-              motion: nextMotion,
-            ),
-          ),
-        ),
-      ],
-    ),
-  };
+        ],
+      ),
+    };
+  }
 }

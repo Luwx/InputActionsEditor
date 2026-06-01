@@ -1,20 +1,28 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
-class PressSection extends StatelessWidget {
+class PressSection extends ConsumerWidget {
   const PressSection({
     required this.gesture,
-    required this.onUpdate,
     super.key,
   });
 
   final PressGesture gesture;
-  final void Function(MouseGesture Function(MouseGesture)) onUpdate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = context.gestureLocation;
+    final instantField = ref.field(
+      pressInstantLens(location),
+      fallbackValue: () => gesture.instant,
+      scope: location,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -34,12 +42,8 @@ class PressSection extends StatelessWidget {
                 'and normal clicks to work. Enabling this prevents normal '
                 'clicks on that button.',
           ),
-          value: gesture.instant ?? false,
-          onChange: (v) {
-            onUpdate(
-              (g) => (g as PressGesture).copyWith(instant: v ? true : null),
-            );
-          },
+          value: instantField.value ?? false,
+          onChange: (v) => instantField.onChanged(v ? true : null),
         ),
         const SizedBox(height: 8),
       ],

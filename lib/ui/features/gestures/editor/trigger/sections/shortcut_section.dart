@@ -1,7 +1,11 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/data/keyboard_scancodes.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 /// Modifier key descriptor - a canonical logical name and its left/right variants.
 class _Modifier {
@@ -32,38 +36,32 @@ final List<String> _nonModifierKeys = keyboardScancodes
     .where((k) => !_modifierKeys.contains(k) && k != 'reserved')
     .toList();
 
-class ShortcutSection extends StatelessWidget {
+class ShortcutSection extends ConsumerWidget {
   const ShortcutSection({
     required this.keys,
-    required this.onKeysChanged,
     super.key,
   });
 
   final List<String> keys;
-  final void Function(List<String>) onKeysChanged;
-
-  String? get _mainKey =>
-      keys.where((k) => !_modifierKeys.contains(k)).firstOrNull;
-
-  void _toggleKey(String key) {
-    final updated = List<String>.of(keys);
-    if (updated.contains(key)) {
-      updated.remove(key);
-    } else {
-      updated.add(key);
-    }
-    onKeysChanged(updated);
-  }
-
-  void _setMainKey(String? key) {
-    final updated = keys.where(_modifierKeys.contains).toList();
-    if (key != null) updated.add(key);
-    onKeysChanged(updated);
-  }
 
   @override
-  Widget build(BuildContext context) {
-    final mainKey = _mainKey;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = context.gestureLocation;
+    final keysField = ref.field(
+      shortcutKeysLens(location),
+      fallbackValue: () => keys,
+      scope: location,
+    );
+    final currentKeys = keysField.value;
+    final mainKey = currentKeys
+        .where((k) => !_modifierKeys.contains(k))
+        .firstOrNull;
+
+    void setMainKey(String? key) {
+      final updated = currentKeys.where(_modifierKeys.contains).toList();
+      if (key != null) updated.add(key);
+      keysField.onChanged(updated);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -88,16 +86,24 @@ class ShortcutSection extends StatelessWidget {
               for (final mod in _modifiers)
                 _ModifierChip(
                   modifier: mod,
-                  activeKeys: keys,
-                  onToggle: _toggleKey,
+                  activeKeys: currentKeys,
+                  onToggle: (key) {
+                    final updated = List<String>.of(currentKeys);
+                    if (updated.contains(key)) {
+                      updated.remove(key);
+                    } else {
+                      updated.add(key);
+                    }
+                    keysField.onChanged(updated);
+                  },
                   onSetModifier: (key) {
-                    final updated = keys
+                    final updated = currentKeys
                         .where(
                           (k) => k != mod.left && k != mod.right,
                         )
                         .toList();
                     if (key != null) updated.add(key);
-                    onKeysChanged(updated);
+                    keysField.onChanged(updated);
                   },
                 ),
             ],
@@ -127,7 +133,7 @@ class ShortcutSection extends StatelessWidget {
                   ],
                   control: FSelectManagedControl<String>(
                     initial: mainKey,
-                    onChange: _setMainKey,
+                    onChange: setMainKey,
                   ),
                   label: const LabelWithTooltip(
                     label: 'Key',
@@ -140,7 +146,7 @@ class ShortcutSection extends StatelessWidget {
               if (mainKey != null) ...[
                 const SizedBox(width: 8),
                 FButton.icon(
-                  onPress: () => _setMainKey(null),
+                  onPress: () => setMainKey(null),
                   child: const Icon(FLucideIcons.delete),
                 ),
               ],
@@ -148,7 +154,7 @@ class ShortcutSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Preview
-          if (keys.isNotEmpty) _ShortcutPreview(keys: keys),
+          if (currentKeys.isNotEmpty) _ShortcutPreview(keys: currentKeys),
         ],
       ),
     );

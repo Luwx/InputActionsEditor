@@ -1,12 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 
-class PointerGestureEditor extends ConsumerWidget {
+class PointerGestureEditor extends StatelessWidget {
   const PointerGestureEditor({
     required this.index,
     required this.gesture,
@@ -16,17 +14,8 @@ class PointerGestureEditor extends ConsumerWidget {
   final int index;
   final PointerGesture gesture;
 
-  void _update(
-    WidgetRef ref,
-    PointerGesture Function(PointerGesture) mutator,
-  ) {
-    ref
-        .read(configControllerProvider.notifier)
-        .updatePointerGesture(index, mutator);
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return GestureEditorLayout(
       device: DeviceType.pointer,
       gestureIndex: index,
@@ -39,7 +28,6 @@ class PointerGestureEditor extends ConsumerWidget {
         ),
       ],
       common: gesture.common,
-      onCommonChanged: (c) => _update(ref, (g) => g.withCommon(c)),
     );
   }
 }

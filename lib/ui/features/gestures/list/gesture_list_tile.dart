@@ -12,9 +12,9 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
-import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
@@ -551,7 +551,7 @@ class _SwipeIconPainter extends CustomPainter {
 
     for (var i = 0; i < 8; i++) {
       if (!active.contains(i)) continue;
-      final alpha = isAny ? 0.18 : 0.28;
+      final alpha = isAny ? 0.16 : 0.18;
       final startAngle = (i - 0.5) * math.pi / 4;
       final path = Path()
         ..moveTo(cx, cy)

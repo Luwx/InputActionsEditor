@@ -4,40 +4,28 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
-import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_trigger_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/add_action_dialog.dart';
-import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
-import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 /// An alternative to [ActionsEditor]: a reorderable list of collapsible action
 /// rows. Collapsed rows show a one-line summary plus chips for any non-default
 /// trigger options; expanding a row reveals the full editor.
-class ActionListEditor extends StatefulWidget {
-  const ActionListEditor({
-    required this.gestureLocation,
-    required this.common,
-    required this.onCommonChanged,
-    this.dirtyState,
-    this.onRevert,
-    super.key,
-  });
-
-  final GestureLocation gestureLocation;
-  final TriggerCommon common;
-  final void Function(TriggerCommon) onCommonChanged;
-  final DirtyMarkState? dirtyState;
-  final VoidCallback? onRevert;
+class ActionListEditor extends ConsumerStatefulWidget {
+  const ActionListEditor({super.key});
 
   @override
-  State<ActionListEditor> createState() => _ActionListEditorState();
+  ConsumerState<ActionListEditor> createState() => _ActionListEditorState();
 }
 
-class _ActionListEditorState extends State<ActionListEditor> {
+class _ActionListEditorState extends ConsumerState<ActionListEditor> {
   final Set<int> _expanded = {};
 
   /// Marker placed just below the row currently being anchored. Its distance to
@@ -60,10 +48,9 @@ class _ActionListEditorState extends State<ActionListEditor> {
     _anchor = ScrollAnchorScope.maybeOf(context);
   }
 
-  List<TriggerAction> get _actions => widget.common.actions;
-
-  void _emit(List<TriggerAction> actions) =>
-      widget.onCommonChanged(widget.common.copyWith(actions: actions));
+  List<TriggerAction> _actionsFromDraft() {
+    return ref.read(actionListEditorProvider(context.gestureLocation)).actions;
+  }
 
   /// Marks [index] as the active anchor and arms the enclosing sliver so the
   /// row's bottom is kept visible while it grows. The below-anchor extent is
@@ -122,14 +109,10 @@ class _ActionListEditorState extends State<ActionListEditor> {
     if (expanding) _beginAnchor(index);
   }
 
-  void _update(int index, TriggerAction updated) {
-    final actions = List<TriggerAction>.of(_actions);
-    actions[index] = updated;
-    _emit(actions);
-  }
-
   void _remove(int index) {
-    final actions = List<TriggerAction>.of(_actions)..removeAt(index);
+    final actions = List<TriggerAction>.of(_actionsFromDraft());
+    if (index < 0 || index >= actions.length) return;
+    actions.removeAt(index);
     setState(() {
       final next = <int>{};
       for (final e in _expanded) {
@@ -141,12 +124,16 @@ class _ActionListEditorState extends State<ActionListEditor> {
         ..addAll(next);
       _clearAnchor();
     });
-    _emit(actions);
+    ref
+        .read(actionListEditorProvider(context.gestureLocation).notifier)
+        .remove(
+          index,
+        );
   }
 
   void _duplicate(int index) {
-    final actions = List<TriggerAction>.of(_actions)
-      ..insert(index + 1, _actions[index].copyWith());
+    final current = _actionsFromDraft();
+    if (index < 0 || index >= current.length) return;
     setState(() {
       final next = <int>{};
       for (final e in _expanded) {
@@ -157,12 +144,19 @@ class _ActionListEditorState extends State<ActionListEditor> {
         ..addAll(next);
       _clearAnchor();
     });
-    _emit(actions);
+    ref
+        .read(actionListEditorProvider(context.gestureLocation).notifier)
+        .duplicate(index);
   }
 
   void _add(Action action) {
-    final newIndex = _actions.length;
-    _emit([..._actions, TriggerAction(action: action)]);
+    final current = _actionsFromDraft();
+    final newIndex = current.length;
+    ref
+        .read(actionListEditorProvider(context.gestureLocation).notifier)
+        .add(
+          action,
+        );
     setState(() {
       _expanded.add(newIndex);
       _clearAnchor();
@@ -187,8 +181,13 @@ class _ActionListEditorState extends State<ActionListEditor> {
   }
 
   void _reorder(int oldIndex, int newIndex) {
-    final actions = List<TriggerAction>.of(_actions);
-    actions.insert(newIndex, actions.removeAt(oldIndex));
+    final actions = List<TriggerAction>.of(_actionsFromDraft());
+    if (oldIndex < 0 ||
+        oldIndex >= actions.length ||
+        newIndex < 0 ||
+        newIndex >= actions.length) {
+      return;
+    }
     setState(() {
       final next = <int>{};
       for (final e in _expanded) {
@@ -199,7 +198,9 @@ class _ActionListEditorState extends State<ActionListEditor> {
         ..addAll(next);
       _clearAnchor();
     });
-    _emit(actions);
+    ref
+        .read(actionListEditorProvider(context.gestureLocation).notifier)
+        .reorder(oldIndex, newIndex);
   }
 
   int _remapIndex(int e, int from, int to) {
@@ -221,7 +222,9 @@ class _ActionListEditorState extends State<ActionListEditor> {
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final actions = _actions;
+    final gestureLocation = context.gestureLocation;
+    final vm = ref.watch(actionListEditorProvider(gestureLocation));
+    final actions = vm.actions;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,8 +233,16 @@ class _ActionListEditorState extends State<ActionListEditor> {
         Row(
           children: [
             UnsavedLabel(
-              state: widget.dirtyState,
-              onRevert: widget.onRevert,
+              state: vm.dirtyState,
+              onRevert: vm.savedActions == null
+                  ? null
+                  : () => ref
+                        .read(
+                          actionListEditorProvider(
+                            gestureLocation,
+                          ).notifier,
+                        )
+                        .revert(),
               child: Text(
                 'Actions',
                 style: context.theme.typography.sm.copyWith(
@@ -276,14 +287,12 @@ class _ActionListEditorState extends State<ActionListEditor> {
               return _ActionRow(
                 key: ValueKey('action-row-$index'),
                 index: index,
-                gestureLocation: widget.gestureLocation,
                 triggerAction: actions[index],
                 expanded: _expanded.contains(index),
                 onToggle: () => _toggle(index),
                 onOptionsExpanded: () => _beginAnchor(index),
                 onAnchorSettled: _endAnchor,
                 anchorKey: index == _anchorIndex ? _anchorKey : null,
-                onChanged: (updated) => _update(index, updated),
                 onDuplicate: () => _duplicate(index),
                 onDelete: () => _remove(index),
               );
@@ -305,13 +314,11 @@ class _ActionListEditorState extends State<ActionListEditor> {
 class _ActionRow extends ConsumerWidget {
   const _ActionRow({
     required this.index,
-    required this.gestureLocation,
     required this.triggerAction,
     required this.expanded,
     required this.onToggle,
     required this.onOptionsExpanded,
     required this.onAnchorSettled,
-    required this.onChanged,
     required this.onDuplicate,
     required this.onDelete,
     this.anchorKey,
@@ -319,7 +326,6 @@ class _ActionRow extends ConsumerWidget {
   });
 
   final int index;
-  final GestureLocation gestureLocation;
   final TriggerAction triggerAction;
   final bool expanded;
   final VoidCallback onToggle;
@@ -332,12 +338,12 @@ class _ActionRow extends ConsumerWidget {
   /// Zero-height marker placed just below the growing region when this row is
   /// the active anchor; consumed by the [SliverSmartAnchor] above it.
   final GlobalKey? anchorKey;
-  final void Function(TriggerAction) onChanged;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final gestureLocation = context.gestureLocation;
     final colors = context.theme.colors;
     final actionLocation = ActionLocation(
       gesture: gestureLocation,
@@ -377,12 +383,13 @@ class _ActionRow extends ConsumerWidget {
             alignment: Alignment.topCenter,
             onEnd: expanded ? onAnchorSettled : null,
             child: expanded
-                ? _ExpandedEditor(
-                    actionLocation: actionLocation,
-                    triggerAction: triggerAction,
-                    onChanged: onChanged,
-                    onOptionsExpanded: onOptionsExpanded,
-                    footerKey: ValueKey('action-footer-$index'),
+                ? EditLocationScope(
+                    action: actionLocation,
+                    child: _ExpandedEditor(
+                      triggerAction: triggerAction,
+                      onOptionsExpanded: onOptionsExpanded,
+                      footerKey: ValueKey('action-footer-$index'),
+                    ),
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -566,16 +573,12 @@ class _MetaChips extends StatelessWidget {
 
 class _ExpandedEditor extends StatefulWidget {
   const _ExpandedEditor({
-    required this.actionLocation,
     required this.triggerAction,
-    required this.onChanged,
     required this.footerKey,
     this.onOptionsExpanded,
   });
 
-  final ActionLocation actionLocation;
   final TriggerAction triggerAction;
-  final void Function(TriggerAction) onChanged;
   final Key footerKey;
   final VoidCallback? onOptionsExpanded;
 
@@ -589,13 +592,12 @@ class _ExpandedEditorState extends State<_ExpandedEditor> {
   @override
   void initState() {
     super.initState();
-    _optionsExpanded = ActionTriggerFields.hasNonDefaultFields(
-      widget.triggerAction,
-    );
+    _optionsExpanded = actionHasNonDefaultTriggerOptions(widget.triggerAction);
   }
 
   @override
   Widget build(BuildContext context) {
+    final actionLocation = context.actionLocation;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
@@ -604,14 +606,11 @@ class _ExpandedEditorState extends State<_ExpandedEditor> {
           // Container(height: 1, color: colors.border),
           const SizedBox(height: 8),
           ActionFields(
-            actionLocation: widget.actionLocation,
             action: widget.triggerAction.action,
-            onActionChanged: (action) =>
-                widget.onChanged(widget.triggerAction.copyWith(action: action)),
           ),
           const SizedBox(height: 16),
           FAccordion(
-            key: ValueKey(widget.actionLocation.actionIndex),
+            key: ValueKey(actionLocation.actionIndex),
             control: FAccordionControl.lifted(
               expanded: (index) => index == 0 && _optionsExpanded,
               onChange: (index, expanded) {
@@ -630,9 +629,7 @@ class _ExpandedEditorState extends State<_ExpandedEditor> {
               FAccordionItem(
                 title: const Text('Other Options'),
                 child: ActionTriggerFields(
-                  actionLocation: widget.actionLocation,
                   triggerAction: widget.triggerAction,
-                  onChanged: widget.onChanged,
                 ),
               ),
             ],

@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
-import 'package:input_actions_editor/state/local_settings_provider.dart';
+import 'package:input_actions_editor/state/app/local_settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 

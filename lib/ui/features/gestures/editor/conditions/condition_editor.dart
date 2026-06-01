@@ -5,15 +5,15 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_editor_modal.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_nodes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/raw_fallback.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
-import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
-import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
-import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class ConditionEditor extends StatelessWidget {
   /// Convenience constructor that reads/writes from [TriggerCommon.conditions].

@@ -1,6 +1,5 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-
 List<_FlatItem> _buildFlatList(
   Config config,
   DeviceType? deviceFilter,

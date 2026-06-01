@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
-class CircleSection extends StatelessWidget {
+class CircleSection extends ConsumerWidget {
   const CircleSection({
     required this.direction,
-    required this.onDirectionChanged,
+    this.location,
+    this.onDirectionChanged,
     super.key,
   });
 
+  final GestureLocation? location;
   final CircleDirection direction;
-  final void Function(CircleDirection) onDirectionChanged;
+  final void Function(CircleDirection)? onDirectionChanged;
 
   static const Map<String, CircleDirection> _directions = {
     'Any': CircleDirection.any,
@@ -21,13 +28,23 @@ class CircleSection extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location =
+        this.location ?? EditLocationScope.maybeOf(context)?.gesture;
+    final directionField = location == null
+        ? null
+        : ref.field(
+            circleDirectionLens(location),
+            fallbackValue: () => direction,
+            scope: location,
+          );
+    final value = directionField?.value ?? direction;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: SizedBox(
         width: 220,
         child: FSelect<CircleDirection>(
-          key: ValueKey(direction),
+          key: ValueKey(value),
           items: _directions,
           // TODO(me): add icons
           // prefixBuilder: (context, style, variants) {
@@ -41,9 +58,14 @@ class CircleSection extends StatelessWidget {
           //         );
           // },
           control: FSelectManagedControl<CircleDirection>(
-            initial: direction,
+            initial: value,
             onChange: (v) {
-              if (v != null) onDirectionChanged(v);
+              if (v == null) return;
+              if (directionField != null) {
+                directionField.onChanged(v);
+              } else {
+                onDirectionChanged?.call(v);
+              }
             },
           ),
           label: const LabelWithTooltip(

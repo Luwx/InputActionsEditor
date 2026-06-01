@@ -1,13 +1,20 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 /// Compact finger count selector. [maxFingers] caps the available buttons.
 /// Null means "any finger count" and is always available.
-class FingerCountField extends StatelessWidget {
+class FingerCountField extends ConsumerWidget {
   const FingerCountField({
     required this.fingers,
     required this.onChanged,
+    this.location,
     this.minFingers = 1,
     this.maxFingers = 4,
     super.key,
@@ -15,12 +22,34 @@ class FingerCountField extends StatelessWidget {
 
   final int? fingers;
   final void Function(int?) onChanged;
+  final GestureLocation? location;
   final int minFingers;
   final int maxFingers;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typography = context.theme.typography;
+    final location =
+        this.location ?? EditLocationScope.maybeOf(context)?.gesture;
+    final fingersField = location == null
+        ? null
+        : ref.field(
+            switch (location.device) {
+              DeviceType.touchpad => touchpadFingersLens(location),
+              DeviceType.touchscreen => touchscreenFingersLens(location),
+              _ => touchpadFingersLens(location),
+            },
+            fallbackValue: () => fingers,
+            scope: location,
+          );
+    final value = fingersField?.value ?? fingers;
+    void update(int? next) {
+      if (fingersField != null) {
+        fingersField.onChanged(next);
+      } else {
+        onChanged(next);
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -39,16 +68,16 @@ class FingerCountField extends StatelessWidget {
             spacing: 6,
             children: [
               FButton(
-                variant: fingers == null ? .primary : .outline,
+                variant: value == null ? .primary : .outline,
                 size: .sm,
-                onPress: () => onChanged(null),
+                onPress: () => update(null),
                 child: const Text('Any'),
               ),
               for (int n = minFingers; n <= maxFingers; n++)
                 FButton(
-                  variant: fingers == n ? .primary : .outline,
+                  variant: value == n ? .primary : .outline,
                   size: .sm,
-                  onPress: () => onChanged(n),
+                  onPress: () => update(n),
                   child: Text('$n'),
                 ),
             ],

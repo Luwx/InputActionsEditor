@@ -10,19 +10,21 @@ import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/multi_select_controller.dart';
+import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/keyboard_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/mouse_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/pointer_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchpad_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchscreen_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
-import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 
 class GestureDetailSection extends ConsumerStatefulWidget {
   const GestureDetailSection({super.key});
@@ -58,25 +60,11 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
   }
 
   void _enableSelected(Set<GestureKey> selected) {
-    final notifier = ref.read(configControllerProvider.notifier);
-    for (final s in selected) {
-      notifier.updateGestureCommonForDevice(
-        s.device,
-        s.index,
-        (c) => c.copyWith(enabled: null),
-      );
-    }
+    ref.read(gestureListProvider.notifier).enableGestures(selected);
   }
 
   void _disableSelected(Set<GestureKey> selected) {
-    final notifier = ref.read(configControllerProvider.notifier);
-    for (final s in selected) {
-      notifier.updateGestureCommonForDevice(
-        s.device,
-        s.index,
-        (c) => c.copyWith(enabled: false),
-      );
-    }
+    ref.read(gestureListProvider.notifier).disableGestures(selected);
   }
 
   void _deleteSelected(Set<GestureKey> selected) {
@@ -84,47 +72,15 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     for (final s in selected) {
       byDevice.putIfAbsent(s.device, () => []).add(s.index);
     }
-    final notifier = ref.read(configControllerProvider.notifier);
+    final listNotifier = ref.read(gestureListProvider.notifier);
     for (final entry in byDevice.entries) {
       final indices = entry.value..sort();
       for (final i in indices.reversed) {
-        notifier.removeGestureForDevice(entry.key, i);
+        listNotifier.removeGesture(entry.key, i);
       }
     }
     context.clearGestureSelection();
     ref.read(multiSelectControllerProvider.notifier).exit();
-  }
-
-  void _updateSelectedGesture(
-    DeviceType device,
-    int index,
-    Object Function(Object) transform,
-  ) {
-    final notifier = ref.read(configControllerProvider.notifier);
-    switch (device) {
-      case DeviceType.mouse:
-        notifier.updateMouseGesture(index, (g) => transform(g) as MouseGesture);
-      case DeviceType.keyboard:
-        notifier.updateKeyboardGesture(
-          index,
-          (g) => transform(g) as KeyboardGesture,
-        );
-      case DeviceType.pointer:
-        notifier.updatePointerGesture(
-          index,
-          (g) => transform(g) as PointerGesture,
-        );
-      case DeviceType.touchpad:
-        notifier.updateTouchpadGesture(
-          index,
-          (g) => transform(g) as TouchpadGesture,
-        );
-      case DeviceType.touchscreen:
-        notifier.updateTouchscreenGesture(
-          index,
-          (g) => transform(g) as TouchscreenGesture,
-        );
-    }
   }
 
   @override
@@ -142,7 +98,8 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     });
 
     final multiSelect = ref.watch(multiSelectControllerProvider);
-    final config = ref.watch(configControllerProvider).value;
+    final listVm = ref.watch(gestureListProvider);
+    final config = listVm.config;
 
     if (multiSelect != null) {
       final selectedEnabledStates = [
@@ -193,6 +150,13 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     }
 
     final gesture = gestures[selection.index] as Object;
+    final gestureLocation = GestureLocation(
+      device: selection.device,
+      index: selection.index,
+    );
+    final gestureEditor = ref.read(
+      gestureEditorProvider(gestureLocation).notifier,
+    );
     final common = gestureCommon(gesture);
     final name = (common.name?.isNotEmpty ?? false)
         ? common.name!
@@ -217,37 +181,24 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
                   final selection = ref.read(selectedGestureProvider);
                   if (selection == null) return;
                   ref
-                      .read(configControllerProvider.notifier)
-                      .updateGestureCommonForDevice(
-                        selection.device,
-                        selection.index,
-                        (c) =>
-                            c.copyWith(name: newName.isEmpty ? null : newName),
-                      );
+                      .read(
+                        gestureEditorProvider(
+                          GestureLocation(
+                            device: selection.device,
+                            index: selection.index,
+                          ),
+                        ).notifier,
+                      )
+                      .rename(newName);
                 },
               ),
               subtitle: subtitle,
               trailing: _GestureHeaderMenu(
                 isEnabled: isEnabled,
-                onToggleEnabled: () => ref
-                    .read(configControllerProvider.notifier)
-                    .updateGestureCommonForDevice(
-                      selection.device,
-                      selection.index,
-                      (c) => c.copyWith(enabled: isEnabled ? false : null),
-                    ),
-                onResetDefaults: () => _updateSelectedGesture(
-                  selection.device,
-                  selection.index,
-                  resetGestureToDefaults,
-                ),
+                onToggleEnabled: () => gestureEditor.setEnabled(!isEnabled),
+                onResetDefaults: () => gestureEditor.resetDefaults(gesture),
                 onDuplicate: () {
-                  ref
-                      .read(configControllerProvider.notifier)
-                      .duplicateGestureForDevice(
-                        selection.device,
-                        selection.index,
-                      );
+                  gestureEditor.duplicate();
                   context.selectGesture(
                     selection.device,
                     selection.index + 1,
@@ -275,12 +226,7 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
                 },
                 onDelete: () {
                   context.clearGestureSelection();
-                  ref
-                      .read(configControllerProvider.notifier)
-                      .removeGestureForDevice(
-                        selection.device,
-                        selection.index,
-                      );
+                  gestureEditor.delete();
                 },
               ),
               horizontalPadding: 16,
@@ -322,17 +268,13 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
         actions: <Type, Action<Intent>>{
           _UndoIntent: CallbackAction<_UndoIntent>(
             onInvoke: (_) {
-              ref
-                  .read(configControllerProvider.notifier)
-                  .undoActiveGesture(selection.device, selection.index);
+              ref.read(gestureEditorProvider(gestureLocation).notifier).undo();
               return null;
             },
           ),
           _RedoIntent: CallbackAction<_RedoIntent>(
             onInvoke: (_) {
-              ref
-                  .read(configControllerProvider.notifier)
-                  .redoActiveGesture(selection.device, selection.index);
+              ref.read(gestureEditorProvider(gestureLocation).notifier).redo();
               return null;
             },
           ),

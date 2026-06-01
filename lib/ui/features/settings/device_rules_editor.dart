@@ -4,23 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/device_variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rule_properties_form.dart';
-import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/settings/state/settings_editor_notifier.dart';
 
 class DeviceRulesEditor extends ConsumerWidget {
   const DeviceRulesEditor({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(configControllerProvider).value;
+    final vm = ref.watch(settingsEditorProvider);
+    final config = vm.config;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final notifier = ref.read(configControllerProvider.notifier);
+    final notifier = ref.read(settingsEditorProvider.notifier);
 
     if (config == null) {
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -55,7 +58,7 @@ class DeviceRulesEditor extends ConsumerWidget {
             trailing: FButton(
               variant: .outline,
               size: .sm,
-              onPress: () => notifier.addDeviceRule(const DeviceRule()),
+              onPress: notifier.addDeviceRule,
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 6,
@@ -89,7 +92,7 @@ class DeviceRulesEditor extends ConsumerWidget {
                     FButton(
                       variant: .outline,
                       size: .sm,
-                      onPress: () => notifier.addDeviceRule(const DeviceRule()),
+                      onPress: notifier.addDeviceRule,
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         spacing: 6,
@@ -123,7 +126,7 @@ class DeviceRulesEditor extends ConsumerWidget {
   }
 }
 
-class _DeviceRuleCard extends StatelessWidget {
+class _DeviceRuleCard extends ConsumerWidget {
   const _DeviceRuleCard({
     required this.index,
     required this.rule,
@@ -142,8 +145,12 @@ class _DeviceRuleCard extends StatelessWidget {
   final FTypography typography;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final condLabel = _conditionLabel(rule.conditions);
+    final conditionsField = ref.field(
+      deviceRuleConditionsLens(index),
+      fallbackValue: () => rule.conditions,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -187,9 +194,8 @@ class _DeviceRuleCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(14),
             child: ConditionEditor.generic(
-              condition: rule.conditions,
-              onConditionChanged: (c) =>
-                  onChanged(rule.copyWith(conditions: c)),
+              condition: conditionsField.value,
+              onConditionChanged: conditionsField.onChanged,
               title: 'Device Conditions',
               groups: kDeviceVariableGroups,
             ),
@@ -199,6 +205,7 @@ class _DeviceRuleCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(14),
             child: DeviceRulePropertiesForm(
+              ruleIndex: index,
               properties: rule.properties,
               onChanged: (p) => onChanged(rule.copyWith(properties: p)),
               colors: colors,

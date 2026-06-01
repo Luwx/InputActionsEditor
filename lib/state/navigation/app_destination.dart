@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/state/navigation/gesture_selection.dart'
     show OpenGesture;
+import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
 sealed class AppDestination extends Equatable {
   const AppDestination();

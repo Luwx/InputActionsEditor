@@ -4,11 +4,9 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
-import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -261,20 +259,6 @@ Object? comparableTriggerCommon(TriggerCommon? common) => [
       .toList(),
 ];
 
-Object? comparableGestureCommonFieldValue(
-  TriggerCommon? common,
-  GestureCommonDirtyField field,
-) => switch (field) {
-  GestureCommonDirtyField.id => common?.id,
-  GestureCommonDirtyField.threshold => common?.threshold,
-  GestureCommonDirtyField.resumeTimeout => common?.resumeTimeout,
-  GestureCommonDirtyField.accelerated => common?.effectiveAccelerated,
-  GestureCommonDirtyField.blockEvents => common?.effectiveBlockEvents,
-  GestureCommonDirtyField.clearModifiers => common?.effectiveClearModifiers,
-  GestureCommonDirtyField.setLastTrigger => common?.effectiveSetLastTrigger,
-  GestureCommonDirtyField.endConditions => common?.endConditions,
-};
-
 Object? comparableTriggerConfigValue(TriggerCommon? common) => [
   common?.mouseButtons ?? const <Object?>[],
   common?.mouseButtonsExactOrder ?? false,
@@ -314,128 +298,6 @@ Object? comparableAction(Action? action) => switch (action) {
   SleepAction(:final milliseconds) => ['sleep', milliseconds],
   RawAction(:final raw) => ['raw', raw],
   _ => null,
-};
-
-Object? comparableActionFieldValue(
-  TriggerAction? triggerAction,
-  ActionDirtyField field,
-) => switch (field) {
-  ActionDirtyField.command => switch (triggerAction?.action) {
-    CommandAction(:final command) => command,
-    _ => null,
-  },
-  ActionDirtyField.wait => switch (triggerAction?.action) {
-    CommandAction() => (triggerAction!.action as CommandAction).effectiveWait,
-    _ => null,
-  },
-  ActionDirtyField.inputEntries => switch (triggerAction?.action) {
-    InputAction(:final entries) => entries,
-    _ => null,
-  },
-  ActionDirtyField.component => switch (triggerAction?.action) {
-    PlasmaShortcutAction(:final component) => component,
-    _ => null,
-  },
-  ActionDirtyField.shortcut => switch (triggerAction?.action) {
-    PlasmaShortcutAction(:final shortcut) => shortcut,
-    _ => null,
-  },
-  ActionDirtyField.duration => switch (triggerAction?.action) {
-    SleepAction(:final milliseconds) => milliseconds,
-    _ => null,
-  },
-  ActionDirtyField.raw => switch (triggerAction?.action) {
-    RawAction(:final raw) => raw,
-    _ => null,
-  },
-  ActionDirtyField.triggerOn => triggerAction?.on,
-  ActionDirtyField.interval => triggerAction?.interval,
-  ActionDirtyField.threshold => triggerAction?.threshold,
-  ActionDirtyField.limit => triggerAction?.limit,
-  ActionDirtyField.conflicting => triggerAction?.conflicting,
-  ActionDirtyField.conditions => triggerAction?.conditions,
-};
-
-Action restoreSavedActionField({
-  required Action current,
-  required Action saved,
-  required ActionDirtyField field,
-}) => switch ((current, saved, field)) {
-  (
-    CommandAction() && final currentAction,
-    CommandAction() && final savedAction,
-    ActionDirtyField.command,
-  ) =>
-    currentAction.copyWith(
-      command: savedAction.command,
-    ),
-  (
-    CommandAction() && final currentAction,
-    CommandAction() && final savedAction,
-    ActionDirtyField.wait,
-  ) =>
-    currentAction.copyWith(wait: savedAction.wait),
-  (
-    InputAction() && final currentAction,
-    InputAction() && final savedAction,
-    ActionDirtyField.inputEntries,
-  ) =>
-    currentAction.copyWith(
-      entries: savedAction.entries,
-    ),
-  (
-    PlasmaShortcutAction() && final currentAction,
-    PlasmaShortcutAction() && final savedAction,
-    ActionDirtyField.component,
-  ) =>
-    currentAction.copyWith(component: savedAction.component),
-  (
-    PlasmaShortcutAction() && final currentAction,
-    PlasmaShortcutAction() && final savedAction,
-    ActionDirtyField.shortcut,
-  ) =>
-    currentAction.copyWith(shortcut: savedAction.shortcut),
-  (
-    SleepAction() && final currentAction,
-    SleepAction() && final savedAction,
-    ActionDirtyField.duration,
-  ) =>
-    currentAction.copyWith(
-      milliseconds: savedAction.milliseconds,
-    ),
-  (RawAction(), RawAction(:final raw), ActionDirtyField.raw) => RawAction(
-    raw: raw,
-  ),
-  _ => current,
-};
-
-TriggerAction restoreSavedTriggerActionField({
-  required TriggerAction current,
-  required TriggerAction saved,
-  required ActionDirtyField field,
-}) => switch (field) {
-  ActionDirtyField.triggerOn => current.copyWith(on: saved.on),
-  ActionDirtyField.interval => current.copyWith(interval: saved.interval),
-  ActionDirtyField.threshold => current.copyWith(threshold: saved.threshold),
-  ActionDirtyField.limit => current.copyWith(limit: saved.limit),
-  ActionDirtyField.conflicting => current.copyWith(
-    conflicting: saved.conflicting,
-  ),
-  ActionDirtyField.conditions => current.copyWith(conditions: saved.conditions),
-  _ => current,
-};
-
-Object? comparableGlobalSettingsFieldValue(
-  GlobalSettings? settings,
-  GlobalSettingsDirtyField field,
-) => switch (field) {
-  GlobalSettingsDirtyField.autoreload => settings?.effectiveAutoreload,
-  GlobalSettingsDirtyField.externalVariableAccess =>
-    settings?.effectiveExternalVariableAccess,
-  GlobalSettingsDirtyField.notificationsConfigError =>
-    settings?.effectiveNotificationsConfigError,
-  GlobalSettingsDirtyField.emergencyCombination =>
-    settings?.emergencyCombination,
 };
 
 Object? comparableRootFieldValue(Config? config, RootConfigDirtyField field) =>
@@ -490,90 +352,6 @@ bool rootFieldHasSavedBacking(Config? config, RootConfigDirtyField field) =>
       RootConfigDirtyField.touchpadSpeed => config?.touchpadSpeed != null,
       RootConfigDirtyField.touchscreenSpeed => config?.touchscreenSpeed != null,
     };
-
-Object? comparableDevicePropertyFieldValue(
-  DeviceRuleProperties? properties,
-  DevicePropertyDirtyField field,
-) => switch (field) {
-  DevicePropertyDirtyField.ignore => properties?.ignore,
-  DevicePropertyDirtyField.grab => properties?.grab,
-  DevicePropertyDirtyField.motionTimeout => properties?.motionTimeout,
-  DevicePropertyDirtyField.motionThreshold => properties?.motionThreshold,
-  DevicePropertyDirtyField.pressTimeout => properties?.pressTimeout,
-  DevicePropertyDirtyField.swipeAngleTolerance =>
-    properties?.swipeAngleTolerance,
-  DevicePropertyDirtyField.unblockButtonsOnTimeout =>
-    properties?.unblockButtonsOnTimeout,
-  DevicePropertyDirtyField.buttonpad => properties?.buttonpad,
-  DevicePropertyDirtyField.clickTimeout => properties?.clickTimeout,
-  DevicePropertyDirtyField.handleEvdevEvents => properties?.handleEvdevEvents,
-  DevicePropertyDirtyField.motionThreshold2 => properties?.motionThreshold2,
-  DevicePropertyDirtyField.motionThreshold3 => properties?.motionThreshold3,
-  DevicePropertyDirtyField.pressureRangesFinger =>
-    properties?.pressureRangesFinger,
-  DevicePropertyDirtyField.pressureRangesThumb =>
-    properties?.pressureRangesThumb,
-  DevicePropertyDirtyField.pressureRangesPalm => properties?.pressureRangesPalm,
-};
-
-DeviceRuleProperties restoreSavedDeviceProperty(
-  DeviceRuleProperties current,
-  DeviceRuleProperties saved,
-  DevicePropertyDirtyField field,
-) => switch (field) {
-  DevicePropertyDirtyField.ignore => current.copyWith(ignore: saved.ignore),
-  DevicePropertyDirtyField.grab => current.copyWith(grab: saved.grab),
-  DevicePropertyDirtyField.motionTimeout => current.copyWith(
-    motionTimeout: saved.motionTimeout,
-  ),
-  DevicePropertyDirtyField.motionThreshold => current.copyWith(
-    motionThreshold: saved.motionThreshold,
-  ),
-  DevicePropertyDirtyField.pressTimeout => current.copyWith(
-    pressTimeout: saved.pressTimeout,
-  ),
-  DevicePropertyDirtyField.swipeAngleTolerance => current.copyWith(
-    swipeAngleTolerance: saved.swipeAngleTolerance,
-  ),
-  DevicePropertyDirtyField.unblockButtonsOnTimeout => current.copyWith(
-    unblockButtonsOnTimeout: saved.unblockButtonsOnTimeout,
-  ),
-  DevicePropertyDirtyField.buttonpad => current.copyWith(
-    buttonpad: saved.buttonpad,
-  ),
-  DevicePropertyDirtyField.clickTimeout => current.copyWith(
-    clickTimeout: saved.clickTimeout,
-  ),
-  DevicePropertyDirtyField.handleEvdevEvents => current.copyWith(
-    handleEvdevEvents: saved.handleEvdevEvents,
-  ),
-  DevicePropertyDirtyField.motionThreshold2 => current.copyWith(
-    motionThreshold2: saved.motionThreshold2,
-  ),
-  DevicePropertyDirtyField.motionThreshold3 => current.copyWith(
-    motionThreshold3: saved.motionThreshold3,
-  ),
-  DevicePropertyDirtyField.pressureRangesFinger => current.copyWith(
-    pressureRangesFinger: saved.pressureRangesFinger,
-  ),
-  DevicePropertyDirtyField.pressureRangesThumb => current.copyWith(
-    pressureRangesThumb: saved.pressureRangesThumb,
-  ),
-  DevicePropertyDirtyField.pressureRangesPalm => current.copyWith(
-    pressureRangesPalm: saved.pressureRangesPalm,
-  ),
-};
-
-Object? comparableSpeedSettingFieldValue(
-  SpeedSettings? settings,
-  SpeedSettingDirtyField field,
-) => switch (field) {
-  SpeedSettingDirtyField.events => settings?.events,
-  SpeedSettingDirtyField.swipeThreshold => settings?.swipeThreshold,
-  SpeedSettingDirtyField.pinchInThreshold => settings?.pinchInThreshold,
-  SpeedSettingDirtyField.pinchOutThreshold => settings?.pinchOutThreshold,
-  SpeedSettingDirtyField.rotateThreshold => settings?.rotateThreshold,
-};
 
 Object? comparableMotionCommon(MotionCommon motion) => [
   motion.speed,

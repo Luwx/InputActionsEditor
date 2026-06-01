@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/app_router.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 
 class TriggerEditor extends ConsumerWidget {
   const TriggerEditor({
     required this.sections,
-    required this.gestureIndex,
     required this.hasAdvanced,
-    required this.device,
     required this.common,
     required this.onCommonChanged,
     this.dirtyState,
@@ -27,9 +25,7 @@ class TriggerEditor extends ConsumerWidget {
   });
 
   final List<Widget> sections;
-  final int gestureIndex;
   final bool hasAdvanced;
-  final DeviceType device;
   final TriggerCommon common;
   final void Function(TriggerCommon) onCommonChanged;
   final DirtyMarkState? dirtyState;
@@ -37,9 +33,10 @@ class TriggerEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final location = context.gestureLocation;
     final conflicts = ref
         .watch(conflictReportProvider)
-        .forGesture(device, gestureIndex);
+        .forGesture(location.device, location.index);
 
     return SectionCard(
       color: context.theme.colors.card.withValues(alpha: 0.55),
@@ -60,7 +57,7 @@ class TriggerEditor extends ConsumerWidget {
           _TriggerConflictBadge(
             key: ValueKey('trigger-conflict-${conflicts.length}'),
             conflicts: conflicts,
-            focus: (device: device, index: gestureIndex),
+            focus: (device: location.device, index: location.index),
             onJump: (target) =>
                 context.redirectToGesture(target.device, target.index),
           ).appearToggle(
@@ -76,7 +73,7 @@ class TriggerEditor extends ConsumerWidget {
         children: [
           for (final section in sections) section,
           FAccordion(
-            key: ValueKey(gestureIndex),
+            key: ValueKey(location.index),
             style: const .delta(
               dividerStyle: .delta(
                 color: Colors.transparent,
@@ -88,8 +85,6 @@ class TriggerEditor extends ConsumerWidget {
                 title: const Text('Other Options'),
                 initiallyExpanded: hasAdvanced,
                 child: TriggerAdvancedFields(
-                  device: device,
-                  gestureIndex: gestureIndex,
                   common: common,
                   onChanged: onCommonChanged,
                 ),

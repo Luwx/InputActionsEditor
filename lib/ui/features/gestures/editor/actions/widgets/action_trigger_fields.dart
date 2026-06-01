@@ -4,23 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/dirty/dirty_semantics.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class ActionTriggerFields extends ConsumerWidget {
   const ActionTriggerFields({
-    required this.actionLocation,
     required this.triggerAction,
-    required this.onChanged,
     super.key,
   });
 
-  final ActionLocation actionLocation;
   final TriggerAction triggerAction;
-  final void Function(TriggerAction) onChanged;
 
   static const Map<String, TriggerOn> onOptions = {
     'begin': TriggerOn.begin,
@@ -31,33 +29,30 @@ class ActionTriggerFields extends ConsumerWidget {
     'tick': TriggerOn.tick,
   };
 
-  static bool hasNonDefaultFields(TriggerAction t) =>
-      t.on != null ||
-      t.conditions != null ||
-      t.interval != null ||
-      t.threshold != null ||
-      (t.limit != null && t.limit != 0) ||
-      !t.conflicting;
-
-  bool get _showInterval =>
-      triggerAction.on == TriggerOn.update ||
-      triggerAction.on == TriggerOn.tick;
-
-  bool get _showThreshold =>
-      triggerAction.on != null && triggerAction.on != TriggerOn.begin;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final savedAction = ref.watch(savedActionProvider(actionLocation));
-    VoidCallback? revertField(ActionDirtyField field) => savedAction == null
-        ? null
-        : () => onChanged(
-            restoreSavedTriggerActionField(
-              current: triggerAction,
-              saved: savedAction,
-              field: field,
-            ),
-          );
+    final actionLocation = context.actionLocation;
+    final vm = ref.watch(actionEditorProvider(actionLocation));
+    final triggerOnField = ref.field(
+      actionTriggerOnLens(actionLocation),
+      fallbackValue: () => triggerAction.on,
+      scope: actionLocation.gesture,
+    );
+    final limitField = ref.field(
+      actionLimitLens(actionLocation),
+      fallbackValue: () => triggerAction.limit,
+      scope: actionLocation.gesture,
+    );
+    final conflictingField = ref.field(
+      actionConflictingLens(actionLocation),
+      fallbackValue: () => triggerAction.conflicting,
+      scope: actionLocation.gesture,
+    );
+    final conditionsField = ref.field(
+      actionConditionsLens(actionLocation),
+      fallbackValue: () => triggerAction.conditions,
+      scope: actionLocation.gesture,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,15 +65,8 @@ class ActionTriggerFields extends ConsumerWidget {
               width: 180,
               child: FSelect<TriggerOn>(
                 label: UnsavedLabel(
-                  state: ref.watch(
-                    actionFieldDirtyStateProvider(
-                      ActionDirtyLocation(
-                        action: actionLocation,
-                        field: ActionDirtyField.triggerOn,
-                      ),
-                    ),
-                  ),
-                  onRevert: revertField(ActionDirtyField.triggerOn),
+                  state: triggerOnField.dirty,
+                  onRevert: triggerOnField.onRevert,
                   child: const LabelWithTooltip(
                     label: 'Trigger on',
                     tooltip:
@@ -104,116 +92,108 @@ class ActionTriggerFields extends ConsumerWidget {
                 key: ValueKey(triggerAction.on),
                 items: onOptions,
                 control: FSelectManagedControl<TriggerOn>(
-                  initial: triggerAction.on,
+                  initial: triggerOnField.value,
                   onChange: (value) {
-                    if (value != null) {
-                      onChanged(triggerAction.copyWith(on: value));
-                    }
+                    if (value != null) triggerOnField.onChanged(value);
                   },
                 ),
               ),
             ),
-            if (_showInterval)
-              SizedBox(
-                width: 180,
-                child: FTextField(
-                  label: UnsavedLabel(
-                    state: ref.watch(
-                      actionFieldDirtyStateProvider(
-                        ActionDirtyLocation(
-                          action: actionLocation,
-                          field: ActionDirtyField.interval,
+            if (vm.showInterval)
+              Builder(
+                builder: (context) {
+                  final intervalField = ref.field(
+                    actionIntervalLens(actionLocation),
+                    fallbackValue: () => triggerAction.interval,
+                    scope: actionLocation.gesture,
+                  );
+                  return SizedBox(
+                    width: 180,
+                    child: FTextField(
+                      label: UnsavedLabel(
+                        state: intervalField.dirty,
+                        onRevert: intervalField.onRevert,
+                        child: const LabelWithTooltip(
+                          label: 'Interval',
+                          tooltip:
+                              'Controls how often the action repeats for '
+                              'on:update and on:tick.\n\n'
+                              '  empty / 0  - every input event or tick\n'
+                              '  +          - only while delta is increasing\n'
+                              '               (positive direction)\n'
+                              '  -          - only while delta is decreasing\n'
+                              '               (negative direction)\n'
+                              '  number     - once per N units of accumulated '
+                              'delta\n\n'
+                              'Example: interval:4 on a wheel action fires '
+                              'every 4 scroll ticks instead of every single '
+                              'tick.',
                         ),
                       ),
-                    ),
-                    onRevert: revertField(ActionDirtyField.interval),
-                    child: const LabelWithTooltip(
-                      label: 'Interval',
-                      tooltip:
-                          'Controls how often the action repeats for '
-                          'on:update and on:tick.\n\n'
-                          '  empty / 0  - every input event or tick\n'
-                          '  +          - only while delta is increasing\n'
-                          '               (positive direction)\n'
-                          '  -          - only while delta is decreasing\n'
-                          '               (negative direction)\n'
-                          '  number     - once per N units of accumulated '
-                          'delta\n\n'
-                          'Example: interval:4 on a wheel action fires every '
-                          '4 scroll ticks instead of every single tick.',
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  control: FTextFieldControl.managed(
-                    initial: TextEditingValue(
-                      text: triggerAction.interval ?? '',
-                    ),
-                    onChange: (value) => onChanged(
-                      triggerAction.copyWith(
-                        interval: value.text.isEmpty ? null : value.text,
+                      keyboardType: TextInputType.number,
+                      control: FTextFieldControl.managed(
+                        initial: TextEditingValue(
+                          text: intervalField.value ?? '',
+                        ),
+                        onChange: (value) => intervalField.onChanged(
+                          value.text.isEmpty ? null : value.text,
+                        ),
                       ),
+                      hint: '+, -, or number',
                     ),
-                  ),
-                  hint: '+, -, or number',
-                ),
+                  );
+                },
               ),
-            if (_showThreshold)
-              SizedBox(
-                width: 180,
-                child: FTextField(
-                  label: UnsavedLabel(
-                    state: ref.watch(
-                      actionFieldDirtyStateProvider(
-                        ActionDirtyLocation(
-                          action: actionLocation,
-                          field: ActionDirtyField.threshold,
+            if (vm.showThreshold)
+              Builder(
+                builder: (context) {
+                  final thresholdField = ref.field(
+                    actionThresholdLens(actionLocation),
+                    fallbackValue: () => triggerAction.threshold,
+                    scope: actionLocation.gesture,
+                  );
+                  return SizedBox(
+                    width: 180,
+                    child: FTextField(
+                      label: UnsavedLabel(
+                        state: thresholdField.dirty,
+                        onRevert: thresholdField.onRevert,
+                        child: const LabelWithTooltip(
+                          label: 'Threshold',
+                          tooltip:
+                              'Accumulated movement since the gesture began '
+                              'before this action fires.\n\n'
+                              'Same units as the trigger threshold:\n'
+                              '  Swipe / stroke  - pixels\n'
+                              '  Wheel           - scroll ticks\n'
+                              '  Pinch           - scale factor (0.1 = 10%)\n'
+                              '  Rotate / circle - degrees\n\n'
+                              'Unlike the trigger Threshold (which gates '
+                              'recognition), this gates only this action '
+                              'after the gesture is already active.\n\n'
+                              'Use a range like 50-200 to fire only within '
+                              'that window of movement.',
                         ),
                       ),
-                    ),
-                    onRevert: revertField(ActionDirtyField.threshold),
-                    child: const LabelWithTooltip(
-                      label: 'Threshold',
-                      tooltip:
-                          'Accumulated movement since the gesture began '
-                          'before this action fires.\n\n'
-                          'Same units as the trigger threshold:\n'
-                          '  Swipe / stroke  - pixels\n'
-                          '  Wheel           - scroll ticks\n'
-                          '  Pinch           - scale factor (0.1 = 10%)\n'
-                          '  Rotate / circle - degrees\n\n'
-                          'Unlike the trigger Threshold (which gates '
-                          'recognition), this gates only this action after '
-                          'the gesture is already active.\n\n'
-                          'Use a range like 50-200 to fire only within '
-                          'that window of movement.',
-                    ),
-                  ),
-                  control: FTextFieldControl.managed(
-                    initial: TextEditingValue(
-                      text: triggerAction.threshold ?? '',
-                    ),
-                    onChange: (value) => onChanged(
-                      triggerAction.copyWith(
-                        threshold: value.text.isEmpty ? null : value.text,
+                      control: FTextFieldControl.managed(
+                        initial: TextEditingValue(
+                          text: thresholdField.value ?? '',
+                        ),
+                        onChange: (value) => thresholdField.onChanged(
+                          value.text.isEmpty ? null : value.text,
+                        ),
                       ),
+                      hint: 'e.g. 100 or 50-200',
                     ),
-                  ),
-                  hint: 'e.g. 100 or 50-200',
-                ),
+                  );
+                },
               ),
             SizedBox(
               width: 180,
               child: FTextField(
                 label: UnsavedLabel(
-                  state: ref.watch(
-                    actionFieldDirtyStateProvider(
-                      ActionDirtyLocation(
-                        action: actionLocation,
-                        field: ActionDirtyField.limit,
-                      ),
-                    ),
-                  ),
-                  onRevert: revertField(ActionDirtyField.limit),
+                  state: limitField.dirty,
+                  onRevert: limitField.onRevert,
                   child: const LabelWithTooltip(
                     label: 'Limit',
                     tooltip:
@@ -227,14 +207,10 @@ class ActionTriggerFields extends ConsumerWidget {
                 keyboardType: TextInputType.number,
                 control: FTextFieldControl.managed(
                   initial: TextEditingValue(
-                    text: triggerAction.limit?.toString() ?? '',
+                    text: limitField.value?.toString() ?? '',
                   ),
-                  onChange: (value) => onChanged(
-                    triggerAction.copyWith(
-                      limit: value.text.isEmpty
-                          ? null
-                          : int.tryParse(value.text),
-                    ),
+                  onChange: (value) => limitField.onChanged(
+                    value.text.isEmpty ? null : int.tryParse(value.text),
                   ),
                 ),
                 hint: '0 = unlimited',
@@ -244,19 +220,11 @@ class ActionTriggerFields extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         FCheckbox(
-          value: triggerAction.conflicting,
-          onChange: (value) =>
-              onChanged(triggerAction.copyWith(conflicting: value)),
+          value: conflictingField.value,
+          onChange: conflictingField.onChanged,
           label: UnsavedLabel(
-            state: ref.watch(
-              actionFieldDirtyStateProvider(
-                ActionDirtyLocation(
-                  action: actionLocation,
-                  field: ActionDirtyField.conflicting,
-                ),
-              ),
-            ),
-            onRevert: revertField(ActionDirtyField.conflicting),
+            state: conflictingField.dirty,
+            onRevert: conflictingField.onRevert,
             child: const LabelWithTooltip(
               label: 'Conflicting',
               tooltip:
@@ -274,15 +242,8 @@ class ActionTriggerFields extends ConsumerWidget {
         const SizedBox(height: 16),
         ConditionEditor.generic(
           title: 'Action Conditions',
-          dirtyState: ref.watch(
-            actionFieldDirtyStateProvider(
-              ActionDirtyLocation(
-                action: actionLocation,
-                field: ActionDirtyField.conditions,
-              ),
-            ),
-          ),
-          onRevert: revertField(ActionDirtyField.conditions),
+          dirtyState: conditionsField.dirty,
+          onRevert: conditionsField.onRevert,
           titleTooltip:
               'Conditions checked just before this action executes.\n'
               'The gesture fires regardless; only this action is skipped '
@@ -296,9 +257,8 @@ class ActionTriggerFields extends ConsumerWidget {
               '      → only if cursor is over the focused window\n'
               '  \$last_trigger == my_swipe\n'
               '      → only if a specific gesture ran just before this one',
-          condition: triggerAction.conditions,
-          onConditionChanged: (c) =>
-              onChanged(triggerAction.copyWith(conditions: c)),
+          condition: conditionsField.value,
+          onConditionChanged: conditionsField.onChanged,
         ),
       ],
     );

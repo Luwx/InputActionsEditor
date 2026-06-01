@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/shell/state/document_notifier.dart';
 
 class DeviceSidebar extends ConsumerStatefulWidget {
   const DeviceSidebar({super.key});
@@ -38,7 +38,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
         currentView != AppView.gestures || currentFilter != device;
 
     if (changingFilter) {
-      final config = ref.read(configControllerProvider).value;
+      final config = ref.read(documentProvider).config;
       if (config != null) {
         final first = firstGestureForFilter(config, device);
         if (first != null) {
@@ -60,10 +60,8 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
     final deviceFilter = ref.watch(deviceFilterProvider);
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
-    ref.watch(configControllerProvider);
-    final canDiscard =
-        ref.read(configControllerProvider.notifier).isDirty &&
-        ref.read(configControllerProvider.notifier).savedConfig != null;
+    final document = ref.watch(documentProvider);
+    final documentNotifier = ref.read(documentProvider.notifier);
 
     return FSidebar.raw(
       style: const .delta(
@@ -115,33 +113,24 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                                 .item(
                                   prefix: const Icon(FLucideIcons.folderOpen),
                                   title: const Text('Load'),
-                                  onPress: () => ref
-                                      .read(configControllerProvider.notifier)
-                                      .loadFromPicker(),
+                                  onPress: documentNotifier.loadFromPicker,
                                 ),
                                 .item(
                                   prefix: const Icon(FLucideIcons.save),
                                   title: const Text('Save'),
                                   onPress: () async {
                                     await controller.hide();
-                                    await ref
-                                        .read(configControllerProvider.notifier)
-                                        .save();
+                                    await documentNotifier.save();
                                   },
                                 ),
                                 .item(
                                   prefix: const Icon(FLucideIcons.undo2),
                                   title: const Text('Discard changes'),
-                                  enabled: canDiscard,
-                                  onPress: canDiscard
+                                  enabled: document.canDiscard,
+                                  onPress: document.canDiscard
                                       ? () async {
                                           await controller.hide();
-                                          ref
-                                              .read(
-                                                configControllerProvider
-                                                    .notifier,
-                                              )
-                                              .discardChanges();
+                                          documentNotifier.discardChanges();
                                         }
                                       : null,
                                 ),

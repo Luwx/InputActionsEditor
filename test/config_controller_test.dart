@@ -636,12 +636,11 @@ void main() {
     test('dispatch applies edit and scoped undo/redo restores it', () async {
       final c = _makeContainer(const Config());
       await c.read(configControllerProvider.future);
-      final notifier = _notifier(c);
-
-      notifier.dispatch(
-        SetLens<SpeedSettings?>(_mouseSpeedLens, _speed1),
-        scope: 'settings',
-      );
+      final notifier = _notifier(c)
+        ..dispatch(
+          SetLens<SpeedSettings?>(_mouseSpeedLens, _speed1),
+          scope: 'settings',
+        );
 
       expect(_config(c).mouseSpeed?.events, 4);
       expect(notifier.canUndoEdit(scope: 'settings'), isTrue);
@@ -658,9 +657,8 @@ void main() {
     test('revert dispatches a saved-value edit', () async {
       final c = _makeContainer(const Config(mouseSpeed: _speed1));
       await c.read(configControllerProvider.future);
-      final notifier = _notifier(c);
-
-      notifier.dispatch(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
+      final notifier = _notifier(c)
+        ..dispatch(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
       expect(_config(c).mouseSpeed?.events, 8);
 
       notifier.revert(_mouseSpeedLens);

@@ -19,8 +19,8 @@ final class _GestureListController {
     };
 
     ref
-        .read(configControllerProvider.notifier)
-        .reorderAndUpdateGroupsForDevice(device, newOrder, assignments);
+        .read(gestureListProvider.notifier)
+        .reorderGesturesAndGroups(device, newOrder, assignments);
 
     final selection = ref.read(selectedGestureProvider);
     if (selection != null && selection.device == device) {
@@ -42,8 +42,6 @@ final class _GestureListController {
   }
 
   void applyGroupReorder(DeviceType device, int from, int to) {
-    ref
-        .read(configControllerProvider.notifier)
-        .reorderGestureGroupForDevice(device, from, to);
+    ref.read(gestureListProvider.notifier).reorderGroups(device, from, to);
   }
 }

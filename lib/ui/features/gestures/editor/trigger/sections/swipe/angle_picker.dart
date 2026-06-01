@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/angle_wheel_painter.dart';
-import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 class AnglePicker extends StatefulWidget {
   const AnglePicker({

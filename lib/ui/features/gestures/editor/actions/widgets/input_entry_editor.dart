@@ -17,10 +17,10 @@ import 'package:input_actions_editor/data/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
-import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 
 class InputEntryEditor extends StatefulWidget {
   const InputEntryEditor({

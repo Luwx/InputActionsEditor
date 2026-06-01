@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
 class SettingsListSection extends ConsumerWidget {
   const SettingsListSection({super.key});

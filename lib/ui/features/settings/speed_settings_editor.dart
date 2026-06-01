@@ -4,24 +4,23 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class SpeedSettingsEditor extends ConsumerWidget {
   const SpeedSettingsEditor({
     required this.device,
     required this.settings,
-    required this.onChanged,
     super.key,
   });
 
   final DeviceType device;
   final SpeedSettings? settings;
-  final void Function(SpeedSettings?) onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = settings ?? const SpeedSettings();
-    final savedSettings = ref.watch(savedSpeedSettingsProvider(device));
     final sectionState = ref.watch(
       rootConfigDirtyStateProvider(switch (device) {
         DeviceType.mouse => RootConfigDirtyField.mouseSpeed,
@@ -30,10 +29,30 @@ class SpeedSettingsEditor extends ConsumerWidget {
         _ => RootConfigDirtyField.mouseSpeed,
       }),
     );
-
-    void update(SpeedSettings updated) {
-      onChanged(updated.isEmpty ? null : updated);
-    }
+    final sectionField = ref.field(
+      speedSettingsLens(device),
+      fallbackValue: () => s,
+    );
+    final eventsField = ref.field(
+      speedEventsLens(device),
+      fallbackValue: () => s.events,
+    );
+    final swipeThresholdField = ref.field(
+      speedSwipeThresholdLens(device),
+      fallbackValue: () => s.swipeThreshold,
+    );
+    final pinchInThresholdField = ref.field(
+      speedPinchInThresholdLens(device),
+      fallbackValue: () => s.pinchInThreshold,
+    );
+    final pinchOutThresholdField = ref.field(
+      speedPinchOutThresholdLens(device),
+      fallbackValue: () => s.pinchOutThreshold,
+    );
+    final rotateThresholdField = ref.field(
+      speedRotateThresholdLens(device),
+      fallbackValue: () => s.rotateThreshold,
+    );
 
     return Center(
       child: ConstrainedBox(
@@ -42,9 +61,7 @@ class SpeedSettingsEditor extends ConsumerWidget {
           divider: .full,
           label: UnsavedLabel(
             state: sectionState,
-            onRevert: savedSettings == null
-                ? null
-                : () => onChanged(savedSettings),
+            onRevert: sectionField.onRevert,
             child: const Text('Speed Settings'),
           ),
           description: const Text(
@@ -53,17 +70,8 @@ class SpeedSettingsEditor extends ConsumerWidget {
           children: [
             FTile(
               title: UnsavedLabel(
-                state: ref.watch(
-                  speedSettingDirtyStateProvider(
-                    SpeedSettingLocation(
-                      device: device,
-                      field: SpeedSettingDirtyField.events,
-                    ),
-                  ),
-                ),
-                onRevert: savedSettings == null
-                    ? null
-                    : () => update(s.copyWith(events: savedSettings.events)),
+                state: eventsField.dirty,
+                onRevert: eventsField.onRevert,
                 child: const Text('Input Events to Sample'),
               ),
               subtitle: const Text(
@@ -71,122 +79,70 @@ class SpeedSettingsEditor extends ConsumerWidget {
                 ' No triggers start until all events are sampled.',
               ),
               suffix: _SpeedField(
-                value: s.events?.toDouble(),
+                value: eventsField.value?.toDouble(),
                 isInt: true,
                 hint: '3',
-                onChanged: (v) => update(s.copyWith(events: v?.toInt())),
+                onChanged: (v) => eventsField.onChanged(v?.toInt()),
               ),
             ),
             FTile(
               title: UnsavedLabel(
-                state: ref.watch(
-                  speedSettingDirtyStateProvider(
-                    SpeedSettingLocation(
-                      device: device,
-                      field: SpeedSettingDirtyField.swipeThreshold,
-                    ),
-                  ),
-                ),
-                onRevert: savedSettings == null
-                    ? null
-                    : () => update(
-                        s.copyWith(
-                          swipeThreshold: savedSettings.swipeThreshold,
-                        ),
-                      ),
+                state: swipeThresholdField.dirty,
+                onRevert: swipeThresholdField.onRevert,
                 child: const Text('Swipe Threshold'),
               ),
               subtitle: const Text(
                 'Delta threshold to consider a swipe as "fast".',
               ),
               suffix: _SpeedField(
-                value: s.swipeThreshold,
+                value: swipeThresholdField.value,
                 hint: '20',
-                onChanged: (v) => update(s.copyWith(swipeThreshold: v)),
+                onChanged: swipeThresholdField.onChanged,
               ),
             ),
             FTile(
               title: UnsavedLabel(
-                state: ref.watch(
-                  speedSettingDirtyStateProvider(
-                    SpeedSettingLocation(
-                      device: device,
-                      field: SpeedSettingDirtyField.pinchInThreshold,
-                    ),
-                  ),
-                ),
-                onRevert: savedSettings == null
-                    ? null
-                    : () => update(
-                        s.copyWith(
-                          pinchInThreshold: savedSettings.pinchInThreshold,
-                        ),
-                      ),
+                state: pinchInThresholdField.dirty,
+                onRevert: pinchInThresholdField.onRevert,
                 child: const Text('Pinch-In Threshold'),
               ),
               subtitle: const Text(
                 'Delta threshold to consider a pinch-in as "fast".',
               ),
               suffix: _SpeedField(
-                value: s.pinchInThreshold,
+                value: pinchInThresholdField.value,
                 hint: '0.04',
-                onChanged: (v) => update(s.copyWith(pinchInThreshold: v)),
+                onChanged: pinchInThresholdField.onChanged,
               ),
             ),
             FTile(
               title: UnsavedLabel(
-                state: ref.watch(
-                  speedSettingDirtyStateProvider(
-                    SpeedSettingLocation(
-                      device: device,
-                      field: SpeedSettingDirtyField.pinchOutThreshold,
-                    ),
-                  ),
-                ),
-                onRevert: savedSettings == null
-                    ? null
-                    : () => update(
-                        s.copyWith(
-                          pinchOutThreshold: savedSettings.pinchOutThreshold,
-                        ),
-                      ),
+                state: pinchOutThresholdField.dirty,
+                onRevert: pinchOutThresholdField.onRevert,
                 child: const Text('Pinch-Out Threshold'),
               ),
               subtitle: const Text(
                 'Delta threshold to consider a pinch-out as "fast".',
               ),
               suffix: _SpeedField(
-                value: s.pinchOutThreshold,
+                value: pinchOutThresholdField.value,
                 hint: '0.08',
-                onChanged: (v) => update(s.copyWith(pinchOutThreshold: v)),
+                onChanged: pinchOutThresholdField.onChanged,
               ),
             ),
             FTile(
               title: UnsavedLabel(
-                state: ref.watch(
-                  speedSettingDirtyStateProvider(
-                    SpeedSettingLocation(
-                      device: device,
-                      field: SpeedSettingDirtyField.rotateThreshold,
-                    ),
-                  ),
-                ),
-                onRevert: savedSettings == null
-                    ? null
-                    : () => update(
-                        s.copyWith(
-                          rotateThreshold: savedSettings.rotateThreshold,
-                        ),
-                      ),
+                state: rotateThresholdField.dirty,
+                onRevert: rotateThresholdField.onRevert,
                 child: const Text('Rotate Threshold'),
               ),
               subtitle: const Text(
                 'Delta threshold to consider a rotation as "fast".',
               ),
               suffix: _SpeedField(
-                value: s.rotateThreshold,
+                value: rotateThresholdField.value,
                 hint: '5',
-                onChanged: (v) => update(s.copyWith(rotateThreshold: v)),
+                onChanged: rotateThresholdField.onChanged,
               ),
             ),
           ],

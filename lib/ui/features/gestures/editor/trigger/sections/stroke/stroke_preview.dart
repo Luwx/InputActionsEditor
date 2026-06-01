@@ -14,6 +14,8 @@ class StrokePreview extends StatelessWidget {
     this.showSamplePoints = false,
     this.pathPadding,
     this.dottedBackground = false,
+    this.animatePath = false,
+    this.animationDuration = const Duration(milliseconds: 800),
     super.key,
   });
 
@@ -27,6 +29,8 @@ class StrokePreview extends StatelessWidget {
   final bool showSamplePoints;
   final double? pathPadding;
   final bool dottedBackground;
+  final bool animatePath;
+  final Duration animationDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,8 @@ class StrokePreview extends StatelessWidget {
       showSamplePoints: showSamplePoints,
       pathPadding: pathPadding,
       dottedBackground: dottedBackground,
+      animatePath: animatePath,
+      animationDuration: animationDuration,
       borderRadius: BorderRadius.circular(6),
       empty: Center(
         child: Text(

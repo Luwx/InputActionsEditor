@@ -4,14 +4,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
-import 'package:input_actions_editor/state/stroke_recording_provider.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_row.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/state/stroke_recording_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_row.dart';
 
 /// Reusable stroke list field
 /// used by mouse, touchpad, and touchscreen editors.
-class StrokesField extends ConsumerWidget {
+class StrokesField extends ConsumerStatefulWidget {
   const StrokesField({
     required this.strokes,
     required this.onStrokesChanged,
@@ -22,7 +22,15 @@ class StrokesField extends ConsumerWidget {
   final void Function(List<String>) onStrokesChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StrokesField> createState() => _StrokesFieldState();
+}
+
+class _StrokesFieldState extends ConsumerState<StrokesField> {
+  String? _animatedStroke;
+  int? _animatedIndex;
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen<AsyncValue<String?>>(strokeRecordingProvider, (
       previous,
       next,
@@ -73,7 +81,7 @@ class StrokesField extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (strokes.isEmpty)
+          if (widget.strokes.isEmpty)
             Text(
               'No strokes recorded. Tap Record to add one.',
               style: context.theme.typography.xs.copyWith(
@@ -83,13 +91,17 @@ class StrokesField extends ConsumerWidget {
           else
             Wrap(
               children: [
-                for (final (i, stroke) in strokes.indexed)
+                for (final (i, stroke) in widget.strokes.indexed)
                   StrokeRow(
+                    key: ValueKey('stroke-$i-$stroke'),
                     stroke: stroke,
                     index: i,
+                    animatePath:
+                        _animatedStroke == stroke && _animatedIndex == i,
                     onDelete: () {
-                      final updated = List<String>.of(strokes)..removeAt(i);
-                      onStrokesChanged(updated);
+                      final updated = List<String>.of(widget.strokes)
+                        ..removeAt(i);
+                      widget.onStrokesChanged(updated);
                     },
                   ),
               ],
@@ -107,7 +119,21 @@ class StrokesField extends ConsumerWidget {
                     if (stroke == null) {
                       return;
                     }
-                    onStrokesChanged([...strokes, stroke]);
+                    final appendedIndex = widget.strokes.length;
+                    setState(() {
+                      _animatedStroke = stroke;
+                      _animatedIndex = appendedIndex;
+                    });
+                    widget.onStrokesChanged([...widget.strokes, stroke]);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() {
+                        _animatedStroke = null;
+                        _animatedIndex = null;
+                      });
+                    });
                   },
             child: Row(
               mainAxisSize: MainAxisSize.min,

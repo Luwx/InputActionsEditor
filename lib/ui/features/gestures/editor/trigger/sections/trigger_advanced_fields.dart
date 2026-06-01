@@ -3,24 +3,21 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
-import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class TriggerAdvancedFields extends ConsumerWidget {
   const TriggerAdvancedFields({
-    required this.device,
-    required this.gestureIndex,
     required this.common,
     required this.onChanged,
     super.key,
   });
 
-  final DeviceType device;
-  final int gestureIndex;
   final TriggerCommon common;
   final void Function(TriggerCommon) onChanged;
 
@@ -37,22 +34,55 @@ class TriggerAdvancedFields extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gestureLocation = GestureLocation(
-      device: device,
-      index: gestureIndex,
-    );
+    final gestureLocation = context.gestureLocation;
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
       context.theme.colors.background,
     );
-    final savedCommon = ref.watch(savedGestureCommonProvider(gestureLocation));
-    final triggerConditionsDirtyState = ref.watch(
-      gestureSectionDirtyStateProvider(
-        GestureSectionLocation(
-          gesture: gestureLocation,
-          field: GestureSectionDirtyField.triggerConditions,
-        ),
-      ),
+    final idField = ref.field(
+      gestureIdLens(gestureLocation),
+      fallbackValue: () => common.id,
+      scope: gestureLocation,
+    );
+    final thresholdField = ref.field(
+      gestureThresholdLens(gestureLocation),
+      fallbackValue: () => common.threshold,
+      scope: gestureLocation,
+    );
+    final resumeTimeoutField = ref.field(
+      gestureResumeTimeoutLens(gestureLocation),
+      fallbackValue: () => common.resumeTimeout,
+      scope: gestureLocation,
+    );
+    final acceleratedField = ref.field(
+      gestureAcceleratedLens(gestureLocation),
+      fallbackValue: () => common.accelerated,
+      scope: gestureLocation,
+    );
+    final blockEventsField = ref.field(
+      gestureBlockEventsLens(gestureLocation),
+      fallbackValue: () => common.blockEvents,
+      scope: gestureLocation,
+    );
+    final clearModifiersField = ref.field(
+      gestureClearModifiersLens(gestureLocation),
+      fallbackValue: () => common.clearModifiers,
+      scope: gestureLocation,
+    );
+    final setLastTriggerField = ref.field(
+      gestureSetLastTriggerLens(gestureLocation),
+      fallbackValue: () => common.setLastTrigger,
+      scope: gestureLocation,
+    );
+    final conditionsField = ref.field(
+      gestureConditionsLens(gestureLocation),
+      fallbackValue: () => common.conditions,
+      scope: gestureLocation,
+    );
+    final endConditionsField = ref.field(
+      gestureEndConditionsLens(gestureLocation),
+      fallbackValue: () => common.endConditions,
+      scope: gestureLocation,
     );
 
     return Column(
@@ -64,17 +94,8 @@ class TriggerAdvancedFields extends ConsumerWidget {
           children: [
             FTextField(
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.id,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(common.copyWith(id: savedCommon.id)),
+                state: idField.dirty,
+                onRevert: idField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'ID',
                   tooltip:
@@ -89,28 +110,16 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 ),
               ),
               control: FTextFieldControl.managed(
-                initial: TextEditingValue(text: common.id ?? ''),
-                onChange: (v) => onChanged(
-                  common.copyWith(id: v.text.isEmpty ? null : v.text),
-                ),
+                initial: TextEditingValue(text: idField.value ?? ''),
+                onChange: (v) =>
+                    idField.onChanged(v.text.isEmpty ? null : v.text),
               ),
               hint: 'e.g. my_trigger',
             ),
             FTextField(
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.threshold,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(threshold: savedCommon.threshold),
-                      ),
+                state: thresholdField.dirty,
+                onRevert: thresholdField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Threshold',
                   tooltip:
@@ -133,32 +142,16 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 ),
               ),
               control: FTextFieldControl.managed(
-                initial: TextEditingValue(text: common.threshold ?? ''),
-                onChange: (v) => onChanged(
-                  common.copyWith(
-                    threshold: v.text.isEmpty ? null : v.text,
-                  ),
-                ),
+                initial: TextEditingValue(text: thresholdField.value ?? ''),
+                onChange: (v) =>
+                    thresholdField.onChanged(v.text.isEmpty ? null : v.text),
               ),
               hint: 'e.g. 100 or 50-200',
             ),
             FTextField(
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.resumeTimeout,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(
-                          resumeTimeout: savedCommon.resumeTimeout,
-                        ),
-                      ),
+                state: resumeTimeoutField.dirty,
+                onRevert: resumeTimeoutField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Resume timeout',
                   tooltip:
@@ -177,12 +170,10 @@ class TriggerAdvancedFields extends ConsumerWidget {
               keyboardType: TextInputType.number,
               control: FTextFieldControl.managed(
                 initial: TextEditingValue(
-                  text: common.resumeTimeout?.toString() ?? '',
+                  text: resumeTimeoutField.value?.toString() ?? '',
                 ),
-                onChange: (v) => onChanged(
-                  common.copyWith(
-                    resumeTimeout: v.text.isEmpty ? null : int.tryParse(v.text),
-                  ),
+                onChange: (v) => resumeTimeoutField.onChanged(
+                  v.text.isEmpty ? null : int.tryParse(v.text),
                 ),
               ),
               hint: '0 = disabled',
@@ -195,23 +186,10 @@ class TriggerAdvancedFields extends ConsumerWidget {
           children: [
             FCheckbox(
               value: common.effectiveAccelerated,
-              onChange: (v) => onChanged(
-                common.copyWith(accelerated: v ? true : null),
-              ),
+              onChange: (v) => acceleratedField.onChanged(v ? true : null),
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.accelerated,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(accelerated: savedCommon.accelerated),
-                      ),
+                state: acceleratedField.dirty,
+                onRevert: acceleratedField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Accelerated',
                   tooltip:
@@ -226,23 +204,10 @@ class TriggerAdvancedFields extends ConsumerWidget {
             ),
             FCheckbox(
               value: common.effectiveBlockEvents,
-              onChange: (v) => onChanged(
-                common.copyWith(blockEvents: v ? null : false),
-              ),
+              onChange: (v) => blockEventsField.onChanged(v ? null : false),
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.blockEvents,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(blockEvents: savedCommon.blockEvents),
-                      ),
+                state: blockEventsField.dirty,
+                onRevert: blockEventsField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Block events',
                   tooltip:
@@ -257,25 +222,10 @@ class TriggerAdvancedFields extends ConsumerWidget {
             ),
             FCheckbox(
               value: common.effectiveClearModifiers,
-              onChange: (v) => onChanged(
-                common.copyWith(clearModifiers: v ? true : null),
-              ),
+              onChange: (v) => clearModifiersField.onChanged(v ? true : null),
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.clearModifiers,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(
-                          clearModifiers: savedCommon.clearModifiers,
-                        ),
-                      ),
+                state: clearModifiersField.dirty,
+                onRevert: clearModifiersField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Clear modifiers',
                   tooltip:
@@ -291,25 +241,10 @@ class TriggerAdvancedFields extends ConsumerWidget {
             ),
             FCheckbox(
               value: common.effectiveSetLastTrigger,
-              onChange: (v) => onChanged(
-                common.copyWith(setLastTrigger: v ? null : false),
-              ),
+              onChange: (v) => setLastTriggerField.onChanged(v ? null : false),
               label: UnsavedLabel(
-                state: ref.watch(
-                  gestureCommonFieldDirtyStateProvider(
-                    GestureCommonDirtyLocation(
-                      gesture: gestureLocation,
-                      field: GestureCommonDirtyField.setLastTrigger,
-                    ),
-                  ),
-                ),
-                onRevert: savedCommon == null
-                    ? null
-                    : () => onChanged(
-                        common.copyWith(
-                          setLastTrigger: savedCommon.setLastTrigger,
-                        ),
-                      ),
+                state: setLastTriggerField.dirty,
+                onRevert: setLastTriggerField.onRevert,
                 child: const LabelWithTooltip(
                   label: 'Set last trigger',
                   tooltip:
@@ -326,33 +261,39 @@ class TriggerAdvancedFields extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        ConditionEditor(
-          common: common,
-          onCommonChanged: onChanged,
+        ConditionEditor.generic(
+          condition: conditionsField.value,
+          onConditionChanged: conditionsField.onChanged,
+          titleTooltip:
+              'Conditions that must ALL be true for this gesture to '
+              'activate.\n\n'
+              'Examples:\n'
+              r'  $window_class == firefox'
+              '\n'
+              '      → only fires inside Firefox\n'
+              r'  $window_class == konsole'
+              '\n'
+              '      → only fires inside the terminal\n'
+              r'  $window_id == $window_under_id'
+              '\n'
+              '      → cursor is over the focused window\n'
+              r'  $pointer_position_screen_percentage_x >= 0.95'
+              '\n'
+              '      → cursor is at the right screen edge\n'
+              r'  $fingers == 3'
+              '\n'
+              '      → exactly 3 fingers on touchpad\n\n'
+              'Multiple rows are ANDed together.\n'
+              'Use an "any" group inside for OR logic.',
           bodyBackgroundColor: conditionsBodyBackgroundColor,
-          dirtyState: triggerConditionsDirtyState,
-          onRevert: savedCommon == null
-              ? null
-              : () => onChanged(
-                  common.copyWith(conditions: savedCommon.conditions),
-                ),
+          dirtyState: conditionsField.dirty,
+          onRevert: conditionsField.onRevert,
         ),
         const SizedBox(height: 12),
         ConditionEditor.generic(
           title: 'End conditions',
-          dirtyState: ref.watch(
-            gestureCommonFieldDirtyStateProvider(
-              GestureCommonDirtyLocation(
-                gesture: gestureLocation,
-                field: GestureCommonDirtyField.endConditions,
-              ),
-            ),
-          ),
-          onRevert: savedCommon == null
-              ? null
-              : () => onChanged(
-                  common.copyWith(endConditions: savedCommon.endConditions),
-                ),
+          dirtyState: endConditionsField.dirty,
+          onRevert: endConditionsField.onRevert,
           titleTooltip:
               'Checked at the moment the gesture ends.\n\n'
               '  • Met → gesture ends normally; on:end actions fire.\n'
@@ -363,10 +304,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
               r'Example: $distance >= 100 cancels the gesture if the '
               'finger did not travel at least 100 px, so a short '
               'accidental movement is ignored.',
-          condition: common.endConditions,
+          condition: endConditionsField.value,
           bodyBackgroundColor: conditionsBodyBackgroundColor,
-          onConditionChanged: (c) =>
-              onChanged(common.copyWith(endConditions: c)),
+          onConditionChanged: endConditionsField.onChanged,
         ),
       ],
     );

@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/press_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_section.dart';
@@ -22,7 +23,13 @@ class MouseGestureEditor extends ConsumerWidget {
   final MouseGesture gesture;
 
   void _update(WidgetRef ref, MouseGesture Function(MouseGesture) mutator) {
-    ref.read(configControllerProvider.notifier).updateGesture(index, mutator);
+    ref
+        .read(
+          gestureEditorProvider(
+            GestureLocation(device: DeviceType.mouse, index: index),
+          ).notifier,
+        )
+        .updateMouse(mutator);
   }
 
   @override
@@ -39,16 +46,12 @@ class MouseGestureEditor extends ConsumerWidget {
               onUpdate: (mutator) => _update(ref, mutator),
             ),
             MouseButtonsField(
-              device: DeviceType.mouse,
-              gestureIndex: index,
               gesture: gesture,
-              onUpdate: (m) => _update(ref, m),
             ),
           ],
         ),
       ],
       common: gesture.common,
-      onCommonChanged: (c) => _update(ref, (g) => g.withCommon(c)),
     );
   }
 }
@@ -74,19 +77,12 @@ class _MouseTriggerSection extends StatelessWidget {
     ),
     CircleGesture() => CircleSection(
       direction: (gesture as CircleGesture).direction,
-      onDirectionChanged: (nextDirection) => onUpdate(
-        (current) => (current as CircleGesture).copyWith(
-          direction: nextDirection,
-        ),
-      ),
     ),
     PressGesture() => PressSection(
       gesture: gesture as PressGesture,
-      onUpdate: onUpdate,
     ),
     WheelGesture() => WheelSection(
       gesture: gesture as WheelGesture,
-      onUpdate: onUpdate,
     ),
   };
 }

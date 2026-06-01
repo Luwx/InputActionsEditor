@@ -6,17 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
+import 'package:input_actions_editor/state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
-import 'package:input_actions_editor/state/local_settings_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
 import 'package:input_actions_editor/ui/features/history/history_screen.dart';
+import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rules_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/effect_settings_screen.dart';
+import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _StubHistoryNotifier extends RecognitionHistoryController {

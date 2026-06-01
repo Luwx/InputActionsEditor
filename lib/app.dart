@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
-import 'package:input_actions_editor/state/kde_color_scheme_provider.dart';
-import 'package:input_actions_editor/state/local_settings_provider.dart';
+import 'package:input_actions_editor/state/app/kde_color_scheme_provider.dart';
+import 'package:input_actions_editor/state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
+import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // Cached once at startup — kdeglobals either exists or it doesn't.

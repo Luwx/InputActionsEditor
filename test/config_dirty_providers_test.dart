@@ -7,6 +7,8 @@ import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 
 void main() {
   group('config dirty providers', () {
@@ -150,20 +152,6 @@ void main() {
 
         expect(
           container.read(
-            actionFieldDirtyStateProvider(
-              const ActionDirtyLocation(
-                action: ActionLocation(
-                  gesture: GestureLocation(device: DeviceType.mouse, index: 0),
-                  actionIndex: 0,
-                ),
-                field: ActionDirtyField.wait,
-              ),
-            ),
-          ),
-          DirtyMarkState.clean,
-        );
-        expect(
-          container.read(
             actionDirtyStateProvider(
               const ActionLocation(
                 gesture: GestureLocation(device: DeviceType.mouse, index: 0),
@@ -175,6 +163,68 @@ void main() {
         );
       },
     );
+
+    test('lens dirty reports changed scalar fields', () async {
+      const location = ActionLocation(
+        gesture: GestureLocation(device: DeviceType.mouse, index: 0),
+        actionIndex: 0,
+      );
+      const savedConfig = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(action: CommandAction(command: 'saved')),
+              ],
+            ),
+          ),
+        ],
+      );
+      const currentConfig = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(action: CommandAction(command: 'draft')),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      final container = _containerWith(
+        current: currentConfig,
+        saved: savedConfig,
+      );
+      addTearDown(container.dispose);
+      await container.read(configControllerProvider.future);
+
+      expect(
+        container.read(lensDirtyStateProvider(actionCommandLens(location))),
+        DirtyMarkState.changedFromSaved,
+      );
+    });
+
+    test('lens dirty treats a missing saved path as new unsaved', () async {
+      const location = GestureLocation(device: DeviceType.mouse, index: 0);
+      const currentConfig = Config(
+        mouseGestures: [
+          PressGesture(common: TriggerCommon(id: 'new')),
+        ],
+      );
+
+      final container = _containerWith(
+        current: currentConfig,
+        saved: const Config(),
+      );
+      addTearDown(container.dispose);
+      await container.read(configControllerProvider.future);
+
+      expect(
+        container.read(lensDirtyStateProvider(gestureIdLens(location))),
+        DirtyMarkState.newUnsaved,
+      );
+    });
 
     test(
       'gesture becomes clean when block events is toggled back to default',
@@ -203,17 +253,6 @@ void main() {
         addTearDown(container.dispose);
         await container.read(configControllerProvider.future);
 
-        expect(
-          container.read(
-            gestureCommonFieldDirtyStateProvider(
-              const GestureCommonDirtyLocation(
-                gesture: GestureLocation(device: DeviceType.mouse, index: 0),
-                field: GestureCommonDirtyField.blockEvents,
-              ),
-            ),
-          ),
-          DirtyMarkState.clean,
-        );
         expect(
           container.read(
             gestureDirtyStateProvider(

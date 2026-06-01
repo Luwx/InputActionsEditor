@@ -1,14 +1,19 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
+import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
 
 /// A compact form for editing all device rule properties.
-class DeviceRulePropertiesForm extends StatelessWidget {
+class DeviceRulePropertiesForm extends ConsumerWidget {
   const DeviceRulePropertiesForm({
     required this.properties,
     required this.onChanged,
     required this.colors,
     required this.typography,
+    this.ruleIndex,
     super.key,
   });
 
@@ -16,10 +21,75 @@ class DeviceRulePropertiesForm extends StatelessWidget {
   final void Function(DeviceRuleProperties) onChanged;
   final FColors colors;
   final FTypography typography;
+  final int? ruleIndex;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void upd(DeviceRuleProperties p) => onChanged(p);
+    EditableField<T>? field<T>(
+      Lens<T> Function(int index) lens,
+      T fallback,
+    ) {
+      final index = ruleIndex;
+      if (index == null) return null;
+      return ref.field(
+        lens(index),
+        fallbackValue: () => fallback,
+      );
+    }
+
+    Widget boolChip({
+      required String label,
+      required bool? value,
+      required Lens<bool?> Function(int index) lens,
+      required DeviceRuleProperties Function(bool? value) update,
+    }) {
+      final editable = field(lens, value);
+      return _BoolChip(
+        label: label,
+        value: editable?.value ?? value,
+        onChanged: (v) =>
+            editable == null ? upd(update(v)) : editable.onChanged(v),
+        colors: colors,
+        typography: typography,
+      );
+    }
+
+    Widget numberChip({
+      required String label,
+      required double? value,
+      required Lens<double?> Function(int index) lens,
+      required DeviceRuleProperties Function(double? value) update,
+    }) {
+      final editable = field(lens, value);
+      return _NumberChip(
+        label: label,
+        value: editable?.value ?? value,
+        onChanged: (v) =>
+            editable == null ? upd(update(v)) : editable.onChanged(v),
+        colors: colors,
+        typography: typography,
+      );
+    }
+
+    Widget intChip({
+      required String label,
+      required int? value,
+      required Lens<int?> Function(int index) lens,
+      required DeviceRuleProperties Function(int? value) update,
+    }) {
+      final editable = field(lens, value);
+      return _NumberChip(
+        label: label,
+        value: (editable?.value ?? value)?.toDouble(),
+        isInt: true,
+        onChanged: (v) => editable == null
+            ? upd(update(v?.toInt()))
+            : editable.onChanged(v?.toInt()),
+        colors: colors,
+        typography: typography,
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,124 +103,95 @@ class DeviceRulePropertiesForm extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _BoolChip(
+            boolChip(
               label: 'ignore',
               value: properties.ignore,
-              onChanged: (v) => upd(properties.copyWith(ignore: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleIgnoreLens,
+              update: (v) => properties.copyWith(ignore: v),
             ),
-            _BoolChip(
+            boolChip(
               label: 'grab',
               value: properties.grab,
-              onChanged: (v) => upd(properties.copyWith(grab: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleGrabLens,
+              update: (v) => properties.copyWith(grab: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'motion_timeout',
-              value: properties.motionTimeout?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(motionTimeout: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.motionTimeout,
+              lens: deviceRuleMotionTimeoutLens,
+              update: (v) => properties.copyWith(motionTimeout: v),
             ),
-            _NumberChip(
+            numberChip(
               label: 'motion_threshold',
               value: properties.motionThreshold,
-              onChanged: (v) => upd(properties.copyWith(motionThreshold: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleMotionThresholdLens,
+              update: (v) => properties.copyWith(motionThreshold: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'press_timeout',
-              value: properties.pressTimeout?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(pressTimeout: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.pressTimeout,
+              lens: deviceRulePressTimeoutLens,
+              update: (v) => properties.copyWith(pressTimeout: v),
             ),
-            _NumberChip(
+            numberChip(
               label: 'swipe.angle_tolerance',
               value: properties.swipeAngleTolerance,
-              onChanged: (v) =>
-                  upd(properties.copyWith(swipeAngleTolerance: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleSwipeAngleToleranceLens,
+              update: (v) => properties.copyWith(swipeAngleTolerance: v),
             ),
-            _BoolChip(
+            boolChip(
               label: 'unblock_buttons_on_timeout',
               value: properties.unblockButtonsOnTimeout,
-              onChanged: (v) =>
-                  upd(properties.copyWith(unblockButtonsOnTimeout: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleUnblockButtonsOnTimeoutLens,
+              update: (v) => properties.copyWith(unblockButtonsOnTimeout: v),
             ),
-            _BoolChip(
+            boolChip(
               label: 'buttonpad',
               value: properties.buttonpad,
-              onChanged: (v) => upd(properties.copyWith(buttonpad: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleButtonpadLens,
+              update: (v) => properties.copyWith(buttonpad: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'click_timeout',
-              value: properties.clickTimeout?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(clickTimeout: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.clickTimeout,
+              lens: deviceRuleClickTimeoutLens,
+              update: (v) => properties.copyWith(clickTimeout: v),
             ),
-            _BoolChip(
+            boolChip(
               label: 'handle_evdev_events',
               value: properties.handleEvdevEvents,
-              onChanged: (v) => upd(properties.copyWith(handleEvdevEvents: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleHandleEvdevEventsLens,
+              update: (v) => properties.copyWith(handleEvdevEvents: v),
             ),
-            _NumberChip(
+            numberChip(
               label: 'motion_threshold_2',
               value: properties.motionThreshold2,
-              onChanged: (v) => upd(properties.copyWith(motionThreshold2: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleMotionThreshold2Lens,
+              update: (v) => properties.copyWith(motionThreshold2: v),
             ),
-            _NumberChip(
+            numberChip(
               label: 'motion_threshold_3',
               value: properties.motionThreshold3,
-              onChanged: (v) => upd(properties.copyWith(motionThreshold3: v)),
-              colors: colors,
-              typography: typography,
+              lens: deviceRuleMotionThreshold3Lens,
+              update: (v) => properties.copyWith(motionThreshold3: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'pressure_ranges.finger',
-              value: properties.pressureRangesFinger?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(pressureRangesFinger: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.pressureRangesFinger,
+              lens: deviceRulePressureRangesFingerLens,
+              update: (v) => properties.copyWith(pressureRangesFinger: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'pressure_ranges.thumb',
-              value: properties.pressureRangesThumb?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(pressureRangesThumb: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.pressureRangesThumb,
+              lens: deviceRulePressureRangesThumbLens,
+              update: (v) => properties.copyWith(pressureRangesThumb: v),
             ),
-            _NumberChip(
+            intChip(
               label: 'pressure_ranges.palm',
-              value: properties.pressureRangesPalm?.toDouble(),
-              isInt: true,
-              onChanged: (v) =>
-                  upd(properties.copyWith(pressureRangesPalm: v?.toInt())),
-              colors: colors,
-              typography: typography,
+              value: properties.pressureRangesPalm,
+              lens: deviceRulePressureRangesPalmLens,
+              update: (v) => properties.copyWith(pressureRangesPalm: v),
             ),
           ],
         ),

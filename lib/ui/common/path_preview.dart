@@ -1,6 +1,10 @@
+import 'dart:async' show unawaited;
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
-class PathPreview extends StatelessWidget {
+class PathPreview extends StatefulWidget {
   const PathPreview({
     required this.points,
     required this.startColor,
@@ -20,6 +24,8 @@ class PathPreview extends StatelessWidget {
     this.endPointRadius = 3.5,
     this.samplePointRadius = 1.5,
     this.arrowSize = 8.0,
+    this.animatePath = false,
+    this.animationDuration = const Duration(seconds: 1),
     this.empty,
     super.key,
   });
@@ -42,45 +48,124 @@ class PathPreview extends StatelessWidget {
   final double endPointRadius;
   final double samplePointRadius;
   final double arrowSize;
+  final bool animatePath;
+  final Duration animationDuration;
   final Widget? empty;
 
   @override
+  State<PathPreview> createState() => _PathPreviewState();
+}
+
+class _PathPreviewState extends State<PathPreview>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: widget.animationDuration,
+    value: widget.animatePath ? 0 : 1,
+  );
+  late final CurvedAnimation _progress = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeInOut,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _syncAnimation(startFromZero: true);
+  }
+
+  @override
+  void didUpdateWidget(PathPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animationDuration != widget.animationDuration) {
+      _controller.duration = widget.animationDuration;
+    }
+    if (!listEquals(oldWidget.points, widget.points)) {
+      _syncAnimation(startFromZero: true);
+      return;
+    }
+    if (!oldWidget.animatePath && widget.animatePath) {
+      _syncAnimation(startFromZero: true);
+      return;
+    }
+    if (oldWidget.animatePath && !widget.animatePath) {
+      return;
+    }
+    if (!widget.animatePath && _controller.value != 1) {
+      _controller.value = 1;
+    }
+  }
+
+  void _syncAnimation({required bool startFromZero}) {
+    if (!widget.animatePath || widget.points.length < 2) {
+      _controller.value = 1;
+      return;
+    }
+    if (startFromZero) {
+      _controller.value = 0;
+    }
+    unawaited(_controller.forward());
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final preview = CustomPaint(
+    final isAnimatingPath =
+        widget.animatePath || _controller.isAnimating || _controller.value < 1;
+
+    Widget buildPreview(double progress) => CustomPaint(
       painter: PathPreviewPainter(
-        points: points,
-        startColor: startColor,
-        endColor: endColor,
-        surface: surface,
-        border: border,
-        showSamplePoints: showSamplePoints,
-        shape: shape,
-        padding: pathPadding ?? padding,
-        paddingFactor: paddingFactor,
-        dottedBackground: dottedBackground,
-        lineWidth: lineWidth,
-        startPointRadius: startPointRadius,
-        endPointRadius: endPointRadius,
-        samplePointRadius: samplePointRadius,
-        arrowSize: arrowSize,
+        points: widget.points,
+        startColor: widget.startColor,
+        endColor: widget.endColor,
+        surface: widget.surface,
+        border: widget.border,
+        showSamplePoints: widget.showSamplePoints,
+        shape: widget.shape,
+        padding: widget.pathPadding ?? widget.padding,
+        paddingFactor: widget.paddingFactor,
+        dottedBackground: widget.dottedBackground,
+        lineWidth: widget.lineWidth,
+        startPointRadius: widget.startPointRadius,
+        endPointRadius: widget.endPointRadius,
+        samplePointRadius: widget.samplePointRadius,
+        arrowSize: widget.arrowSize,
+        progress: progress,
+        minPointCount: isAnimatingPath
+            ? minimumAnimatedPointCount(widget.animationDuration)
+            : null,
       ),
-      child: points.length >= 2 ? null : empty,
+      child: widget.points.length >= 2 ? null : widget.empty,
     );
 
-    if (shape == BoxShape.circle) {
-      return SizedBox(width: size, height: size, child: preview);
+    final preview = isAnimatingPath
+        ? AnimatedBuilder(
+            animation: _progress,
+            builder: (context, child) => buildPreview(_progress.value),
+          )
+        : buildPreview(1);
+
+    if (widget.shape == BoxShape.circle) {
+      return SizedBox(width: widget.size, height: widget.size, child: preview);
     }
 
     return Container(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       decoration: BoxDecoration(
-        color: surface,
-        shape: shape,
-        borderRadius: shape == BoxShape.rectangle ? borderRadius : null,
-        border: Border.all(color: border),
+        color: widget.surface,
+        shape: widget.shape,
+        borderRadius: widget.shape == BoxShape.rectangle
+            ? widget.borderRadius
+            : null,
+        border: Border.all(color: widget.border),
       ),
-      // clipBehavior: Clip.none,
       child: preview,
     );
   }
@@ -103,6 +188,8 @@ class PathPreviewPainter extends CustomPainter {
     this.endPointRadius = 3.5,
     this.samplePointRadius = 1.5,
     this.arrowSize = 16.0,
+    this.progress = 1,
+    this.minPointCount,
   });
 
   final List<Offset> points;
@@ -120,6 +207,8 @@ class PathPreviewPainter extends CustomPainter {
   final double endPointRadius;
   final double samplePointRadius;
   final double arrowSize;
+  final double progress;
+  final int? minPointCount;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -151,13 +240,21 @@ class PathPreviewPainter extends CustomPainter {
       }
     }
 
-    if (points.length < 2) return;
+    final resolvedPoints = minPointCount == null
+        ? points
+        : densifyPathPoints(points, minPointCount!);
+    final visiblePoints = visiblePathPoints(
+      resolvedPoints,
+      progress.clamp(0, 1),
+    );
 
-    var minX = points[0].dx;
+    if (resolvedPoints.length < 2 || visiblePoints.isEmpty) return;
+
+    var minX = resolvedPoints[0].dx;
     var maxX = minX;
-    var minY = points[0].dy;
+    var minY = resolvedPoints[0].dy;
     var maxY = minY;
-    for (final point in points) {
+    for (final point in resolvedPoints) {
       if (point.dx < minX) minX = point.dx;
       if (point.dx > maxX) maxX = point.dx;
       if (point.dy < minY) minY = point.dy;
@@ -184,18 +281,23 @@ class PathPreviewPainter extends CustomPainter {
       originY + (point.dy - minY) * scale,
     );
 
-    final count = points.length;
+    final count = visiblePoints.length;
     for (var index = 0; index < count - 1; index++) {
-      final t = index / (count - 1);
+      final segmentCount = math.max(1, visiblePoints.length - 1);
+      final startT = index / segmentCount;
+      final endT = (index + 1) / segmentCount;
+      final from = toCanvas(visiblePoints[index]);
+      final to = toCanvas(visiblePoints[index + 1]);
       canvas.drawLine(
-        toCanvas(points[index]),
-        toCanvas(points[index + 1]),
+        from,
+        to,
         Paint()
-          ..color = Color.lerp(
-            startColor,
-            endColor,
-            t,
-          )!.withValues(alpha: 0.08)
+          ..shader = LinearGradient(
+            colors: [
+              Color.lerp(startColor, endColor, startT)!.withValues(alpha: 0.08),
+              Color.lerp(startColor, endColor, endT)!.withValues(alpha: 0.08),
+            ],
+          ).createShader(Rect.fromPoints(from, to))
           ..strokeWidth = lineWidth + 4
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke
@@ -204,12 +306,21 @@ class PathPreviewPainter extends CustomPainter {
     }
 
     for (var index = 0; index < count - 1; index++) {
-      final t = index / (count - 1);
+      final segmentCount = math.max(1, visiblePoints.length - 1);
+      final startT = index / segmentCount;
+      final endT = (index + 1) / segmentCount;
+      final from = toCanvas(visiblePoints[index]);
+      final to = toCanvas(visiblePoints[index + 1]);
       canvas.drawLine(
-        toCanvas(points[index]),
-        toCanvas(points[index + 1]),
+        from,
+        to,
         Paint()
-          ..color = Color.lerp(startColor, endColor, t)!
+          ..shader = LinearGradient(
+            colors: [
+              Color.lerp(startColor, endColor, startT)!,
+              Color.lerp(startColor, endColor, endT)!,
+            ],
+          ).createShader(Rect.fromPoints(from, to))
           ..strokeWidth = lineWidth
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke,
@@ -218,9 +329,11 @@ class PathPreviewPainter extends CustomPainter {
 
     if (showSamplePoints) {
       for (var index = 1; index < count - 1; index++) {
-        final t = index / (count - 1);
+        final t = visiblePoints.length <= 1
+            ? 1.0
+            : index / (visiblePoints.length - 1);
         canvas.drawCircle(
-          toCanvas(points[index]),
+          toCanvas(visiblePoints[index]),
           samplePointRadius,
           Paint()
             ..color = Color.lerp(
@@ -232,8 +345,8 @@ class PathPreviewPainter extends CustomPainter {
       }
     }
 
-    final firstCanvas = toCanvas(points.first);
-    final lastCanvas = toCanvas(points.last);
+    final firstCanvas = toCanvas(visiblePoints.first);
+    final lastCanvas = toCanvas(visiblePoints.last);
 
     canvas.drawCircle(
       firstCanvas,
@@ -242,7 +355,7 @@ class PathPreviewPainter extends CustomPainter {
     );
 
     if (arrowSize > 0 && count >= 2) {
-      final secondToLastCanvas = toCanvas(points[count - 2]);
+      final secondToLastCanvas = toCanvas(visiblePoints[count - 2]);
       final dir = lastCanvas - secondToLastCanvas;
       final len = dir.distance;
       if (len > 0) {
@@ -278,5 +391,75 @@ class PathPreviewPainter extends CustomPainter {
       old.startPointRadius != startPointRadius ||
       old.endPointRadius != endPointRadius ||
       old.samplePointRadius != samplePointRadius ||
-      old.arrowSize != arrowSize;
+      old.arrowSize != arrowSize ||
+      old.progress != progress ||
+      old.minPointCount != minPointCount;
+}
+
+int minimumAnimatedPointCount(Duration duration) =>
+    math.max(2, (duration.inMilliseconds / 16).ceil());
+
+List<Offset> densifyPathPoints(List<Offset> points, int minPointCount) {
+  if (points.length < 2 || points.length >= minPointCount) {
+    return points;
+  }
+
+  final segmentLengths = <double>[];
+  var totalLength = 0.0;
+  for (var index = 0; index < points.length - 1; index++) {
+    final length = (points[index + 1] - points[index]).distance;
+    segmentLengths.add(length);
+    totalLength += length;
+  }
+
+  if (totalLength == 0) {
+    return points;
+  }
+
+  final targetCount = math.max(points.length, minPointCount);
+  final result = <Offset>[points.first];
+  var segmentIndex = 0;
+  var traversed = 0.0;
+
+  for (var sampleIndex = 1; sampleIndex < targetCount - 1; sampleIndex++) {
+    final targetDistance = totalLength * (sampleIndex / (targetCount - 1));
+    while (segmentIndex < segmentLengths.length - 1 &&
+        traversed + segmentLengths[segmentIndex] < targetDistance) {
+      traversed += segmentLengths[segmentIndex];
+      segmentIndex++;
+    }
+
+    final segmentLength = segmentLengths[segmentIndex];
+    final localDistance = targetDistance - traversed;
+    final t = segmentLength == 0 ? 0.0 : localDistance / segmentLength;
+    result.add(Offset.lerp(points[segmentIndex], points[segmentIndex + 1], t)!);
+  }
+
+  result.add(points.last);
+  return result;
+}
+
+List<Offset> visiblePathPoints(List<Offset> points, double progress) {
+  if (points.isEmpty) {
+    return const [];
+  }
+  if (points.length == 1 || progress <= 0) {
+    return [points.first];
+  }
+  if (progress >= 1) {
+    return points;
+  }
+
+  final scaledProgress = progress * (points.length - 1);
+  final lastIndex = scaledProgress.floor();
+  final visible = points.take(lastIndex + 1).toList(growable: true);
+  final fraction = scaledProgress - lastIndex;
+
+  if (fraction > 0 && lastIndex < points.length - 1) {
+    visible.add(
+      Offset.lerp(points[lastIndex], points[lastIndex + 1], fraction)!,
+    );
+  }
+
+  return visible;
 }

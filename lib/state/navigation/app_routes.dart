@@ -4,7 +4,6 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/routing/mini_router/mini_router.dart';
 import 'package:input_actions_editor/state/app_router.dart'
     show gestureListWidthProvider;
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/nav_transition.dart';
 import 'package:input_actions_editor/ui/common/fade_forwards_transition.dart';
@@ -15,6 +14,7 @@ import 'package:input_actions_editor/ui/features/settings/appearance_settings_sc
 import 'package:input_actions_editor/ui/features/settings/device_config_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rules_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/effect_settings_screen.dart';
+import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/ui/shell/main_shell.dart';
 import 'package:input_actions_editor/ui/shell/settings_shell.dart';
 
