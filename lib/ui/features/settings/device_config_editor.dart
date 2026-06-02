@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/app_router.dart';
+import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
@@ -13,7 +14,6 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
-import 'package:input_actions_editor/ui/features/settings/state/settings_editor_notifier.dart';
 
 class DeviceConfigEditor extends ConsumerWidget {
   const DeviceConfigEditor({required this.section, super.key});
@@ -22,8 +22,9 @@ class DeviceConfigEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch(settingsEditorProvider);
-    final config = vm.config;
+    final config = ref.watch(
+      configControllerProvider.select((state) => state.value),
+    );
     final colors = context.theme.colors;
     final typography = context.theme.typography;
 

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/state/app_router.dart';
+import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
@@ -47,73 +48,50 @@ class SettingsListSection extends ConsumerWidget {
         FSidebarGroup(
           label: const Text('General'),
           children: [
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.monitorCog),
-              label: const Text('Effect'),
-              selected: settingsSection == SettingsSection.effectSettings,
-              onPress: () => goSection(SettingsSection.effectSettings),
-            ),
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.appWindowMac),
-              label: const Text('Interface'),
-              selected: settingsSection == SettingsSection.appearance,
-              onPress: () => goSection(SettingsSection.appearance),
-            ),
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.listTree),
-              label: const Text('Device Rules'),
-              selected: settingsSection == SettingsSection.deviceRules,
-              onPress: () => goSection(SettingsSection.deviceRules),
-            ),
+            for (final section in SettingsDestination.generalSections)
+              FSidebarItem(
+                icon: Icon(switch (section) {
+                  SettingsSection.effectSettings => FLucideIcons.monitorCog,
+                  SettingsSection.appearance => FLucideIcons.appWindowMac,
+                  SettingsSection.deviceRules => FLucideIcons.listTree,
+                  SettingsSection.deviceSettings => FLucideIcons.cpu,
+                }),
+                label: Text(switch (section) {
+                  SettingsSection.effectSettings => 'Effect',
+                  SettingsSection.appearance => 'Interface',
+                  SettingsSection.deviceRules => 'Device Rules',
+                  SettingsSection.deviceSettings => 'Device Settings',
+                }),
+                selected: settingsSection == section,
+                onPress: () => goSection(section),
+              ),
           ],
         ),
         FSidebarGroup(
           label: const Text('Device Settings'),
           children: [
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.mouse),
-              label: const Text('Mouse'),
-              selected:
-                  isDeviceSettings &&
-                  deviceSection == DeviceSettingsSection.mouse,
-              onPress: () => goSection(
-                SettingsSection.deviceSettings,
-                device: DeviceSettingsSection.mouse,
+            for (final device in SettingsDestination.deviceSections)
+              FSidebarItem(
+                icon: Icon(switch (device) {
+                  DeviceSettingsSection.mouse => FLucideIcons.mouse,
+                  DeviceSettingsSection.pointer => FLucideIcons.pointer,
+                  DeviceSettingsSection.keyboard => FLucideIcons.keyboard,
+                  DeviceSettingsSection.touchpad => FLucideIcons.touchpad,
+                  DeviceSettingsSection.touchscreen => FLucideIcons.monitor,
+                }),
+                label: Text(switch (device) {
+                  DeviceSettingsSection.mouse => 'Mouse',
+                  DeviceSettingsSection.pointer => 'Pointer',
+                  DeviceSettingsSection.keyboard => 'Keyboard',
+                  DeviceSettingsSection.touchpad => 'Touchpad',
+                  DeviceSettingsSection.touchscreen => 'Touchscreen',
+                }),
+                selected: isDeviceSettings && deviceSection == device,
+                onPress: () => goSection(
+                  SettingsSection.deviceSettings,
+                  device: device,
+                ),
               ),
-            ),
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.keyboard),
-              label: const Text('Keyboard'),
-              selected:
-                  isDeviceSettings &&
-                  deviceSection == DeviceSettingsSection.keyboard,
-              onPress: () => goSection(
-                SettingsSection.deviceSettings,
-                device: DeviceSettingsSection.keyboard,
-              ),
-            ),
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.touchpad),
-              label: const Text('Touchpad'),
-              selected:
-                  isDeviceSettings &&
-                  deviceSection == DeviceSettingsSection.touchpad,
-              onPress: () => goSection(
-                SettingsSection.deviceSettings,
-                device: DeviceSettingsSection.touchpad,
-              ),
-            ),
-            FSidebarItem(
-              icon: const Icon(FLucideIcons.monitor),
-              label: const Text('Touchscreen'),
-              selected:
-                  isDeviceSettings &&
-                  deviceSection == DeviceSettingsSection.touchscreen,
-              onPress: () => goSection(
-                SettingsSection.deviceSettings,
-                device: DeviceSettingsSection.touchscreen,
-              ),
-            ),
           ],
         ),
         const SizedBox(height: 16),

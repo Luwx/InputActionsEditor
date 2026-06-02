@@ -28,18 +28,28 @@ class HistoryDestination extends AppDestination {
 class SettingsDestination extends AppDestination {
   const SettingsDestination(this.section, {this.device});
 
+  static const List<SettingsSection> generalSections = [
+    SettingsSection.effectSettings,
+    SettingsSection.appearance,
+    SettingsSection.deviceRules,
+  ];
+
+  static const List<DeviceSettingsSection> deviceSections = [
+    DeviceSettingsSection.mouse,
+    DeviceSettingsSection.keyboard,
+    DeviceSettingsSection.touchpad,
+    DeviceSettingsSection.touchscreen,
+  ];
+
   final SettingsSection section;
   final DeviceSettingsSection? device;
 
   int get settingsSidebarOrder {
-    const sectionStride = 100;
-    final sectionOrder = section.settingsSidebarOrder * sectionStride;
-    return switch (section) {
-      SettingsSection.deviceSettings =>
-        sectionOrder +
-            (device ?? DeviceSettingsSection.mouse).settingsSidebarOrder,
-      _ => sectionOrder,
-    };
+    if (section != SettingsSection.deviceSettings) {
+      return generalSections.indexOf(section) * deviceSections.length;
+    }
+    return generalSections.length * deviceSections.length +
+        deviceSections.indexOf(device ?? DeviceSettingsSection.mouse);
   }
 
   @override

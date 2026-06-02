@@ -12,10 +12,10 @@ import 'package:input_actions_editor/model/recognition_event.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/path_preview.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
-import 'package:input_actions_editor/ui/shell/state/document_notifier.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -51,7 +51,9 @@ class HistoryScreen extends ConsumerWidget {
       );
     }
 
-    final config = ref.watch(documentProvider).config;
+    final config = ref.watch(
+      configControllerProvider.select((s) => s.value),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

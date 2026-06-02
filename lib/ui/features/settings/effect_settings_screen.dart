@@ -4,21 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
+import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/state/edit/config_edit.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
-import 'package:input_actions_editor/ui/features/settings/state/settings_editor_notifier.dart';
 
 class EffectSettingsScreen extends ConsumerWidget {
   const EffectSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch(settingsEditorProvider);
-    final config = vm.config;
+    final config = ref.watch(
+      configControllerProvider.select((state) => state.value),
+    );
     final colors = context.theme.colors;
     final typography = context.theme.typography;
 
@@ -28,7 +30,7 @@ class EffectSettingsScreen extends ConsumerWidget {
 
     final gs = config.globalSettings;
     final savedSettings = ref.watch(savedGlobalSettingsProvider);
-    final notifier = ref.read(settingsEditorProvider.notifier);
+    final controller = ref.read(configControllerProvider.notifier);
 
     final generalState = ref.watch(
       rootConfigDirtyStateProvider(RootConfigDirtyField.effectGeneral),
@@ -53,8 +55,9 @@ class EffectSettingsScreen extends ConsumerWidget {
         ? DirtyMarkState.newUnsaved
         : DirtyMarkState.clean;
 
-    void update(GlobalSettings Function(GlobalSettings) m) =>
-        notifier.updateGlobalSettings(m);
+    void revertGlobalSettings(GlobalSettings next) => controller.dispatch(
+      SetLens<GlobalSettings>(globalSettingsLens, next),
+    );
     final autoreloadField = ref.field(
       globalAutoreloadLens,
       fallbackValue: () => gs.autoreload,
@@ -82,7 +85,7 @@ class EffectSettingsScreen extends ConsumerWidget {
               state: screenState,
               onRevert: savedSettings == null
                   ? null
-                  : () => update((_) => savedSettings),
+                  : () => revertGlobalSettings(savedSettings),
               child: Text(
                 'Effect Settings',
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
@@ -101,8 +104,8 @@ class EffectSettingsScreen extends ConsumerWidget {
                       state: generalState,
                       onRevert: savedSettings == null
                           ? null
-                          : () => update(
-                              (s) => s.copyWith(
+                          : () => revertGlobalSettings(
+                              gs.copyWith(
                                 autoreload: savedSettings.autoreload,
                                 externalVariableAccess:
                                     savedSettings.externalVariableAccess,
@@ -162,8 +165,8 @@ class EffectSettingsScreen extends ConsumerWidget {
                       state: notificationsState,
                       onRevert: savedSettings == null
                           ? null
-                          : () => update(
-                              (s) => s.copyWith(
+                          : () => revertGlobalSettings(
+                              gs.copyWith(
                                 notificationsConfigError:
                                     savedSettings.notificationsConfigError,
                               ),

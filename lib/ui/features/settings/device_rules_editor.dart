@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
+import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
@@ -12,18 +13,18 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/device_variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rule_properties_form.dart';
-import 'package:input_actions_editor/ui/features/settings/state/settings_editor_notifier.dart';
 
 class DeviceRulesEditor extends ConsumerWidget {
   const DeviceRulesEditor({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch(settingsEditorProvider);
-    final config = vm.config;
+    final config = ref.watch(
+      configControllerProvider.select((state) => state.value),
+    );
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final notifier = ref.read(settingsEditorProvider.notifier);
+    final controller = ref.read(configControllerProvider.notifier);
 
     if (config == null) {
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -45,7 +46,8 @@ class DeviceRulesEditor extends ConsumerWidget {
               state: rulesDirtyState,
               onRevert: savedConfig == null || savedConfig.deviceRules.isEmpty
                   ? null
-                  : () => notifier.replaceDeviceRules(savedConfig.deviceRules),
+                  : () =>
+                        controller.replaceDeviceRules(savedConfig.deviceRules),
               child: Text(
                 'Device Rules',
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
@@ -58,7 +60,7 @@ class DeviceRulesEditor extends ConsumerWidget {
             trailing: FButton(
               variant: .outline,
               size: .sm,
-              onPress: notifier.addDeviceRule,
+              onPress: () => controller.addDeviceRule(const DeviceRule()),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 6,
@@ -92,7 +94,8 @@ class DeviceRulesEditor extends ConsumerWidget {
                     FButton(
                       variant: .outline,
                       size: .sm,
-                      onPress: notifier.addDeviceRule,
+                      onPress: () =>
+                          controller.addDeviceRule(const DeviceRule()),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         spacing: 6,
@@ -113,8 +116,8 @@ class DeviceRulesEditor extends ConsumerWidget {
                   key: ValueKey(i),
                   index: i,
                   rule: rules[i],
-                  onChanged: (r) => notifier.updateDeviceRule(i, (_) => r),
-                  onDelete: () => notifier.removeDeviceRule(i),
+                  onChanged: (r) => controller.updateDeviceRule(i, (_) => r),
+                  onDelete: () => controller.removeDeviceRule(i),
                   colors: colors,
                   typography: typography,
                 ),
