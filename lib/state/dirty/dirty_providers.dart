@@ -8,6 +8,7 @@ import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
 import 'package:input_actions_editor/state/dirty/dirty_saved_providers.dart';
 import 'package:input_actions_editor/state/dirty/dirty_semantics.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
     Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {
@@ -26,16 +27,16 @@ final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
 final ProviderFamily<DirtyMarkState, RootConfigDirtyField>
 rootConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, RootConfigDirtyField>((ref, field) {
-      final current = comparableRootFieldValue(
+      final current = comparableRootConfigFieldValue(
         ref.watch(configControllerProvider).value,
         field,
       );
       final savedConfig = ref.watch(savedConfigProvider);
-      final saved = comparableRootFieldValue(savedConfig, field);
+      final saved = comparableRootConfigFieldValue(savedConfig, field);
       return dirtyMarkState(
         current: current,
         saved: saved,
-        hasSavedBacking: rootFieldHasSavedBacking(savedConfig, field),
+        hasSavedBacking: rootConfigFieldHasSavedBacking(savedConfig, field),
       );
     });
 
@@ -93,10 +94,10 @@ gestureTriggerConfigDirtyStateProvider =
 
 final ProviderFamily<DirtyMarkState, ActionLocation> actionDirtyStateProvider =
     Provider.family<DirtyMarkState, ActionLocation>((ref, location) {
-      final current = comparableTriggerAction(
+      final current = comparableTriggerActionValue(
         actionAt(ref.watch(configControllerProvider).value, location),
       );
-      final saved = comparableTriggerAction(
+      final saved = comparableTriggerActionValue(
         actionAt(ref.watch(savedConfigProvider), location),
       );
       return dirtyMarkState(

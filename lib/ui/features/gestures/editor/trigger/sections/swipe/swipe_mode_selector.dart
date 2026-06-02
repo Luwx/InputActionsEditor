@@ -20,6 +20,13 @@ class SwipeModeSelector extends HookWidget {
   final SwipeMode mode;
   final void Function(SwipeMode) onModeChanged;
 
+  bool get _useDirection => mode is SwipeDirectionMode;
+
+  void _setDirection(SwipeDirection dir) =>
+      onModeChanged(SwipeDirectionMode(direction: dir));
+
+  void _setAngleMode(SwipeAngleMode m) => onModeChanged(m);
+
   @override
   Widget build(BuildContext context) {
     const cardSpacing = 12.0;
@@ -39,15 +46,8 @@ class SwipeModeSelector extends HookWidget {
           : const SwipeAngleMode(minAngle: 0, maxAngle: 45),
     );
 
-    final useDirection = mode is SwipeDirectionMode;
-
-    void setDirection(SwipeDirection dir) =>
-        onModeChanged(SwipeDirectionMode(direction: dir));
-
-    void setAngleMode(SwipeAngleMode m) => onModeChanged(m);
-
     void setMode(bool toDirection) {
-      if (toDirection == useDirection) return;
+      if (toDirection == _useDirection) return;
       if (toDirection) {
         savedAngle.value = mode as SwipeAngleMode;
         onModeChanged(savedDirection.value);
@@ -103,11 +103,11 @@ class SwipeModeSelector extends HookWidget {
               width: directionWidth,
               child: _SwipeModeCard(
                 title: 'Direction',
-                selected: useDirection,
+                selected: _useDirection,
                 onTap: () => setMode(true),
                 child: DirectionPicker(
                   direction: directionMode.direction,
-                  onChanged: setDirection,
+                  onChanged: _setDirection,
                 ),
               ),
             );
@@ -116,11 +116,11 @@ class SwipeModeSelector extends HookWidget {
               width: angleWidth,
               child: _SwipeModeCard(
                 title: 'Angle range',
-                selected: !useDirection,
+                selected: !_useDirection,
                 onTap: () => setMode(false),
                 child: AnglePicker(
                   mode: angleMode,
-                  onChanged: setAngleMode,
+                  onChanged: _setAngleMode,
                 ),
               ),
             );

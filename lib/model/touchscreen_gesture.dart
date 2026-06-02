@@ -84,4 +84,6 @@ sealed class TouchscreenGesture with _$TouchscreenGesture {
     final TouchscreenHoldGesture g => g.copyWith(fingers: f),
     final TouchscreenStrokeGesture g => g.copyWith(fingers: f),
   };
+
+  int? get fingersTest => fingers;
 }

@@ -52,30 +52,10 @@ class KeySequenceTextField extends HookWidget {
   final bool autofocus;
   final int maxLines;
 
-  @override
-  Widget build(BuildContext context) {
-    final ownController = useTextEditingController(
-      text: controller == null ? (initialValue ?? '') : null,
-    );
-    final effectiveController = controller ?? ownController;
-
-    // Rebuild when the controller content changes (needed for maxLines logic).
-    useListenable(effectiveController);
-
-    useEffect(() {
-      void onTextChanged() {
-        final segs = KeySequenceParser.parse(effectiveController.text);
-        onChanged?.call(KeySequenceParser.toTokens(segs));
-      }
-
-      effectiveController.addListener(onTextChanged);
-      return () => effectiveController.removeListener(onTextChanged);
-    }, [effectiveController]);
-
-    KeySequenceSpanStyle buildSpanStyle() {
-      final colors = context.theme.colors;
-      final base = context.theme.typography.sm;
-      return KeySequenceSpanStyle(
+  static KeySequenceSpanStyle _buildSpanStyle(BuildContext context) {
+    final colors = context.theme.colors;
+    final base = context.theme.typography.sm;
+    return KeySequenceSpanStyle(
         baseStyle: base,
         pressBackground: colors.primary.withValues(alpha: 0.18),
         releaseBackground: colors.destructive.withValues(alpha: 0.18),
@@ -86,10 +66,28 @@ class KeySequenceTextField extends HookWidget {
         separatorDimColor: colors.mutedForeground,
         errorColor: colors.destructive,
       );
-    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ownController = useTextEditingController(
+      text: controller == null ? (initialValue ?? '') : null,
+    );
+    final effectiveController = controller ?? ownController;
+
+    useListenable(effectiveController);
+
+    useEffect(() {
+      void onTextChanged() {
+        final segs = KeySequenceParser.parse(effectiveController.text);
+        onChanged?.call(KeySequenceParser.toTokens(segs));
+      }
+      effectiveController.addListener(onTextChanged);
+      return () => effectiveController.removeListener(onTextChanged);
+    }, [effectiveController]);
 
     final colors = context.theme.colors;
-    final spanStyle = buildSpanStyle();
+    final spanStyle = _buildSpanStyle(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {

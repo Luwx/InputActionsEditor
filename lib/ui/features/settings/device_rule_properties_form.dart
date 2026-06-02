@@ -5,7 +5,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
-import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 /// A compact form for editing all device rule properties.
 class DeviceRulePropertiesForm extends ConsumerWidget {
@@ -293,21 +293,21 @@ class _NumberChip extends HookWidget {
   final FTypography typography;
   final bool isInt;
 
+  String _fmt(double? v) {
+    if (v == null) return '';
+    return isInt ? v.toInt().toString() : v.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    String fmt(double? v) {
-      if (v == null) return '';
-      return isInt ? v.toInt().toString() : v.toString();
-    }
-
-    final ctrl = useTextEditingController(text: fmt(value));
+    final ctrl = useTextEditingController(text: _fmt(value));
     final focus = useFocusNode();
     final editing = useState(false);
 
     // Sync text when external value changes and not editing.
     final prevValue = usePrevious(value);
     if (prevValue != value && !editing.value) {
-      ctrl.text = fmt(value);
+      ctrl.text = _fmt(value);
     }
 
     // Keep the "commit" logic in a ref so the focus listener stays fresh.
@@ -353,7 +353,7 @@ class _NumberChip extends HookWidget {
 
     return GestureDetector(
       onTap: () {
-        ctrl.text = isSet ? fmt(value) : '';
+        ctrl.text = isSet ? _fmt(value) : '';
         editing.value = true;
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => focus.requestFocus(),
@@ -384,7 +384,7 @@ class _NumberChip extends HookWidget {
             ),
             if (isSet)
               Text(
-                ': ${fmt(value)}',
+                ': ${_fmt(value)}',
                 style: typography.xs.copyWith(
                   fontFamily: 'monospace',
                   color: colors.foreground,

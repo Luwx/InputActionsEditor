@@ -14,6 +14,10 @@ import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/edit/config_edit.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart'
+    as gedit;
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart'
+    as sedit;
 import 'package:input_actions_editor/state/gesture_undo_controller.dart';
 
 class ConfigController extends AsyncNotifier<Config> {
@@ -63,6 +67,14 @@ class ConfigController extends AsyncNotifier<Config> {
     _applyConfig(setList(current, list));
   }
 
+  /// Applies a pure `Config -> Config` edit (typically a generated list helper)
+  /// to the current draft.
+  void _edit(Config Function(Config) edit) {
+    final current = state.value;
+    if (current == null) return;
+    _applyConfig(edit(current));
+  }
+
   void _applyConfig(Config config) {
     state = AsyncData(assignEditIds(config));
   }
@@ -102,24 +114,29 @@ class ConfigController extends AsyncNotifier<Config> {
 
   bool canRedoEdit({Object? scope}) => _editStacks[scope]?.canRedo ?? false;
 
-  /// Edits the gesture at [i], recording its pre-edit snapshot to the
-  /// per-gesture undo history (unless we're currently restoring one).
+  /// Edits the gesture at [i] through the generated [applyUpdate] helper,
+  /// recording its pre-edit snapshot to the per-gesture undo history first
+  /// (unless we're currently restoring one). The list mutation itself is the
+  /// same guarded copy-on-write as every other gesture edit; only the undo
+  /// recording is controller-specific.
   void _updateGesture<T extends Object>(
     List<T> Function(Config) getList,
-    Config Function(Config, List<T>) setList,
+    Config Function(Config, int, T Function(T)) applyUpdate,
     int i,
     T Function(T) m,
-  ) => _modifyList(getList, setList, (l) {
-    if (i < 0 || i >= l.length) return;
-    final before = l[i];
+  ) {
+    final current = state.value;
+    if (current == null) return;
+    final list = getList(current);
+    if (i < 0 || i >= list.length) return;
     if (!_restoring) {
-      final editId = _commonOf(before)?.editId;
+      final editId = _commonOf(list[i])?.editId;
       if (editId != null) {
-        ref.read(gestureUndoProvider.notifier).record(editId, before);
+        ref.read(gestureUndoProvider.notifier).record(editId, list[i]);
       }
     }
-    l[i] = m(l[i]);
-  });
+    _applyConfig(applyUpdate(current, i, m));
+  }
 
   static TriggerCommon? _commonOf(Object gesture) => switch (gesture) {
     MouseGesture(:final common) => common,
@@ -134,35 +151,22 @@ class ConfigController extends AsyncNotifier<Config> {
   // Mouse
   // ---------------------------------------------------------------------------
 
-  void addMouseGesture(MouseGesture g) => _modifyList(
-    (c) => c.mouseGestures,
-    (c, l) => c.copyWith(mouseGestures: l),
-    (l) => l.add(g),
-  );
+  void addMouseGesture(MouseGesture g) =>
+      _edit((c) => gedit.addMouseGesture(c, g));
 
   void updateMouseGesture(int i, MouseGesture Function(MouseGesture) m) =>
       _updateGesture<MouseGesture>(
         (c) => c.mouseGestures,
-        (c, l) => c.copyWith(mouseGestures: l),
+        gedit.updateMouseGestureAt,
         i,
         m,
       );
 
-  void duplicateMouseGesture(int i) => _modifyList(
-    (c) => c.mouseGestures,
-    (c, l) => c.copyWith(mouseGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.insert(i + 1, l[i]);
-    },
-  );
+  void duplicateMouseGesture(int i) =>
+      _edit((c) => gedit.duplicateMouseGestureAt(c, i));
 
-  void removeMouseGesture(int i) => _modifyList(
-    (c) => c.mouseGestures,
-    (c, l) => c.copyWith(mouseGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removeMouseGesture(int i) =>
+      _edit((c) => gedit.removeMouseGestureAt(c, i));
 
   void reorderMouseGesture(int oldIndex, int newIndex) => _modifyList(
     (c) => c.mouseGestures,
@@ -182,37 +186,24 @@ class ConfigController extends AsyncNotifier<Config> {
   // Keyboard
   // ---------------------------------------------------------------------------
 
-  void addKeyboardGesture(KeyboardGesture g) => _modifyList(
-    (c) => c.keyboardGestures,
-    (c, l) => c.copyWith(keyboardGestures: l),
-    (l) => l.add(g),
-  );
+  void addKeyboardGesture(KeyboardGesture g) =>
+      _edit((c) => gedit.addKeyboardGesture(c, g));
 
   void updateKeyboardGesture(
     int i,
     KeyboardGesture Function(KeyboardGesture) m,
   ) => _updateGesture<KeyboardGesture>(
     (c) => c.keyboardGestures,
-    (c, l) => c.copyWith(keyboardGestures: l),
+    gedit.updateKeyboardGestureAt,
     i,
     m,
   );
 
-  void duplicateKeyboardGesture(int i) => _modifyList(
-    (c) => c.keyboardGestures,
-    (c, l) => c.copyWith(keyboardGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.insert(i + 1, l[i]);
-    },
-  );
+  void duplicateKeyboardGesture(int i) =>
+      _edit((c) => gedit.duplicateKeyboardGestureAt(c, i));
 
-  void removeKeyboardGesture(int i) => _modifyList(
-    (c) => c.keyboardGestures,
-    (c, l) => c.copyWith(keyboardGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removeKeyboardGesture(int i) =>
+      _edit((c) => gedit.removeKeyboardGestureAt(c, i));
 
   void reorderKeyboardGesture(int o, int n) => _modifyList(
     (c) => c.keyboardGestures,
@@ -224,35 +215,22 @@ class ConfigController extends AsyncNotifier<Config> {
   // Pointer
   // ---------------------------------------------------------------------------
 
-  void addPointerGesture(PointerGesture g) => _modifyList(
-    (c) => c.pointerGestures,
-    (c, l) => c.copyWith(pointerGestures: l),
-    (l) => l.add(g),
-  );
+  void addPointerGesture(PointerGesture g) =>
+      _edit((c) => gedit.addPointerGesture(c, g));
 
   void updatePointerGesture(int i, PointerGesture Function(PointerGesture) m) =>
       _updateGesture<PointerGesture>(
         (c) => c.pointerGestures,
-        (c, l) => c.copyWith(pointerGestures: l),
+        gedit.updatePointerGestureAt,
         i,
         m,
       );
 
-  void duplicatePointerGesture(int i) => _modifyList(
-    (c) => c.pointerGestures,
-    (c, l) => c.copyWith(pointerGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.insert(i + 1, l[i]);
-    },
-  );
+  void duplicatePointerGesture(int i) =>
+      _edit((c) => gedit.duplicatePointerGestureAt(c, i));
 
-  void removePointerGesture(int i) => _modifyList(
-    (c) => c.pointerGestures,
-    (c, l) => c.copyWith(pointerGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removePointerGesture(int i) =>
+      _edit((c) => gedit.removePointerGestureAt(c, i));
 
   void reorderPointerGesture(int o, int n) => _modifyList(
     (c) => c.pointerGestures,
@@ -264,37 +242,24 @@ class ConfigController extends AsyncNotifier<Config> {
   // Touchpad
   // ---------------------------------------------------------------------------
 
-  void addTouchpadGesture(TouchpadGesture g) => _modifyList(
-    (c) => c.touchpadGestures,
-    (c, l) => c.copyWith(touchpadGestures: l),
-    (l) => l.add(g),
-  );
+  void addTouchpadGesture(TouchpadGesture g) =>
+      _edit((c) => gedit.addTouchpadGesture(c, g));
 
   void updateTouchpadGesture(
     int i,
     TouchpadGesture Function(TouchpadGesture) m,
   ) => _updateGesture<TouchpadGesture>(
     (c) => c.touchpadGestures,
-    (c, l) => c.copyWith(touchpadGestures: l),
+    gedit.updateTouchpadGestureAt,
     i,
     m,
   );
 
-  void duplicateTouchpadGesture(int i) => _modifyList(
-    (c) => c.touchpadGestures,
-    (c, l) => c.copyWith(touchpadGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.insert(i + 1, l[i]);
-    },
-  );
+  void duplicateTouchpadGesture(int i) =>
+      _edit((c) => gedit.duplicateTouchpadGestureAt(c, i));
 
-  void removeTouchpadGesture(int i) => _modifyList(
-    (c) => c.touchpadGestures,
-    (c, l) => c.copyWith(touchpadGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removeTouchpadGesture(int i) =>
+      _edit((c) => gedit.removeTouchpadGestureAt(c, i));
 
   void reorderTouchpadGesture(int o, int n) => _modifyList(
     (c) => c.touchpadGestures,
@@ -306,37 +271,24 @@ class ConfigController extends AsyncNotifier<Config> {
   // Touchscreen
   // ---------------------------------------------------------------------------
 
-  void addTouchscreenGesture(TouchscreenGesture g) => _modifyList(
-    (c) => c.touchscreenGestures,
-    (c, l) => c.copyWith(touchscreenGestures: l),
-    (l) => l.add(g),
-  );
+  void addTouchscreenGesture(TouchscreenGesture g) =>
+      _edit((c) => gedit.addTouchscreenGesture(c, g));
 
   void updateTouchscreenGesture(
     int i,
     TouchscreenGesture Function(TouchscreenGesture) m,
   ) => _updateGesture<TouchscreenGesture>(
     (c) => c.touchscreenGestures,
-    (c, l) => c.copyWith(touchscreenGestures: l),
+    gedit.updateTouchscreenGestureAt,
     i,
     m,
   );
 
-  void duplicateTouchscreenGesture(int i) => _modifyList(
-    (c) => c.touchscreenGestures,
-    (c, l) => c.copyWith(touchscreenGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.insert(i + 1, l[i]);
-    },
-  );
+  void duplicateTouchscreenGesture(int i) =>
+      _edit((c) => gedit.duplicateTouchscreenGestureAt(c, i));
 
-  void removeTouchscreenGesture(int i) => _modifyList(
-    (c) => c.touchscreenGestures,
-    (c, l) => c.copyWith(touchscreenGestures: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removeTouchscreenGesture(int i) =>
+      _edit((c) => gedit.removeTouchscreenGestureAt(c, i));
 
   void reorderTouchscreenGesture(int o, int n) => _modifyList(
     (c) => c.touchscreenGestures,
@@ -713,28 +665,13 @@ class ConfigController extends AsyncNotifier<Config> {
   // Device rules
   // ---------------------------------------------------------------------------
 
-  void addDeviceRule(DeviceRule rule) => _modifyList(
-    (c) => c.deviceRules,
-    (c, l) => c.copyWith(deviceRules: l),
-    (l) => l.add(rule),
-  );
+  void addDeviceRule(DeviceRule rule) =>
+      _edit((c) => sedit.addDeviceRule(c, rule));
 
   void updateDeviceRule(int i, DeviceRule Function(DeviceRule) m) =>
-      _modifyList(
-        (c) => c.deviceRules,
-        (c, l) => c.copyWith(deviceRules: l),
-        (l) {
-          if (i >= 0 && i < l.length) l[i] = m(l[i]);
-        },
-      );
+      _edit((c) => sedit.updateDeviceRuleAt(c, i, m));
 
-  void removeDeviceRule(int i) => _modifyList(
-    (c) => c.deviceRules,
-    (c, l) => c.copyWith(deviceRules: l),
-    (l) {
-      if (i >= 0 && i < l.length) l.removeAt(i);
-    },
-  );
+  void removeDeviceRule(int i) => _edit((c) => sedit.removeDeviceRuleAt(c, i));
 
   void reorderDeviceRule(int oldIndex, int newIndex) => _modifyList(
     (c) => c.deviceRules,

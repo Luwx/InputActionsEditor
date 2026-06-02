@@ -36,11 +36,12 @@ class FSpinBox extends HookWidget {
     return maxLength > minLength ? maxLength : minLength;
   }
 
+  String _fmt(double v) => v.toStringAsFixed(decimalPlaces);
+
   @override
   Widget build(BuildContext context) {
-    String fmt(double v) => v.toStringAsFixed(decimalPlaces);
 
-    final controller = useTextEditingController(text: fmt(value));
+    final controller = useTextEditingController(text: _fmt(value));
     final focusNode = useFocusNode();
     final repeatTimer = useRef<Timer?>(null);
     final isSyncingText = useRef(false);
@@ -61,7 +62,7 @@ class FSpinBox extends HookWidget {
     // (replaces didUpdateWidget).
     final prevValue = usePrevious(value);
     if (prevValue != null && prevValue != value && !focusNode.hasFocus) {
-      final text = fmt(value);
+      final text = _fmt(value);
       if (controller.text != text) {
         isSyncingText.value = true;
         try {
@@ -130,7 +131,7 @@ class FSpinBox extends HookWidget {
     }, const []);
 
     void syncText(double v) {
-      final text = fmt(v);
+      final text = _fmt(v);
       if (controller.text == text) return;
       isSyncingText.value = true;
       try {

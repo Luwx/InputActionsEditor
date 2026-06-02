@@ -3,7 +3,7 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
-import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 void main() {
   group('generated speed lenses', () {

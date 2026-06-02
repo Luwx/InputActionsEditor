@@ -28,17 +28,3 @@ abstract class ActionLocation with _$ActionLocation {
     required int actionIndex,
   }) = _ActionLocation;
 }
-
-enum RootConfigDirtyField {
-  deviceRules,
-  effectGeneral,
-  effectNotifications,
-  effectEmergencyCombination,
-  mouseDeviceProperties,
-  keyboardDeviceProperties,
-  touchpadDeviceProperties,
-  touchscreenDeviceProperties,
-  mouseSpeed,
-  touchpadSpeed,
-  touchscreenSpeed,
-}

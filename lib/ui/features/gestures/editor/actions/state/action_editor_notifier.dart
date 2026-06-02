@@ -7,7 +7,7 @@ import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
 import 'package:input_actions_editor/state/edit/config_edit.dart';
-import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 part 'action_editor_notifier.freezed.dart';
 

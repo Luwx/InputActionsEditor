@@ -7,7 +7,7 @@ import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 void main() {
   group('config dirty providers', () {

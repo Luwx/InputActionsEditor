@@ -6,7 +6,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 
 class SpeedSettingsEditor extends ConsumerWidget {
@@ -166,19 +166,19 @@ class _SpeedField extends HookWidget {
   final void Function(double?) onChanged;
   final bool isInt;
 
+  String _fmt(double? v) {
+    if (v == null) return '';
+    return isInt ? v.toInt().toString() : v.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    String fmt(double? v) {
-      if (v == null) return '';
-      return isInt ? v.toInt().toString() : v.toString();
-    }
-
-    final controller = useTextEditingController(text: fmt(value));
+    final controller = useTextEditingController(text: _fmt(value));
     final focused = useRef(false);
 
     final prevValue = usePrevious(value);
     if (prevValue != value && !focused.value) {
-      controller.text = fmt(value);
+      controller.text = _fmt(value);
     }
 
     void commit(String text) {
@@ -189,7 +189,7 @@ class _SpeedField extends HookWidget {
       }
       final parsed = double.tryParse(trimmed);
       if (parsed == null) {
-        controller.text = fmt(value);
+        controller.text = _fmt(value);
       } else {
         onChanged(parsed);
       }

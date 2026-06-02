@@ -9,7 +9,7 @@ import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/config_edit.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -247,16 +247,17 @@ class _EmergencyCombinationSection extends HookWidget {
   final FColors colors;
   final FTypography typography;
 
+  static String _fmt(List<String>? v) => v == null ? '' : v.join(', ');
+
   @override
   Widget build(BuildContext context) {
-    String fmt(List<String>? v) => v == null ? '' : v.join(', ');
 
-    final ctrl = useTextEditingController(text: fmt(value));
+    final ctrl = useTextEditingController(text: _fmt(value));
     final focused = useRef(false);
 
     final prevValue = usePrevious(value);
     if (prevValue != value && !focused.value) {
-      ctrl.text = fmt(value);
+      ctrl.text = _fmt(value);
     }
 
     void commit(String text) {

@@ -5,7 +5,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
-import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 
 void main() {
   group('action lenses', () {

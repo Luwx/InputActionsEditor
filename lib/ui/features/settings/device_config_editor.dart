@@ -10,7 +10,7 @@ import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
-import 'package:input_actions_editor/state/edit/lenses/settings_lenses.dart';
+import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
@@ -429,20 +429,20 @@ class _NumberField extends HookWidget {
   final double? min;
   final double? max;
 
+  String _fmt(double? v) {
+    if (v == null) return '';
+    return isInt ? v.toInt().toString() : v.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
-    String formatValue(double? v) {
-      if (v == null) return '';
-      return isInt ? v.toInt().toString() : v.toString();
-    }
-
-    final controller = useTextEditingController(text: formatValue(value));
+    final controller = useTextEditingController(text: _fmt(value));
     final focused = useRef(false);
 
     // Sync text when external value changes and field is not focused.
     final prevValue = usePrevious(value);
     if (prevValue != value && !focused.value) {
-      controller.text = formatValue(value);
+      controller.text = _fmt(value);
     }
 
     void commit(String text) {
@@ -453,7 +453,7 @@ class _NumberField extends HookWidget {
       }
       final parsed = double.tryParse(trimmed);
       if (parsed == null) {
-        controller.text = formatValue(value);
+        controller.text = _fmt(value);
         return;
       }
       var clamped = parsed;
@@ -462,7 +462,7 @@ class _NumberField extends HookWidget {
       if (mn != null && clamped < mn) clamped = mn;
       if (mx != null && clamped > mx) clamped = mx;
       onChanged(clamped);
-      if (clamped != parsed) controller.text = formatValue(clamped);
+      if (clamped != parsed) controller.text = _fmt(clamped);
     }
 
     return SizedBox(
