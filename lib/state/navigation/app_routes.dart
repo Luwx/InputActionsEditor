@@ -18,19 +18,6 @@ import 'package:input_actions_editor/ui/features/settings/state/device_settings_
 import 'package:input_actions_editor/ui/shell/main_shell.dart';
 import 'package:input_actions_editor/ui/shell/settings_shell.dart';
 
-/// Builds the state-preserving cross-branch (main ⇄ settings) container.
-Widget _branchContainer(
-  BuildContext context,
-  StatefulNavigationShell shell,
-  List<Widget> children,
-) {
-  return AnimatedBranchContainer(
-    currentIndex: shell.currentIndex,
-    transitionsBuilder: _branchTransition,
-    children: children,
-  );
-}
-
 /// Assembles the app's [MiniRouter] from [history].
 ///
 /// A [StatefulShellRoute] of two branches
@@ -73,7 +60,28 @@ MiniRouter<AppDestination> buildAppRouter(
     routes: [
       StatefulShellRoute<AppDestination>.indexedStack(
         // Cross-branch (main ⇄ settings) rendering.
-        navigatorContainerBuilder: _branchContainer,
+        navigatorContainerBuilder:
+            (
+              context,
+              shell,
+              children,
+            ) => AnimatedBranchContainer(
+              currentIndex: shell.currentIndex,
+              transitionsBuilder:
+                  (
+                    context,
+                    animation,
+                    secondaryAnimation,
+                    child,
+                  ) => CustomFadeForwardsTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    axis: Axis.horizontal,
+                    backgroundColor: Colors.transparent,
+                    child: child,
+                  ),
+              children: children,
+            ),
         branches: [
           // Branch 0 > main: gestures + history share the FScaffold sidebar.
           StatefulShellBranch<AppDestination>(
@@ -120,7 +128,19 @@ MiniRouter<AppDestination> buildAppRouter(
                       final (key, content) = switch (state.destination) {
                         SettingsDestination(:final section, :final device) => (
                           ValueKey((section, device)),
-                          _settingsContent(section, device),
+                          // _settingsContent(section, device),
+                          switch (section) {
+                            SettingsSection.deviceSettings =>
+                              DeviceConfigEditor(
+                                section: device ?? DeviceSettingsSection.mouse,
+                              ),
+                            SettingsSection.deviceRules =>
+                              const DeviceRulesEditor(),
+                            SettingsSection.effectSettings =>
+                              const EffectSettingsScreen(),
+                            SettingsSection.appearance =>
+                              const AppearanceSettingsScreen(),
+                          },
                         ),
                         _ => (
                           const ValueKey('settings'),
@@ -149,35 +169,6 @@ Widget _leaf({required LocalKey key, required Widget child}) {
       builder: (context) => child,
     ),
   );
-}
-
-Widget _branchTransition(
-  BuildContext context,
-  Animation<double> animation,
-  Animation<double> secondaryAnimation,
-  Widget child,
-) {
-  return CustomFadeForwardsTransition(
-    animation: animation,
-    secondaryAnimation: secondaryAnimation,
-    axis: Axis.horizontal,
-    backgroundColor: Colors.transparent,
-    child: child,
-  );
-}
-
-Widget _settingsContent(
-  SettingsSection section,
-  DeviceSettingsSection? device,
-) {
-  return switch (section) {
-    SettingsSection.deviceSettings => DeviceConfigEditor(
-      section: device ?? DeviceSettingsSection.mouse,
-    ),
-    SettingsSection.deviceRules => const DeviceRulesEditor(),
-    SettingsSection.effectSettings => const EffectSettingsScreen(),
-    SettingsSection.appearance => const AppearanceSettingsScreen(),
-  };
 }
 
 /// The gestures content: the resizable list/detail split, wired to the persisted

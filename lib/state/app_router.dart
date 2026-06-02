@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
-import 'package:input_actions_editor/state/navigation/gesture_selection.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 

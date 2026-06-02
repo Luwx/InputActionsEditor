@@ -1,8 +1,34 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
-import 'package:input_actions_editor/state/navigation/nav_state.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
+
+class NavState extends Equatable {
+  const NavState({
+    required this.history,
+    required this.cursor,
+  });
+  final List<AppDestination> history;
+  final int cursor;
+
+  AppDestination get current => history[cursor];
+  bool get canBack => cursor > 0;
+  bool get canForward => cursor < history.length - 1;
+
+  NavState copyWith({
+    List<AppDestination>? history,
+    int? cursor,
+  }) {
+    return NavState(
+      history: history ?? this.history,
+      cursor: cursor ?? this.cursor,
+    );
+  }
+
+  @override
+  List<Object?> get props => [history, cursor];
+}
 
 class NavController extends Notifier<NavState> {
   SettingsDestination _lastSettingsDestination = const SettingsDestination(

@@ -1,7 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/navigation/gesture_selection.dart'
-    show OpenGesture;
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
 sealed class AppDestination extends Equatable {
@@ -58,4 +56,22 @@ class SettingsDestination extends AppDestination {
   @override
   String toString() =>
       'SettingsDestination(section: $section, device: $device)';
+}
+
+/// Open gesture selection: which device + index is visible in the detail panel.
+typedef OpenGesture = ({DeviceType device, int index});
+
+/// Snapshot of filter + open gesture. Used as a view-model where both are
+/// needed together (e.g. gesture list section listeners).
+class GestureSelection extends Equatable {
+  const GestureSelection({
+    this.filter,
+    this.open,
+  });
+
+  final DeviceType? filter;
+  final OpenGesture? open;
+
+  @override
+  List<Object?> get props => [filter, open];
 }

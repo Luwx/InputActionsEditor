@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/navigation/app_destination.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/state/navigation/nav_state.dart';
 import 'package:input_actions_editor/state/navigation/nav_transition.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
