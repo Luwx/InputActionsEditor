@@ -1,21 +1,41 @@
 # Input Actions Editor
 
-# WIP
+**WIP** beta
 
 ![screenshot](https://github.com/Luwx/InputActionsEditor/blob/main/screenshot.png)
 
-A new Flutter project.
+A GUI config editor app for [Input Actions](https://github.com/taj-ny/InputActions).
 
-## Getting Started
+## What it can do (so far)
 
-This project is a starting point for a Flutter application.
+- Edit the trigger types
+- Edit the action types
+- Group gestures and reorder them so things are easier to find
+- Multiple actions on a single gesture
+- Nested conditions for triggers and actions
+- Stroke path visualization
+- Conflict detection
 
-A few resources to get you started if this is your first Flutter project:
+## Building
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+You'll need the Flutter SDK installed and set up for Linux desktop builds.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+First grab the dependencies:
+
+```sh
+flutter pub get
+```
+
+To just run it during development:
+
+```sh
+flutter run -d linux
+```
+
+To build a release binary:
+
+```sh
+flutter build linux --release
+```
+
+The built app ends up in `build/linux/x64/release/bundle/`.
