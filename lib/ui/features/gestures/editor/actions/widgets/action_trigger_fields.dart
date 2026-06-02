@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -33,25 +32,25 @@ class ActionTriggerFields extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actionLocation = context.actionLocation;
     final vm = ref.watch(actionEditorProvider(actionLocation));
-    final triggerOnField = ref.field(
-      actionTriggerOnLens(actionLocation),
+    final triggerOnField = ref.actionField(
+      context,
+      actionTriggerOnLens,
       fallbackValue: () => triggerAction.on,
-      scope: actionLocation.gesture,
     );
-    final limitField = ref.field(
-      actionLimitLens(actionLocation),
+    final limitField = ref.actionField(
+      context,
+      actionLimitLens,
       fallbackValue: () => triggerAction.limit,
-      scope: actionLocation.gesture,
     );
-    final conflictingField = ref.field(
-      actionConflictingLens(actionLocation),
+    final conflictingField = ref.actionField(
+      context,
+      actionConflictingLens,
       fallbackValue: () => triggerAction.conflicting,
-      scope: actionLocation.gesture,
     );
-    final conditionsField = ref.field(
-      actionConditionsLens(actionLocation),
+    final conditionsField = ref.actionField(
+      context,
+      actionConditionsLens,
       fallbackValue: () => triggerAction.conditions,
-      scope: actionLocation.gesture,
     );
 
     return Column(
@@ -102,10 +101,10 @@ class ActionTriggerFields extends ConsumerWidget {
             if (vm.showInterval)
               Builder(
                 builder: (context) {
-                  final intervalField = ref.field(
-                    actionIntervalLens(actionLocation),
+                  final intervalField = ref.actionField(
+                    context,
+                    actionIntervalLens,
                     fallbackValue: () => triggerAction.interval,
-                    scope: actionLocation.gesture,
                   );
                   return SizedBox(
                     width: 180,
@@ -147,10 +146,10 @@ class ActionTriggerFields extends ConsumerWidget {
             if (vm.showThreshold)
               Builder(
                 builder: (context) {
-                  final thresholdField = ref.field(
-                    actionThresholdLens(actionLocation),
+                  final thresholdField = ref.actionField(
+                    context,
+                    actionThresholdLens,
                     fallbackValue: () => triggerAction.threshold,
-                    scope: actionLocation.gesture,
                   );
                   return SizedBox(
                     width: 180,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -26,10 +25,10 @@ class ActionFields extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final field = ref.field(
-                actionCommandLens(context.actionLocation),
+              final field = ref.actionField(
+                context,
+                actionCommandLens,
                 fallbackValue: () => command,
-                scope: context.gestureLocation,
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -60,10 +59,10 @@ class ActionFields extends ConsumerWidget {
           const SizedBox(height: 8),
           Builder(
             builder: (context) {
-              final field = ref.field(
-                actionWaitLens(context.actionLocation),
+              final field = ref.actionField(
+                context,
+                actionWaitLens,
                 fallbackValue: () => wait,
-                scope: context.gestureLocation,
               );
               return FCheckbox(
                 value: field.value ?? false,
@@ -91,10 +90,10 @@ class ActionFields extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final field = ref.field(
-                actionComponentLens(context.actionLocation),
+              final field = ref.actionField(
+                context,
+                actionComponentLens,
                 fallbackValue: () => component,
-                scope: context.gestureLocation,
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -120,10 +119,10 @@ class ActionFields extends ConsumerWidget {
           const SizedBox(height: 6),
           Builder(
             builder: (context) {
-              final field = ref.field(
-                actionShortcutLens(context.actionLocation),
+              final field = ref.actionField(
+                context,
+                actionShortcutLens,
                 fallbackValue: () => shortcut,
-                scope: context.gestureLocation,
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -149,10 +148,10 @@ class ActionFields extends ConsumerWidget {
       ),
       SleepAction(:final milliseconds) => Builder(
         builder: (context) {
-          final field = ref.field(
-            actionDurationLens(context.actionLocation),
+          final field = ref.actionField(
+            context,
+            actionDurationLens,
             fallbackValue: () => milliseconds,
-            scope: context.gestureLocation,
           );
           return FTextField(
             control: FTextFieldControl.managed(
@@ -179,10 +178,10 @@ class ActionFields extends ConsumerWidget {
       ),
       RawAction(:final raw) => Builder(
         builder: (context) {
-          final field = ref.field(
-            actionRawLens(context.actionLocation),
+          final field = ref.actionField(
+            context,
+            actionRawLens,
             fallbackValue: () => raw,
-            scope: context.gestureLocation,
           );
           return FTextField(
             control: FTextFieldControl.managed(

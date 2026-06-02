@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -33,14 +32,14 @@ class FingerCountField extends ConsumerWidget {
         this.location ?? EditLocationScope.maybeOf(context)?.gesture;
     final fingersField = location == null
         ? null
-        : ref.field(
+        : ref.gestureField(
+            context,
             switch (location.device) {
-              DeviceType.touchpad => touchpadFingersLens(location),
-              DeviceType.touchscreen => touchscreenFingersLens(location),
-              _ => touchpadFingersLens(location),
+              DeviceType.touchpad => touchpadFingersLens,
+              DeviceType.touchscreen => touchscreenFingersLens,
+              _ => touchpadFingersLens,
             },
             fallbackValue: () => fingers,
-            scope: location,
           );
     final value = fingersField?.value ?? fingers;
     void update(int? next) {

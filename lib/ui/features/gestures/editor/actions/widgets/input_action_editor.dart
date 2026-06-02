@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_entry_editor.dart';
@@ -49,10 +48,10 @@ class InputEntriesEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entriesField = ref.field(
-      actionInputEntriesLens(context.actionLocation),
+    final entriesField = ref.actionField(
+      context,
+      actionInputEntriesLens,
       fallbackValue: () => entries,
-      scope: context.gestureLocation,
     );
     final currentEntries = entriesField.value;
     return Column(

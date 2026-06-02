@@ -424,6 +424,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  lens_geneartor:
+    dependency: "direct main"
+    description:
+      path: "../../flutter_pkg/lens_geneartor"
+      relative: true
+    source: path
+    version: "0.0.1"
   lints:
     dependency: transitive
     description:

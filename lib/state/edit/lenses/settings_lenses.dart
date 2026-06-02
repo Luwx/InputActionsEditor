@@ -5,36 +5,109 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:lens_geneartor/lens_geneartor.dart';
 
-const speedEventsPart = LensPart<SpeedSettings, int?>(
-  get: _getEvents,
-  set: _setEvents,
-  name: 'events',
-);
+part 'settings_lenses.g.dart';
 
-const speedSwipeThresholdPart = LensPart<SpeedSettings, double?>(
-  get: _getSwipeThreshold,
-  set: _setSwipeThreshold,
-  name: 'swipeThreshold',
-);
+@GenerateEditSchema()
+final EditRoot<SpeedSettings, DeviceType> speedSchema =
+    editRoot<SpeedSettings, DeviceType>(
+      id: 'speed',
+      rootLens: 'speedSettingsLens',
+      savedBacking: SavedBackingSpec<SpeedSettings>.rootExists(),
+      fields: [
+        field<SpeedSettings, int?>(
+          id: 'events',
+          select: leaf<SpeedSettings, int?>(),
+        ),
+        field<SpeedSettings, double?>(
+          id: 'swipeThreshold',
+          select: leaf<SpeedSettings, double?>(),
+        ),
+        field<SpeedSettings, double?>(
+          id: 'pinchInThreshold',
+          select: leaf<SpeedSettings, double?>(),
+        ),
+        field<SpeedSettings, double?>(
+          id: 'pinchOutThreshold',
+          select: leaf<SpeedSettings, double?>(),
+        ),
+        field<SpeedSettings, double?>(
+          id: 'rotateThreshold',
+          select: leaf<SpeedSettings, double?>(),
+        ),
+      ],
+    );
 
-const speedPinchInThresholdPart = LensPart<SpeedSettings, double?>(
-  get: _getPinchInThreshold,
-  set: _setPinchInThreshold,
-  name: 'pinchInThreshold',
-);
-
-const speedPinchOutThresholdPart = LensPart<SpeedSettings, double?>(
-  get: _getPinchOutThreshold,
-  set: _setPinchOutThreshold,
-  name: 'pinchOutThreshold',
-);
-
-const speedRotateThresholdPart = LensPart<SpeedSettings, double?>(
-  get: _getRotateThreshold,
-  set: _setRotateThreshold,
-  name: 'rotateThreshold',
-);
+@GenerateEditSchema()
+final EditRoot<DeviceRuleProperties, DeviceType> defaultDeviceSchema =
+    editRoot<DeviceRuleProperties, DeviceType>(
+      id: 'defaultDevice',
+      rootLens: 'defaultDevicePropertiesLens',
+      savedBacking: SavedBackingSpec<DeviceRuleProperties>.rootExists(),
+      fields: [
+        field<DeviceRuleProperties, bool?>(
+          id: 'ignore',
+          select: leaf<DeviceRuleProperties, bool?>(),
+        ),
+        field<DeviceRuleProperties, bool?>(
+          id: 'grab',
+          select: leaf<DeviceRuleProperties, bool?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'motionTimeout',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+        field<DeviceRuleProperties, double?>(
+          id: 'motionThreshold',
+          select: leaf<DeviceRuleProperties, double?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'pressTimeout',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+        field<DeviceRuleProperties, double?>(
+          id: 'swipeAngleTolerance',
+          select: leaf<DeviceRuleProperties, double?>(),
+        ),
+        field<DeviceRuleProperties, bool?>(
+          id: 'unblockButtonsOnTimeout',
+          select: leaf<DeviceRuleProperties, bool?>(),
+        ),
+        field<DeviceRuleProperties, bool?>(
+          id: 'buttonpad',
+          select: leaf<DeviceRuleProperties, bool?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'clickTimeout',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+        field<DeviceRuleProperties, bool?>(
+          id: 'handleEvdevEvents',
+          select: leaf<DeviceRuleProperties, bool?>(),
+        ),
+        field<DeviceRuleProperties, double?>(
+          id: 'motionThreshold2',
+          select: leaf<DeviceRuleProperties, double?>(),
+        ),
+        field<DeviceRuleProperties, double?>(
+          id: 'motionThreshold3',
+          select: leaf<DeviceRuleProperties, double?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'pressureRangesFinger',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'pressureRangesThumb',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+        field<DeviceRuleProperties, int?>(
+          id: 'pressureRangesPalm',
+          select: leaf<DeviceRuleProperties, int?>(),
+        ),
+      ],
+    );
 
 const globalAutoreloadPart = LensPart<GlobalSettings, bool?>(
   get: _getAutoreload,
@@ -65,21 +138,6 @@ Lens<SpeedSettings> speedSettingsLens(DeviceType device) => Lens<SpeedSettings>(
   set: (config, settings) => _setSpeedSettings(config, device, settings),
   name: 'speed[${device.name}]',
 );
-
-Lens<int?> speedEventsLens(DeviceType device) =>
-    speedSettingsLens(device).then(speedEventsPart);
-
-Lens<double?> speedSwipeThresholdLens(DeviceType device) =>
-    speedSettingsLens(device).then(speedSwipeThresholdPart);
-
-Lens<double?> speedPinchInThresholdLens(DeviceType device) =>
-    speedSettingsLens(device).then(speedPinchInThresholdPart);
-
-Lens<double?> speedPinchOutThresholdLens(DeviceType device) =>
-    speedSettingsLens(device).then(speedPinchOutThresholdPart);
-
-Lens<double?> speedRotateThresholdLens(DeviceType device) =>
-    speedSettingsLens(device).then(speedRotateThresholdPart);
 
 final Lens<GlobalSettings> globalSettingsLens = Lens<GlobalSettings>(
   get: (config) => config.globalSettings,
@@ -255,127 +313,6 @@ Lens<DeviceRuleProperties> defaultDevicePropertiesLens(DeviceType device) =>
       name: 'defaultDevice[${device.name}].properties',
     );
 
-Lens<bool?> defaultDeviceIgnoreLens(DeviceType device) =>
-    _defaultDevicePropertyLens<bool?>(
-      device,
-      'ignore',
-      (properties) => properties.ignore,
-      (properties, value) => properties.copyWith(ignore: value),
-    );
-
-Lens<bool?> defaultDeviceGrabLens(DeviceType device) =>
-    _defaultDevicePropertyLens<bool?>(
-      device,
-      'grab',
-      (properties) => properties.grab,
-      (properties, value) => properties.copyWith(grab: value),
-    );
-
-Lens<int?> defaultDeviceMotionTimeoutLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'motionTimeout',
-      (properties) => properties.motionTimeout,
-      (properties, value) => properties.copyWith(motionTimeout: value),
-    );
-
-Lens<double?> defaultDeviceMotionThresholdLens(DeviceType device) =>
-    _defaultDevicePropertyLens<double?>(
-      device,
-      'motionThreshold',
-      (properties) => properties.motionThreshold,
-      (properties, value) => properties.copyWith(motionThreshold: value),
-    );
-
-Lens<int?> defaultDevicePressTimeoutLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'pressTimeout',
-      (properties) => properties.pressTimeout,
-      (properties, value) => properties.copyWith(pressTimeout: value),
-    );
-
-Lens<double?> defaultDeviceSwipeAngleToleranceLens(DeviceType device) =>
-    _defaultDevicePropertyLens<double?>(
-      device,
-      'swipeAngleTolerance',
-      (properties) => properties.swipeAngleTolerance,
-      (properties, value) => properties.copyWith(swipeAngleTolerance: value),
-    );
-
-Lens<bool?> defaultDeviceUnblockButtonsOnTimeoutLens(DeviceType device) =>
-    _defaultDevicePropertyLens<bool?>(
-      device,
-      'unblockButtonsOnTimeout',
-      (properties) => properties.unblockButtonsOnTimeout,
-      (properties, value) =>
-          properties.copyWith(unblockButtonsOnTimeout: value),
-    );
-
-Lens<bool?> defaultDeviceButtonpadLens(DeviceType device) =>
-    _defaultDevicePropertyLens<bool?>(
-      device,
-      'buttonpad',
-      (properties) => properties.buttonpad,
-      (properties, value) => properties.copyWith(buttonpad: value),
-    );
-
-Lens<int?> defaultDeviceClickTimeoutLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'clickTimeout',
-      (properties) => properties.clickTimeout,
-      (properties, value) => properties.copyWith(clickTimeout: value),
-    );
-
-Lens<bool?> defaultDeviceHandleEvdevEventsLens(DeviceType device) =>
-    _defaultDevicePropertyLens<bool?>(
-      device,
-      'handleEvdevEvents',
-      (properties) => properties.handleEvdevEvents,
-      (properties, value) => properties.copyWith(handleEvdevEvents: value),
-    );
-
-Lens<double?> defaultDeviceMotionThreshold2Lens(DeviceType device) =>
-    _defaultDevicePropertyLens<double?>(
-      device,
-      'motionThreshold2',
-      (properties) => properties.motionThreshold2,
-      (properties, value) => properties.copyWith(motionThreshold2: value),
-    );
-
-Lens<double?> defaultDeviceMotionThreshold3Lens(DeviceType device) =>
-    _defaultDevicePropertyLens<double?>(
-      device,
-      'motionThreshold3',
-      (properties) => properties.motionThreshold3,
-      (properties, value) => properties.copyWith(motionThreshold3: value),
-    );
-
-Lens<int?> defaultDevicePressureRangesFingerLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'pressureRangesFinger',
-      (properties) => properties.pressureRangesFinger,
-      (properties, value) => properties.copyWith(pressureRangesFinger: value),
-    );
-
-Lens<int?> defaultDevicePressureRangesThumbLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'pressureRangesThumb',
-      (properties) => properties.pressureRangesThumb,
-      (properties, value) => properties.copyWith(pressureRangesThumb: value),
-    );
-
-Lens<int?> defaultDevicePressureRangesPalmLens(DeviceType device) =>
-    _defaultDevicePropertyLens<int?>(
-      device,
-      'pressureRangesPalm',
-      (properties) => properties.pressureRangesPalm,
-      (properties, value) => properties.copyWith(pressureRangesPalm: value),
-    );
-
 Config _setSpeedSettings(
   Config config,
   DeviceType device,
@@ -389,33 +326,6 @@ Config _setSpeedSettings(
     DeviceType.keyboard || DeviceType.pointer => config,
   };
 }
-
-int? _getEvents(SpeedSettings settings) => settings.events;
-
-SpeedSettings _setEvents(SpeedSettings settings, int? value) =>
-    settings.copyWith(events: value);
-
-double? _getSwipeThreshold(SpeedSettings settings) => settings.swipeThreshold;
-
-SpeedSettings _setSwipeThreshold(SpeedSettings settings, double? value) =>
-    settings.copyWith(swipeThreshold: value);
-
-double? _getPinchInThreshold(SpeedSettings settings) =>
-    settings.pinchInThreshold;
-
-SpeedSettings _setPinchInThreshold(SpeedSettings settings, double? value) =>
-    settings.copyWith(pinchInThreshold: value);
-
-double? _getPinchOutThreshold(SpeedSettings settings) =>
-    settings.pinchOutThreshold;
-
-SpeedSettings _setPinchOutThreshold(SpeedSettings settings, double? value) =>
-    settings.copyWith(pinchOutThreshold: value);
-
-double? _getRotateThreshold(SpeedSettings settings) => settings.rotateThreshold;
-
-SpeedSettings _setRotateThreshold(SpeedSettings settings, double? value) =>
-    settings.copyWith(rotateThreshold: value);
 
 bool? _getAutoreload(GlobalSettings settings) => settings.autoreload;
 
@@ -486,27 +396,6 @@ Lens<T> _deviceRulePropertyLens<T>(
     (rule, value) => rule.copyWith(
       properties: set(rule.properties, value),
     ),
-  );
-}
-
-Lens<T> _defaultDevicePropertyLens<T>(
-  DeviceType device,
-  String name,
-  T Function(DeviceRuleProperties properties) get,
-  DeviceRuleProperties Function(DeviceRuleProperties properties, T value) set,
-) {
-  return Lens<T>(
-    get: (config) => get(
-      _defaultDeviceRule(config, device)?.properties ??
-          const DeviceRuleProperties(),
-    ),
-    set: (config, value) {
-      final current =
-          _defaultDeviceRule(config, device)?.properties ??
-          const DeviceRuleProperties();
-      return _setDefaultDeviceProperties(config, device, set(current, value));
-    },
-    name: 'defaultDevice[${device.name}].properties.$name',
   );
 }
 

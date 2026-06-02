@@ -1,5 +1,6 @@
-import 'dart:async' show unawaited;
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui show Gradient;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
@@ -292,12 +293,10 @@ class PathPreviewPainter extends CustomPainter {
         from,
         to,
         Paint()
-          ..shader = LinearGradient(
-            colors: [
-              Color.lerp(startColor, endColor, startT)!.withValues(alpha: 0.08),
-              Color.lerp(startColor, endColor, endT)!.withValues(alpha: 0.08),
-            ],
-          ).createShader(Rect.fromPoints(from, to))
+          ..shader = ui.Gradient.linear(from, to, [
+            Color.lerp(startColor, endColor, startT)!.withValues(alpha: 0.08),
+            Color.lerp(startColor, endColor, endT)!.withValues(alpha: 0.08),
+          ])
           ..strokeWidth = lineWidth + 4
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke
@@ -315,12 +314,10 @@ class PathPreviewPainter extends CustomPainter {
         from,
         to,
         Paint()
-          ..shader = LinearGradient(
-            colors: [
-              Color.lerp(startColor, endColor, startT)!,
-              Color.lerp(startColor, endColor, endT)!,
-            ],
-          ).createShader(Rect.fromPoints(from, to))
+          ..shader = ui.Gradient.linear(from, to, [
+            Color.lerp(startColor, endColor, startT)!,
+            Color.lerp(startColor, endColor, endT)!,
+          ])
           ..strokeWidth = lineWidth
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke,

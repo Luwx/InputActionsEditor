@@ -4,7 +4,6 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/state/dirty/dirty_mark_state.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
@@ -34,16 +33,15 @@ class MouseButtonsField extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final common = gesture.common;
     final buttons = common.mouseButtons;
-    final gestureLocation = context.gestureLocation;
-    final buttonsField = ref.field(
-      gestureMouseButtonsLens(gestureLocation),
+    final buttonsField = ref.gestureField(
+      context,
+      gestureMouseButtonsLens,
       fallbackValue: () => common.mouseButtons,
-      scope: gestureLocation,
     );
-    final exactOrderField = ref.field(
-      gestureMouseButtonsExactOrderLens(gestureLocation),
+    final exactOrderField = ref.gestureField(
+      context,
+      gestureMouseButtonsExactOrderLens,
       fallbackValue: () => common.mouseButtonsExactOrder,
-      scope: gestureLocation,
     );
     final dirtyState = _combineDirty([
       buttonsField.dirty,

@@ -1,4 +1,3 @@
-import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -10,72 +9,24 @@ import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
 import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 
-const triggerCommonIdPart = LensPart<TriggerCommon, String?>(
-  get: _getId,
-  set: _setId,
-  name: 'id',
-);
-
-const triggerCommonThresholdPart = LensPart<TriggerCommon, String?>(
-  get: _getThreshold,
-  set: _setThreshold,
-  name: 'threshold',
-);
-
-const triggerCommonResumeTimeoutPart = LensPart<TriggerCommon, int?>(
-  get: _getResumeTimeout,
-  set: _setResumeTimeout,
-  name: 'resumeTimeout',
-);
-
-const triggerCommonAcceleratedPart = LensPart<TriggerCommon, bool?>(
-  get: _getAccelerated,
-  set: _setAccelerated,
-  name: 'accelerated',
-);
-
-const triggerCommonBlockEventsPart = LensPart<TriggerCommon, bool?>(
-  get: _getBlockEvents,
-  set: _setBlockEvents,
-  name: 'blockEvents',
-);
-
-const triggerCommonClearModifiersPart = LensPart<TriggerCommon, bool?>(
-  get: _getClearModifiers,
-  set: _setClearModifiers,
-  name: 'clearModifiers',
-);
-
-const triggerCommonSetLastTriggerPart = LensPart<TriggerCommon, bool?>(
-  get: _getSetLastTrigger,
-  set: _setSetLastTrigger,
-  name: 'setLastTrigger',
-);
-
-const triggerCommonConditionsPart = LensPart<TriggerCommon, Condition?>(
-  get: _getConditions,
-  set: _setConditions,
-  name: 'conditions',
-);
-
-const triggerCommonEndConditionsPart = LensPart<TriggerCommon, Condition?>(
-  get: _getEndConditions,
-  set: _setEndConditions,
-  name: 'endConditions',
-);
-
-const triggerCommonMouseButtonsPart =
-    LensPart<TriggerCommon, List<MouseButtonValue>>(
-      get: _getMouseButtons,
-      set: _setMouseButtons,
-      name: 'mouseButtons',
-    );
-
-const triggerCommonMouseButtonsExactOrderPart = LensPart<TriggerCommon, bool>(
-  get: _getMouseButtonsExactOrder,
-  set: _setMouseButtonsExactOrder,
-  name: 'mouseButtonsExactOrder',
-);
+export 'package:input_actions_editor/state/edit/lenses/action_lenses.dart'
+    show
+        GestureDirtyField,
+        comparableGestureFieldValue,
+        gestureAcceleratedLens,
+        gestureActionsLens,
+        gestureBlockEventsLens,
+        gestureClearModifiersLens,
+        gestureConditionsLens,
+        gestureEndConditionsLens,
+        gestureHasSavedBacking,
+        gestureIdLens,
+        gestureMouseButtonsExactOrderLens,
+        gestureMouseButtonsLens,
+        gestureResumeTimeoutLens,
+        gestureSetLastTriggerLens,
+        gestureThresholdLens,
+        restoreGestureField;
 
 const pressInstantPart = LensPart<PressGesture, bool?>(
   get: _getPressInstant,
@@ -191,40 +142,6 @@ const touchscreenMotionPart = LensPart<TouchscreenGesture, MotionCommon>(
   set: _setTouchscreenMotion,
   name: 'motion',
 );
-
-Lens<String?> gestureIdLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonIdPart);
-
-Lens<String?> gestureThresholdLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonThresholdPart);
-
-Lens<int?> gestureResumeTimeoutLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonResumeTimeoutPart);
-
-Lens<bool?> gestureAcceleratedLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonAcceleratedPart);
-
-Lens<bool?> gestureBlockEventsLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonBlockEventsPart);
-
-Lens<bool?> gestureClearModifiersLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonClearModifiersPart);
-
-Lens<bool?> gestureSetLastTriggerLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonSetLastTriggerPart);
-
-Lens<Condition?> gestureConditionsLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonConditionsPart);
-
-Lens<Condition?> gestureEndConditionsLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonEndConditionsPart);
-
-Lens<List<MouseButtonValue>> gestureMouseButtonsLens(
-  GestureLocation location,
-) => triggerCommonLens(location).then(triggerCommonMouseButtonsPart);
-
-Lens<bool> gestureMouseButtonsExactOrderLens(GestureLocation location) =>
-    triggerCommonLens(location).then(triggerCommonMouseButtonsExactOrderPart);
 
 Lens<MouseGesture> mouseGestureLens(GestureLocation location) =>
     Lens<MouseGesture>(
@@ -421,67 +338,6 @@ const _asTouchscreenStrokePart =
       set: _setTouchscreenStroke,
       name: 'asStroke',
     );
-
-String? _getId(TriggerCommon common) => common.id;
-
-TriggerCommon _setId(TriggerCommon common, String? value) =>
-    common.copyWith(id: value);
-
-String? _getThreshold(TriggerCommon common) => common.threshold;
-
-TriggerCommon _setThreshold(TriggerCommon common, String? value) =>
-    common.copyWith(threshold: value);
-
-int? _getResumeTimeout(TriggerCommon common) => common.resumeTimeout;
-
-TriggerCommon _setResumeTimeout(TriggerCommon common, int? value) =>
-    common.copyWith(resumeTimeout: value);
-
-bool? _getAccelerated(TriggerCommon common) => common.accelerated;
-
-TriggerCommon _setAccelerated(TriggerCommon common, bool? value) =>
-    common.copyWith(accelerated: value);
-
-bool? _getBlockEvents(TriggerCommon common) => common.blockEvents;
-
-TriggerCommon _setBlockEvents(TriggerCommon common, bool? value) =>
-    common.copyWith(blockEvents: value);
-
-bool? _getClearModifiers(TriggerCommon common) => common.clearModifiers;
-
-TriggerCommon _setClearModifiers(TriggerCommon common, bool? value) =>
-    common.copyWith(clearModifiers: value);
-
-bool? _getSetLastTrigger(TriggerCommon common) => common.setLastTrigger;
-
-TriggerCommon _setSetLastTrigger(TriggerCommon common, bool? value) =>
-    common.copyWith(setLastTrigger: value);
-
-Condition? _getConditions(TriggerCommon common) => common.conditions;
-
-TriggerCommon _setConditions(TriggerCommon common, Condition? value) =>
-    common.copyWith(conditions: value);
-
-Condition? _getEndConditions(TriggerCommon common) => common.endConditions;
-
-TriggerCommon _setEndConditions(TriggerCommon common, Condition? value) =>
-    common.copyWith(endConditions: value);
-
-List<MouseButtonValue> _getMouseButtons(TriggerCommon common) =>
-    common.mouseButtons;
-
-TriggerCommon _setMouseButtons(
-  TriggerCommon common,
-  List<MouseButtonValue> value,
-) => common.copyWith(mouseButtons: value);
-
-bool _getMouseButtonsExactOrder(TriggerCommon common) =>
-    common.mouseButtonsExactOrder;
-
-TriggerCommon _setMouseButtonsExactOrder(
-  TriggerCommon common,
-  bool value,
-) => common.copyWith(mouseButtonsExactOrder: value);
 
 Config replaceTriggerCommonAt(
   Config config,

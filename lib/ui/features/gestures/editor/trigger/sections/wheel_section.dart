@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -28,11 +27,10 @@ class WheelSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = context.gestureLocation;
-    final directionField = ref.field(
-      wheelDirectionLens(location),
+    final directionField = ref.gestureField(
+      context,
+      wheelDirectionLens,
       fallbackValue: () => gesture.direction,
-      scope: location,
     );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

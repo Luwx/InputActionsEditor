@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/data/keyboard_scancodes.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -46,11 +45,10 @@ class ShortcutSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = context.gestureLocation;
-    final keysField = ref.field(
-      shortcutKeysLens(location),
+    final keysField = ref.gestureField(
+      context,
+      shortcutKeysLens,
       fallbackValue: () => keys,
-      scope: location,
     );
     final currentKeys = keysField.value;
     final mainKey = currentKeys

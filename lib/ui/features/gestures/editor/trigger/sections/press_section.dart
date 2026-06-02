@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -17,11 +16,10 @@ class PressSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = context.gestureLocation;
-    final instantField = ref.field(
-      pressInstantLens(location),
+    final instantField = ref.gestureField(
+      context,
+      pressInstantLens,
       fallbackValue: () => gesture.instant,
-      scope: location,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

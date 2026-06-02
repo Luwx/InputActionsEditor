@@ -63,6 +63,8 @@ dependencies:
   window_manager: ^0.5.1
   equatable: ^2.0.8
   meta: ^1.18.0
+  lens_geneartor:
+    path: ../../flutter_pkg/lens_geneartor
 dev_dependencies:
   flutter_test:
     sdk: flutter

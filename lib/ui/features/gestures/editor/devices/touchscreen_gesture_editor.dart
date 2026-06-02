@@ -4,7 +4,6 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
@@ -75,9 +74,9 @@ class TouchscreenTriggerSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = context.gestureLocation;
-    final motionField = ref.field(
-      touchscreenMotionLens(location),
+    final motionField = ref.gestureField(
+      context,
+      touchscreenMotionLens,
       fallbackValue: () => switch (gesture) {
         TouchscreenSwipeGesture(:final motion) => motion,
         TouchscreenPinchGesture(:final motion) => motion,
@@ -86,7 +85,6 @@ class TouchscreenTriggerSection extends ConsumerWidget {
         TouchscreenStrokeGesture(:final motion) => motion,
         _ => const MotionCommon(),
       },
-      scope: location,
     );
 
     return switch (gesture) {
@@ -95,10 +93,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final modeField = ref.field(
-                touchscreenSwipeModeLens(location),
+              final modeField = ref.gestureField(
+                context,
+                touchscreenSwipeModeLens,
                 fallbackValue: () => mode,
-                scope: location,
               );
               return SwipeModeSelector(
                 mode: modeField.value,
@@ -117,10 +115,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final directionField = ref.field(
-                touchscreenPinchDirectionLens(location),
+              final directionField = ref.gestureField(
+                context,
+                touchscreenPinchDirectionLens,
                 fallbackValue: () => direction,
-                scope: location,
               );
               return PinchSection(
                 direction: directionField.value,
@@ -139,10 +137,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final directionField = ref.field(
-                touchscreenRotateDirectionLens(location),
+              final directionField = ref.gestureField(
+                context,
+                touchscreenRotateDirectionLens,
                 fallbackValue: () => direction,
-                scope: location,
               );
               return RotateSection(
                 direction: directionField.value,
@@ -182,10 +180,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
         children: [
           Builder(
             builder: (context) {
-              final strokesField = ref.field(
-                touchscreenStrokeStrokesLens(location),
+              final strokesField = ref.gestureField(
+                context,
+                touchscreenStrokeStrokesLens,
                 fallbackValue: () => strokes,
-                scope: location,
               );
               return StrokesField(
                 strokes: strokesField.value,

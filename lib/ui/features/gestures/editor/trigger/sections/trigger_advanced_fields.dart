@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/lens.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -34,55 +36,52 @@ class TriggerAdvancedFields extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gestureLocation = context.gestureLocation;
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
       context.theme.colors.background,
     );
-    final idField = ref.field(
-      gestureIdLens(gestureLocation),
-      fallbackValue: () => common.id,
-      scope: gestureLocation,
+
+    EditableField<T> getGestureField<T>(
+      Lens<T> Function(GestureLocation location) lensFor,
+      T fallbackValue,
+    ) => ref.gestureField(
+      context,
+      lensFor,
+      fallbackValue: () => fallbackValue,
     );
-    final thresholdField = ref.field(
-      gestureThresholdLens(gestureLocation),
-      fallbackValue: () => common.threshold,
-      scope: gestureLocation,
+
+    final idField = getGestureField(gestureIdLens, common.id);
+    final thresholdField = getGestureField(
+      gestureThresholdLens,
+      common.threshold,
     );
-    final resumeTimeoutField = ref.field(
-      gestureResumeTimeoutLens(gestureLocation),
-      fallbackValue: () => common.resumeTimeout,
-      scope: gestureLocation,
+    final resumeTimeoutField = getGestureField(
+      gestureResumeTimeoutLens,
+      common.resumeTimeout,
     );
-    final acceleratedField = ref.field(
-      gestureAcceleratedLens(gestureLocation),
-      fallbackValue: () => common.accelerated,
-      scope: gestureLocation,
+    final acceleratedField = getGestureField(
+      gestureAcceleratedLens,
+      common.accelerated,
     );
-    final blockEventsField = ref.field(
-      gestureBlockEventsLens(gestureLocation),
-      fallbackValue: () => common.blockEvents,
-      scope: gestureLocation,
+    final blockEventsField = getGestureField(
+      gestureBlockEventsLens,
+      common.blockEvents,
     );
-    final clearModifiersField = ref.field(
-      gestureClearModifiersLens(gestureLocation),
-      fallbackValue: () => common.clearModifiers,
-      scope: gestureLocation,
+    final clearModifiersField = getGestureField(
+      gestureClearModifiersLens,
+      common.clearModifiers,
     );
-    final setLastTriggerField = ref.field(
-      gestureSetLastTriggerLens(gestureLocation),
-      fallbackValue: () => common.setLastTrigger,
-      scope: gestureLocation,
+    final setLastTriggerField = getGestureField(
+      gestureSetLastTriggerLens,
+      common.setLastTrigger,
     );
-    final conditionsField = ref.field(
-      gestureConditionsLens(gestureLocation),
-      fallbackValue: () => common.conditions,
-      scope: gestureLocation,
+    final conditionsField = getGestureField(
+      gestureConditionsLens,
+      common.conditions,
     );
-    final endConditionsField = ref.field(
-      gestureEndConditionsLens(gestureLocation),
-      fallbackValue: () => common.endConditions,
-      scope: gestureLocation,
+    final endConditionsField = getGestureField(
+      gestureEndConditionsLens,
+      common.endConditions,
     );
 
     return Column(
