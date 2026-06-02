@@ -118,7 +118,7 @@ class ActionListEditor extends HookConsumerWidget {
       expanded.value = {...expanded.value, newIndex};
       clearAnchor();
       // AnimatedSize renders new rows at full size immediately (no prior state
-      // to animate from), so the anchor mechanism won't fire. 
+      // to animate from), so the anchor mechanism won't fire.
       // Scroll explicitly.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ctx = bottomKey.currentContext;

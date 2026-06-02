@@ -1,6 +1,7 @@
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -16,137 +17,140 @@ import 'package:lens_geneartor/lens_geneartor.dart';
 part 'action_lenses.g.dart';
 
 @GenerateEditSchema()
-final EditRoot<TriggerAction, ActionLocation> actionSchema =
-    editRoot<TriggerAction, ActionLocation>(
+final EditSchema<TriggerAction, ActionLocation> actionSchema =
+    editSchema<TriggerAction, ActionLocation>(
       id: 'action',
       rootLens: 'triggerActionLens',
-      savedBacking: SavedBackingSpec<TriggerAction>.rootExists(),
       fields: [
-        field<TriggerAction, String>(
-          id: 'command',
-          select: unionField<TriggerAction, CommandAction, String>(
-            getCase: (value) => value.action,
-          ),
+        union<CommandAction>(
+          'action',
+          fields: [
+            prop<dynamic, String>('command'),
+            prop<TriggerAction, bool?>(
+              'wait',
+              compare: projected<TriggerAction, bool?>(
+                (value) => value?.action is CommandAction
+                    ? (value!.action as CommandAction).effectiveWait
+                    : null,
+              ),
+            ),
+          ],
         ),
-        field<TriggerAction, bool?>(
-          id: 'wait',
-          select: unionField<TriggerAction, CommandAction, bool?>(
-            getCase: (value) => value.action,
-          ),
+        union<PlasmaShortcutAction>(
+          'action',
+          fields: [
+            prop<dynamic, String>('component'),
+            prop<dynamic, String>('shortcut'),
+          ],
         ),
-        field<TriggerAction, String>(
-          id: 'component',
-          select: unionField<TriggerAction, PlasmaShortcutAction, String>(
-            getCase: (value) => value.action,
-          ),
+        union<SleepAction>(
+          'action',
+          fields: [
+            prop<dynamic, int>('duration', property: 'milliseconds'),
+          ],
         ),
-        field<TriggerAction, String>(
-          id: 'shortcut',
-          select: unionField<TriggerAction, PlasmaShortcutAction, String>(
-            getCase: (value) => value.action,
-          ),
+        union<RawAction>('action', fields: [prop<dynamic, String>('raw')]),
+        union<InputAction>(
+          'action',
+          fields: [
+            prop<dynamic, List<InputEntry>>(
+              'inputEntries',
+              property: 'entries',
+            ),
+          ],
         ),
-        field<TriggerAction, int>(
-          id: 'duration',
-          select: unionField<TriggerAction, SleepAction, int>(
-            getCase: (value) => value.action,
-            fieldName: 'milliseconds',
-          ),
-        ),
-        field<TriggerAction, String>(
-          id: 'raw',
-          select: unionField<TriggerAction, RawAction, String>(
-            getCase: (value) => value.action,
-          ),
-        ),
-        field<TriggerAction, TriggerOn?>(
-          id: 'triggerOn',
-          select: leaf<TriggerAction, TriggerOn?>(fieldName: 'on'),
-        ),
-        field<TriggerAction, String?>(
-          id: 'interval',
-          select: leaf<TriggerAction, String?>(),
-        ),
-        field<TriggerAction, String?>(
-          id: 'threshold',
-          select: leaf<TriggerAction, String?>(),
-        ),
-        field<TriggerAction, int?>(
-          id: 'limit',
-          select: leaf<TriggerAction, int?>(),
-        ),
-        field<TriggerAction, bool>(
-          id: 'conflicting',
-          select: leaf<TriggerAction, bool>(),
-        ),
-        field<TriggerAction, Condition?>(
-          id: 'conditions',
-          select: leaf<TriggerAction, Condition?>(),
-        ),
-        field<TriggerAction, List<InputEntry>>(
-          id: 'inputEntries',
-          select: unionField<TriggerAction, InputAction, List<InputEntry>>(
-            getCase: (value) => value.action,
-            fieldName: 'entries',
-          ),
+        prop<TriggerAction, TriggerOn?>('triggerOn', property: 'on'),
+        prop<TriggerAction, String?>('interval', adapter: nullableText()),
+        prop<TriggerAction, String?>('threshold', adapter: nullableText()),
+        prop<TriggerAction, int?>('limit', adapter: nullableInt()),
+        prop<TriggerAction, bool>('conflicting'),
+        prop<TriggerAction, Condition?>('conditions'),
+        prop<TriggerAction, String?>('id', adapter: nullableText()),
+      ],
+      groups: [
+        editGroup(
+          id: 'all',
+          members: [
+            'triggerOn',
+            'command',
+            'wait',
+            'component',
+            'shortcut',
+            'duration',
+            'raw',
+            'inputEntries',
+            'conditions',
+            'interval',
+            'threshold',
+            'conflicting',
+            'id',
+            'limit',
+          ],
         ),
       ],
     );
 
 @GenerateEditSchema()
-final EditRoot<TriggerCommon, GestureLocation> gestureSchema =
-    editRoot<TriggerCommon, GestureLocation>(
+final EditSchema<TriggerCommon, GestureLocation> gestureSchema =
+    editSchema<TriggerCommon, GestureLocation>(
       id: 'gesture',
       rootLens: 'triggerCommonLens',
-      savedBacking: SavedBackingSpec<TriggerCommon>.rootExists(),
       fields: [
-        field<TriggerCommon, String?>(
-          id: 'id',
-          select: leaf<TriggerCommon, String?>(),
+        prop<TriggerCommon, String?>('id', adapter: nullableText()),
+        prop<TriggerCommon, String?>('threshold', adapter: nullableText()),
+        prop<TriggerCommon, int?>('resumeTimeout', adapter: nullableInt()),
+        prop<TriggerCommon, bool?>(
+          'accelerated',
+          compare: projected<TriggerCommon, bool?>(
+            (value) => value?.effectiveAccelerated,
+          ),
         ),
-        field<TriggerCommon, String?>(
-          id: 'threshold',
-          select: leaf<TriggerCommon, String?>(),
+        prop<TriggerCommon, bool?>(
+          'blockEvents',
+          compare: projected<TriggerCommon, bool?>(
+            (value) => value?.effectiveBlockEvents,
+          ),
         ),
-        field<TriggerCommon, int?>(
-          id: 'resumeTimeout',
-          select: leaf<TriggerCommon, int?>(),
+        prop<TriggerCommon, bool?>(
+          'clearModifiers',
+          compare: projected<TriggerCommon, bool?>(
+            (value) => value?.effectiveClearModifiers,
+          ),
         ),
-        field<TriggerCommon, bool?>(
-          id: 'accelerated',
-          select: leaf<TriggerCommon, bool?>(),
+        prop<TriggerCommon, bool?>(
+          'setLastTrigger',
+          compare: projected<TriggerCommon, bool?>(
+            (value) => value?.effectiveSetLastTrigger,
+          ),
         ),
-        field<TriggerCommon, bool?>(
-          id: 'blockEvents',
-          select: leaf<TriggerCommon, bool?>(),
+        prop<TriggerCommon, Condition?>('conditions'),
+        prop<TriggerCommon, Condition?>('endConditions'),
+        prop<TriggerCommon, List<MouseButtonValue>>('mouseButtons'),
+        prop<TriggerCommon, bool>('mouseButtonsExactOrder'),
+        prop<TriggerCommon, List<TriggerAction>>('actions'),
+      ],
+      groups: [
+        editGroup(
+          id: 'mouseButtonsSection',
+          members: ['mouseButtons', 'mouseButtonsExactOrder'],
         ),
-        field<TriggerCommon, bool?>(
-          id: 'clearModifiers',
-          select: leaf<TriggerCommon, bool?>(),
-        ),
-        field<TriggerCommon, bool?>(
-          id: 'setLastTrigger',
-          select: leaf<TriggerCommon, bool?>(),
-        ),
-        field<TriggerCommon, Condition?>(
-          id: 'conditions',
-          select: leaf<TriggerCommon, Condition?>(),
-        ),
-        field<TriggerCommon, Condition?>(
-          id: 'endConditions',
-          select: leaf<TriggerCommon, Condition?>(),
-        ),
-        field<TriggerCommon, List<MouseButtonValue>>(
-          id: 'mouseButtons',
-          select: leaf<TriggerCommon, List<MouseButtonValue>>(),
-        ),
-        field<TriggerCommon, bool>(
-          id: 'mouseButtonsExactOrder',
-          select: leaf<TriggerCommon, bool>(),
-        ),
-        field<TriggerCommon, List<TriggerAction>>(
-          id: 'actions',
-          select: leaf<TriggerCommon, List<TriggerAction>>(),
+        editGroup(id: 'triggerConditions', members: ['conditions']),
+        editGroup(id: 'actionsSection', members: ['actions']),
+        editGroup(
+          id: 'triggerConfig',
+          members: [
+            'mouseButtons',
+            'mouseButtonsExactOrder',
+            'conditions',
+            'id',
+            'threshold',
+            'resumeTimeout',
+            'accelerated',
+            'blockEvents',
+            'clearModifiers',
+            'setLastTrigger',
+            'endConditions',
+          ],
         ),
       ],
     );

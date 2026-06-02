@@ -7,7 +7,7 @@ part of 'settings_lenses.dart';
 // **************************************************************************
 
 // Generated code. Do not modify by hand.
-// ignore_for_file: prefer_null_aware_operators
+// ignore_for_file: dead_code, prefer_null_aware_operators, lines_longer_than_80_chars, unnecessary_cast, unnecessary_lambdas, unnecessary_parenthesis, unreachable_switch_case
 
 enum SpeedDirtyField {
   events,
@@ -62,6 +62,51 @@ final _speedRotateThresholdPart = LensPart<SpeedSettings, double?>(
 Lens<double?> speedRotateThresholdLens(DeviceType location) =>
     speedSettingsLens(location).then(_speedRotateThresholdPart);
 
+final speedEventsField =
+    GeneratedEditField<SpeedSettings, DeviceType, int?, Lens<int?>>(
+      id: 'events',
+      dirtyField: SpeedDirtyField.events,
+      lens: speedEventsLens,
+      fallback: (value) => value.events,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final speedSwipeThresholdField =
+    GeneratedEditField<SpeedSettings, DeviceType, double?, Lens<double?>>(
+      id: 'swipeThreshold',
+      dirtyField: SpeedDirtyField.swipeThreshold,
+      lens: speedSwipeThresholdLens,
+      fallback: (value) => value.swipeThreshold,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final speedPinchInThresholdField =
+    GeneratedEditField<SpeedSettings, DeviceType, double?, Lens<double?>>(
+      id: 'pinchInThreshold',
+      dirtyField: SpeedDirtyField.pinchInThreshold,
+      lens: speedPinchInThresholdLens,
+      fallback: (value) => value.pinchInThreshold,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final speedPinchOutThresholdField =
+    GeneratedEditField<SpeedSettings, DeviceType, double?, Lens<double?>>(
+      id: 'pinchOutThreshold',
+      dirtyField: SpeedDirtyField.pinchOutThreshold,
+      lens: speedPinchOutThresholdLens,
+      fallback: (value) => value.pinchOutThreshold,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final speedRotateThresholdField =
+    GeneratedEditField<SpeedSettings, DeviceType, double?, Lens<double?>>(
+      id: 'rotateThreshold',
+      dirtyField: SpeedDirtyField.rotateThreshold,
+      lens: speedRotateThresholdLens,
+      fallback: (value) => value.rotateThreshold,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
 Object? comparableSpeedFieldValue(
   SpeedSettings? value,
   SpeedDirtyField field,
@@ -99,7 +144,7 @@ SpeedSettings restoreSpeedField({
 bool speedHasSavedBacking(SpeedSettings? saved) => saved != null;
 
 // Generated code. Do not modify by hand.
-// ignore_for_file: prefer_null_aware_operators
+// ignore_for_file: dead_code, prefer_null_aware_operators, lines_longer_than_80_chars, unnecessary_cast, unnecessary_lambdas, unnecessary_parenthesis, unreachable_switch_case
 
 enum DefaultDeviceDirtyField {
   ignore,
@@ -280,6 +325,161 @@ Lens<int?> defaultDevicePressureRangesPalmLens(DeviceType location) =>
     defaultDevicePropertiesLens(
       location,
     ).then(_defaultDevicePressureRangesPalmPart);
+
+final defaultDeviceIgnoreField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, bool?, Lens<bool?>>(
+      id: 'ignore',
+      dirtyField: DefaultDeviceDirtyField.ignore,
+      lens: defaultDeviceIgnoreLens,
+      fallback: (value) => value.ignore,
+      adapter: FieldAdapterSpec<bool?>.identity(),
+    );
+
+final defaultDeviceGrabField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, bool?, Lens<bool?>>(
+      id: 'grab',
+      dirtyField: DefaultDeviceDirtyField.grab,
+      lens: defaultDeviceGrabLens,
+      fallback: (value) => value.grab,
+      adapter: FieldAdapterSpec<bool?>.identity(),
+    );
+
+final defaultDeviceMotionTimeoutField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'motionTimeout',
+      dirtyField: DefaultDeviceDirtyField.motionTimeout,
+      lens: defaultDeviceMotionTimeoutLens,
+      fallback: (value) => value.motionTimeout,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final defaultDeviceMotionThresholdField =
+    GeneratedEditField<
+      DeviceRuleProperties,
+      DeviceType,
+      double?,
+      Lens<double?>
+    >(
+      id: 'motionThreshold',
+      dirtyField: DefaultDeviceDirtyField.motionThreshold,
+      lens: defaultDeviceMotionThresholdLens,
+      fallback: (value) => value.motionThreshold,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final defaultDevicePressTimeoutField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'pressTimeout',
+      dirtyField: DefaultDeviceDirtyField.pressTimeout,
+      lens: defaultDevicePressTimeoutLens,
+      fallback: (value) => value.pressTimeout,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final defaultDeviceSwipeAngleToleranceField =
+    GeneratedEditField<
+      DeviceRuleProperties,
+      DeviceType,
+      double?,
+      Lens<double?>
+    >(
+      id: 'swipeAngleTolerance',
+      dirtyField: DefaultDeviceDirtyField.swipeAngleTolerance,
+      lens: defaultDeviceSwipeAngleToleranceLens,
+      fallback: (value) => value.swipeAngleTolerance,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final defaultDeviceUnblockButtonsOnTimeoutField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, bool?, Lens<bool?>>(
+      id: 'unblockButtonsOnTimeout',
+      dirtyField: DefaultDeviceDirtyField.unblockButtonsOnTimeout,
+      lens: defaultDeviceUnblockButtonsOnTimeoutLens,
+      fallback: (value) => value.unblockButtonsOnTimeout,
+      adapter: FieldAdapterSpec<bool?>.identity(),
+    );
+
+final defaultDeviceButtonpadField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, bool?, Lens<bool?>>(
+      id: 'buttonpad',
+      dirtyField: DefaultDeviceDirtyField.buttonpad,
+      lens: defaultDeviceButtonpadLens,
+      fallback: (value) => value.buttonpad,
+      adapter: FieldAdapterSpec<bool?>.identity(),
+    );
+
+final defaultDeviceClickTimeoutField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'clickTimeout',
+      dirtyField: DefaultDeviceDirtyField.clickTimeout,
+      lens: defaultDeviceClickTimeoutLens,
+      fallback: (value) => value.clickTimeout,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final defaultDeviceHandleEvdevEventsField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, bool?, Lens<bool?>>(
+      id: 'handleEvdevEvents',
+      dirtyField: DefaultDeviceDirtyField.handleEvdevEvents,
+      lens: defaultDeviceHandleEvdevEventsLens,
+      fallback: (value) => value.handleEvdevEvents,
+      adapter: FieldAdapterSpec<bool?>.identity(),
+    );
+
+final defaultDeviceMotionThreshold2Field =
+    GeneratedEditField<
+      DeviceRuleProperties,
+      DeviceType,
+      double?,
+      Lens<double?>
+    >(
+      id: 'motionThreshold2',
+      dirtyField: DefaultDeviceDirtyField.motionThreshold2,
+      lens: defaultDeviceMotionThreshold2Lens,
+      fallback: (value) => value.motionThreshold2,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final defaultDeviceMotionThreshold3Field =
+    GeneratedEditField<
+      DeviceRuleProperties,
+      DeviceType,
+      double?,
+      Lens<double?>
+    >(
+      id: 'motionThreshold3',
+      dirtyField: DefaultDeviceDirtyField.motionThreshold3,
+      lens: defaultDeviceMotionThreshold3Lens,
+      fallback: (value) => value.motionThreshold3,
+      adapter: FieldAdapterSpec<double?>.nullableDouble(),
+    );
+
+final defaultDevicePressureRangesFingerField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'pressureRangesFinger',
+      dirtyField: DefaultDeviceDirtyField.pressureRangesFinger,
+      lens: defaultDevicePressureRangesFingerLens,
+      fallback: (value) => value.pressureRangesFinger,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final defaultDevicePressureRangesThumbField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'pressureRangesThumb',
+      dirtyField: DefaultDeviceDirtyField.pressureRangesThumb,
+      lens: defaultDevicePressureRangesThumbLens,
+      fallback: (value) => value.pressureRangesThumb,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
+
+final defaultDevicePressureRangesPalmField =
+    GeneratedEditField<DeviceRuleProperties, DeviceType, int?, Lens<int?>>(
+      id: 'pressureRangesPalm',
+      dirtyField: DefaultDeviceDirtyField.pressureRangesPalm,
+      lens: defaultDevicePressureRangesPalmLens,
+      fallback: (value) => value.pressureRangesPalm,
+      adapter: FieldAdapterSpec<int?>.nullableInt(),
+    );
 
 Object? comparableDefaultDeviceFieldValue(
   DeviceRuleProperties? value,

@@ -10,104 +10,78 @@ import 'package:lens_geneartor/lens_geneartor.dart';
 part 'settings_lenses.g.dart';
 
 @GenerateEditSchema()
-final EditRoot<SpeedSettings, DeviceType> speedSchema =
-    editRoot<SpeedSettings, DeviceType>(
+final EditSchema<SpeedSettings, DeviceType> speedSchema =
+    editSchema<SpeedSettings, DeviceType>(
       id: 'speed',
       rootLens: 'speedSettingsLens',
-      savedBacking: SavedBackingSpec<SpeedSettings>.rootExists(),
       fields: [
-        field<SpeedSettings, int?>(
-          id: 'events',
-          select: leaf<SpeedSettings, int?>(),
+        prop<SpeedSettings, int?>('events', adapter: nullableInt()),
+        prop<SpeedSettings, double?>(
+          'swipeThreshold',
+          adapter: nullableDouble(),
         ),
-        field<SpeedSettings, double?>(
-          id: 'swipeThreshold',
-          select: leaf<SpeedSettings, double?>(),
+        prop<SpeedSettings, double?>(
+          'pinchInThreshold',
+          adapter: nullableDouble(),
         ),
-        field<SpeedSettings, double?>(
-          id: 'pinchInThreshold',
-          select: leaf<SpeedSettings, double?>(),
+        prop<SpeedSettings, double?>(
+          'pinchOutThreshold',
+          adapter: nullableDouble(),
         ),
-        field<SpeedSettings, double?>(
-          id: 'pinchOutThreshold',
-          select: leaf<SpeedSettings, double?>(),
-        ),
-        field<SpeedSettings, double?>(
-          id: 'rotateThreshold',
-          select: leaf<SpeedSettings, double?>(),
+        prop<SpeedSettings, double?>(
+          'rotateThreshold',
+          adapter: nullableDouble(),
         ),
       ],
     );
 
 @GenerateEditSchema()
-final EditRoot<DeviceRuleProperties, DeviceType> defaultDeviceSchema =
-    editRoot<DeviceRuleProperties, DeviceType>(
-      id: 'defaultDevice',
-      rootLens: 'defaultDevicePropertiesLens',
-      savedBacking: SavedBackingSpec<DeviceRuleProperties>.rootExists(),
-      fields: [
-        field<DeviceRuleProperties, bool?>(
-          id: 'ignore',
-          select: leaf<DeviceRuleProperties, bool?>(),
-        ),
-        field<DeviceRuleProperties, bool?>(
-          id: 'grab',
-          select: leaf<DeviceRuleProperties, bool?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'motionTimeout',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-        field<DeviceRuleProperties, double?>(
-          id: 'motionThreshold',
-          select: leaf<DeviceRuleProperties, double?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'pressTimeout',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-        field<DeviceRuleProperties, double?>(
-          id: 'swipeAngleTolerance',
-          select: leaf<DeviceRuleProperties, double?>(),
-        ),
-        field<DeviceRuleProperties, bool?>(
-          id: 'unblockButtonsOnTimeout',
-          select: leaf<DeviceRuleProperties, bool?>(),
-        ),
-        field<DeviceRuleProperties, bool?>(
-          id: 'buttonpad',
-          select: leaf<DeviceRuleProperties, bool?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'clickTimeout',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-        field<DeviceRuleProperties, bool?>(
-          id: 'handleEvdevEvents',
-          select: leaf<DeviceRuleProperties, bool?>(),
-        ),
-        field<DeviceRuleProperties, double?>(
-          id: 'motionThreshold2',
-          select: leaf<DeviceRuleProperties, double?>(),
-        ),
-        field<DeviceRuleProperties, double?>(
-          id: 'motionThreshold3',
-          select: leaf<DeviceRuleProperties, double?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'pressureRangesFinger',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'pressureRangesThumb',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-        field<DeviceRuleProperties, int?>(
-          id: 'pressureRangesPalm',
-          select: leaf<DeviceRuleProperties, int?>(),
-        ),
-      ],
-    );
+final EditSchema<DeviceRuleProperties, DeviceType>
+defaultDeviceSchema = editSchema<DeviceRuleProperties, DeviceType>(
+  id: 'defaultDevice',
+  rootLens: 'defaultDevicePropertiesLens',
+  fields: [
+    prop<DeviceRuleProperties, bool?>('ignore'),
+    prop<DeviceRuleProperties, bool?>('grab'),
+    prop<DeviceRuleProperties, int?>(
+      'motionTimeout',
+      adapter: nullableInt(),
+    ),
+    prop<DeviceRuleProperties, double?>(
+      'motionThreshold',
+      adapter: nullableDouble(),
+    ),
+    prop<DeviceRuleProperties, int?>('pressTimeout', adapter: nullableInt()),
+    prop<DeviceRuleProperties, double?>(
+      'swipeAngleTolerance',
+      adapter: nullableDouble(),
+    ),
+    prop<DeviceRuleProperties, bool?>('unblockButtonsOnTimeout'),
+    prop<DeviceRuleProperties, bool?>('buttonpad'),
+    prop<DeviceRuleProperties, int?>('clickTimeout', adapter: nullableInt()),
+    prop<DeviceRuleProperties, bool?>('handleEvdevEvents'),
+    prop<DeviceRuleProperties, double?>(
+      'motionThreshold2',
+      adapter: nullableDouble(),
+    ),
+    prop<DeviceRuleProperties, double?>(
+      'motionThreshold3',
+      adapter: nullableDouble(),
+    ),
+    prop<DeviceRuleProperties, int?>(
+      'pressureRangesFinger',
+      adapter: nullableInt(),
+    ),
+    prop<DeviceRuleProperties, int?>(
+      'pressureRangesThumb',
+      adapter: nullableInt(),
+    ),
+    prop<DeviceRuleProperties, int?>(
+      'pressureRangesPalm',
+      adapter: nullableInt(),
+    ),
+  ],
+);
 
 const globalAutoreloadPart = LensPart<GlobalSettings, bool?>(
   get: _getAutoreload,

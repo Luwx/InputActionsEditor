@@ -37,10 +37,10 @@ class ActionTriggerFields extends ConsumerWidget {
       actionTriggerOnLens,
       fallbackValue: () => triggerAction.on,
     );
-    final limitField = ref.actionField(
+    final limitField = ref.actionSchemaField(
       context,
-      actionLimitLens,
-      fallbackValue: () => triggerAction.limit,
+      actionLimitField,
+      triggerAction,
     );
     final conflictingField = ref.actionField(
       context,
@@ -101,10 +101,10 @@ class ActionTriggerFields extends ConsumerWidget {
             if (vm.showInterval)
               Builder(
                 builder: (context) {
-                  final intervalField = ref.actionField(
+                  final intervalField = ref.actionSchemaField(
                     context,
-                    actionIntervalLens,
-                    fallbackValue: () => triggerAction.interval,
+                    actionIntervalField,
+                    triggerAction,
                   );
                   return SizedBox(
                     width: 180,
@@ -131,12 +131,8 @@ class ActionTriggerFields extends ConsumerWidget {
                       ),
                       keyboardType: TextInputType.number,
                       control: FTextFieldControl.managed(
-                        initial: TextEditingValue(
-                          text: intervalField.value ?? '',
-                        ),
-                        onChange: (value) => intervalField.onChanged(
-                          value.text.isEmpty ? null : value.text,
-                        ),
+                        initial: intervalField.textEditingValue,
+                        onChange: intervalField.onTextChanged,
                       ),
                       hint: '+, -, or number',
                     ),
@@ -146,10 +142,10 @@ class ActionTriggerFields extends ConsumerWidget {
             if (vm.showThreshold)
               Builder(
                 builder: (context) {
-                  final thresholdField = ref.actionField(
+                  final thresholdField = ref.actionSchemaField(
                     context,
-                    actionThresholdLens,
-                    fallbackValue: () => triggerAction.threshold,
+                    actionThresholdField,
+                    triggerAction,
                   );
                   return SizedBox(
                     width: 180,
@@ -175,12 +171,8 @@ class ActionTriggerFields extends ConsumerWidget {
                         ),
                       ),
                       control: FTextFieldControl.managed(
-                        initial: TextEditingValue(
-                          text: thresholdField.value ?? '',
-                        ),
-                        onChange: (value) => thresholdField.onChanged(
-                          value.text.isEmpty ? null : value.text,
-                        ),
+                        initial: thresholdField.textEditingValue,
+                        onChange: thresholdField.onTextChanged,
                       ),
                       hint: 'e.g. 100 or 50-200',
                     ),
@@ -205,12 +197,8 @@ class ActionTriggerFields extends ConsumerWidget {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 keyboardType: TextInputType.number,
                 control: FTextFieldControl.managed(
-                  initial: TextEditingValue(
-                    text: limitField.value?.toString() ?? '',
-                  ),
-                  onChange: (value) => limitField.onChanged(
-                    value.text.isEmpty ? null : int.tryParse(value.text),
-                  ),
+                  initial: limitField.textEditingValue,
+                  onChange: limitField.onTextChanged,
                 ),
                 hint: '0 = unlimited',
               ),

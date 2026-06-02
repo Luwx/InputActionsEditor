@@ -4,6 +4,7 @@ import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/state/dirty/dirty_mark_state.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:lens_geneartor/lens_geneartor.dart';
 
 class EditLocationScope extends InheritedWidget {
   const EditLocationScope({
@@ -61,7 +62,7 @@ extension ScopedFieldAccess on WidgetRef {
     T Function()? fallbackValue,
   }) {
     final location = context.gestureLocation;
-    return field(
+    return this.field<T>(
       lensFor(location),
       dirty: dirty,
       fallbackValue: fallbackValue,
@@ -76,10 +77,42 @@ extension ScopedFieldAccess on WidgetRef {
     T Function()? fallbackValue,
   }) {
     final location = context.actionLocation;
-    return field(
+    return this.field<T>(
       lensFor(location),
       dirty: dirty,
       fallbackValue: fallbackValue,
+      scope: location.gesture,
+    );
+  }
+
+  SchemaEditableField<T> gestureSchemaField<TRoot, T>(
+    BuildContext context,
+    GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field,
+    TRoot fallbackRoot, {
+    DirtyMarkState? dirty,
+  }) {
+    final location = context.gestureLocation;
+    return schemaField(
+      field,
+      location: location,
+      fallbackRoot: fallbackRoot,
+      dirty: dirty,
+      scope: location,
+    );
+  }
+
+  SchemaEditableField<T> actionSchemaField<TRoot, T>(
+    BuildContext context,
+    GeneratedEditField<TRoot, ActionLocation, T, Lens<T>> field,
+    TRoot fallbackRoot, {
+    DirtyMarkState? dirty,
+  }) {
+    final location = context.actionLocation;
+    return schemaField(
+      field,
+      location: location,
+      fallbackRoot: fallbackRoot,
+      dirty: dirty,
       scope: location.gesture,
     );
   }

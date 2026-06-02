@@ -8,140 +8,285 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/state/edit/lens.dart';
 import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
+import 'package:lens_geneartor/lens_geneartor.dart';
 
 export 'package:input_actions_editor/state/edit/lenses/action_lenses.dart'
     show
         GestureDirtyField,
         comparableGestureFieldValue,
+        gestureAcceleratedField,
         gestureAcceleratedLens,
         gestureActionsLens,
+        gestureBlockEventsField,
         gestureBlockEventsLens,
+        gestureClearModifiersField,
         gestureClearModifiersLens,
+        gestureConditionsField,
         gestureConditionsLens,
+        gestureEndConditionsField,
         gestureEndConditionsLens,
         gestureHasSavedBacking,
+        gestureIdField,
         gestureIdLens,
+        gestureMouseButtonsExactOrderField,
         gestureMouseButtonsExactOrderLens,
+        gestureMouseButtonsField,
         gestureMouseButtonsLens,
+        gestureResumeTimeoutField,
         gestureResumeTimeoutLens,
+        gestureSetLastTriggerField,
         gestureSetLastTriggerLens,
+        gestureThresholdField,
         gestureThresholdLens,
         restoreGestureField;
 
-const pressInstantPart = LensPart<PressGesture, bool?>(
-  get: _getPressInstant,
-  set: _setPressInstant,
-  name: 'instant',
-);
+part 'gesture_lenses.g.dart';
 
-const wheelDirectionPart = LensPart<WheelGesture, WheelDirection>(
-  get: _getWheelDirection,
-  set: _setWheelDirection,
-  name: 'direction',
-);
-
-const circleDirectionPart = LensPart<CircleGesture, CircleDirection>(
-  get: _getCircleDirection,
-  set: _setCircleDirection,
-  name: 'direction',
-);
-
-const shortcutKeysPart = LensPart<ShortcutGesture, List<String>>(
-  get: _getShortcutKeys,
-  set: _setShortcutKeys,
-  name: 'keys',
-);
-
-const touchpadFingersPart = LensPart<TouchpadGesture, int?>(
-  get: _getTouchpadFingers,
-  set: _setTouchpadFingers,
-  name: 'fingers',
-);
-
-const touchscreenFingersPart = LensPart<TouchscreenGesture, int?>(
-  get: _getTouchscreenFingers,
-  set: _setTouchscreenFingers,
-  name: 'fingers',
-);
-
-const touchpadSwipeModePart = LensPart<TouchpadSwipeGesture, SwipeMode>(
-  get: _getTouchpadSwipeMode,
-  set: _setTouchpadSwipeMode,
-  name: 'mode',
-);
-
-const touchscreenSwipeModePart = LensPart<TouchscreenSwipeGesture, SwipeMode>(
-  get: _getTouchscreenSwipeMode,
-  set: _setTouchscreenSwipeMode,
-  name: 'mode',
-);
-
-const touchpadPinchDirectionPart =
-    LensPart<TouchpadPinchGesture, PinchDirection>(
-      get: _getTouchpadPinchDirection,
-      set: _setTouchpadPinchDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<MouseGesture, GestureLocation> pressSchema =
+    editSchema<MouseGesture, GestureLocation>(
+      id: 'press',
+      rootLens: 'mouseGestureLens',
+      fields: [
+        union<PressGesture>(
+          'self',
+          select: caseLens<MouseGesture, PressGesture>(
+            get: (value) => _as<PressGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [prop<PressGesture, bool?>('instant')],
+        ),
+      ],
     );
 
-const touchscreenPinchDirectionPart =
-    LensPart<TouchscreenPinchGesture, PinchDirection>(
-      get: _getTouchscreenPinchDirection,
-      set: _setTouchscreenPinchDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<MouseGesture, GestureLocation> wheelSchema =
+    editSchema<MouseGesture, GestureLocation>(
+      id: 'wheel',
+      rootLens: 'mouseGestureLens',
+      fields: [
+        union<WheelGesture>(
+          'self',
+          select: caseLens<MouseGesture, WheelGesture>(
+            get: (value) => _as<WheelGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [prop<WheelGesture, WheelDirection>('direction')],
+        ),
+      ],
     );
 
-const touchpadRotateDirectionPart =
-    LensPart<TouchpadRotateGesture, RotateDirection>(
-      get: _getTouchpadRotateDirection,
-      set: _setTouchpadRotateDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<MouseGesture, GestureLocation> circleSchema =
+    editSchema<MouseGesture, GestureLocation>(
+      id: 'circle',
+      rootLens: 'mouseGestureLens',
+      fields: [
+        union<CircleGesture>(
+          'self',
+          select: caseLens<MouseGesture, CircleGesture>(
+            get: (value) => _as<CircleGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [prop<CircleGesture, CircleDirection>('direction')],
+        ),
+      ],
     );
 
-const touchscreenRotateDirectionPart =
-    LensPart<TouchscreenRotateGesture, RotateDirection>(
-      get: _getTouchscreenRotateDirection,
-      set: _setTouchscreenRotateDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<KeyboardGesture, GestureLocation> shortcutSchema =
+    editSchema<KeyboardGesture, GestureLocation>(
+      id: 'shortcut',
+      rootLens: 'keyboardGestureLens',
+      fields: [
+        union<ShortcutGesture>(
+          'self',
+          select: caseLens<KeyboardGesture, ShortcutGesture>(
+            get: (value) => _as<ShortcutGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [prop<ShortcutGesture, List<String>>('keys')],
+        ),
+      ],
     );
 
-const touchpadCircleDirectionPart =
-    LensPart<TouchpadCircleGesture, CircleDirection>(
-      get: _getTouchpadCircleDirection,
-      set: _setTouchpadCircleDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<TouchpadGesture, GestureLocation> touchpadSchema =
+    editSchema<TouchpadGesture, GestureLocation>(
+      id: 'touchpad',
+      rootLens: 'touchpadGestureLens',
+      fields: [
+        prop<TouchpadGesture, int?>(
+          'fingers',
+          select: lens<TouchpadGesture, int?>(
+            get: (value) => _select(_getTouchpadFingers(value)),
+            set: (value, next) => value.withFingers(next),
+          ),
+        ),
+        prop<TouchpadGesture, MotionCommon>(
+          'motion',
+          select: lens<TouchpadGesture, MotionCommon>(
+            get: (value) => _select(_getTouchpadMotion(value)),
+            // ignore: unnecessary_lambdas, source-gen requires closure source.
+            set: (value, next) => _setTouchpadMotion(value, next),
+          ),
+        ),
+        union<TouchpadSwipeGesture>(
+          'self',
+          select: caseLens<TouchpadGesture, TouchpadSwipeGesture>(
+            get: (value) => _as<TouchpadSwipeGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchpadSwipeGesture, SwipeMode>(
+              'swipeMode',
+              property: 'mode',
+            ),
+          ],
+        ),
+        union<TouchpadPinchGesture>(
+          'self',
+          select: caseLens<TouchpadGesture, TouchpadPinchGesture>(
+            get: (value) => _as<TouchpadPinchGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchpadPinchGesture, PinchDirection>(
+              'pinchDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchpadRotateGesture>(
+          'self',
+          select: caseLens<TouchpadGesture, TouchpadRotateGesture>(
+            get: (value) => _as<TouchpadRotateGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchpadRotateGesture, RotateDirection>(
+              'rotateDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchpadCircleGesture>(
+          'self',
+          select: caseLens<TouchpadGesture, TouchpadCircleGesture>(
+            get: (value) => _as<TouchpadCircleGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchpadCircleGesture, CircleDirection>(
+              'circleDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchpadStrokeGesture>(
+          'self',
+          select: caseLens<TouchpadGesture, TouchpadStrokeGesture>(
+            get: (value) => _as<TouchpadStrokeGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchpadStrokeGesture, List<String>>(
+              'strokeStrokes',
+              property: 'strokes',
+            ),
+          ],
+        ),
+      ],
     );
 
-const touchscreenCircleDirectionPart =
-    LensPart<TouchscreenCircleGesture, CircleDirection>(
-      get: _getTouchscreenCircleDirection,
-      set: _setTouchscreenCircleDirection,
-      name: 'direction',
+@GenerateEditSchema()
+final EditSchema<TouchscreenGesture, GestureLocation> touchscreenSchema =
+    editSchema<TouchscreenGesture, GestureLocation>(
+      id: 'touchscreen',
+      rootLens: 'touchscreenGestureLens',
+      fields: [
+        prop<TouchscreenGesture, int?>(
+          'fingers',
+          select: lens<TouchscreenGesture, int?>(
+            get: (value) => _select(_getTouchscreenFingers(value)),
+            set: (value, next) => value.withFingers(next),
+          ),
+        ),
+        prop<TouchscreenGesture, MotionCommon>(
+          'motion',
+          select: lens<TouchscreenGesture, MotionCommon>(
+            get: (value) => _select(_getTouchscreenMotion(value)),
+            // ignore: unnecessary_lambdas, source-gen requires closure source.
+            set: (value, next) => _setTouchscreenMotion(value, next),
+          ),
+        ),
+        union<TouchscreenSwipeGesture>(
+          'self',
+          select: caseLens<TouchscreenGesture, TouchscreenSwipeGesture>(
+            get: (value) => _as<TouchscreenSwipeGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchscreenSwipeGesture, SwipeMode>(
+              'swipeMode',
+              property: 'mode',
+            ),
+          ],
+        ),
+        union<TouchscreenPinchGesture>(
+          'self',
+          select: caseLens<TouchscreenGesture, TouchscreenPinchGesture>(
+            get: (value) => _as<TouchscreenPinchGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchscreenPinchGesture, PinchDirection>(
+              'pinchDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchscreenRotateGesture>(
+          'self',
+          select: caseLens<TouchscreenGesture, TouchscreenRotateGesture>(
+            get: (value) => _as<TouchscreenRotateGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchscreenRotateGesture, RotateDirection>(
+              'rotateDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchscreenCircleGesture>(
+          'self',
+          select: caseLens<TouchscreenGesture, TouchscreenCircleGesture>(
+            get: (value) => _as<TouchscreenCircleGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchscreenCircleGesture, CircleDirection>(
+              'circleDirection',
+              property: 'direction',
+            ),
+          ],
+        ),
+        union<TouchscreenStrokeGesture>(
+          'self',
+          select: caseLens<TouchscreenGesture, TouchscreenStrokeGesture>(
+            get: (value) => _as<TouchscreenStrokeGesture>(value),
+            set: (_, next) => next,
+          ),
+          fields: [
+            prop<TouchscreenStrokeGesture, List<String>>(
+              'strokeStrokes',
+              property: 'strokes',
+            ),
+          ],
+        ),
+      ],
     );
-
-const touchpadStrokeStrokesPart = LensPart<TouchpadStrokeGesture, List<String>>(
-  get: _getTouchpadStrokeStrokes,
-  set: _setTouchpadStrokeStrokes,
-  name: 'strokes',
-);
-
-const touchscreenStrokeStrokesPart =
-    LensPart<TouchscreenStrokeGesture, List<String>>(
-      get: _getTouchscreenStrokeStrokes,
-      set: _setTouchscreenStrokeStrokes,
-      name: 'strokes',
-    );
-
-const touchpadMotionPart = LensPart<TouchpadGesture, MotionCommon>(
-  get: _getTouchpadMotion,
-  set: _setTouchpadMotion,
-  name: 'motion',
-);
-
-const touchscreenMotionPart = LensPart<TouchscreenGesture, MotionCommon>(
-  get: _getTouchscreenMotion,
-  set: _setTouchscreenMotion,
-  name: 'motion',
-);
 
 Lens<MouseGesture> mouseGestureLens(GestureLocation location) =>
     Lens<MouseGesture>(
@@ -174,170 +319,9 @@ Lens<TouchscreenGesture> touchscreenGestureLens(GestureLocation location) =>
       name: 'touchscreenGesture[${location.index}]',
     );
 
-Lens<bool?> pressInstantLens(GestureLocation location) =>
-    mouseGestureLens(location).then(_asPressPart).then(pressInstantPart);
+T _as<T>(Object value) => value as T;
 
-Lens<WheelDirection> wheelDirectionLens(GestureLocation location) =>
-    mouseGestureLens(location).then(_asWheelPart).then(wheelDirectionPart);
-
-Lens<CircleDirection> circleDirectionLens(GestureLocation location) =>
-    mouseGestureLens(location).then(_asCirclePart).then(circleDirectionPart);
-
-Lens<List<String>> shortcutKeysLens(GestureLocation location) =>
-    keyboardGestureLens(location).then(_asShortcutPart).then(shortcutKeysPart);
-
-Lens<int?> touchpadFingersLens(GestureLocation location) =>
-    touchpadGestureLens(location).then(touchpadFingersPart);
-
-Lens<int?> touchscreenFingersLens(GestureLocation location) =>
-    touchscreenGestureLens(location).then(touchscreenFingersPart);
-
-Lens<SwipeMode> touchpadSwipeModeLens(GestureLocation location) =>
-    touchpadGestureLens(
-      location,
-    ).then(_asTouchpadSwipePart).then(touchpadSwipeModePart);
-
-Lens<SwipeMode> touchscreenSwipeModeLens(GestureLocation location) =>
-    touchscreenGestureLens(
-      location,
-    ).then(_asTouchscreenSwipePart).then(touchscreenSwipeModePart);
-
-Lens<PinchDirection> touchpadPinchDirectionLens(GestureLocation location) =>
-    touchpadGestureLens(
-      location,
-    ).then(_asTouchpadPinchPart).then(touchpadPinchDirectionPart);
-
-Lens<PinchDirection> touchscreenPinchDirectionLens(GestureLocation location) =>
-    touchscreenGestureLens(
-      location,
-    ).then(_asTouchscreenPinchPart).then(touchscreenPinchDirectionPart);
-
-Lens<RotateDirection> touchpadRotateDirectionLens(GestureLocation location) =>
-    touchpadGestureLens(
-      location,
-    ).then(_asTouchpadRotatePart).then(touchpadRotateDirectionPart);
-
-Lens<RotateDirection> touchscreenRotateDirectionLens(
-  GestureLocation location,
-) => touchscreenGestureLens(
-  location,
-).then(_asTouchscreenRotatePart).then(touchscreenRotateDirectionPart);
-
-Lens<CircleDirection> touchpadCircleDirectionLens(GestureLocation location) =>
-    touchpadGestureLens(
-      location,
-    ).then(_asTouchpadCirclePart).then(touchpadCircleDirectionPart);
-
-Lens<CircleDirection> touchscreenCircleDirectionLens(
-  GestureLocation location,
-) => touchscreenGestureLens(
-  location,
-).then(_asTouchscreenCirclePart).then(touchscreenCircleDirectionPart);
-
-Lens<List<String>> touchpadStrokeStrokesLens(GestureLocation location) =>
-    touchpadGestureLens(
-      location,
-    ).then(_asTouchpadStrokePart).then(touchpadStrokeStrokesPart);
-
-Lens<List<String>> touchscreenStrokeStrokesLens(GestureLocation location) =>
-    touchscreenGestureLens(
-      location,
-    ).then(_asTouchscreenStrokePart).then(touchscreenStrokeStrokesPart);
-
-Lens<MotionCommon> touchpadMotionLens(GestureLocation location) =>
-    touchpadGestureLens(location).then(touchpadMotionPart);
-
-Lens<MotionCommon> touchscreenMotionLens(GestureLocation location) =>
-    touchscreenGestureLens(location).then(touchscreenMotionPart);
-
-const _asPressPart = LensPart<MouseGesture, PressGesture>(
-  get: _asPress,
-  set: _setPress,
-  name: 'asPress',
-);
-
-const _asWheelPart = LensPart<MouseGesture, WheelGesture>(
-  get: _asWheel,
-  set: _setWheel,
-  name: 'asWheel',
-);
-
-const _asCirclePart = LensPart<MouseGesture, CircleGesture>(
-  get: _asCircle,
-  set: _setCircle,
-  name: 'asCircle',
-);
-
-const _asShortcutPart = LensPart<KeyboardGesture, ShortcutGesture>(
-  get: _asShortcut,
-  set: _setShortcut,
-  name: 'asShortcut',
-);
-
-const _asTouchpadSwipePart = LensPart<TouchpadGesture, TouchpadSwipeGesture>(
-  get: _asTouchpadSwipe,
-  set: _setTouchpadSwipe,
-  name: 'asSwipe',
-);
-
-const _asTouchscreenSwipePart =
-    LensPart<TouchscreenGesture, TouchscreenSwipeGesture>(
-      get: _asTouchscreenSwipe,
-      set: _setTouchscreenSwipe,
-      name: 'asSwipe',
-    );
-
-const _asTouchpadPinchPart = LensPart<TouchpadGesture, TouchpadPinchGesture>(
-  get: _asTouchpadPinch,
-  set: _setTouchpadPinch,
-  name: 'asPinch',
-);
-
-const _asTouchscreenPinchPart =
-    LensPart<TouchscreenGesture, TouchscreenPinchGesture>(
-      get: _asTouchscreenPinch,
-      set: _setTouchscreenPinch,
-      name: 'asPinch',
-    );
-
-const _asTouchpadRotatePart = LensPart<TouchpadGesture, TouchpadRotateGesture>(
-  get: _asTouchpadRotate,
-  set: _setTouchpadRotate,
-  name: 'asRotate',
-);
-
-const _asTouchscreenRotatePart =
-    LensPart<TouchscreenGesture, TouchscreenRotateGesture>(
-      get: _asTouchscreenRotate,
-      set: _setTouchscreenRotate,
-      name: 'asRotate',
-    );
-
-const _asTouchpadCirclePart = LensPart<TouchpadGesture, TouchpadCircleGesture>(
-  get: _asTouchpadCircle,
-  set: _setTouchpadCircle,
-  name: 'asCircle',
-);
-
-const _asTouchscreenCirclePart =
-    LensPart<TouchscreenGesture, TouchscreenCircleGesture>(
-      get: _asTouchscreenCircle,
-      set: _setTouchscreenCircle,
-      name: 'asCircle',
-    );
-
-const _asTouchpadStrokePart = LensPart<TouchpadGesture, TouchpadStrokeGesture>(
-  get: _asTouchpadStroke,
-  set: _setTouchpadStroke,
-  name: 'asStroke',
-);
-
-const _asTouchscreenStrokePart =
-    LensPart<TouchscreenGesture, TouchscreenStrokeGesture>(
-      get: _asTouchscreenStroke,
-      set: _setTouchscreenStroke,
-      name: 'asStroke',
-    );
+T _select<T>(T value) => value;
 
 Config replaceTriggerCommonAt(
   Config config,
@@ -398,46 +382,6 @@ Config _replaceTouchscreenGesture(
   return config.copyWith(touchscreenGestures: gestures);
 }
 
-PressGesture _asPress(MouseGesture gesture) => gesture as PressGesture;
-
-MouseGesture _setPress(MouseGesture _, PressGesture gesture) => gesture;
-
-WheelGesture _asWheel(MouseGesture gesture) => gesture as WheelGesture;
-
-MouseGesture _setWheel(MouseGesture _, WheelGesture gesture) => gesture;
-
-CircleGesture _asCircle(MouseGesture gesture) => gesture as CircleGesture;
-
-MouseGesture _setCircle(MouseGesture _, CircleGesture gesture) => gesture;
-
-ShortcutGesture _asShortcut(KeyboardGesture gesture) =>
-    gesture as ShortcutGesture;
-
-KeyboardGesture _setShortcut(KeyboardGesture _, ShortcutGesture gesture) =>
-    gesture;
-
-bool? _getPressInstant(PressGesture gesture) => gesture.instant;
-
-PressGesture _setPressInstant(PressGesture gesture, bool? value) =>
-    gesture.copyWith(instant: value);
-
-WheelDirection _getWheelDirection(WheelGesture gesture) => gesture.direction;
-
-WheelGesture _setWheelDirection(WheelGesture gesture, WheelDirection value) =>
-    gesture.copyWith(direction: value);
-
-CircleDirection _getCircleDirection(CircleGesture gesture) => gesture.direction;
-
-CircleGesture _setCircleDirection(
-  CircleGesture gesture,
-  CircleDirection value,
-) => gesture.copyWith(direction: value);
-
-List<String> _getShortcutKeys(ShortcutGesture gesture) => gesture.keys;
-
-ShortcutGesture _setShortcutKeys(ShortcutGesture gesture, List<String> value) =>
-    gesture.copyWith(keys: value);
-
 int? _getTouchpadFingers(TouchpadGesture gesture) => switch (gesture) {
   TouchpadSwipeGesture(:final fingers) => fingers,
   TouchpadPinchGesture(:final fingers) => fingers,
@@ -449,9 +393,6 @@ int? _getTouchpadFingers(TouchpadGesture gesture) => switch (gesture) {
   TouchpadStrokeGesture(:final fingers) => fingers,
 };
 
-TouchpadGesture _setTouchpadFingers(TouchpadGesture gesture, int? value) =>
-    gesture.withFingers(value);
-
 int? _getTouchscreenFingers(TouchscreenGesture gesture) => switch (gesture) {
   TouchscreenSwipeGesture(:final fingers) => fingers,
   TouchscreenPinchGesture(:final fingers) => fingers,
@@ -461,173 +402,6 @@ int? _getTouchscreenFingers(TouchscreenGesture gesture) => switch (gesture) {
   TouchscreenHoldGesture(:final fingers) => fingers,
   TouchscreenStrokeGesture(:final fingers) => fingers,
 };
-
-TouchscreenGesture _setTouchscreenFingers(
-  TouchscreenGesture gesture,
-  int? value,
-) => gesture.withFingers(value);
-
-TouchpadSwipeGesture _asTouchpadSwipe(TouchpadGesture gesture) =>
-    gesture as TouchpadSwipeGesture;
-
-TouchpadGesture _setTouchpadSwipe(
-  TouchpadGesture _,
-  TouchpadSwipeGesture gesture,
-) => gesture;
-
-TouchscreenSwipeGesture _asTouchscreenSwipe(TouchscreenGesture gesture) =>
-    gesture as TouchscreenSwipeGesture;
-
-TouchscreenGesture _setTouchscreenSwipe(
-  TouchscreenGesture _,
-  TouchscreenSwipeGesture gesture,
-) => gesture;
-
-TouchpadPinchGesture _asTouchpadPinch(TouchpadGesture gesture) =>
-    gesture as TouchpadPinchGesture;
-
-TouchpadGesture _setTouchpadPinch(
-  TouchpadGesture _,
-  TouchpadPinchGesture gesture,
-) => gesture;
-
-TouchscreenPinchGesture _asTouchscreenPinch(TouchscreenGesture gesture) =>
-    gesture as TouchscreenPinchGesture;
-
-TouchscreenGesture _setTouchscreenPinch(
-  TouchscreenGesture _,
-  TouchscreenPinchGesture gesture,
-) => gesture;
-
-TouchpadRotateGesture _asTouchpadRotate(TouchpadGesture gesture) =>
-    gesture as TouchpadRotateGesture;
-
-TouchpadGesture _setTouchpadRotate(
-  TouchpadGesture _,
-  TouchpadRotateGesture gesture,
-) => gesture;
-
-TouchscreenRotateGesture _asTouchscreenRotate(TouchscreenGesture gesture) =>
-    gesture as TouchscreenRotateGesture;
-
-TouchscreenGesture _setTouchscreenRotate(
-  TouchscreenGesture _,
-  TouchscreenRotateGesture gesture,
-) => gesture;
-
-TouchpadCircleGesture _asTouchpadCircle(TouchpadGesture gesture) =>
-    gesture as TouchpadCircleGesture;
-
-TouchpadGesture _setTouchpadCircle(
-  TouchpadGesture _,
-  TouchpadCircleGesture gesture,
-) => gesture;
-
-TouchscreenCircleGesture _asTouchscreenCircle(TouchscreenGesture gesture) =>
-    gesture as TouchscreenCircleGesture;
-
-TouchscreenGesture _setTouchscreenCircle(
-  TouchscreenGesture _,
-  TouchscreenCircleGesture gesture,
-) => gesture;
-
-TouchpadStrokeGesture _asTouchpadStroke(TouchpadGesture gesture) =>
-    gesture as TouchpadStrokeGesture;
-
-TouchpadGesture _setTouchpadStroke(
-  TouchpadGesture _,
-  TouchpadStrokeGesture gesture,
-) => gesture;
-
-TouchscreenStrokeGesture _asTouchscreenStroke(TouchscreenGesture gesture) =>
-    gesture as TouchscreenStrokeGesture;
-
-TouchscreenGesture _setTouchscreenStroke(
-  TouchscreenGesture _,
-  TouchscreenStrokeGesture gesture,
-) => gesture;
-
-SwipeMode _getTouchpadSwipeMode(TouchpadSwipeGesture gesture) => gesture.mode;
-
-TouchpadSwipeGesture _setTouchpadSwipeMode(
-  TouchpadSwipeGesture gesture,
-  SwipeMode value,
-) => gesture.copyWith(mode: value);
-
-SwipeMode _getTouchscreenSwipeMode(TouchscreenSwipeGesture gesture) =>
-    gesture.mode;
-
-TouchscreenSwipeGesture _setTouchscreenSwipeMode(
-  TouchscreenSwipeGesture gesture,
-  SwipeMode value,
-) => gesture.copyWith(mode: value);
-
-PinchDirection _getTouchpadPinchDirection(TouchpadPinchGesture gesture) =>
-    gesture.direction;
-
-TouchpadPinchGesture _setTouchpadPinchDirection(
-  TouchpadPinchGesture gesture,
-  PinchDirection value,
-) => gesture.copyWith(direction: value);
-
-PinchDirection _getTouchscreenPinchDirection(
-  TouchscreenPinchGesture gesture,
-) => gesture.direction;
-
-TouchscreenPinchGesture _setTouchscreenPinchDirection(
-  TouchscreenPinchGesture gesture,
-  PinchDirection value,
-) => gesture.copyWith(direction: value);
-
-RotateDirection _getTouchpadRotateDirection(TouchpadRotateGesture gesture) =>
-    gesture.direction;
-
-TouchpadRotateGesture _setTouchpadRotateDirection(
-  TouchpadRotateGesture gesture,
-  RotateDirection value,
-) => gesture.copyWith(direction: value);
-
-RotateDirection _getTouchscreenRotateDirection(
-  TouchscreenRotateGesture gesture,
-) => gesture.direction;
-
-TouchscreenRotateGesture _setTouchscreenRotateDirection(
-  TouchscreenRotateGesture gesture,
-  RotateDirection value,
-) => gesture.copyWith(direction: value);
-
-CircleDirection _getTouchpadCircleDirection(TouchpadCircleGesture gesture) =>
-    gesture.direction;
-
-TouchpadCircleGesture _setTouchpadCircleDirection(
-  TouchpadCircleGesture gesture,
-  CircleDirection value,
-) => gesture.copyWith(direction: value);
-
-CircleDirection _getTouchscreenCircleDirection(
-  TouchscreenCircleGesture gesture,
-) => gesture.direction;
-
-TouchscreenCircleGesture _setTouchscreenCircleDirection(
-  TouchscreenCircleGesture gesture,
-  CircleDirection value,
-) => gesture.copyWith(direction: value);
-
-List<String> _getTouchpadStrokeStrokes(TouchpadStrokeGesture gesture) =>
-    gesture.strokes;
-
-TouchpadStrokeGesture _setTouchpadStrokeStrokes(
-  TouchpadStrokeGesture gesture,
-  List<String> value,
-) => gesture.copyWith(strokes: value);
-
-List<String> _getTouchscreenStrokeStrokes(TouchscreenStrokeGesture gesture) =>
-    gesture.strokes;
-
-TouchscreenStrokeGesture _setTouchscreenStrokeStrokes(
-  TouchscreenStrokeGesture gesture,
-  List<String> value,
-) => gesture.copyWith(strokes: value);
 
 MotionCommon _getTouchpadMotion(TouchpadGesture gesture) => switch (gesture) {
   TouchpadSwipeGesture(:final motion) => motion,

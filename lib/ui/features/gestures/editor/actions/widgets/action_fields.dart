@@ -20,24 +20,24 @@ class ActionFields extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (action) {
-      CommandAction(:final command, :final wait) => Column(
+      CommandAction(:final wait) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
             builder: (context) {
-              final field = ref.actionField(
+              final schemaField = ref.actionSchemaField(
                 context,
-                actionCommandLens,
-                fallbackValue: () => command,
+                actionCommandField,
+                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
-                  initial: TextEditingValue(text: field.value),
-                  onChange: (value) => field.onChanged(value.text),
+                  initial: schemaField.textEditingValue,
+                  onChange: schemaField.onTextChanged,
                 ),
                 label: UnsavedLabel(
-                  state: field.dirty,
-                  onRevert: field.onRevert,
+                  state: schemaField.dirty,
+                  onRevert: schemaField.onRevert,
                   child: const LabelWithTooltip(
                     label: 'Command',
                     tooltip:
@@ -85,24 +85,24 @@ class ActionFields extends ConsumerWidget {
       InputAction(:final entries) => input_entries_editor.InputEntriesEditor(
         entries: entries,
       ),
-      PlasmaShortcutAction(:final component, :final shortcut) => Column(
+      PlasmaShortcutAction() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
             builder: (context) {
-              final field = ref.actionField(
+              final schemaField = ref.actionSchemaField(
                 context,
-                actionComponentLens,
-                fallbackValue: () => component,
+                actionComponentField,
+                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
-                  initial: TextEditingValue(text: field.value),
-                  onChange: (value) => field.onChanged(value.text),
+                  initial: schemaField.textEditingValue,
+                  onChange: schemaField.onTextChanged,
                 ),
                 label: UnsavedLabel(
-                  state: field.dirty,
-                  onRevert: field.onRevert,
+                  state: schemaField.dirty,
+                  onRevert: schemaField.onRevert,
                   child: const LabelWithTooltip(
                     label: 'Component',
                     tooltip:
@@ -119,19 +119,19 @@ class ActionFields extends ConsumerWidget {
           const SizedBox(height: 6),
           Builder(
             builder: (context) {
-              final field = ref.actionField(
+              final schemaField = ref.actionSchemaField(
                 context,
-                actionShortcutLens,
-                fallbackValue: () => shortcut,
+                actionShortcutField,
+                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
-                  initial: TextEditingValue(text: field.value),
-                  onChange: (value) => field.onChanged(value.text),
+                  initial: schemaField.textEditingValue,
+                  onChange: schemaField.onTextChanged,
                 ),
                 label: UnsavedLabel(
-                  state: field.dirty,
-                  onRevert: field.onRevert,
+                  state: schemaField.dirty,
+                  onRevert: schemaField.onRevert,
                   child: const LabelWithTooltip(
                     label: 'Shortcut',
                     tooltip:
@@ -176,21 +176,21 @@ class ActionFields extends ConsumerWidget {
           );
         },
       ),
-      RawAction(:final raw) => Builder(
+      RawAction() => Builder(
         builder: (context) {
-          final field = ref.actionField(
+          final schemaField = ref.actionSchemaField(
             context,
-            actionRawLens,
-            fallbackValue: () => raw,
+            actionRawField,
+            TriggerAction(action: action),
           );
           return FTextField(
             control: FTextFieldControl.managed(
-              initial: TextEditingValue(text: field.value),
-              onChange: (value) => field.onChanged(value.text),
+              initial: schemaField.textEditingValue,
+              onChange: schemaField.onTextChanged,
             ),
             label: UnsavedLabel(
-              state: field.dirty,
-              onRevert: field.onRevert,
+              state: schemaField.dirty,
+              onRevert: schemaField.onRevert,
               child: const Text('Raw YAML'),
             ),
             maxLines: null,

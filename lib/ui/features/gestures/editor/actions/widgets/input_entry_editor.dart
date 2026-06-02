@@ -63,7 +63,7 @@ class InputEntryEditor extends HookWidget {
 
     final mode = inferInputEntryMode(entry);
 
-    // Keyboard recording handler, 
+    // Keyboard recording handler,
     // stored in a ref so cleanup always unregisters.
     final keyHandlerRef = useRef<bool Function(KeyEvent)?>(null);
 

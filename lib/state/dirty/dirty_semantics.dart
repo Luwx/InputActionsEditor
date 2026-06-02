@@ -13,6 +13,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/state/dirty/dirty_mark_state.dart';
 import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
+import 'package:input_actions_editor/state/edit/lenses/action_lenses.dart';
 
 const _deepCollectionEquality = DeepCollectionEquality();
 
@@ -228,15 +229,18 @@ Object? comparableGestureSectionValue(
   TriggerCommon? common,
   GestureSectionDirtyField field,
 ) => switch (field) {
-  GestureSectionDirtyField.mouseButtons => [
-    common?.mouseButtons ?? const <Object?>[],
-    common?.mouseButtonsExactOrder ?? false,
-  ],
-  GestureSectionDirtyField.triggerConditions => common?.conditions,
-  GestureSectionDirtyField.actions =>
-    (common?.actions ?? const <TriggerAction>[])
-        .map(comparableTriggerAction)
-        .toList(),
+  GestureSectionDirtyField.mouseButtons => comparableGestureGroupValue(
+    common,
+    GestureDirtyGroup.mouseButtonsSection,
+  ),
+  GestureSectionDirtyField.triggerConditions => comparableGestureGroupValue(
+    common,
+    GestureDirtyGroup.triggerConditions,
+  ),
+  GestureSectionDirtyField.actions => comparableGestureGroupValue(
+    common,
+    GestureDirtyGroup.actionsSection,
+  ),
 };
 
 Object? comparableTriggerCommon(TriggerCommon? common) => [
@@ -259,46 +263,11 @@ Object? comparableTriggerCommon(TriggerCommon? common) => [
       .toList(),
 ];
 
-Object? comparableTriggerConfigValue(TriggerCommon? common) => [
-  common?.mouseButtons ?? const <Object?>[],
-  common?.mouseButtonsExactOrder ?? false,
-  common?.conditions,
-  common?.id,
-  common?.threshold,
-  common?.resumeTimeout,
-  common?.effectiveAccelerated,
-  common?.effectiveBlockEvents,
-  common?.effectiveClearModifiers,
-  common?.effectiveSetLastTrigger,
-  common?.endConditions,
-];
+Object? comparableTriggerConfigValue(TriggerCommon? common) =>
+    comparableGestureGroupValue(common, GestureDirtyGroup.triggerConfig);
 
-Object? comparableTriggerAction(TriggerAction? triggerAction) {
-  if (triggerAction == null) return null;
-  return [
-    triggerAction.on,
-    comparableAction(triggerAction.action),
-    triggerAction.conditions,
-    triggerAction.interval,
-    triggerAction.threshold,
-    triggerAction.conflicting,
-    triggerAction.id,
-    triggerAction.limit,
-  ];
-}
-
-Object? comparableAction(Action? action) => switch (action) {
-  CommandAction(:final command) => ['command', command, action.effectiveWait],
-  InputAction(:final entries) => ['input', entries],
-  PlasmaShortcutAction(:final component, :final shortcut) => [
-    'plasmaShortcut',
-    component,
-    shortcut,
-  ],
-  SleepAction(:final milliseconds) => ['sleep', milliseconds],
-  RawAction(:final raw) => ['raw', raw],
-  _ => null,
-};
+Object? comparableTriggerAction(TriggerAction? triggerAction) =>
+    comparableActionGroupValue(triggerAction, ActionDirtyGroup.all);
 
 Object? comparableRootFieldValue(Config? config, RootConfigDirtyField field) =>
     switch (field) {

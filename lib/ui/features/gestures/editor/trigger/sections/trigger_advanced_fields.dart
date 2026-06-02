@@ -4,9 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lens.dart';
 import 'package:input_actions_editor/state/edit/lenses/gesture_lenses.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -41,47 +38,46 @@ class TriggerAdvancedFields extends ConsumerWidget {
       context.theme.colors.background,
     );
 
-    EditableField<T> getGestureField<T>(
-      Lens<T> Function(GestureLocation location) lensFor,
-      T fallbackValue,
-    ) => ref.gestureField(
+    final idField = ref.gestureSchemaField(context, gestureIdField, common);
+    final thresholdField = ref.gestureSchemaField(
       context,
-      lensFor,
-      fallbackValue: () => fallbackValue,
+      gestureThresholdField,
+      common,
     );
-
-    final idField = getGestureField(gestureIdLens, common.id);
-    final thresholdField = getGestureField(
-      gestureThresholdLens,
-      common.threshold,
+    final resumeTimeoutField = ref.gestureSchemaField(
+      context,
+      gestureResumeTimeoutField,
+      common,
     );
-    final resumeTimeoutField = getGestureField(
-      gestureResumeTimeoutLens,
-      common.resumeTimeout,
+    final acceleratedField = ref.gestureSchemaField(
+      context,
+      gestureAcceleratedField,
+      common,
     );
-    final acceleratedField = getGestureField(
-      gestureAcceleratedLens,
-      common.accelerated,
+    final blockEventsField = ref.gestureSchemaField(
+      context,
+      gestureBlockEventsField,
+      common,
     );
-    final blockEventsField = getGestureField(
-      gestureBlockEventsLens,
-      common.blockEvents,
+    final clearModifiersField = ref.gestureSchemaField(
+      context,
+      gestureClearModifiersField,
+      common,
     );
-    final clearModifiersField = getGestureField(
-      gestureClearModifiersLens,
-      common.clearModifiers,
+    final setLastTriggerField = ref.gestureSchemaField(
+      context,
+      gestureSetLastTriggerField,
+      common,
     );
-    final setLastTriggerField = getGestureField(
-      gestureSetLastTriggerLens,
-      common.setLastTrigger,
+    final conditionsField = ref.gestureSchemaField(
+      context,
+      gestureConditionsField,
+      common,
     );
-    final conditionsField = getGestureField(
-      gestureConditionsLens,
-      common.conditions,
-    );
-    final endConditionsField = getGestureField(
-      gestureEndConditionsLens,
-      common.endConditions,
+    final endConditionsField = ref.gestureSchemaField(
+      context,
+      gestureEndConditionsField,
+      common,
     );
 
     return Column(
@@ -109,9 +105,8 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 ),
               ),
               control: FTextFieldControl.managed(
-                initial: TextEditingValue(text: idField.value ?? ''),
-                onChange: (v) =>
-                    idField.onChanged(v.text.isEmpty ? null : v.text),
+                initial: idField.textEditingValue,
+                onChange: idField.onTextChanged,
               ),
               hint: 'e.g. my_trigger',
             ),
@@ -141,9 +136,8 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 ),
               ),
               control: FTextFieldControl.managed(
-                initial: TextEditingValue(text: thresholdField.value ?? ''),
-                onChange: (v) =>
-                    thresholdField.onChanged(v.text.isEmpty ? null : v.text),
+                initial: thresholdField.textEditingValue,
+                onChange: thresholdField.onTextChanged,
               ),
               hint: 'e.g. 100 or 50-200',
             ),
@@ -168,12 +162,8 @@ class TriggerAdvancedFields extends ConsumerWidget {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               keyboardType: TextInputType.number,
               control: FTextFieldControl.managed(
-                initial: TextEditingValue(
-                  text: resumeTimeoutField.value?.toString() ?? '',
-                ),
-                onChange: (v) => resumeTimeoutField.onChanged(
-                  v.text.isEmpty ? null : int.tryParse(v.text),
-                ),
+                initial: resumeTimeoutField.textEditingValue,
+                onChange: resumeTimeoutField.onTextChanged,
               ),
               hint: '0 = disabled',
             ),
