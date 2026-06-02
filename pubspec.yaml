@@ -65,6 +65,8 @@ dependencies:
   meta: ^1.18.0
   lens_geneartor:
     path: ../../flutter_pkg/lens_geneartor
+  flutter_hooks: ^0.21.3+1
+  hooks_riverpod: ^3.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

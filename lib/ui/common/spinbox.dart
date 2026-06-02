@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 
-class FSpinBox extends StatefulWidget {
+class FSpinBox extends HookWidget {
   const FSpinBox({
     required this.value,
     required this.onChanged,
@@ -29,146 +30,164 @@ class FSpinBox extends StatefulWidget {
   final int decimalPlaces;
   final String? hint;
 
-  @override
-  State<FSpinBox> createState() => _FSpinBoxState();
-}
-
-class _FSpinBoxState extends State<FSpinBox> {
-  static const Duration _repeatDelay = Duration(milliseconds: 350);
-  static const Duration _repeatInterval = Duration(milliseconds: 65);
-
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-  Timer? _repeatTimer;
-  bool _isSyncingText = false;
-
-  String get _formattedValue => widget.value.toStringAsFixed(
-    widget.decimalPlaces,
-  );
-
-  int get _maxInputLength {
-    final maxLength = widget.max.toStringAsFixed(widget.decimalPlaces).length;
-    final minLength = widget.min.toStringAsFixed(widget.decimalPlaces).length;
+  int get maxInputLength {
+    final maxLength = max.toStringAsFixed(decimalPlaces).length;
+    final minLength = min.toStringAsFixed(decimalPlaces).length;
     return maxLength > minLength ? maxLength : minLength;
-  }
-
-  TextInputFormatter get _rangeFormatter => TextInputFormatter.withFunction((
-    oldValue,
-    newValue,
-  ) {
-    final text = newValue.text;
-    if (text.isEmpty || text == '-' || text == '.' || text == '-.') {
-      return newValue;
-    }
-
-    final parsed = double.tryParse(text);
-    if (parsed == null || parsed < widget.min || parsed > widget.max) {
-      return oldValue;
-    }
-
-    return newValue;
-  });
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: _formattedValue);
-    _focusNode = FocusNode()..addListener(_handleFocusChange);
-  }
-
-  @override
-  void didUpdateWidget(covariant FSpinBox oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && !_focusNode.hasFocus) {
-      _syncText(widget.value);
-    }
-  }
-
-  @override
-  void dispose() {
-    _repeatTimer?.cancel();
-    _focusNode
-      ..removeListener(_handleFocusChange)
-      ..dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleFocusChange() {
-    if (!_focusNode.hasFocus) {
-      _commitText();
-    }
-  }
-
-  double _clamp(double value) => value.clamp(widget.min, widget.max);
-
-  void _syncText(double value) {
-    final text = value.toStringAsFixed(widget.decimalPlaces);
-    if (_controller.text == text) {
-      return;
-    }
-    _isSyncingText = true;
-    try {
-      _controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    } finally {
-      _isSyncingText = false;
-    }
-  }
-
-  void _setValue(double value) {
-    final nextValue = _clamp(value);
-    widget.onChanged(nextValue);
-    _syncText(nextValue);
-  }
-
-  void _commitText() {
-    final parsed = double.tryParse(_controller.text);
-    if (parsed == null) {
-      _syncText(widget.value);
-      return;
-    }
-    _setValue(parsed);
-  }
-
-  void _stepBy(double delta) {
-    _setValue(widget.value + delta);
-  }
-
-  void _startRepeating(double delta) {
-    _repeatTimer?.cancel();
-    _stepBy(delta);
-    _repeatTimer = Timer(_repeatDelay, () {
-      _repeatTimer = Timer.periodic(_repeatInterval, (_) {
-        _stepBy(delta);
-      });
-    });
-  }
-
-  void _stopRepeating() {
-    _repeatTimer?.cancel();
-    _repeatTimer = null;
-  }
-
-  void _handleTextChanged(String text) {
-    if (_isSyncingText) {
-      return;
-    }
-    final parsed = double.tryParse(text);
-    if (parsed != null) {
-      widget.onChanged(_clamp(parsed));
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final canIncrement = widget.value < widget.max;
-    final canDecrement = widget.value > widget.min;
-    final formatter = widget.decimalPlaces == 0
+    String fmt(double v) => v.toStringAsFixed(decimalPlaces);
+
+    final controller = useTextEditingController(text: fmt(value));
+    final focusNode = useFocusNode();
+    final repeatTimer = useRef<Timer?>(null);
+    final isSyncingText = useRef(false);
+
+    // Always-fresh refs so timer and focus callbacks read current props.
+    final valueRef = useRef(value);
+    final minRef = useRef(min);
+    final maxRef = useRef(max);
+    final decimalPlacesRef = useRef(decimalPlaces);
+    final onChangedRef = useRef(onChanged);
+    valueRef.value = value;
+    minRef.value = min;
+    maxRef.value = max;
+    decimalPlacesRef.value = decimalPlaces;
+    onChangedRef.value = onChanged;
+
+    // Sync controller text when external value changes and field is not focused
+    // (replaces didUpdateWidget).
+    final prevValue = usePrevious(value);
+    if (prevValue != null && prevValue != value && !focusNode.hasFocus) {
+      final text = fmt(value);
+      if (controller.text != text) {
+        isSyncingText.value = true;
+        try {
+          controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
+        } finally {
+          isSyncingText.value = false;
+        }
+      }
+    }
+
+    // Cancel timer on dispose.
+    useEffect(
+      () =>
+          () => repeatTimer.value?.cancel(),
+      const [],
+    );
+
+    // Focus listener: commit text on unfocus (reads through refs).
+    useEffect(() {
+      void handleFocusChange() {
+        if (focusNode.hasFocus) return;
+        final curMin = minRef.value;
+        final curMax = maxRef.value;
+        final curDp = decimalPlacesRef.value;
+        final curValue = valueRef.value;
+        final notify = onChangedRef.value;
+        String localFmt(double v) => v.toStringAsFixed(curDp);
+
+        final parsed = double.tryParse(controller.text);
+        if (parsed == null) {
+          final text = localFmt(curValue);
+          if (controller.text != text) {
+            isSyncingText.value = true;
+            try {
+              controller.value = TextEditingValue(
+                text: text,
+                selection: TextSelection.collapsed(offset: text.length),
+              );
+            } finally {
+              isSyncingText.value = false;
+            }
+          }
+          return;
+        }
+        final next = parsed.clamp(curMin, curMax);
+        notify(next);
+        final text = localFmt(next);
+        if (controller.text != text) {
+          isSyncingText.value = true;
+          try {
+            controller.value = TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
+            );
+          } finally {
+            isSyncingText.value = false;
+          }
+        }
+      }
+
+      focusNode.addListener(handleFocusChange);
+      return () => focusNode.removeListener(handleFocusChange);
+    }, const []);
+
+    void syncText(double v) {
+      final text = fmt(v);
+      if (controller.text == text) return;
+      isSyncingText.value = true;
+      try {
+        controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      } finally {
+        isSyncingText.value = false;
+      }
+    }
+
+    void setValue(double v) {
+      final next = v.clamp(min, max);
+      onChanged(next);
+      syncText(next);
+    }
+
+    // Uses valueRef so timer callbacks always read the current value.
+    void stepBy(double delta) => setValue(valueRef.value + delta);
+
+    void startRepeating(double delta) {
+      repeatTimer.value?.cancel();
+      stepBy(delta);
+      repeatTimer.value = Timer(const Duration(milliseconds: 350), () {
+        repeatTimer.value = Timer.periodic(
+          const Duration(milliseconds: 65),
+          (_) => stepBy(delta),
+        );
+      });
+    }
+
+    void stopRepeating() {
+      repeatTimer.value?.cancel();
+      repeatTimer.value = null;
+    }
+
+    void handleTextChanged(String text) {
+      if (isSyncingText.value) return;
+      final parsed = double.tryParse(text);
+      if (parsed != null) onChanged(parsed.clamp(min, max));
+    }
+
+    final canIncrement = value < max;
+    final canDecrement = value > min;
+    final formatter = decimalPlaces == 0
         ? FilteringTextInputFormatter.allow(RegExp(r'^-?\d*$'))
         : FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*$'));
+    final rangeFormatter = TextInputFormatter.withFunction((old, newVal) {
+      final text = newVal.text;
+      if (text.isEmpty || text == '-' || text == '.' || text == '-.') {
+        return newVal;
+      }
+      final parsed = double.tryParse(text);
+      if (parsed == null || parsed < min || parsed > max) return old;
+      return newVal;
+    });
 
     return Shortcuts(
       shortcuts: const {
@@ -179,49 +198,51 @@ class _FSpinBoxState extends State<FSpinBox> {
         actions: {
           _SpinIntent: CallbackAction<_SpinIntent>(
             onInvoke: (intent) {
-              _stepBy(intent.direction * widget.step);
+              stepBy(intent.direction * step);
               return null;
             },
           ),
         },
         child: SizedBox(
-          width: widget.width,
+          width: width,
           child: FTextField(
-            label: widget.label,
+            label: label,
             control: FTextFieldControl.managed(
-              controller: _controller,
-              onChange: (next) => _handleTextChanged(next.text),
+              controller: controller,
+              onChange: (next) => handleTextChanged(next.text),
             ),
-            focusNode: _focusNode,
+            focusNode: focusNode,
             keyboardType: TextInputType.numberWithOptions(
-              decimal: widget.decimalPlaces > 0,
-              signed: widget.min < 0,
+              decimal: decimalPlaces > 0,
+              signed: min < 0,
             ),
             textAlign: TextAlign.center,
-            hint: widget.hint,
+            hint: hint,
             inputFormatters: [
               formatter,
-              LengthLimitingTextInputFormatter(_maxInputLength),
-              _rangeFormatter,
+              LengthLimitingTextInputFormatter(maxInputLength),
+              rangeFormatter,
             ],
-            onSubmit: (_) => _commitText(),
-            // style: const .delta(
-            //   contentPadding: .value(
-            //     EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            //   ),
-            // ),
+            onSubmit: (_) {
+              final parsed = double.tryParse(controller.text);
+              if (parsed == null) {
+                syncText(value);
+                return;
+              }
+              setValue(parsed);
+            },
             suffixBuilder: (context, style, variants) => _SpinStepper(
               style: style,
               variants: variants,
               canIncrement: canIncrement,
               canDecrement: canDecrement,
-              onIncrement: () => _stepBy(widget.step),
-              onDecrement: () => _stepBy(-widget.step),
-              onLongIncrementStart: () => _startRepeating(widget.step),
-              onLongDecrementStart: () => _startRepeating(-widget.step),
-              onLongPressEnd: _stopRepeating,
-              onScroll: (direction) => _stepBy(direction * widget.step),
-              onTapIntoStepper: _focusNode.requestFocus,
+              onIncrement: () => stepBy(step),
+              onDecrement: () => stepBy(-step),
+              onLongIncrementStart: () => startRepeating(step),
+              onLongDecrementStart: () => startRepeating(-step),
+              onLongPressEnd: stopRepeating,
+              onScroll: (direction) => stepBy(direction * step),
+              onTapIntoStepper: focusNode.requestFocus,
             ),
           ),
         ),

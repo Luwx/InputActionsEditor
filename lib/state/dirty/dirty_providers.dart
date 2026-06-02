@@ -26,7 +26,6 @@ final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
 final ProviderFamily<DirtyMarkState, RootConfigDirtyField>
 rootConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, RootConfigDirtyField>((ref, field) {
-
       final current = comparableRootFieldValue(
         ref.watch(configControllerProvider).value,
         field,

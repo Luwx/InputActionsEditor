@@ -3,6 +3,7 @@ import 'package:flutter/material.dart'
     show Colors, InputDecoration, Material, OutlineInputBorder;
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/data/key_sequence_parser.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
@@ -24,7 +25,7 @@ import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 ///
 /// [onChanged] is called with the normalised `List<String>` token list every
 /// time the text changes (chords are expanded to press-all + release-reversed).
-class KeySequenceTextField extends StatefulWidget {
+class KeySequenceTextField extends HookWidget {
   const KeySequenceTextField({
     super.key,
     this.controller,
@@ -52,67 +53,54 @@ class KeySequenceTextField extends StatefulWidget {
   final int maxLines;
 
   @override
-  State<KeySequenceTextField> createState() => _KeySequenceTextFieldState();
-}
-
-class _KeySequenceTextFieldState extends State<KeySequenceTextField> {
-  TextEditingController? _ownController;
-
-  TextEditingController get _controller => widget.controller ?? _ownController!;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.controller == null) {
-      _ownController = TextEditingController(text: widget.initialValue ?? '');
-    }
-    _controller.addListener(_onTextChanged);
-  }
-
-  void _onTextChanged() {
-    final segs = KeySequenceParser.parse(_controller.text);
-    widget.onChanged?.call(KeySequenceParser.toTokens(segs));
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onTextChanged);
-    _ownController?.dispose();
-    super.dispose();
-  }
-
-  KeySequenceSpanStyle _buildSpanStyle(BuildContext context) {
-    final colors = context.theme.colors;
-    final base = context.theme.typography.sm;
-    return KeySequenceSpanStyle(
-      baseStyle: base,
-      pressBackground: colors.primary.withValues(alpha: 0.18),
-      releaseBackground: colors.destructive.withValues(alpha: 0.18),
-      chordBackground: colors.secondary.withValues(alpha: 0.55),
-      pressTextColor: colors.primary,
-      releaseTextColor: colors.destructive,
-      chordTextColor: colors.secondaryForeground,
-      separatorDimColor: colors.mutedForeground,
-      errorColor: colors.destructive,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final ownController = useTextEditingController(
+      text: controller == null ? (initialValue ?? '') : null,
+    );
+    final effectiveController = controller ?? ownController;
+
+    // Rebuild when the controller content changes (needed for maxLines logic).
+    useListenable(effectiveController);
+
+    useEffect(() {
+      void onTextChanged() {
+        final segs = KeySequenceParser.parse(effectiveController.text);
+        onChanged?.call(KeySequenceParser.toTokens(segs));
+      }
+
+      effectiveController.addListener(onTextChanged);
+      return () => effectiveController.removeListener(onTextChanged);
+    }, [effectiveController]);
+
+    KeySequenceSpanStyle buildSpanStyle() {
+      final colors = context.theme.colors;
+      final base = context.theme.typography.sm;
+      return KeySequenceSpanStyle(
+        baseStyle: base,
+        pressBackground: colors.primary.withValues(alpha: 0.18),
+        releaseBackground: colors.destructive.withValues(alpha: 0.18),
+        chordBackground: colors.secondary.withValues(alpha: 0.55),
+        pressTextColor: colors.primary,
+        releaseTextColor: colors.destructive,
+        chordTextColor: colors.secondaryForeground,
+        separatorDimColor: colors.mutedForeground,
+        errorColor: colors.destructive,
+      );
+    }
+
     final colors = context.theme.colors;
-    final spanStyle = _buildSpanStyle(context);
+    final spanStyle = buildSpanStyle();
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        var effectiveMaxLines = widget.maxLines;
-        if (widget.maxLines == 1) {
+        var effectiveMaxLines = maxLines;
+        if (maxLines == 1) {
           // Measure whether the current text overflows a single line.
           // If it does, expand to 3 lines so the user can see their input.
           const horizontalPadding = 20.0; // contentPadding 10 × 2
           final painter = TextPainter(
             text: TextSpan(
-              text: _controller.text,
+              text: effectiveController.text,
               style: context.theme.typography.sm,
             ),
             textDirection: TextDirection.ltr,
@@ -128,12 +116,12 @@ class _KeySequenceTextFieldState extends State<KeySequenceTextField> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.label ?? 'Key Sequence',
+                label ?? 'Key Sequence',
               ),
               const SizedBox(height: 4),
               ExtendedTextField(
-                controller: _controller,
-                autofocus: widget.autofocus,
+                controller: effectiveController,
+                autofocus: autofocus,
                 maxLines: effectiveMaxLines,
                 minLines: 1,
                 inputFormatters: [
@@ -145,8 +133,7 @@ class _KeySequenceTextFieldState extends State<KeySequenceTextField> {
                 style: context.theme.typography.sm,
                 decoration: InputDecoration(
                   hintText:
-                      widget.hintText ??
-                      'e.g.  ctrl+c   or   +ctrl, +c, -c, -ctrl',
+                      hintText ?? 'e.g.  ctrl+c   or   +ctrl, +c, -c, -ctrl',
                   isDense: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),

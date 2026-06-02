@@ -4,7 +4,7 @@ part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_sec
 // Gesture context menu tile
 // ---------------------------------------------------------------------------
 
-class _ContextMenuTile extends StatefulWidget {
+class _ContextMenuTile extends HookWidget {
   const _ContextMenuTile({
     required this.item,
     required this.newlyAddedMarkerId,
@@ -30,53 +30,43 @@ class _ContextMenuTile extends StatefulWidget {
   final VoidCallback onDelete;
 
   @override
-  State<_ContextMenuTile> createState() => _ContextMenuTileState();
-}
-
-class _ContextMenuTileState extends State<_ContextMenuTile> {
-  final ContextMenuController _menuController = ContextMenuController();
-
-  @override
-  void dispose() {
-    _menuController.remove();
-    super.dispose();
-  }
-
-  void _onSecondaryTapUp(TapUpDetails details) {
-    if (widget.isMultiSelectMode) return;
-    _menuController.show(
-      context: context,
-      contextMenuBuilder: (_) => _GestureContextMenu(
-        position: details.globalPosition,
-        onDismiss: _menuController.remove,
-        onDuplicate: () {
-          _menuController.remove();
-          widget.onDuplicate();
-        },
-        onDelete: () {
-          _menuController.remove();
-          widget.onDelete();
-        },
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final menuController = useMemoized(ContextMenuController.new);
+    useEffect(() => menuController.remove, const []);
+
+    void onSecondaryTapUp(TapUpDetails details) {
+      if (isMultiSelectMode) return;
+      menuController.show(
+        context: context,
+        contextMenuBuilder: (_) => _GestureContextMenu(
+          position: details.globalPosition,
+          onDismiss: menuController.remove,
+          onDuplicate: () {
+            menuController.remove();
+            onDuplicate();
+          },
+          onDelete: () {
+            menuController.remove();
+            onDelete();
+          },
+        ),
+      );
+    }
+
     return GestureDetector(
-      onSecondaryTapUp: _onSecondaryTapUp,
-      onLongPress: widget.onLongPress,
+      onSecondaryTapUp: onSecondaryTapUp,
+      onLongPress: onLongPress,
       behavior: HitTestBehavior.translucent,
       child: GestureListTile(
-        device: widget.item.device,
-        index: widget.item.configIndex,
-        gesture: widget.item.gesture,
-        newlyAddedMarkerId: widget.newlyAddedMarkerId,
-        isSelected: widget.isSelected,
-        isMultiSelectMode: widget.isMultiSelectMode,
-        isMultiSelected: widget.isMultiSelected,
-        groupDisabled: widget.groupDisabled,
-        onTap: widget.onTap,
+        device: item.device,
+        index: item.configIndex,
+        gesture: item.gesture,
+        newlyAddedMarkerId: newlyAddedMarkerId,
+        isSelected: isSelected,
+        isMultiSelectMode: isMultiSelectMode,
+        isMultiSelected: isMultiSelected,
+        groupDisabled: groupDisabled,
+        onTap: onTap,
       ),
     );
   }

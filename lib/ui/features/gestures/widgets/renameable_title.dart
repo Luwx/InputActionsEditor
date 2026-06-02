@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/state/app_router.dart';
 
-class RenameableTitle extends ConsumerStatefulWidget {
+class RenameableTitle extends HookConsumerWidget {
   const RenameableTitle({
     required this.name,
     required this.titleStyle,
@@ -16,58 +17,45 @@ class RenameableTitle extends ConsumerStatefulWidget {
   final void Function(String)? onRename;
 
   @override
-  ConsumerState<RenameableTitle> createState() => _RenameableTitleState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isRenaming = useState(false);
+    final controller = useTextEditingController();
+    final focusNode = useFocusNode();
 
-class _RenameableTitleState extends ConsumerState<RenameableTitle> {
-  bool _isRenaming = false;
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+    useEffect(() {
+      void onFocusChange() {
+        if (!focusNode.hasFocus && isRenaming.value) {
+          isRenaming.value = false;
+        }
+      }
 
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onFocusChange);
-  }
+      focusNode.addListener(onFocusChange);
+      return () => focusNode.removeListener(onFocusChange);
+    }, const []);
 
-  void _onFocusChange() {
-    if (!_focusNode.hasFocus && _isRenaming) {
-      setState(() => _isRenaming = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_onFocusChange);
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _startRename() {
-    _controller.text = widget.name;
-    _controller.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: widget.name.length,
-    );
-    setState(() => _isRenaming = true);
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _focusNode.requestFocus(),
-    );
-  }
-
-  void _doConfirm() {
-    widget.onRename!(_controller.text.trim());
-    setState(() => _isRenaming = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     ref.listen(selectedGestureProvider, (prev, next) {
-      if (prev != next && _isRenaming) setState(() => _isRenaming = false);
+      if (prev != next && isRenaming.value) isRenaming.value = false;
     });
 
-    if (_isRenaming) {
+    void startRename() {
+      controller
+        ..text = name
+        ..selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: name.length,
+        );
+      isRenaming.value = true;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => focusNode.requestFocus(),
+      );
+    }
+
+    void doConfirm() {
+      onRename!(controller.text.trim());
+      isRenaming.value = false;
+    }
+
+    if (isRenaming.value) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -75,15 +63,15 @@ class _RenameableTitleState extends ConsumerState<RenameableTitle> {
           children: [
             Flexible(
               child: FTextField(
-                control: FTextFieldControl.managed(controller: _controller),
-                focusNode: _focusNode,
+                control: FTextFieldControl.managed(controller: controller),
+                focusNode: focusNode,
                 hint: 'Name',
-                onSubmit: (_) => _doConfirm(),
+                onSubmit: (_) => doConfirm(),
               ),
             ),
             const SizedBox(width: 8),
             FButton.icon(
-              onPress: _doConfirm,
+              onPress: doConfirm,
               size: .sm,
               child: const Icon(FLucideIcons.check),
             ),
@@ -97,12 +85,12 @@ class _RenameableTitleState extends ConsumerState<RenameableTitle> {
       children: [
         Flexible(
           child: GestureDetector(
-            onTap: _startRename,
+            onTap: startRename,
             child: MouseRegion(
               cursor: SystemMouseCursors.text,
               child: Text(
-                widget.name,
-                style: widget.titleStyle,
+                name,
+                style: titleStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -113,7 +101,7 @@ class _RenameableTitleState extends ConsumerState<RenameableTitle> {
         FButton.icon(
           variant: .ghost,
           size: .xs,
-          onPress: _startRename,
+          onPress: startRename,
           child: const Icon(FLucideIcons.pencil),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -152,7 +153,7 @@ class SpeedSettingsEditor extends ConsumerWidget {
   }
 }
 
-class _SpeedField extends StatefulWidget {
+class _SpeedField extends HookWidget {
   const _SpeedField({
     required this.value,
     required this.hint,
@@ -166,68 +167,48 @@ class _SpeedField extends StatefulWidget {
   final bool isInt;
 
   @override
-  State<_SpeedField> createState() => _SpeedFieldState();
-}
-
-class _SpeedFieldState extends State<_SpeedField> {
-  late final TextEditingController _controller;
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: _fmt(widget.value));
-  }
-
-  @override
-  void didUpdateWidget(_SpeedField old) {
-    super.didUpdateWidget(old);
-    if (!_focused && old.value != widget.value) {
-      _controller.text = _fmt(widget.value);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  String _fmt(double? v) {
-    if (v == null) return '';
-    return widget.isInt ? v.toInt().toString() : v.toString();
-  }
-
-  void _commit(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) {
-      widget.onChanged(null);
-      return;
-    }
-    final parsed = double.tryParse(trimmed);
-    if (parsed == null) {
-      _controller.text = _fmt(widget.value);
-    } else {
-      widget.onChanged(parsed);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    String fmt(double? v) {
+      if (v == null) return '';
+      return isInt ? v.toInt().toString() : v.toString();
+    }
+
+    final controller = useTextEditingController(text: fmt(value));
+    final focused = useRef(false);
+
+    final prevValue = usePrevious(value);
+    if (prevValue != value && !focused.value) {
+      controller.text = fmt(value);
+    }
+
+    void commit(String text) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        onChanged(null);
+        return;
+      }
+      final parsed = double.tryParse(trimmed);
+      if (parsed == null) {
+        controller.text = fmt(value);
+      } else {
+        onChanged(parsed);
+      }
+    }
+
     return SizedBox(
       width: 100,
       child: Focus(
-        onFocusChange: (focused) {
-          _focused = focused;
-          if (!focused) _commit(_controller.text);
+        onFocusChange: (f) {
+          focused.value = f;
+          if (!f) commit(controller.text);
         },
         child: FTextField(
           control: FTextFieldControl.managed(
-            controller: _controller,
+            controller: controller,
             onChange: (_) {},
           ),
-          hint: widget.hint,
-          onSubmit: _commit,
+          hint: hint,
+          onSubmit: commit,
         ),
       ),
     );

@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 
-class OperatorSelect extends StatefulWidget {
+class OperatorSelect extends HookWidget {
   const OperatorSelect({
     required this.operators,
     required this.current,
@@ -17,86 +16,68 @@ class OperatorSelect extends StatefulWidget {
   final void Function(String) onChanged;
 
   @override
-  State<OperatorSelect> createState() => _OperatorSelectState();
-}
-
-class _OperatorSelectState extends State<OperatorSelect> {
-  late final FocusNode _focusNode;
-  bool _hovered = false;
-  bool _focused = false;
-  Timer? _idleDelayTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode()..addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() {
-    if (_focusNode.hasFocus) {
-      _focused = true;
-    } else {
-      _focused = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _idleDelayTimer?.cancel();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  // TODO(me): propper style it without idle hack
-  static final _idleStyle = FSelectStyleDelta.delta(
-    fieldStyles: .delta([
-      .all(
-        .delta(
-          border: .delta([
-            .base(
-              OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.transparent),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ]),
-          color: .delta([.all(Colors.transparent)]),
-        ),
-      ),
-    ]),
-  );
-
-  @override
   Widget build(BuildContext context) {
-    final active = _focused || _hovered;
+    final focusNode = useFocusNode();
+    final isHovered = useState(false);
+    final isFocused = useState(false);
+
+    useEffect(() {
+      void onFocusChange() {
+        isFocused.value = focusNode.hasFocus;
+      }
+
+      focusNode.addListener(onFocusChange);
+      return () => focusNode.removeListener(onFocusChange);
+    }, const []);
+
+    // TODO(me): propper style it without idle hack
+    final idleStyle = FSelectStyleDelta.delta(
+      fieldStyles: .delta([
+        .all(
+          .delta(
+            border: .delta([
+              .base(
+                OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.transparent),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ]),
+            color: .delta([.all(Colors.transparent)]),
+          ),
+        ),
+      ]),
+    );
+
+    final active = isFocused.value || isHovered.value;
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => isHovered.value = true,
+      onExit: (_) => isHovered.value = false,
       child: FSelect<String>.rich(
         format: operatorLabel,
         textAlign: TextAlign.center,
         autofocus: true,
-        focusNode: _focusNode,
+        focusNode: focusNode,
         prefixBuilder: (_, style, variants) => Padding(
           padding: const EdgeInsets.only(left: 8),
           child: Icon(
-            operatorIcons[widget.current] ?? FLucideIcons.equal,
+            operatorIcons[current] ?? FLucideIcons.equal,
             size: 14,
           ),
         ),
         control: FSelectControl<String>.lifted(
-          value: widget.current,
+          value: current,
           onChange: (value) {
-            if (value != null) widget.onChanged(value);
+            if (value != null) onChanged(value);
           },
         ),
         contentConstraints: const FPortalConstraints(
           maxWidth: 260,
           maxHeight: 280,
         ),
-        style: active ? const FSelectStyleDelta.delta() : _idleStyle,
+        style: active ? const FSelectStyleDelta.delta() : idleStyle,
         children: [
-          for (final operator in widget.operators)
+          for (final operator in operators)
             FSelectItem<String>.item(
               value: operator,
               title: Text(

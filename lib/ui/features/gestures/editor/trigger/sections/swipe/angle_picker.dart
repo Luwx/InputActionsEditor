@@ -1,13 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/angle_wheel_painter.dart';
 
-class AnglePicker extends StatefulWidget {
+class AnglePicker extends HookWidget {
   const AnglePicker({
     required this.mode,
     required this.onChanged,
@@ -17,70 +18,59 @@ class AnglePicker extends StatefulWidget {
   final SwipeAngleMode mode;
   final void Function(SwipeAngleMode) onChanged;
 
-  @override
-  State<AnglePicker> createState() => _AnglePickerState();
-}
-
-class _AnglePickerState extends State<AnglePicker> {
   static const _size = 128.0;
   static const double _r = _size / 2;
   static const _handleR = 7.0;
   static const _hitSlop = 16.0;
   static const double _arcR = _r - _handleR - 2;
 
-  int? _dragging;
-
-  Offset _toPoint(double deg) {
+  static Offset _toPoint(double deg) {
     final rad = deg * math.pi / 180;
     return Offset(_r + math.cos(rad) * _arcR, _r + math.sin(rad) * _arcR);
   }
 
-  double _toAngle(Offset local) {
+  static double _toAngle(Offset local) {
     final delta = local - const Offset(_r, _r);
     return (math.atan2(delta.dy, delta.dx) * 180 / math.pi + 360) % 360;
   }
 
-  void _onPanStart(DragStartDetails details) {
-    final minPoint = _toPoint(widget.mode.minAngle);
-    final maxPoint = _toPoint(widget.mode.maxAngle);
-    final minDistance = (details.localPosition - minPoint).distance;
-    final maxDistance = (details.localPosition - maxPoint).distance;
-    if (minDistance <= _hitSlop || maxDistance <= _hitSlop) {
-      setState(() => _dragging = minDistance <= maxDistance ? 0 : 1);
-    }
-  }
-
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (_dragging == null) return;
-    final angle = _toAngle(details.localPosition);
-    final mode = widget.mode;
-    widget.onChanged(
-      _dragging == 0
-          ? mode.copyWith(minAngle: angle)
-          : mode.copyWith(maxAngle: angle),
-    );
-  }
-
-  void _onPanEnd(DragEndDetails _) => setState(() => _dragging = null);
-
   @override
   Widget build(BuildContext context) {
+    final dragging = useState<int?>(null);
+
+    void onPanStart(DragStartDetails details) {
+      final minPoint = _toPoint(mode.minAngle);
+      final maxPoint = _toPoint(mode.maxAngle);
+      final minDistance = (details.localPosition - minPoint).distance;
+      final maxDistance = (details.localPosition - maxPoint).distance;
+      if (minDistance <= _hitSlop || maxDistance <= _hitSlop) {
+        dragging.value = minDistance <= maxDistance ? 0 : 1;
+      }
+    }
+
+    void onPanUpdate(DragUpdateDetails details) {
+      if (dragging.value == null) return;
+      final angle = _toAngle(details.localPosition);
+      onChanged(
+        dragging.value == 0
+            ? mode.copyWith(minAngle: angle)
+            : mode.copyWith(maxAngle: angle),
+      );
+    }
+
     final colors = context.theme.colors;
-    final mode = widget.mode;
 
     return Column(
       children: [
         const SizedBox(height: 4),
         Row(
-          // crossAxisAlignment: CrossAxisAlignment.center,
-          // mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Align(
               alignment: Alignment.topRight,
               child: GestureDetector(
-                onPanStart: _onPanStart,
-                onPanUpdate: _onPanUpdate,
-                onPanEnd: _onPanEnd,
+                onPanStart: onPanStart,
+                onPanUpdate: onPanUpdate,
+                onPanEnd: (_) => dragging.value = null,
                 child: SizedBox.square(
                   dimension: _size,
                   child: CustomPaint(
@@ -88,7 +78,7 @@ class _AnglePickerState extends State<AnglePicker> {
                       minAngle: mode.minAngle,
                       maxAngle: mode.maxAngle,
                       bidirectional: mode.bidirectional,
-                      dragging: _dragging,
+                      dragging: dragging.value,
                       primary: colors.primary,
                       surface: colors.card,
                       border: colors.border,
@@ -101,13 +91,11 @@ class _AnglePickerState extends State<AnglePicker> {
             ),
             const SizedBox(width: 16),
             Column(
-              // crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 FSpinBox(
                   value: mode.minAngle,
-                  onChanged: (value) {
-                    widget.onChanged(mode.copyWith(minAngle: value));
-                  },
+                  onChanged: (value) =>
+                      onChanged(mode.copyWith(minAngle: value)),
                   label: const LabelWithTooltip(
                     label: 'Min angle °',
                     tooltip:
@@ -123,9 +111,8 @@ class _AnglePickerState extends State<AnglePicker> {
                 const SizedBox(height: 12),
                 FSpinBox(
                   value: mode.maxAngle,
-                  onChanged: (value) {
-                    widget.onChanged(mode.copyWith(maxAngle: value));
-                  },
+                  onChanged: (value) =>
+                      onChanged(mode.copyWith(maxAngle: value)),
                   label: const LabelWithTooltip(
                     label: 'Max angle °',
                     tooltip:
@@ -146,9 +133,8 @@ class _AnglePickerState extends State<AnglePicker> {
         const SizedBox(height: 12),
         FCheckbox(
           value: mode.bidirectional,
-          onChange: (checked) => widget.onChanged(
-            mode.copyWith(bidirectional: checked),
-          ),
+          onChange: (checked) =>
+              onChanged(mode.copyWith(bidirectional: checked)),
           label: const LabelWithTooltip(
             label: 'Bidirectional',
             tooltip:

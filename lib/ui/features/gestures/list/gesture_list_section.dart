@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart'
@@ -39,228 +40,190 @@ part 'gesture_list_section/widgets/header.dart';
 // Section widget
 // ---------------------------------------------------------------------------
 
-class GestureListSection extends ConsumerStatefulWidget {
+class GestureListSection extends HookConsumerWidget {
   const GestureListSection({super.key});
 
   static const _headerHeight = 65.0;
 
   @override
-  ConsumerState<GestureListSection> createState() => _GestureListSectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
+    final pendingAutoSelect = useRef(false);
+    final pendingAutoSelectFilter = useRef<DeviceType?>(null);
+    final scrollTarget = useState<({DeviceType device, int index})?>(null);
+    final scrollTargetFlatIndex = useRef<int?>(null);
+    final scrollTargetQueued = useRef(false);
+    final scrollTargetKey = useMemoized(GlobalKey.new);
 
-class _GestureListSectionState extends ConsumerState<GestureListSection> {
-  final ScrollController _scrollController = ScrollController();
-  bool _pendingAutoSelect = false;
-  DeviceType? _pendingAutoSelectFilter;
-
-  /// A gesture that should be scrolled into view, and the key attached to its
-  /// row so we can locate it after the next layout pass.
-  ({DeviceType device, int index})? _scrollTarget;
-  int? _scrollTargetFlatIndex;
-  bool _scrollTargetQueued = false;
-  final GlobalKey _scrollTargetKey = GlobalKey();
-
-  _GestureListController get _listController =>
-      _GestureListController(ref, context);
-
-  void _queueAutoSelectFirstGesture(DeviceType? filter) {
-    _pendingAutoSelect = true;
-    _pendingAutoSelectFilter = filter;
-  }
-
-  void _clearQueuedAutoSelect() {
-    _pendingAutoSelect = false;
-    _pendingAutoSelectFilter = null;
-  }
-
-  void _queueScrollToGesture(({DeviceType device, int index}) target) {
-    setState(() {
-      _scrollTarget = target;
-      _scrollTargetFlatIndex = null;
-      _scrollTargetQueued = false;
-    });
-  }
-
-  void _prepareScrollTarget(_GestureListViewModel viewModel) {
-    final target = _scrollTarget;
-    if (target == null) return;
-
-    final flatIndex = viewModel.flatItems.indexWhere(
-      (item) =>
-          item is _GestureRowItem &&
-          item.device == target.device &&
-          item.configIndex == target.index,
-    );
-    if (flatIndex < 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _clearScrollTarget());
-      return;
+    void clearScrollTarget() {
+      scrollTarget.value = null;
+      scrollTargetFlatIndex.value = null;
+      scrollTargetQueued.value = false;
     }
 
-    final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
-    final groupId = item.groupId;
-    if (!item.isVisible && groupId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(collapsedGroupsProvider.notifier).expand(groupId);
-      });
-      return;
-    }
-
-    _scrollTargetFlatIndex = flatIndex;
-    if (_scrollTargetQueued) return;
-    _scrollTargetQueued = true;
-    _scrollToTarget();
-  }
-
-  void _clearScrollTarget() {
-    if (!mounted) return;
-    setState(() {
-      _scrollTarget = null;
-      _scrollTargetFlatIndex = null;
-      _scrollTargetQueued = false;
-    });
-  }
-
-  void _tryAutoSelectFirstGesture({
-    required Config config,
-    required Set<String> collapsedGroups,
-  }) {
-    if (!_pendingAutoSelect) return;
-
-    final filter = _pendingAutoSelectFilter;
-    final items = _buildFlatList(config, filter, collapsedGroups);
-    final gestureItems = items.whereType<_GestureRowItem>();
-    final first =
-        gestureItems.where((item) => item.isVisible).firstOrNull ??
-        gestureItems.firstOrNull;
-
-    if (first == null) {
-      _clearQueuedAutoSelect();
-      return;
-    }
-
-    _clearQueuedAutoSelect();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.selectGesture(first.device, first.configIndex);
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _handleGestureAdded(DeviceType device, Object gesture) {
-    final config = ref.read(gestureListProvider).config;
-    if (config == null) return;
-
-    final existingGestures = config.gesturesForDevice(device);
-    final newIndex = existingGestures.length;
-
-    // Count gestures of the same type to build a default name.
-    final typeLabel = gestureTypeLabel(gesture);
-    final sameTypeCount = existingGestures
-        .where((g) => gestureTypeLabel(g as Object) == typeLabel)
-        .length;
-    final defaultName = '$typeLabel #${sameTypeCount + 1}';
-    final named = gestureWithCommon(
-      gesture,
-      gestureCommon(gesture).copyWith(name: defaultName),
-    );
-
-    ref.read(gestureListProvider.notifier).addGesture(device, named);
-    ref.read(addedGestureProvider.notifier).markAdded(newIndex);
-    context.selectGesture(device, newIndex);
-
-    setState(() => _scrollTarget = (device: device, index: newIndex));
-    _scrollToTarget();
-  }
-
-  void _scrollToTarget([int attempt = 0]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      if (!_scrollController.hasClients) {
-        if (attempt < 12) {
-          _scrollToTarget(attempt + 1);
-        } else {
-          _clearScrollTarget();
+    void scrollToTarget([int attempt = 0]) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!scrollController.hasClients) {
+          if (attempt < 12) {
+            scrollToTarget(attempt + 1);
+          } else {
+            clearScrollTarget();
+          }
+          return;
         }
-        return;
-      }
-
-      final ctx = _scrollTargetKey.currentContext;
-      if (ctx != null) {
-        // The row is built — align it precisely and finish.
-        await Scrollable.ensureVisible(
-          ctx,
-          alignment: 1,
-          duration: Durations.medium2,
-          curve: Curves.easeOutCubic,
-        );
-        _clearScrollTarget();
-        return;
-      }
-
-      // The target row may not be built yet. Move near its estimated list
-      // position first, then retry with ensureVisible once Flutter builds it.
-      final position = _scrollController.position;
-      final flatIndex = _scrollTargetFlatIndex;
-      if (attempt < 12 && flatIndex != null) {
-        final viewport = position.viewportDimension;
-        final targetOffset =
-            GestureListSection._headerHeight + flatIndex * 62.0 - viewport / 3;
-        await _scrollController.animateTo(
-          targetOffset.clamp(
-            position.minScrollExtent,
+        final ctx = scrollTargetKey.currentContext;
+        if (ctx != null) {
+          await Scrollable.ensureVisible(
+            ctx,
+            alignment: 1,
+            duration: Durations.medium2,
+            curve: Curves.easeOutCubic,
+          );
+          clearScrollTarget();
+          return;
+        }
+        final position = scrollController.position;
+        final flatIndex = scrollTargetFlatIndex.value;
+        if (attempt < 12 && flatIndex != null) {
+          final viewport = position.viewportDimension;
+          final targetOffset =
+              GestureListSection._headerHeight +
+              flatIndex * 62.0 -
+              viewport / 3;
+          await scrollController.animateTo(
+            targetOffset.clamp(
+              position.minScrollExtent,
+              position.maxScrollExtent,
+            ),
+            duration: Durations.short3,
+            curve: Curves.easeOut,
+          );
+          scrollToTarget(attempt + 1);
+        } else if (attempt < 12 &&
+            position.pixels < position.maxScrollExtent - 1) {
+          await scrollController.animateTo(
             position.maxScrollExtent,
-          ),
-          duration: Durations.short3,
-          curve: Curves.easeOut,
+            duration: Durations.short3,
+            curve: Curves.easeOut,
+          );
+          scrollToTarget(attempt + 1);
+        } else {
+          clearScrollTarget();
+        }
+      });
+    }
+
+    void queueAutoSelectFirstGesture(DeviceType? filter) {
+      pendingAutoSelect.value = true;
+      pendingAutoSelectFilter.value = filter;
+    }
+
+    void clearQueuedAutoSelect() {
+      pendingAutoSelect.value = false;
+      pendingAutoSelectFilter.value = null;
+    }
+
+    void queueScrollToGesture(({DeviceType device, int index}) target) {
+      scrollTarget.value = target;
+      scrollTargetFlatIndex.value = null;
+      scrollTargetQueued.value = false;
+    }
+
+    void prepareScrollTarget(_GestureListViewModel viewModel) {
+      final target = scrollTarget.value;
+      if (target == null) return;
+      final flatIndex = viewModel.flatItems.indexWhere(
+        (item) =>
+            item is _GestureRowItem &&
+            item.device == target.device &&
+            item.configIndex == target.index,
+      );
+      if (flatIndex < 0) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => clearScrollTarget(),
         );
-        _scrollToTarget(attempt + 1);
-      } else if (attempt < 12 &&
-          position.pixels < position.maxScrollExtent - 1) {
-        await _scrollController.animateTo(
-          position.maxScrollExtent,
-          duration: Durations.short3,
-          curve: Curves.easeOut,
-        );
-        _scrollToTarget(attempt + 1);
-      } else if (mounted) {
-        _clearScrollTarget();
+        return;
       }
-    });
-  }
+      final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
+      final groupId = item.groupId;
+      if (!item.isVisible && groupId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(collapsedGroupsProvider.notifier).expand(groupId);
+        });
+        return;
+      }
+      scrollTargetFlatIndex.value = flatIndex;
+      if (scrollTargetQueued.value) return;
+      scrollTargetQueued.value = true;
+      scrollToTarget();
+    }
 
-  Future<void> _addGroup(DeviceType device) {
-    return _showRenameDialog(
-      context,
-      title: 'New Group',
-      initial: '',
-      onConfirm: (name) {
-        if (name.trim().isEmpty) return;
-        final id = _generateGroupId();
-        ref
-            .read(gestureListProvider.notifier)
-            .addGroup(
-              GestureGroup(id: id, name: name.trim(), device: device),
-            );
-      },
-    );
-  }
+    void tryAutoSelectFirstGesture({
+      required Config config,
+      required Set<String> collapsedGroups,
+    }) {
+      if (!pendingAutoSelect.value) return;
+      final filter = pendingAutoSelectFilter.value;
+      final items = _buildFlatList(config, filter, collapsedGroups);
+      final gestureItems = items.whereType<_GestureRowItem>();
+      final first =
+          gestureItems.where((item) => item.isVisible).firstOrNull ??
+          gestureItems.firstOrNull;
+      if (first == null) {
+        clearQueuedAutoSelect();
+        return;
+      }
+      clearQueuedAutoSelect();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.selectGesture(first.device, first.configIndex);
+      });
+    }
 
-  @override
-  Widget build(BuildContext context) {
+    void handleGestureAdded(DeviceType device, Object gesture) {
+      final config = ref.read(gestureListProvider).config;
+      if (config == null) return;
+      final existingGestures = config.gesturesForDevice(device);
+      final newIndex = existingGestures.length;
+      final typeLabel = gestureTypeLabel(gesture);
+      final sameTypeCount = existingGestures
+          .where((g) => gestureTypeLabel(g as Object) == typeLabel)
+          .length;
+      final defaultName = '$typeLabel #${sameTypeCount + 1}';
+      final named = gestureWithCommon(
+        gesture,
+        gestureCommon(gesture).copyWith(name: defaultName),
+      );
+      ref.read(gestureListProvider.notifier).addGesture(device, named);
+      ref.read(addedGestureProvider.notifier).markAdded(newIndex);
+      context.selectGesture(device, newIndex);
+      scrollTarget.value = (device: device, index: newIndex);
+      scrollToTarget();
+    }
+
+    Future<void> addGroupDialog(DeviceType device) {
+      return _showRenameDialog(
+        context,
+        title: 'New Group',
+        initial: '',
+        onConfirm: (name) {
+          if (name.trim().isEmpty) return;
+          final id = _generateGroupId();
+          ref
+              .read(gestureListProvider.notifier)
+              .addGroup(
+                GestureGroup(id: id, name: name.trim(), device: device),
+              );
+        },
+      );
+    }
+
     ref
       ..listen(currentViewProvider, (prevView, nextView) {
         if (nextView != AppView.gestures) {
-          _clearQueuedAutoSelect();
+          clearQueuedAutoSelect();
         } else if (prevView != AppView.gestures) {
-          // Opened gestures view — auto-select if nothing is open.
           if (ref.read(selectedGestureProvider) == null) {
-            _queueAutoSelectFirstGesture(ref.read(deviceFilterProvider));
+            queueAutoSelectFirstGesture(ref.read(deviceFilterProvider));
           }
         }
       })
@@ -268,17 +231,17 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
         if (ref.read(currentViewProvider) != AppView.gestures) return;
         if (prevFilter == nextFilter) return;
         if (ref.read(selectedGestureProvider) == null) {
-          _queueAutoSelectFirstGesture(nextFilter);
+          queueAutoSelectFirstGesture(nextFilter);
         } else {
-          _clearQueuedAutoSelect();
+          clearQueuedAutoSelect();
         }
       })
       ..listen(selectedGestureProvider, (_, next) {
-        if (next != null) _clearQueuedAutoSelect();
+        if (next != null) clearQueuedAutoSelect();
       })
       ..listen(gestureRedirectTargetProvider, (_, next) {
         if (next == null) return;
-        _queueScrollToGesture(next);
+        queueScrollToGesture(next);
         ref.read(gestureRedirectTargetProvider.notifier).clear();
       })
       ..listen(navProvider, (prev, next) {
@@ -287,9 +250,8 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
             prev.history.length == next.history.length &&
             prev.cursor != next.cursor;
         if (!isHistoryCursorMove) return;
-
         if (next.current case GesturesDestination(open: final open?)) {
-          _queueScrollToGesture(open);
+          queueScrollToGesture(open);
         }
       });
 
@@ -322,7 +284,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
           ? const Center(child: CircularProgressIndicator.adaptive())
           : Builder(
               builder: (context) {
-                _tryAutoSelectFirstGesture(
+                tryAutoSelectFirstGesture(
                   config: config,
                   collapsedGroups: collapsedGroups,
                 );
@@ -334,7 +296,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                   isMultiSelectMode: isMultiSelectMode,
                   selectedCount: multiSelect?.length ?? 0,
                 );
-                _prepareScrollTarget(viewModel);
+                prepareScrollTarget(viewModel);
                 final reorderEntries =
                     <ReorderableGroupableListEntry<GestureKey, String>>[];
                 final gestureItemsByKey = <GestureKey, _GestureRowItem>{};
@@ -373,7 +335,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                 return ScrollbarMediaPadding(
                   topInset: GestureListSection._headerHeight,
                   child: CustomScrollView(
-                    controller: _scrollController,
+                    controller: scrollController,
                     slivers: [
                       SliverPersistentHeader(
                         pinned: true,
@@ -385,9 +347,9 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                             countLabel: viewModel.countLabel,
                             deviceFilter: deviceFilter,
                             isMultiSelectMode: isMultiSelectMode,
-                            onGestureAdded: _handleGestureAdded,
+                            onGestureAdded: handleGestureAdded,
                             onAddGroup: deviceFilter != null
-                                ? () => _addGroup(deviceFilter)
+                                ? () => addGroupDialog(deviceFilter)
                                 : null,
                             onExitMultiSelect: multiSelectNotifier.exit,
                           ),
@@ -408,7 +370,7 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                       else
                         ReorderableGroupableList<GestureKey, String>(
                           entries: reorderEntries,
-                          scrollController: _scrollController,
+                          scrollController: scrollController,
                           borderColor: colors.border,
                           reorderEnabled: viewModel.reorderEnabled,
                           selectedItemIds:
@@ -427,12 +389,18 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                               groupItemsById[group.id]?.group.name ??
                               'Move group',
                           onItemsReordered: (result) =>
-                              _listController.applyItemsReorder(
+                              _GestureListController(
+                                ref,
+                                context,
+                              ).applyItemsReorder(
                                 viewModel.deviceFilter!,
                                 result,
                               ),
                           onGroupReordered: (from, to) =>
-                              _listController.applyGroupReorder(
+                              _GestureListController(
+                                ref,
+                                context,
+                              ).applyGroupReorder(
                                 viewModel.deviceFilter!,
                                 from,
                                 to,
@@ -567,11 +535,11 @@ class _GestureListSectionState extends ConsumerState<GestureListSection> {
                             );
 
                             final isScrollTarget =
-                                _scrollTarget?.device == item.device &&
-                                _scrollTarget?.index == item.configIndex;
+                                scrollTarget.value?.device == item.device &&
+                                scrollTarget.value?.index == item.configIndex;
                             return isScrollTarget
                                 ? KeyedSubtree(
-                                    key: _scrollTargetKey,
+                                    key: scrollTargetKey,
                                     child: row,
                                   )
                                 : row;

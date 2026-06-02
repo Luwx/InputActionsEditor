@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -413,7 +414,7 @@ class _NullableBoolToggle extends StatelessWidget {
   }
 }
 
-class _NumberField extends StatefulWidget {
+class _NumberField extends HookWidget {
   const _NumberField({
     required this.value,
     required this.onChanged,
@@ -429,72 +430,55 @@ class _NumberField extends StatefulWidget {
   final double? max;
 
   @override
-  State<_NumberField> createState() => _NumberFieldState();
-}
-
-class _NumberFieldState extends State<_NumberField> {
-  late final TextEditingController _controller;
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: _formatValue(widget.value));
-  }
-
-  @override
-  void didUpdateWidget(_NumberField old) {
-    super.didUpdateWidget(old);
-    if (!_focused && old.value != widget.value) {
-      _controller.text = _formatValue(widget.value);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  String _formatValue(double? v) {
-    if (v == null) return '';
-    return widget.isInt ? v.toInt().toString() : v.toString();
-  }
-
-  void _commit(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) {
-      widget.onChanged(null);
-      return;
-    }
-    final parsed = double.tryParse(trimmed);
-    if (parsed == null) {
-      _controller.text = _formatValue(widget.value);
-      return;
-    }
-    var clamped = parsed;
-    if (widget.min != null && clamped < widget.min!) clamped = widget.min!;
-    if (widget.max != null && clamped > widget.max!) clamped = widget.max!;
-    widget.onChanged(clamped);
-    if (clamped != parsed) _controller.text = _formatValue(clamped);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    String formatValue(double? v) {
+      if (v == null) return '';
+      return isInt ? v.toInt().toString() : v.toString();
+    }
+
+    final controller = useTextEditingController(text: formatValue(value));
+    final focused = useRef(false);
+
+    // Sync text when external value changes and field is not focused.
+    final prevValue = usePrevious(value);
+    if (prevValue != value && !focused.value) {
+      controller.text = formatValue(value);
+    }
+
+    void commit(String text) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        onChanged(null);
+        return;
+      }
+      final parsed = double.tryParse(trimmed);
+      if (parsed == null) {
+        controller.text = formatValue(value);
+        return;
+      }
+      var clamped = parsed;
+      final mn = min;
+      final mx = max;
+      if (mn != null && clamped < mn) clamped = mn;
+      if (mx != null && clamped > mx) clamped = mx;
+      onChanged(clamped);
+      if (clamped != parsed) controller.text = formatValue(clamped);
+    }
+
     return SizedBox(
       width: 100,
       child: Focus(
-        onFocusChange: (focused) {
-          _focused = focused;
-          if (!focused) _commit(_controller.text);
+        onFocusChange: (f) {
+          focused.value = f;
+          if (!f) commit(controller.text);
         },
         child: FTextField(
           control: FTextFieldControl.managed(
-            controller: _controller,
+            controller: controller,
             onChange: (_) {},
           ),
           hint: 'default',
-          onSubmit: _commit,
+          onSubmit: commit,
         ),
       ),
     );

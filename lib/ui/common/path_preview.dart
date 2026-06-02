@@ -4,8 +4,9 @@ import 'dart:ui' as ui show Gradient;
 
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
-class PathPreview extends StatefulWidget {
+class PathPreview extends HookWidget {
   const PathPreview({
     required this.points,
     required this.startColor,
@@ -54,118 +55,102 @@ class PathPreview extends StatefulWidget {
   final Widget? empty;
 
   @override
-  State<PathPreview> createState() => _PathPreviewState();
-}
-
-class _PathPreviewState extends State<PathPreview>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: widget.animationDuration,
-    value: widget.animatePath ? 0 : 1,
-  );
-  late final CurvedAnimation _progress = CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeInOut,
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    _syncAnimation(startFromZero: true);
-  }
-
-  @override
-  void didUpdateWidget(PathPreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.animationDuration != widget.animationDuration) {
-      _controller.duration = widget.animationDuration;
-    }
-    if (!listEquals(oldWidget.points, widget.points)) {
-      _syncAnimation(startFromZero: true);
-      return;
-    }
-    if (!oldWidget.animatePath && widget.animatePath) {
-      _syncAnimation(startFromZero: true);
-      return;
-    }
-    if (oldWidget.animatePath && !widget.animatePath) {
-      return;
-    }
-    if (!widget.animatePath && _controller.value != 1) {
-      _controller.value = 1;
-    }
-  }
-
-  void _syncAnimation({required bool startFromZero}) {
-    if (!widget.animatePath || widget.points.length < 2) {
-      _controller.value = 1;
-      return;
-    }
-    if (startFromZero) {
-      _controller.value = 0;
-    }
-    unawaited(_controller.forward());
-  }
-
-  @override
-  void dispose() {
-    _progress.dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isAnimatingPath =
-        widget.animatePath || _controller.isAnimating || _controller.value < 1;
+    final controller = useAnimationController(
+      duration: animationDuration,
+      initialValue: animatePath ? 0 : 1,
+    );
+    final progress = useMemoized(
+      () => CurvedAnimation(parent: controller, curve: Curves.easeInOut),
+      [controller],
+    );
 
-    Widget buildPreview(double progress) => CustomPaint(
+    // Dispose the CurvedAnimation when done.
+    useEffect(() => progress.dispose, [progress]);
+
+    void syncAnimation({required bool startFromZero}) {
+      if (!animatePath || points.length < 2) {
+        controller.value = 1;
+        return;
+      }
+      if (startFromZero) controller.value = 0;
+      unawaited(controller.forward());
+    }
+
+    // Run on first mount.
+    useEffect(() {
+      syncAnimation(startFromZero: true);
+      return null;
+    }, const []);
+
+    // Handle prop changes (didUpdateWidget logic).
+    final prevDuration = usePrevious(animationDuration);
+    if (prevDuration != null && prevDuration != animationDuration) {
+      controller.duration = animationDuration;
+    }
+
+    final prevPoints = usePrevious(points);
+    final prevAnimatePath = usePrevious(animatePath);
+    if (prevPoints != null && !listEquals(prevPoints, points)) {
+      syncAnimation(startFromZero: true);
+    } else if (prevAnimatePath != null) {
+      if (!prevAnimatePath && animatePath) {
+        syncAnimation(startFromZero: true);
+      } else if (!animatePath && controller.value != 1) {
+        controller.value = 1;
+      }
+    }
+
+    // Rebuild on animation tick.
+    useListenable(controller);
+
+    final isAnimatingPath =
+        animatePath || controller.isAnimating || controller.value < 1;
+
+    Widget buildPreview(double prog) => CustomPaint(
       painter: PathPreviewPainter(
-        points: widget.points,
-        startColor: widget.startColor,
-        endColor: widget.endColor,
-        surface: widget.surface,
-        border: widget.border,
-        showSamplePoints: widget.showSamplePoints,
-        shape: widget.shape,
-        padding: widget.pathPadding ?? widget.padding,
-        paddingFactor: widget.paddingFactor,
-        dottedBackground: widget.dottedBackground,
-        lineWidth: widget.lineWidth,
-        startPointRadius: widget.startPointRadius,
-        endPointRadius: widget.endPointRadius,
-        samplePointRadius: widget.samplePointRadius,
-        arrowSize: widget.arrowSize,
-        progress: progress,
+        points: points,
+        startColor: startColor,
+        endColor: endColor,
+        surface: surface,
+        border: border,
+        showSamplePoints: showSamplePoints,
+        shape: shape,
+        padding: pathPadding ?? padding,
+        paddingFactor: paddingFactor,
+        dottedBackground: dottedBackground,
+        lineWidth: lineWidth,
+        startPointRadius: startPointRadius,
+        endPointRadius: endPointRadius,
+        samplePointRadius: samplePointRadius,
+        arrowSize: arrowSize,
+        progress: prog,
         minPointCount: isAnimatingPath
-            ? minimumAnimatedPointCount(widget.animationDuration)
+            ? minimumAnimatedPointCount(animationDuration)
             : null,
       ),
-      child: widget.points.length >= 2 ? null : widget.empty,
+      child: points.length >= 2 ? null : empty,
     );
 
     final preview = isAnimatingPath
         ? AnimatedBuilder(
-            animation: _progress,
-            builder: (context, child) => buildPreview(_progress.value),
+            animation: progress,
+            builder: (context, child) => buildPreview(progress.value),
           )
         : buildPreview(1);
 
-    if (widget.shape == BoxShape.circle) {
-      return SizedBox(width: widget.size, height: widget.size, child: preview);
+    if (shape == BoxShape.circle) {
+      return SizedBox(width: size, height: size, child: preview);
     }
 
     return Container(
-      width: widget.size,
-      height: widget.size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: widget.surface,
-        shape: widget.shape,
-        borderRadius: widget.shape == BoxShape.rectangle
-            ? widget.borderRadius
-            : null,
-        border: Border.all(color: widget.border),
+        color: surface,
+        shape: shape,
+        borderRadius: shape == BoxShape.rectangle ? borderRadius : null,
+        border: Border.all(color: border),
       ),
       child: preview,
     );

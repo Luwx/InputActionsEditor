@@ -1,70 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/state/app_router.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 
-class DeviceSidebar extends ConsumerStatefulWidget {
+class DeviceSidebar extends HookConsumerWidget {
   const DeviceSidebar({super.key});
 
   @override
-  ConsumerState<DeviceSidebar> createState() => _DeviceSidebarState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
 
-class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// Navigates to [device] filter, auto-selecting the first gesture so there
-  /// is no intermediate frame with an empty selection.
-  void _goToDevice(DeviceType? device) {
-    final currentView = ref.read(currentViewProvider);
-    final currentFilter = ref.read(deviceFilterProvider);
-    final changingFilter =
-        currentView != AppView.gestures || currentFilter != device;
-
-    if (changingFilter) {
-      final config = ref.read(configControllerProvider).value;
-      if (config != null) {
-        final first = firstGestureForFilter(config, device);
-        if (first != null) {
-          context.goToGesturesSelectFirst(
-            filter: device,
-            device: first.device,
-            index: first.index,
-          );
-          return;
-        }
-      }
-    }
-
-    context.goToGestures(device: device);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final deviceFilter = ref.watch(deviceFilterProvider);
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
-    // Rebuild when the config changes so canDiscard re-evaluates.
     ref.watch(configControllerProvider.select((s) => s.value));
     final configController = ref.read(configControllerProvider.notifier);
     final canDiscard =
         configController.isDirty && configController.savedConfig != null;
+
+    /// Navigates to [device] filter, auto-selecting the first gesture so there
+    /// is no intermediate frame with an empty selection.
+    void goToDevice(DeviceType? device) {
+      final currentView = ref.read(currentViewProvider);
+      final currentFilter = ref.read(deviceFilterProvider);
+      final changingFilter =
+          currentView != AppView.gestures || currentFilter != device;
+
+      if (changingFilter) {
+        final config = ref.read(configControllerProvider).value;
+        if (config != null) {
+          final first = firstGestureForFilter(config, device);
+          if (first != null) {
+            context.goToGesturesSelectFirst(
+              filter: device,
+              device: first.device,
+              index: first.index,
+            );
+            return;
+          }
+        }
+      }
+
+      context.goToGestures(device: device);
+    }
 
     return FSidebar.raw(
       style: const .delta(
@@ -74,7 +57,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              controller: _scrollController,
+              controller: scrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
@@ -161,37 +144,37 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                         icon: const Icon(FLucideIcons.list),
                         label: const Text('All'),
                         selected: isGestures && deviceFilter == null,
-                        onPress: () => _goToDevice(null),
+                        onPress: () => goToDevice(null),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.mouse),
                         label: const Text('Mouse'),
                         selected: isGestures && deviceFilter == .mouse,
-                        onPress: () => _goToDevice(DeviceType.mouse),
+                        onPress: () => goToDevice(DeviceType.mouse),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.mousePointer2),
                         label: const Text('Pointer'),
                         selected: isGestures && deviceFilter == .pointer,
-                        onPress: () => _goToDevice(DeviceType.pointer),
+                        onPress: () => goToDevice(DeviceType.pointer),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.keyboard),
                         label: const Text('Keyboard'),
                         selected: isGestures && deviceFilter == .keyboard,
-                        onPress: () => _goToDevice(DeviceType.keyboard),
+                        onPress: () => goToDevice(DeviceType.keyboard),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.touchpad),
                         label: const Text('Touchpad'),
                         selected: isGestures && deviceFilter == .touchpad,
-                        onPress: () => _goToDevice(DeviceType.touchpad),
+                        onPress: () => goToDevice(DeviceType.touchpad),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.monitor),
                         label: const Text('Touchscreen'),
                         selected: isGestures && deviceFilter == .touchscreen,
-                        onPress: () => _goToDevice(DeviceType.touchscreen),
+                        onPress: () => goToDevice(DeviceType.touchscreen),
                       ),
                     ],
                   ),

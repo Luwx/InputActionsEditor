@@ -1,8 +1,9 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart' hide Action;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
@@ -18,208 +19,157 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 /// An alternative to [ActionsEditor]: a reorderable list of collapsible action
 /// rows. Collapsed rows show a one-line summary plus chips for any non-default
 /// trigger options; expanding a row reveals the full editor.
-class ActionListEditor extends ConsumerStatefulWidget {
+class ActionListEditor extends HookConsumerWidget {
   const ActionListEditor({super.key});
 
   @override
-  ConsumerState<ActionListEditor> createState() => _ActionListEditorState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expanded = useState(<int>{});
+    final anchorKey = useMemoized(GlobalKey.new);
+    final bottomKey = useMemoized(GlobalKey.new);
+    final anchorIndex = useState<int?>(null);
+    final anchorRef = useRef<ScrollAnchorController?>(null)
+      ..value = ScrollAnchorScope.maybeOf(context);
 
-class _ActionListEditorState extends ConsumerState<ActionListEditor> {
-  final Set<int> _expanded = {};
+    List<TriggerAction> actionsFromDraft() =>
+        ref.read(actionListEditorProvider(context.gestureLocation)).actions;
 
-  /// Marker placed just below the row currently being anchored. Its distance to
-  /// [_bottomKey] gives the SliverSmartAnchor the constant "content below the
-  /// anchor" extent it needs to locate the anchor as the row grows.
-  final GlobalKey _anchorKey = GlobalKey();
-
-  /// Marker at the very bottom of the editor body, used with [_anchorKey] to
-  /// measure the content below the active anchor.
-  final GlobalKey _bottomKey = GlobalKey();
-
-  /// Index of the row that owns [_anchorKey]. Only this row gets the marker.
-  int? _anchorIndex;
-
-  ScrollAnchorController? _anchor;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _anchor = ScrollAnchorScope.maybeOf(context);
-  }
-
-  List<TriggerAction> _actionsFromDraft() {
-    return ref.read(actionListEditorProvider(context.gestureLocation)).actions;
-  }
-
-  /// Marks [index] as the active anchor and arms the enclosing sliver so the
-  /// row's bottom is kept visible while it grows. The below-anchor extent is
-  /// measured after the next frame (it stays constant for the whole session, so
-  /// a one-off measurement is enough and avoids reading sizes mid-layout).
-  void _beginAnchor(int index) {
-    setState(() => _anchorIndex = index);
-    final anchor = _anchor;
-    if (anchor == null) return;
-    anchor
-      ..belowExtent = null
-      ..isAnchoring = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureBelowExtent());
-  }
-
-  /// Disarms anchoring once an expand animation settles.
-  void _endAnchor() => _anchor?.isAnchoring = false;
-
-  /// Forgets any pending anchor; used when the list structure changes.
-  void _clearAnchor() {
-    _anchorIndex = null;
-    _anchor
-      ?..isAnchoring = false
-      ..belowExtent = null;
-  }
-
-  /// Records how much content sits below the active anchor inside the sliver's
-  /// child. Both markers are zero-height, so the gap between their global tops
-  /// is exactly that extent regardless of how far the row has expanded.
-  void _measureBelowExtent() {
-    if (!mounted) return;
-    final anchorBox = _anchorKey.currentContext?.findRenderObject();
-    final bottomBox = _bottomKey.currentContext?.findRenderObject();
-    if (anchorBox is! RenderBox ||
-        bottomBox is! RenderBox ||
-        !anchorBox.attached ||
-        !bottomBox.attached ||
-        !anchorBox.hasSize ||
-        !bottomBox.hasSize) {
-      return;
-    }
-    final gap =
-        bottomBox.localToGlobal(Offset.zero).dy -
-        anchorBox.localToGlobal(Offset.zero).dy;
-    _anchor?.belowExtent = gap < 0 ? 0 : gap;
-  }
-
-  void _toggle(int index) {
-    final expanding = !_expanded.contains(index);
-    setState(() {
-      if (!_expanded.add(index)) {
-        _expanded.remove(index);
-        if (_anchorIndex == index) _clearAnchor();
+    void measureBelowExtent() {
+      final anchorBox = anchorKey.currentContext?.findRenderObject();
+      final bottomBox = bottomKey.currentContext?.findRenderObject();
+      if (anchorBox is! RenderBox ||
+          bottomBox is! RenderBox ||
+          !anchorBox.attached ||
+          !bottomBox.attached ||
+          !anchorBox.hasSize ||
+          !bottomBox.hasSize) {
+        return;
       }
-    });
-    if (expanding) _beginAnchor(index);
-  }
+      final gap =
+          bottomBox.localToGlobal(Offset.zero).dy -
+          anchorBox.localToGlobal(Offset.zero).dy;
+      anchorRef.value?.belowExtent = gap < 0 ? 0 : gap;
+    }
 
-  void _remove(int index) {
-    final actions = List<TriggerAction>.of(_actionsFromDraft());
-    if (index < 0 || index >= actions.length) return;
-    actions.removeAt(index);
-    setState(() {
+    void clearAnchor() {
+      anchorIndex.value = null;
+      anchorRef.value
+        ?..isAnchoring = false
+        ..belowExtent = null;
+    }
+
+    void beginAnchor(int index) {
+      anchorIndex.value = index;
+      final anchor = anchorRef.value;
+      if (anchor == null) return;
+      anchor
+        ..belowExtent = null
+        ..isAnchoring = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => measureBelowExtent());
+    }
+
+    void endAnchor() => anchorRef.value?.isAnchoring = false;
+
+    void toggle(int index) {
+      final isExpanding = !expanded.value.contains(index);
+      final next = Set<int>.from(expanded.value);
+      if (!next.add(index)) {
+        next.remove(index);
+        if (anchorIndex.value == index) clearAnchor();
+      }
+      expanded.value = next;
+      if (isExpanding) beginAnchor(index);
+    }
+
+    void remove(int index) {
+      final actions = actionsFromDraft();
+      if (index < 0 || index >= actions.length) return;
       final next = <int>{};
-      for (final e in _expanded) {
+      for (final e in expanded.value) {
         if (e == index) continue;
         next.add(e > index ? e - 1 : e);
       }
-      _expanded
-        ..clear()
-        ..addAll(next);
-      _clearAnchor();
-    });
-    ref
-        .read(actionListEditorProvider(context.gestureLocation).notifier)
-        .remove(
-          index,
-        );
-  }
+      expanded.value = next;
+      clearAnchor();
+      ref
+          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .remove(index);
+    }
 
-  void _duplicate(int index) {
-    final current = _actionsFromDraft();
-    if (index < 0 || index >= current.length) return;
-    setState(() {
+    void duplicate(int index) {
+      final current = actionsFromDraft();
+      if (index < 0 || index >= current.length) return;
       final next = <int>{};
-      for (final e in _expanded) {
+      for (final e in expanded.value) {
         next.add(e > index ? e + 1 : e);
       }
-      _expanded
-        ..clear()
-        ..addAll(next);
-      _clearAnchor();
-    });
-    ref
-        .read(actionListEditorProvider(context.gestureLocation).notifier)
-        .duplicate(index);
-  }
-
-  void _add(Action action) {
-    final current = _actionsFromDraft();
-    final newIndex = current.length;
-    ref
-        .read(actionListEditorProvider(context.gestureLocation).notifier)
-        .add(
-          action,
-        );
-    setState(() {
-      _expanded.add(newIndex);
-      _clearAnchor();
-    });
-    // AnimatedSize renders new rows at full size immediately (no prior state
-    // to animate from), so the anchor mechanism won't fire. Scroll explicitly.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final ctx = _bottomKey.currentContext;
-      if (ctx != null) {
-        unawaited(
-          Scrollable.ensureVisible(
-            ctx,
-            alignment: 1,
-            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
-            duration: Durations.short4,
-            curve: Easing.emphasizedDecelerate,
-          ),
-        );
-      }
-    });
-  }
-
-  void _reorder(int oldIndex, int newIndex) {
-    final actions = List<TriggerAction>.of(_actionsFromDraft());
-    if (oldIndex < 0 ||
-        oldIndex >= actions.length ||
-        newIndex < 0 ||
-        newIndex >= actions.length) {
-      return;
+      expanded.value = next;
+      clearAnchor();
+      ref
+          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .duplicate(index);
     }
-    setState(() {
+
+    void add(Action action) {
+      final newIndex = actionsFromDraft().length;
+      ref
+          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .add(action);
+      expanded.value = {...expanded.value, newIndex};
+      clearAnchor();
+      // AnimatedSize renders new rows at full size immediately (no prior state
+      // to animate from), so the anchor mechanism won't fire. 
+      // Scroll explicitly.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = bottomKey.currentContext;
+        if (ctx != null) {
+          unawaited(
+            Scrollable.ensureVisible(
+              ctx,
+              alignment: 1,
+              alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+              duration: Durations.short4,
+              curve: Easing.emphasizedDecelerate,
+            ),
+          );
+        }
+      });
+    }
+
+    int remapIndex(int e, int from, int to) {
+      if (e == from) return to;
+      if (from < to) {
+        if (e > from && e <= to) return e - 1;
+      } else if (e >= to && e < from) {
+        return e + 1;
+      }
+      return e;
+    }
+
+    void reorder(int oldIndex, int newIndex) {
+      final actions = actionsFromDraft();
+      if (oldIndex < 0 ||
+          oldIndex >= actions.length ||
+          newIndex < 0 ||
+          newIndex >= actions.length) {
+        return;
+      }
       final next = <int>{};
-      for (final e in _expanded) {
-        next.add(_remapIndex(e, oldIndex, newIndex));
+      for (final e in expanded.value) {
+        next.add(remapIndex(e, oldIndex, newIndex));
       }
-      _expanded
-        ..clear()
-        ..addAll(next);
-      _clearAnchor();
-    });
-    ref
-        .read(actionListEditorProvider(context.gestureLocation).notifier)
-        .reorder(oldIndex, newIndex);
-  }
-
-  int _remapIndex(int e, int from, int to) {
-    if (e == from) return to;
-    if (from < to) {
-      if (e > from && e <= to) return e - 1;
-    } else if (e >= to && e < from) {
-      return e + 1;
+      expanded.value = next;
+      clearAnchor();
+      ref
+          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .reorder(oldIndex, newIndex);
     }
-    return e;
-  }
 
-  Future<void> _pickAndAdd() async {
-    final action = await showAddActionDialog(context);
-    if (action != null) _add(action);
-  }
+    Future<void> pickAndAdd() async {
+      final action = await showAddActionDialog(context);
+      if (action != null) add(action);
+    }
 
-  @override
-  Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final gestureLocation = context.gestureLocation;
@@ -238,9 +188,7 @@ class _ActionListEditorState extends ConsumerState<ActionListEditor> {
                   ? null
                   : () => ref
                         .read(
-                          actionListEditorProvider(
-                            gestureLocation,
-                          ).notifier,
+                          actionListEditorProvider(gestureLocation).notifier,
                         )
                         .revert(),
               child: Text(
@@ -250,19 +198,7 @@ class _ActionListEditorState extends ConsumerState<ActionListEditor> {
                 ),
               ),
             ),
-            // const SizedBox(width: 8),
-            // FBadge(
-            //   variant: .secondary,
-            //   child: Text('${actions.length}'),
-            // ),
             const Spacer(),
-            // FButton(
-            //   variant: .outline,
-            //   size: .sm,
-            //   prefix: const Icon(FLucideIcons.plus),
-            //   onPress: _pickAndAdd,
-            //   child: const Text('Add action'),
-            // ),
           ],
         ),
         const SizedBox(height: 8),
@@ -280,7 +216,7 @@ class _ActionListEditorState extends ConsumerState<ActionListEditor> {
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
             itemCount: actions.length,
-            onReorderItem: _reorder,
+            onReorderItem: reorder,
             proxyDecorator: (child, index, animation) =>
                 Material(color: Colors.transparent, child: child),
             itemBuilder: (context, index) {
@@ -288,24 +224,24 @@ class _ActionListEditorState extends ConsumerState<ActionListEditor> {
                 key: ValueKey('action-row-$index'),
                 index: index,
                 triggerAction: actions[index],
-                expanded: _expanded.contains(index),
-                onToggle: () => _toggle(index),
-                onOptionsExpanded: () => _beginAnchor(index),
-                onAnchorSettled: _endAnchor,
-                anchorKey: index == _anchorIndex ? _anchorKey : null,
-                onDuplicate: () => _duplicate(index),
-                onDelete: () => _remove(index),
+                expanded: expanded.value.contains(index),
+                onToggle: () => toggle(index),
+                onOptionsExpanded: () => beginAnchor(index),
+                onAnchorSettled: endAnchor,
+                anchorKey: index == anchorIndex.value ? anchorKey : null,
+                onDuplicate: () => duplicate(index),
+                onDelete: () => remove(index),
               );
             },
           ),
         const SizedBox(height: 4),
         FButton(
           variant: .outline,
-          onPress: _pickAndAdd,
+          onPress: pickAndAdd,
           prefix: const Icon(FLucideIcons.plus, size: 14),
           child: const Text('Add'),
         ),
-        SizedBox(key: _bottomKey, height: 0),
+        SizedBox(key: bottomKey, height: 0),
       ],
     );
   }
@@ -468,7 +404,6 @@ class _Header extends StatelessWidget {
               onTap: onToggle,
               child: Row(
                 children: [
-                  // _IndexBadge(index: index),
                   const SizedBox(width: 12),
                   Container(
                     width: 32,
@@ -571,7 +506,7 @@ class _MetaChips extends StatelessWidget {
   }
 }
 
-class _ExpandedEditor extends StatefulWidget {
+class _ExpandedEditor extends HookWidget {
   const _ExpandedEditor({
     required this.triggerAction,
     required this.footerKey,
@@ -583,40 +518,28 @@ class _ExpandedEditor extends StatefulWidget {
   final VoidCallback? onOptionsExpanded;
 
   @override
-  State<_ExpandedEditor> createState() => _ExpandedEditorState();
-}
-
-class _ExpandedEditorState extends State<_ExpandedEditor> {
-  late bool _optionsExpanded;
-
-  @override
-  void initState() {
-    super.initState();
-    _optionsExpanded = actionHasNonDefaultTriggerOptions(widget.triggerAction);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final optionsExpanded = useState(
+      actionHasNonDefaultTriggerOptions(triggerAction),
+    );
     final actionLocation = context.actionLocation;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Container(height: 1, color: colors.border),
           const SizedBox(height: 8),
-          ActionFields(
-            action: widget.triggerAction.action,
-          ),
+          ActionFields(action: triggerAction.action),
           const SizedBox(height: 16),
           FAccordion(
             key: ValueKey(actionLocation.actionIndex),
             control: FAccordionControl.lifted(
-              expanded: (index) => index == 0 && _optionsExpanded,
-              onChange: (index, expanded) {
-                if (index != 0 || _optionsExpanded == expanded) return;
-                setState(() => _optionsExpanded = expanded);
-                if (expanded) widget.onOptionsExpanded?.call();
+              expanded: (index) => index == 0 && optionsExpanded.value,
+              onChange: (index, exp) {
+                if (index != 0 || optionsExpanded.value == exp) return;
+                optionsExpanded.value = exp;
+                if (exp) onOptionsExpanded?.call();
               },
             ),
             style: const .delta(
@@ -628,13 +551,11 @@ class _ExpandedEditorState extends State<_ExpandedEditor> {
             children: [
               FAccordionItem(
                 title: const Text('Other Options'),
-                child: ActionTriggerFields(
-                  triggerAction: widget.triggerAction,
-                ),
+                child: ActionTriggerFields(triggerAction: triggerAction),
               ),
             ],
           ),
-          SizedBox(key: widget.footerKey, height: 1),
+          SizedBox(key: footerKey, height: 1),
         ],
       ),
     );

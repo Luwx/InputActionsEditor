@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -26,76 +27,50 @@ import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_lis
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 
-class GestureDetailSection extends ConsumerStatefulWidget {
+class GestureDetailSection extends HookConsumerWidget {
   const GestureDetailSection({super.key});
 
   @override
-  ConsumerState<GestureDetailSection> createState() =>
-      _GestureDetailSectionState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
+    final anchorController = useMemoized(ScrollAnchorController.new);
+    final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
 
-class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
-  late final ScrollController _scrollController;
-
-  /// Lets the actions editor keep an expanding row's bottom visible by driving
-  /// the [SliverSmartAnchor] that wraps the editor body.
-  final ScrollAnchorController _anchorController = ScrollAnchorController();
-
-  /// Holds focus for the editor pane so the undo/redo [Shortcuts] receive key
-  /// events. Key events bubble up the focus tree, so something inside the
-  /// Shortcuts subtree must be focused for Ctrl+Z to fire.
-  final FocusNode _undoFocusNode = FocusNode(debugLabel: 'gestureEditorUndo');
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _undoFocusNode.dispose();
-    super.dispose();
-  }
-
-  void _enableSelected(Set<GestureKey> selected) {
-    ref.read(gestureListProvider.notifier).enableGestures(selected);
-  }
-
-  void _disableSelected(Set<GestureKey> selected) {
-    ref.read(gestureListProvider.notifier).disableGestures(selected);
-  }
-
-  void _deleteSelected(Set<GestureKey> selected) {
-    final byDevice = <DeviceType, List<int>>{};
-    for (final s in selected) {
-      byDevice.putIfAbsent(s.device, () => []).add(s.index);
-    }
-    final listNotifier = ref.read(gestureListProvider.notifier);
-    for (final entry in byDevice.entries) {
-      final indices = entry.value..sort();
-      for (final i in indices.reversed) {
-        listNotifier.removeGesture(entry.key, i);
-      }
-    }
-    context.clearGestureSelection();
-    ref.read(multiSelectControllerProvider.notifier).exit();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted || !_scrollController.hasClients) return;
-        await _scrollController.animateTo(
+        if (!scrollController.hasClients) return;
+        await scrollController.animateTo(
           0,
           duration: Durations.medium1,
           curve: Easing.standard,
         );
       });
     });
+
+    void enableSelected(Set<GestureKey> selected) {
+      ref.read(gestureListProvider.notifier).enableGestures(selected);
+    }
+
+    void disableSelected(Set<GestureKey> selected) {
+      ref.read(gestureListProvider.notifier).disableGestures(selected);
+    }
+
+    void deleteSelected(Set<GestureKey> selected) {
+      final byDevice = <DeviceType, List<int>>{};
+      for (final s in selected) {
+        byDevice.putIfAbsent(s.device, () => []).add(s.index);
+      }
+      final listNotifier = ref.read(gestureListProvider.notifier);
+      for (final entry in byDevice.entries) {
+        final indices = entry.value..sort();
+        for (final i in indices.reversed) {
+          listNotifier.removeGesture(entry.key, i);
+        }
+      }
+      context.clearGestureSelection();
+      ref.read(multiSelectControllerProvider.notifier).exit();
+    }
 
     final multiSelect = ref.watch(multiSelectControllerProvider);
     final listVm = ref.watch(gestureListProvider);
@@ -120,9 +95,9 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
         count: multiSelect.length,
         canDisable: canDisable,
         canEnable: canEnable,
-        onEnable: () => _enableSelected(multiSelect),
-        onDisable: () => _disableSelected(multiSelect),
-        onDelete: () => _deleteSelected(multiSelect),
+        onEnable: () => enableSelected(multiSelect),
+        onDisable: () => disableSelected(multiSelect),
+        onDelete: () => deleteSelected(multiSelect),
       );
     }
 
@@ -169,7 +144,7 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
     final editor = ScrollbarMediaPadding(
       topInset: GrowingFrostedHeaderDelegate.maxHeight,
       child: CustomScrollView(
-        controller: _scrollController,
+        controller: scrollController,
         slivers: [
           SliverPersistentHeader(
             pinned: true,
@@ -178,14 +153,14 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
                 name: name,
                 titleStyle: style,
                 onRename: (newName) {
-                  final selection = ref.read(selectedGestureProvider);
-                  if (selection == null) return;
+                  final sel = ref.read(selectedGestureProvider);
+                  if (sel == null) return;
                   ref
                       .read(
                         gestureEditorProvider(
                           GestureLocation(
-                            device: selection.device,
-                            index: selection.index,
+                            device: sel.device,
+                            index: sel.index,
                           ),
                         ).notifier,
                       )
@@ -235,12 +210,12 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             sliver: SliverSmartAnchor(
-              controller: _anchorController,
-              scrollPosition: () => _scrollController.hasClients
-                  ? _scrollController.position
+              controller: anchorController,
+              scrollPosition: () => scrollController.hasClients
+                  ? scrollController.position
                   : null,
               child: ScrollAnchorScope(
-                controller: _anchorController,
+                controller: anchorController,
                 child: _buildEditor(
                   key: ValueKey('${selection.device.name}:${selection.index}'),
                   device: selection.device,
@@ -254,9 +229,6 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
       ),
     );
 
-    // Per-gesture undo/redo, scoped to the editor's focus subtree. Ctrl+Z while
-    // focus is inside a text field is handled natively by that field; elsewhere
-    // in the editor it walks this gesture's history.
     return Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.keyZ, control: true): _UndoIntent(),
@@ -280,11 +252,11 @@ class _GestureDetailSectionState extends ConsumerState<GestureDetailSection> {
           ),
         },
         child: Focus(
-          focusNode: _undoFocusNode,
+          focusNode: undoFocusNode,
           autofocus: true,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: _undoFocusNode.requestFocus,
+            onTap: undoFocusNode.requestFocus,
             child: editor,
           ),
         ),

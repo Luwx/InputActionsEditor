@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
@@ -275,7 +276,7 @@ class _BoolChip extends StatelessWidget {
   }
 }
 
-class _NumberChip extends StatefulWidget {
+class _NumberChip extends HookWidget {
   const _NumberChip({
     required this.label,
     required this.value,
@@ -293,71 +294,57 @@ class _NumberChip extends StatefulWidget {
   final bool isInt;
 
   @override
-  State<_NumberChip> createState() => _NumberChipState();
-}
-
-class _NumberChipState extends State<_NumberChip> {
-  bool _editing = false;
-  late final TextEditingController _ctrl;
-  final FocusNode _focus = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: _fmt(widget.value));
-    _focus.addListener(() {
-      if (!_focus.hasFocus && _editing) {
-        _commit();
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(_NumberChip old) {
-    super.didUpdateWidget(old);
-    if (!_editing && old.value != widget.value) {
-      _ctrl.text = _fmt(widget.value);
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  String _fmt(double? v) {
-    if (v == null) return '';
-    return widget.isInt ? v.toInt().toString() : v.toString();
-  }
-
-  void _commit() {
-    final trimmed = _ctrl.text.trim();
-    setState(() => _editing = false);
-    if (trimmed.isEmpty) {
-      widget.onChanged(null);
-    } else {
-      widget.onChanged(double.tryParse(trimmed));
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isSet = widget.value != null;
+    String fmt(double? v) {
+      if (v == null) return '';
+      return isInt ? v.toInt().toString() : v.toString();
+    }
 
-    if (_editing) {
+    final ctrl = useTextEditingController(text: fmt(value));
+    final focus = useFocusNode();
+    final editing = useState(false);
+
+    // Sync text when external value changes and not editing.
+    final prevValue = usePrevious(value);
+    if (prevValue != value && !editing.value) {
+      ctrl.text = fmt(value);
+    }
+
+    // Keep the "commit" logic in a ref so the focus listener stays fresh.
+    final commitRef = useRef<void Function()>(() {})
+      ..value = () {
+        final trimmed = ctrl.text.trim();
+        editing.value = false;
+        if (trimmed.isEmpty) {
+          onChanged(null);
+        } else {
+          onChanged(double.tryParse(trimmed));
+        }
+      };
+
+    useEffect(() {
+      void onFocusChange() {
+        if (!focus.hasFocus && editing.value) commitRef.value();
+      }
+
+      focus.addListener(onFocusChange);
+      return () => focus.removeListener(onFocusChange);
+    }, const []);
+
+    final isSet = value != null;
+
+    if (editing.value) {
       return SizedBox(
         width: 140,
         child: Focus(
-          focusNode: _focus,
+          focusNode: focus,
           child: FTextField(
             control: FTextFieldControl.managed(
-              controller: _ctrl,
+              controller: ctrl,
               onChange: (_) {},
             ),
-            hint: widget.label,
-            onSubmit: (_) => _commit(),
+            hint: label,
+            onSubmit: (_) => commitRef.value(),
             autofocus: true,
           ),
         ),
@@ -366,32 +353,22 @@ class _NumberChipState extends State<_NumberChip> {
 
     return GestureDetector(
       onTap: () {
-        if (!isSet) {
-          _ctrl.text = '';
-          setState(() => _editing = true);
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _focus.requestFocus(),
-          );
-        } else {
-          _ctrl.text = _fmt(widget.value);
-          setState(() => _editing = true);
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _focus.requestFocus(),
-          );
-        }
+        ctrl.text = isSet ? fmt(value) : '';
+        editing.value = true;
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => focus.requestFocus(),
+        );
       },
-      onSecondaryTap: isSet ? () => widget.onChanged(null) : null,
+      onSecondaryTap: isSet ? () => onChanged(null) : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSet
-              ? widget.colors.primary.withValues(alpha: 0.12)
-              : widget.colors.muted,
+          color: isSet ? colors.primary.withValues(alpha: 0.12) : colors.muted,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSet
-                ? widget.colors.primary.withValues(alpha: 0.4)
-                : widget.colors.border,
+                ? colors.primary.withValues(alpha: 0.4)
+                : colors.border,
           ),
         ),
         child: Row(
@@ -399,20 +376,18 @@ class _NumberChipState extends State<_NumberChip> {
           spacing: 4,
           children: [
             Text(
-              widget.label,
-              style: widget.typography.xs.copyWith(
+              label,
+              style: typography.xs.copyWith(
                 fontFamily: 'monospace',
-                color: isSet
-                    ? widget.colors.primary
-                    : widget.colors.mutedForeground,
+                color: isSet ? colors.primary : colors.mutedForeground,
               ),
             ),
             if (isSet)
               Text(
-                ': ${_fmt(widget.value)}',
-                style: widget.typography.xs.copyWith(
+                ': ${fmt(value)}',
+                style: typography.xs.copyWith(
                   fontFamily: 'monospace',
-                  color: widget.colors.foreground,
+                  color: colors.foreground,
                 ),
               ),
           ],

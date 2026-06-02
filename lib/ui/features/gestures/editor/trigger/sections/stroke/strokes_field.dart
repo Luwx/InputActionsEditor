@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
@@ -11,7 +12,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 
 /// Reusable stroke list field
 /// used by mouse, touchpad, and touchscreen editors.
-class StrokesField extends ConsumerStatefulWidget {
+class StrokesField extends HookConsumerWidget {
   const StrokesField({
     required this.strokes,
     required this.onStrokesChanged,
@@ -22,15 +23,10 @@ class StrokesField extends ConsumerStatefulWidget {
   final void Function(List<String>) onStrokesChanged;
 
   @override
-  ConsumerState<StrokesField> createState() => _StrokesFieldState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final animatedStroke = useState<String?>(null);
+    final animatedIndex = useState<int?>(null);
 
-class _StrokesFieldState extends ConsumerState<StrokesField> {
-  String? _animatedStroke;
-  int? _animatedIndex;
-
-  @override
-  Widget build(BuildContext context) {
     ref.listen<AsyncValue<String?>>(strokeRecordingProvider, (
       previous,
       next,
@@ -81,7 +77,7 @@ class _StrokesFieldState extends ConsumerState<StrokesField> {
             ),
           ),
           const SizedBox(height: 8),
-          if (widget.strokes.isEmpty)
+          if (strokes.isEmpty)
             Text(
               'No strokes recorded. Tap Record to add one.',
               style: context.theme.typography.xs.copyWith(
@@ -91,17 +87,17 @@ class _StrokesFieldState extends ConsumerState<StrokesField> {
           else
             Wrap(
               children: [
-                for (final (i, stroke) in widget.strokes.indexed)
+                for (final (i, stroke) in strokes.indexed)
                   StrokeRow(
                     key: ValueKey('stroke-$i-$stroke'),
                     stroke: stroke,
                     index: i,
                     animatePath:
-                        _animatedStroke == stroke && _animatedIndex == i,
+                        animatedStroke.value == stroke &&
+                        animatedIndex.value == i,
                     onDelete: () {
-                      final updated = List<String>.of(widget.strokes)
-                        ..removeAt(i);
-                      widget.onStrokesChanged(updated);
+                      final updated = List<String>.of(strokes)..removeAt(i);
+                      onStrokesChanged(updated);
                     },
                   ),
               ],
@@ -116,23 +112,14 @@ class _StrokesFieldState extends ConsumerState<StrokesField> {
                     final stroke = await ref
                         .read(strokeRecordingProvider.notifier)
                         .recordStroke();
-                    if (stroke == null) {
-                      return;
-                    }
-                    final appendedIndex = widget.strokes.length;
-                    setState(() {
-                      _animatedStroke = stroke;
-                      _animatedIndex = appendedIndex;
-                    });
-                    widget.onStrokesChanged([...widget.strokes, stroke]);
+                    if (stroke == null) return;
+                    final appendedIndex = strokes.length;
+                    animatedStroke.value = stroke;
+                    animatedIndex.value = appendedIndex;
+                    onStrokesChanged([...strokes, stroke]);
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) {
-                        return;
-                      }
-                      setState(() {
-                        _animatedStroke = null;
-                        _animatedIndex = null;
-                      });
+                      animatedStroke.value = null;
+                      animatedIndex.value = null;
                     });
                   },
             child: Row(
