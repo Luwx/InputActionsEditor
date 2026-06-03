@@ -8,6 +8,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/state/gesture_undo_controller.dart';
 
 void main() {
@@ -100,9 +101,12 @@ void main() {
       c.read(gestureUndoProvider.notifier).coalesceEnabled = false;
       final notifier = c.read(configControllerProvider.notifier);
 
-      notifier.updateMouseGesture(
-        0,
-        (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+      notifier.add(
+        UpdateGesture(
+          DeviceType.mouse,
+          0,
+          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+        ),
       );
       expect(thresholdAt(c, 0), '99');
 
@@ -120,11 +124,14 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier);
 
       // Edit the second gesture, then move it to the front.
-      notifier.updateMouseGesture(
-        1,
-        (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+      notifier.add(
+        UpdateGesture(
+          DeviceType.mouse,
+          1,
+          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+        ),
       );
-      notifier.reorderMouseGesture(1, 0);
+      notifier.add(ReorderGesture(DeviceType.mouse, 1, 0));
       expect(thresholdAt(c, 0), '99');
 
       // Undo at the NEW index resolves the same gesture by editId.
@@ -139,9 +146,12 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier);
 
       expect(notifier.isDirty, isFalse);
-      notifier.updateMouseGesture(
-        0,
-        (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+      notifier.add(
+        UpdateGesture(
+          DeviceType.mouse,
+          0,
+          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
+        ),
       );
       expect(notifier.isDirty, isTrue);
 

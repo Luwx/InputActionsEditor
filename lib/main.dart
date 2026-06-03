@@ -32,8 +32,6 @@ void main() async {
   );
 }
 
-// Initializes window_manager and registers org.inputactions.ui on D-Bus so
-// the daemon can focus this window and enforce single-instance behaviour.
 Future<void> _setupTrayMode() async {
   final dbusClient = DBusClient.session();
 
@@ -51,7 +49,7 @@ Future<void> _setupTrayMode() async {
       exit(0);
     }
   } on Exception {
-    // D-Bus unavailable - skip single-instance check and proceed normally.
+    // D-Bus unavailable
   }
 
   final uiServer = UiServerObject()

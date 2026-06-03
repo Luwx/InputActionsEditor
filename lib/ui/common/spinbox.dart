@@ -40,7 +40,6 @@ class FSpinBox extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final controller = useTextEditingController(text: _fmt(value));
     final focusNode = useFocusNode();
     final repeatTimer = useRef<Timer?>(null);

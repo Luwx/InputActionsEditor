@@ -1,13 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
 part 'touchscreen_gesture.freezed.dart';
 
 @freezed
-sealed class TouchscreenGesture with _$TouchscreenGesture {
+sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
   const TouchscreenGesture._();
 
   const factory TouchscreenGesture.swipe({
@@ -65,6 +66,7 @@ sealed class TouchscreenGesture with _$TouchscreenGesture {
     TouchscreenStrokeGesture() => TouchscreenTriggerType.stroke,
   };
 
+  @override
   TouchscreenGesture withCommon(TriggerCommon c) => switch (this) {
     final TouchscreenSwipeGesture g => g.copyWith(common: c),
     final TouchscreenPinchGesture g => g.copyWith(common: c),

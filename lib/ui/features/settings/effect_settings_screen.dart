@@ -56,7 +56,7 @@ class EffectSettingsScreen extends ConsumerWidget {
         ? DirtyMarkState.newUnsaved
         : DirtyMarkState.clean;
 
-    void revertGlobalSettings(GlobalSettings next) => controller.dispatch(
+    void revertGlobalSettings(GlobalSettings next) => controller.add(
       SetLens<GlobalSettings>(globalSettingsLens, next),
     );
     final autoreloadField = ref.field(
@@ -251,7 +251,6 @@ class _EmergencyCombinationSection extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final ctrl = useTextEditingController(text: _fmt(value));
     final focused = useRef(false);
 

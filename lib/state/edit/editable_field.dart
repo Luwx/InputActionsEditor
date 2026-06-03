@@ -95,7 +95,7 @@ extension FieldAccess on WidgetRef {
       value: value,
       dirty: dirtyState,
       onChanged: (value) =>
-          controller.dispatch(SetLens<T>(lens, value), scope: scope),
+          controller.add(SetLens<T>(lens, value), scope: scope),
       onRevert: dirtyState.canRevert
           ? () => controller.revert<T>(lens, scope: scope)
           : null,

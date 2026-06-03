@@ -56,16 +56,16 @@ class KeySequenceTextField extends HookWidget {
     final colors = context.theme.colors;
     final base = context.theme.typography.sm;
     return KeySequenceSpanStyle(
-        baseStyle: base,
-        pressBackground: colors.primary.withValues(alpha: 0.18),
-        releaseBackground: colors.destructive.withValues(alpha: 0.18),
-        chordBackground: colors.secondary.withValues(alpha: 0.55),
-        pressTextColor: colors.primary,
-        releaseTextColor: colors.destructive,
-        chordTextColor: colors.secondaryForeground,
-        separatorDimColor: colors.mutedForeground,
-        errorColor: colors.destructive,
-      );
+      baseStyle: base,
+      pressBackground: colors.primary.withValues(alpha: 0.18),
+      releaseBackground: colors.destructive.withValues(alpha: 0.18),
+      chordBackground: colors.secondary.withValues(alpha: 0.55),
+      pressTextColor: colors.primary,
+      releaseTextColor: colors.destructive,
+      chordTextColor: colors.secondaryForeground,
+      separatorDimColor: colors.mutedForeground,
+      errorColor: colors.destructive,
+    );
   }
 
   @override
@@ -82,6 +82,7 @@ class KeySequenceTextField extends HookWidget {
         final segs = KeySequenceParser.parse(effectiveController.text);
         onChanged?.call(KeySequenceParser.toTokens(segs));
       }
+
       effectiveController.addListener(onTextChanged);
       return () => effectiveController.removeListener(onTextChanged);
     }, [effectiveController]);

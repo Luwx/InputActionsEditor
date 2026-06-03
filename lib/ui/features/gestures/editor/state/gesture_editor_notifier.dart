@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -11,6 +11,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
+import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
 part 'gesture_editor_notifier.freezed.dart';
@@ -70,11 +71,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
   }
 
   void updateCommon(TriggerCommon Function(TriggerCommon) update) {
-    _config.updateGestureCommonForDevice(
-      location.device,
-      location.index,
-      update,
-    );
+    _config.add(UpdateGestureCommon(location.device, location.index, update));
   }
 
   void replaceCommon(TriggerCommon common) => updateCommon((_) => common);
@@ -92,64 +89,38 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
   }
 
   void duplicate() {
-    _config.duplicateGestureForDevice(location.device, location.index);
+    _config.add(DuplicateGesture(location.device, location.index));
   }
 
   void delete() {
-    _config.removeGestureForDevice(location.device, location.index);
+    _config.add(RemoveGesture(location.device, location.index));
   }
 
   void updateGesture(Object Function(Object) update) {
-    switch (location.device) {
-      case DeviceType.mouse:
-        _config.updateMouseGesture(
-          location.index,
-          (gesture) => update(gesture) as MouseGesture,
-        );
-      case DeviceType.keyboard:
-        _config.updateKeyboardGesture(
-          location.index,
-          (gesture) => update(gesture) as KeyboardGesture,
-        );
-      case DeviceType.pointer:
-        _config.updatePointerGesture(
-          location.index,
-          (gesture) => update(gesture) as PointerGesture,
-        );
-      case DeviceType.touchpad:
-        _config.updateTouchpadGesture(
-          location.index,
-          (gesture) => update(gesture) as TouchpadGesture,
-        );
-      case DeviceType.touchscreen:
-        _config.updateTouchscreenGesture(
-          location.index,
-          (gesture) => update(gesture) as TouchscreenGesture,
-        );
-    }
+    _config.add(
+      UpdateGesture(
+        location.device,
+        location.index,
+        (gesture) => update(gesture) as Gesture,
+      ),
+    );
   }
 
-  void updateMouse(MouseGesture Function(MouseGesture) update) {
-    _config.updateMouseGesture(location.index, update);
-  }
+  void updateMouse(MouseGesture Function(MouseGesture) update) =>
+      updateGesture((g) => update(g as MouseGesture));
 
-  void updateKeyboard(KeyboardGesture Function(KeyboardGesture) update) {
-    _config.updateKeyboardGesture(location.index, update);
-  }
+  void updateKeyboard(KeyboardGesture Function(KeyboardGesture) update) =>
+      updateGesture((g) => update(g as KeyboardGesture));
 
-  void updatePointer(PointerGesture Function(PointerGesture) update) {
-    _config.updatePointerGesture(location.index, update);
-  }
+  void updatePointer(PointerGesture Function(PointerGesture) update) =>
+      updateGesture((g) => update(g as PointerGesture));
 
-  void updateTouchpad(TouchpadGesture Function(TouchpadGesture) update) {
-    _config.updateTouchpadGesture(location.index, update);
-  }
+  void updateTouchpad(TouchpadGesture Function(TouchpadGesture) update) =>
+      updateGesture((g) => update(g as TouchpadGesture));
 
   void updateTouchscreen(
     TouchscreenGesture Function(TouchscreenGesture) update,
-  ) {
-    _config.updateTouchscreenGesture(location.index, update);
-  }
+  ) => updateGesture((g) => update(g as TouchscreenGesture));
 
   void revertTriggerConfig(TriggerCommon current, TriggerCommon saved) {
     replaceCommon(
@@ -170,16 +141,16 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
   }
 
   void undo() {
-    if (_config.canUndoEdit(scope: location)) {
-      _config.undoEdit(scope: location);
+    if (_config.canUndo(scope: location)) {
+      _config.undo(scope: location);
     } else {
       _config.undoActiveGesture(location.device, location.index);
     }
   }
 
   void redo() {
-    if (_config.canRedoEdit(scope: location)) {
-      _config.redoEdit(scope: location);
+    if (_config.canRedo(scope: location)) {
+      _config.redo(scope: location);
     } else {
       _config.redoActiveGesture(location.device, location.index);
     }

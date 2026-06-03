@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -47,6 +48,17 @@ abstract class Config with _$Config {
     DeviceType.touchpad => touchpadGestures,
     DeviceType.touchscreen => touchscreenGestures,
   };
+
+  Config withGesturesForDevice(DeviceType device, List<Gesture> gestures) =>
+      switch (device) {
+        DeviceType.mouse => copyWith(mouseGestures: gestures.cast()),
+        DeviceType.keyboard => copyWith(keyboardGestures: gestures.cast()),
+        DeviceType.pointer => copyWith(pointerGestures: gestures.cast()),
+        DeviceType.touchpad => copyWith(touchpadGestures: gestures.cast()),
+        DeviceType.touchscreen => copyWith(
+          touchscreenGestures: gestures.cast(),
+        ),
+      };
 
   int gestureCountForDevice(DeviceType device) =>
       gesturesForDevice(device).length;

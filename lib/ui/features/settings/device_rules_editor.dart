@@ -7,6 +7,7 @@ import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
 import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/state/edit/editable_field.dart';
+import 'package:input_actions_editor/state/edit/edits/device_rule_edits.dart';
 import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -46,8 +47,9 @@ class DeviceRulesEditor extends ConsumerWidget {
               state: rulesDirtyState,
               onRevert: savedConfig == null || savedConfig.deviceRules.isEmpty
                   ? null
-                  : () =>
-                        controller.replaceDeviceRules(savedConfig.deviceRules),
+                  : () => controller.add(
+                      ReplaceDeviceRules(savedConfig.deviceRules),
+                    ),
               child: Text(
                 'Device Rules',
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
@@ -60,7 +62,7 @@ class DeviceRulesEditor extends ConsumerWidget {
             trailing: FButton(
               variant: .outline,
               size: .sm,
-              onPress: () => controller.addDeviceRule(const DeviceRule()),
+              onPress: () => controller.add(AddDeviceRule(const DeviceRule())),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 6,
@@ -95,7 +97,7 @@ class DeviceRulesEditor extends ConsumerWidget {
                       variant: .outline,
                       size: .sm,
                       onPress: () =>
-                          controller.addDeviceRule(const DeviceRule()),
+                          controller.add(AddDeviceRule(const DeviceRule())),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         spacing: 6,
@@ -116,8 +118,9 @@ class DeviceRulesEditor extends ConsumerWidget {
                   key: ValueKey(i),
                   index: i,
                   rule: rules[i],
-                  onChanged: (r) => controller.updateDeviceRule(i, (_) => r),
-                  onDelete: () => controller.removeDeviceRule(i),
+                  onChanged: (r) =>
+                      controller.add(UpdateDeviceRule(i, (_) => r)),
+                  onDelete: () => controller.add(RemoveDeviceRule(i)),
                   colors: colors,
                   typography: typography,
                 ),

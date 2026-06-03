@@ -1,12 +1,13 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
 part 'keyboard_gesture.freezed.dart';
 
 @freezed
-sealed class KeyboardGesture with _$KeyboardGesture {
+sealed class KeyboardGesture with _$KeyboardGesture implements Gesture {
   const KeyboardGesture._();
 
   const factory KeyboardGesture.shortcut({
@@ -18,6 +19,7 @@ sealed class KeyboardGesture with _$KeyboardGesture {
     ShortcutGesture() => KeyboardTriggerType.shortcut,
   };
 
+  @override
   KeyboardGesture withCommon(TriggerCommon c) => switch (this) {
     final ShortcutGesture g => g.copyWith(common: c),
   };

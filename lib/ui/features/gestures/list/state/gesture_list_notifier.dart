@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/state/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:meta/meta.dart';
 
@@ -38,33 +41,37 @@ class GestureListNotifier extends Notifier<GestureListVm> {
   ConfigController get _config => ref.read(configControllerProvider.notifier);
 
   void addGesture(DeviceType device, Object gesture) {
-    _config.addGestureForDevice(device, gesture);
+    _config.add(AddGesture(device, gesture as Gesture));
   }
 
   void duplicateGesture(DeviceType device, int index) {
-    _config.duplicateGestureForDevice(device, index);
+    _config.add(DuplicateGesture(device, index));
   }
 
   void removeGesture(DeviceType device, int index) {
-    _config.removeGestureForDevice(device, index);
+    _config.add(RemoveGesture(device, index));
   }
 
   void enableGestures(Iterable<({DeviceType device, int index})> gestures) {
     for (final gesture in gestures) {
-      _config.updateGestureCommonForDevice(
-        gesture.device,
-        gesture.index,
-        (common) => common.copyWith(enabled: null),
+      _config.add(
+        UpdateGestureCommon(
+          gesture.device,
+          gesture.index,
+          (common) => common.copyWith(enabled: null),
+        ),
       );
     }
   }
 
   void disableGestures(Iterable<({DeviceType device, int index})> gestures) {
     for (final gesture in gestures) {
-      _config.updateGestureCommonForDevice(
-        gesture.device,
-        gesture.index,
-        (common) => common.copyWith(enabled: false),
+      _config.add(
+        UpdateGestureCommon(
+          gesture.device,
+          gesture.index,
+          (common) => common.copyWith(enabled: false),
+        ),
       );
     }
   }
@@ -82,23 +89,23 @@ class GestureListNotifier extends Notifier<GestureListVm> {
   }
 
   void addGroup(GestureGroup group) {
-    _config.addGestureGroup(group);
+    _config.add(AddGestureGroup(group));
   }
 
   void updateGroup(String id, GestureGroup Function(GestureGroup) update) {
-    _config.updateGestureGroup(id, update);
+    _config.add(UpdateGestureGroup(id, update));
   }
 
   void removeGroupAndUngroup(String id) {
-    _config.removeGestureGroupAndUngroup(id);
+    _config.add(RemoveGestureGroupAndUngroup(id));
   }
 
   void deleteGroupWithGestures(String id, DeviceType device) {
-    _config.deleteGestureGroupWithGestures(id, device);
+    _config.add(DeleteGestureGroupWithGestures(id));
   }
 
   void reorderGroups(DeviceType device, int from, int to) {
-    _config.reorderGestureGroupForDevice(device, from, to);
+    _config.add(ReorderGestureGroup(device, from, to));
   }
 
   void reorderGesturesAndGroups(
@@ -106,6 +113,6 @@ class GestureListNotifier extends Notifier<GestureListVm> {
     List<int> newOrder,
     Map<int, String?> assignments,
   ) {
-    _config.reorderAndUpdateGroupsForDevice(device, newOrder, assignments);
+    _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
   }
 }

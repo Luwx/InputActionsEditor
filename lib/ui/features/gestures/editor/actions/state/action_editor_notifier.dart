@@ -100,7 +100,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   void replaceActions(List<TriggerAction> actions, {required String label}) {
     ref
         .read(configControllerProvider.notifier)
-        .dispatch(
+        .add(
           SetLens<List<TriggerAction>>(
             gestureActionsLens(location),
             actions,
@@ -180,7 +180,7 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
   void replaceInputEntries(List<InputEntry> entries) {
     ref
         .read(configControllerProvider.notifier)
-        .dispatch(
+        .add(
           SetLens<List<InputEntry>>(
             actionInputEntriesLens(location),
             entries,

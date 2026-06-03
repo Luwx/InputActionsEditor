@@ -1,13 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
 part 'touchpad_gesture.freezed.dart';
 
 @freezed
-sealed class TouchpadGesture with _$TouchpadGesture {
+sealed class TouchpadGesture with _$TouchpadGesture implements Gesture {
   const TouchpadGesture._();
 
   const factory TouchpadGesture.swipe({
@@ -71,6 +72,7 @@ sealed class TouchpadGesture with _$TouchpadGesture {
     TouchpadStrokeGesture() => TouchpadTriggerType.stroke,
   };
 
+  @override
   TouchpadGesture withCommon(TriggerCommon c) => switch (this) {
     final TouchpadSwipeGesture g => g.copyWith(common: c),
     final TouchpadPinchGesture g => g.copyWith(common: c),

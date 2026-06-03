@@ -11,7 +11,7 @@ import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
-// Cached once at startup — kdeglobals either exists or it doesn't.
+// cached once, kdeglobals either exists or it doesn't
 final bool _kdeAvailable = KdeglobalsParser.isAvailable();
 
 const _appSidebarWidth = 180.0;
@@ -80,7 +80,7 @@ FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
   };
 
   if (colorPair == null) {
-    // KDE theme is handled separately via kdeColorSchemeProvider
+    // KDE theme is handled separately
     return FThemes.zinc.dark.desktop;
   }
 
