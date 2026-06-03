@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 
 class DeviceSidebar extends HookConsumerWidget {

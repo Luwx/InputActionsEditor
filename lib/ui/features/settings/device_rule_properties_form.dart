@@ -2,10 +2,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lens.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
+import 'package:input_actions_editor/ui/fields/editable_field.dart';
 
 /// A compact form for editing all device rule properties.
 class DeviceRulePropertiesForm extends ConsumerWidget {
@@ -28,13 +28,13 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     void upd(DeviceRuleProperties p) => onChanged(p);
     EditableField<T>? field<T>(
-      Lens<T> Function(int index) lens,
+      Lens<T> Function(DeviceRuleLocation location) lens,
       T fallback,
     ) {
       final index = ruleIndex;
       if (index == null) return null;
       return ref.field(
-        lens(index),
+        lens(DeviceRuleLocation(deviceRuleIndex: index)),
         fallbackValue: () => fallback,
       );
     }
@@ -42,7 +42,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget boolChip({
       required String label,
       required bool? value,
-      required Lens<bool?> Function(int index) lens,
+      required Lens<bool?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(bool? value) update,
     }) {
       final editable = field(lens, value);
@@ -59,7 +59,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget numberChip({
       required String label,
       required double? value,
-      required Lens<double?> Function(int index) lens,
+      required Lens<double?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(double? value) update,
     }) {
       final editable = field(lens, value);
@@ -76,7 +76,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget intChip({
       required String label,
       required int? value,
-      required Lens<int?> Function(int index) lens,
+      required Lens<int?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(int? value) update,
     }) {
       final editable = field(lens, value);
@@ -107,91 +107,91 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
             boolChip(
               label: 'ignore',
               value: properties.ignore,
-              lens: deviceRuleIgnoreLens,
+              lens: deviceRulePropertiesIgnoreLens,
               update: (v) => properties.copyWith(ignore: v),
             ),
             boolChip(
               label: 'grab',
               value: properties.grab,
-              lens: deviceRuleGrabLens,
+              lens: deviceRulePropertiesGrabLens,
               update: (v) => properties.copyWith(grab: v),
             ),
             intChip(
               label: 'motion_timeout',
               value: properties.motionTimeout,
-              lens: deviceRuleMotionTimeoutLens,
+              lens: deviceRulePropertiesMotionTimeoutLens,
               update: (v) => properties.copyWith(motionTimeout: v),
             ),
             numberChip(
               label: 'motion_threshold',
               value: properties.motionThreshold,
-              lens: deviceRuleMotionThresholdLens,
+              lens: deviceRulePropertiesMotionThresholdLens,
               update: (v) => properties.copyWith(motionThreshold: v),
             ),
             intChip(
               label: 'press_timeout',
               value: properties.pressTimeout,
-              lens: deviceRulePressTimeoutLens,
+              lens: deviceRulePropertiesPressTimeoutLens,
               update: (v) => properties.copyWith(pressTimeout: v),
             ),
             numberChip(
               label: 'swipe.angle_tolerance',
               value: properties.swipeAngleTolerance,
-              lens: deviceRuleSwipeAngleToleranceLens,
+              lens: deviceRulePropertiesSwipeAngleToleranceLens,
               update: (v) => properties.copyWith(swipeAngleTolerance: v),
             ),
             boolChip(
               label: 'unblock_buttons_on_timeout',
               value: properties.unblockButtonsOnTimeout,
-              lens: deviceRuleUnblockButtonsOnTimeoutLens,
+              lens: deviceRulePropertiesUnblockButtonsOnTimeoutLens,
               update: (v) => properties.copyWith(unblockButtonsOnTimeout: v),
             ),
             boolChip(
               label: 'buttonpad',
               value: properties.buttonpad,
-              lens: deviceRuleButtonpadLens,
+              lens: deviceRulePropertiesButtonpadLens,
               update: (v) => properties.copyWith(buttonpad: v),
             ),
             intChip(
               label: 'click_timeout',
               value: properties.clickTimeout,
-              lens: deviceRuleClickTimeoutLens,
+              lens: deviceRulePropertiesClickTimeoutLens,
               update: (v) => properties.copyWith(clickTimeout: v),
             ),
             boolChip(
               label: 'handle_evdev_events',
               value: properties.handleEvdevEvents,
-              lens: deviceRuleHandleEvdevEventsLens,
+              lens: deviceRulePropertiesHandleEvdevEventsLens,
               update: (v) => properties.copyWith(handleEvdevEvents: v),
             ),
             numberChip(
               label: 'motion_threshold_2',
               value: properties.motionThreshold2,
-              lens: deviceRuleMotionThreshold2Lens,
+              lens: deviceRulePropertiesMotionThreshold2Lens,
               update: (v) => properties.copyWith(motionThreshold2: v),
             ),
             numberChip(
               label: 'motion_threshold_3',
               value: properties.motionThreshold3,
-              lens: deviceRuleMotionThreshold3Lens,
+              lens: deviceRulePropertiesMotionThreshold3Lens,
               update: (v) => properties.copyWith(motionThreshold3: v),
             ),
             intChip(
               label: 'pressure_ranges.finger',
               value: properties.pressureRangesFinger,
-              lens: deviceRulePressureRangesFingerLens,
+              lens: deviceRulePropertiesPressureRangesFingerLens,
               update: (v) => properties.copyWith(pressureRangesFinger: v),
             ),
             intChip(
               label: 'pressure_ranges.thumb',
               value: properties.pressureRangesThumb,
-              lens: deviceRulePressureRangesThumbLens,
+              lens: deviceRulePropertiesPressureRangesThumbLens,
               update: (v) => properties.copyWith(pressureRangesThumb: v),
             ),
             intChip(
               label: 'pressure_ranges.palm',
               value: properties.pressureRangesPalm,
-              lens: deviceRulePressureRangesPalmLens,
+              lens: deviceRulePropertiesPressureRangesPalmLens,
               update: (v) => properties.copyWith(pressureRangesPalm: v),
             ),
           ],

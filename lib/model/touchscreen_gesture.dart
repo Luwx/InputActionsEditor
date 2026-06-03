@@ -1,13 +1,15 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'touchscreen_gesture.freezed.dart';
+part 'touchscreen_gesture.g.dart';
 
 @freezed
+@withMeta
 sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
   const TouchscreenGesture._();
 

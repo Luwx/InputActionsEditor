@@ -1,13 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show actionAt, gestureActionsLens, gestureAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
-import 'package:input_actions_editor/state/edit/config_edit.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 
 part 'action_editor_notifier.freezed.dart';
 
@@ -75,9 +80,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     final common = ref.watch(
       configControllerProvider.select((state) {
         final config = state.value;
-        return config == null
-            ? null
-            : gestureCommonOf(gestureAt(config, location));
+        return config == null ? null : gestureAt(config, location)?.common;
       }),
     );
     final dirtyState = ref.watch(
@@ -97,59 +100,32 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     );
   }
 
-  void replaceActions(List<TriggerAction> actions, {required String label}) {
-    ref
-        .read(configControllerProvider.notifier)
-        .add(
-          SetLens<List<TriggerAction>>(
-            gestureActionsLens(location),
-            actions,
-            label: label,
-          ),
-          scope: location,
-        );
+  void _dispatch(ConfigEdit edit) {
+    ref.read(configControllerProvider.notifier).add(edit, scope: location);
   }
 
   void add(Action action) {
-    replaceActions(
-      [...state.actions, TriggerAction(action: action)],
-      label: 'Add action',
-    );
+    _dispatch(AddAction(location, TriggerAction(action: action)));
   }
 
-  void remove(int index) {
-    final next = List<TriggerAction>.of(state.actions);
-    if (index < 0 || index >= next.length) return;
-    next.removeAt(index);
-    replaceActions(next, label: 'Remove action');
-  }
+  void remove(int index) => _dispatch(RemoveAction(location, index));
 
-  void duplicate(int index) {
-    final current = state.actions;
-    if (index < 0 || index >= current.length) return;
-    replaceActions(
-      List<TriggerAction>.of(current)
-        ..insert(index + 1, current[index].copyWith()),
-      label: 'Duplicate action',
-    );
-  }
+  void duplicate(int index) => _dispatch(DuplicateAction(location, index));
 
-  void reorder(int oldIndex, int newIndex) {
-    final next = List<TriggerAction>.of(state.actions);
-    if (oldIndex < 0 ||
-        oldIndex >= next.length ||
-        newIndex < 0 ||
-        newIndex >= next.length) {
-      return;
-    }
-    next.insert(newIndex, next.removeAt(oldIndex));
-    replaceActions(next, label: 'Reorder actions');
-  }
+  void reorder(int oldIndex, int newIndex) =>
+      _dispatch(ReorderAction(location, oldIndex, newIndex));
 
+  /// Restores the whole action list to its last-saved value as one undo step.
   void revert() {
     final savedActions = state.savedActions;
     if (savedActions == null) return;
-    replaceActions(savedActions, label: 'Revert actions');
+    _dispatch(
+      SetLens<List<TriggerAction>>(
+        gestureActionsLens(location),
+        savedActions,
+        label: 'Revert actions',
+      ),
+    );
   }
 }
 

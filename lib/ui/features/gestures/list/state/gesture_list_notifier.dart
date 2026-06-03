@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
-import 'package:input_actions_editor/state/edit/edits/group_edits.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
+// import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:meta/meta.dart';
 
 final gestureListProvider =
@@ -52,7 +53,7 @@ class GestureListNotifier extends Notifier<GestureListVm> {
     _config.add(RemoveGesture(device, index));
   }
 
-  void enableGestures(Iterable<({DeviceType device, int index})> gestures) {
+  void enableGestures(Iterable<GestureLocation> gestures) {
     for (final gesture in gestures) {
       _config.add(
         UpdateGestureCommon(
@@ -64,7 +65,7 @@ class GestureListNotifier extends Notifier<GestureListVm> {
     }
   }
 
-  void disableGestures(Iterable<({DeviceType device, int index})> gestures) {
+  void disableGestures(Iterable<GestureLocation> gestures) {
     for (final gesture in gestures) {
       _config.add(
         UpdateGestureCommon(
@@ -74,18 +75,6 @@ class GestureListNotifier extends Notifier<GestureListVm> {
         ),
       );
     }
-  }
-
-  bool isEnabled(({DeviceType device, int index}) location) {
-    final config = state.config;
-    if (config == null ||
-        location.index >= config.gesturesForDevice(location.device).length) {
-      return false;
-    }
-    return gestureCommon(
-          config.gesturesForDevice(location.device)[location.index] as Object,
-        ).enabled !=
-        false;
   }
 
   void addGroup(GestureGroup group) {

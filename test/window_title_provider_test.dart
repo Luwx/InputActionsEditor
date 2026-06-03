@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/state/app/window_title_provider.dart';
+import 'package:input_actions_editor/app_state/app/window_title_provider.dart';
 
 void main() {
   group('appWindowTitle', () {

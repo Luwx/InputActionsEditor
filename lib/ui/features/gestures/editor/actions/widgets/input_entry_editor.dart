@@ -14,7 +14,7 @@ import 'package:flutter/services.dart'
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/data/keyboard_physical_key_map.dart';
+import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';

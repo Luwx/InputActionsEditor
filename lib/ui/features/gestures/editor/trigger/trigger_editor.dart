@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/conflict_provider.dart';
+import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';

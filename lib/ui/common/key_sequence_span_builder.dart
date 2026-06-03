@@ -1,6 +1,6 @@
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/painting.dart';
-import 'package:input_actions_editor/data/key_sequence_parser.dart';
+import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
 
 // ---------------------------------------------------------------------------
 // Colour / style configuration

@@ -3,74 +3,20 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
-import 'package:input_actions_editor/state/gesture_undo_controller.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 
 void main() {
-  group('GestureUndoController', () {
-    late ProviderContainer container;
-    late GestureUndoController undo;
-
-    setUp(() {
-      container = ProviderContainer();
-      undo = container.read(gestureUndoProvider.notifier);
-    });
-    tearDown(() => container.dispose());
-
-    test('undo then redo round-trips through recorded snapshots', () {
-      undo.coalesceEnabled = false;
-      undo.record(1, 'A');
-      undo.record(1, 'B');
-
-      expect(undo.canUndo(1), isTrue);
-      expect(undo.undo(1, 'C'), 'B');
-      expect(undo.undo(1, 'B'), 'A');
-      expect(undo.canUndo(1), isFalse);
-
-      expect(undo.redo(1, 'A'), 'B');
-      expect(undo.redo(1, 'B'), 'C');
-      expect(undo.canRedo(1), isFalse);
-    });
-
-    test('edits within the coalesce window collapse into one step', () {
-      final t0 = DateTime(2020);
-      undo.record(1, 'A', at: t0);
-      undo.record(1, 'B', at: t0.add(const Duration(milliseconds: 100)));
-      undo.record(1, 'C', at: t0.add(const Duration(milliseconds: 200)));
-
-      // The whole burst undoes back to the pre-burst snapshot in one step.
-      expect(undo.undo(1, 'D'), 'A');
-      expect(undo.canUndo(1), isFalse);
-    });
-
-    test('edits outside the window are distinct steps', () {
-      final t0 = DateTime(2020);
-      undo.record(1, 'A', at: t0);
-      undo.record(1, 'B', at: t0.add(const Duration(seconds: 1)));
-
-      expect(undo.undo(1, 'C'), 'B');
-      expect(undo.undo(1, 'B'), 'A');
-    });
-
-    test('history is independent per editId', () {
-      undo.coalesceEnabled = false;
-      undo.record(1, 'a1');
-      undo.record(2, 'b1');
-
-      expect(undo.undo(2, 'b2'), 'b1');
-      expect(undo.canUndo(2), isFalse);
-      // editId 1 untouched.
-      expect(undo.canUndo(1), isTrue);
-      expect(undo.undo(1, 'a2'), 'a1');
-    });
-  });
-
-  group('ConfigController per-gesture undo', () {
+  // The per-gesture undo history (former GestureUndoController) was folded into
+  // the single per-scope edit stack. These tests exercise that unified stack:
+  // gesture-body edits routed to a per-location scope, coalescing of rapid
+  // edits, and identity-stable inverses across reorders.
+  group('scoped gesture undo', () {
     ProviderContainer makeContainer(Config seed) {
       final container = ProviderContainer(
         overrides: [
@@ -88,6 +34,8 @@ void main() {
         .common
         .threshold;
 
+    const loc = GestureLocation(device: DeviceType.mouse, index: 0);
+
     const seed = Config(
       mouseGestures: [
         PressGesture(common: TriggerCommon(threshold: '1')),
@@ -95,67 +43,114 @@ void main() {
       ],
     );
 
-    test('undo restores and redo reapplies a gesture edit', () async {
+    UpdateGestureCommon setThreshold(int index, String value) =>
+        UpdateGestureCommon(
+          DeviceType.mouse,
+          index,
+          (common) => common.copyWith(threshold: value),
+        );
+
+    test('scoped undo restores and redo reapplies a gesture edit', () async {
       final c = makeContainer(seed);
       await c.read(configControllerProvider.future);
-      c.read(gestureUndoProvider.notifier).coalesceEnabled = false;
-      final notifier = c.read(configControllerProvider.notifier);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
 
-      notifier.add(
-        UpdateGesture(
-          DeviceType.mouse,
-          0,
-          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
-        ),
-      );
+      notifier.add(setThreshold(0, '99'), scope: loc);
       expect(thresholdAt(c, 0), '99');
 
-      notifier.undoActiveGesture(DeviceType.mouse, 0);
+      notifier.undo(scope: loc);
       expect(thresholdAt(c, 0), '1');
 
-      notifier.redoActiveGesture(DeviceType.mouse, 0);
+      notifier.redo(scope: loc);
       expect(thresholdAt(c, 0), '99');
     });
 
-    test('undo target follows the gesture across a reorder', () async {
+    test('scopes are isolated', () async {
       final c = makeContainer(seed);
       await c.read(configControllerProvider.future);
-      c.read(gestureUndoProvider.notifier).coalesceEnabled = false;
-      final notifier = c.read(configControllerProvider.notifier);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
+      const loc1 = GestureLocation(device: DeviceType.mouse, index: 1);
 
-      // Edit the second gesture, then move it to the front.
-      notifier.add(
-        UpdateGesture(
-          DeviceType.mouse,
-          1,
-          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
-        ),
-      );
+      notifier.add(setThreshold(0, '99'), scope: loc);
+      expect(notifier.canUndo(scope: loc), isTrue);
+      expect(notifier.canUndo(scope: loc1), isFalse);
+    });
+
+    test('rapid edits to the same gesture coalesce into one step', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      var t = DateTime(2020);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceWindow = const Duration(milliseconds: 500)
+        ..clock = () => t;
+
+      notifier.add(setThreshold(0, 'a'), scope: loc);
+      t = t.add(const Duration(milliseconds: 100));
+      notifier.add(setThreshold(0, 'b'), scope: loc);
+      t = t.add(const Duration(milliseconds: 100));
+      notifier.add(setThreshold(0, 'c'), scope: loc);
+      expect(thresholdAt(c, 0), 'c');
+
+      // One undo jumps the whole burst back to the pre-burst value.
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), '1');
+      expect(notifier.canUndo(scope: loc), isFalse);
+
+      // One redo replays the latest value.
+      notifier.redo(scope: loc);
+      expect(thresholdAt(c, 0), 'c');
+    });
+
+    test('edits outside the window are distinct steps', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      var t = DateTime(2020);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceWindow = const Duration(milliseconds: 500)
+        ..clock = () => t;
+
+      notifier.add(setThreshold(0, 'a'), scope: loc);
+      t = t.add(const Duration(seconds: 1));
+      notifier.add(setThreshold(0, 'b'), scope: loc);
+
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), 'a');
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), '1');
+    });
+
+    test('a gesture edit undoes correctly after a later reorder', () async {
+      // Edit gesture 1, then reorder it to the front — both on the global
+      // stack. The inverse is a whole-document restore, so undo is correct
+      // regardless of where the gesture moved (index-resistant).
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
+
+      notifier.add(setThreshold(1, '99'));
       notifier.add(ReorderGesture(DeviceType.mouse, 1, 0));
       expect(thresholdAt(c, 0), '99');
 
-      // Undo at the NEW index resolves the same gesture by editId.
-      notifier.undoActiveGesture(DeviceType.mouse, 0);
-      expect(thresholdAt(c, 0), '2');
+      notifier.undo(); // undo reorder
+      expect(thresholdAt(c, 1), '99');
+      notifier.undo(); // undo the edit
+      expect(thresholdAt(c, 1), '2');
     });
 
     test('undoing back to the saved state clears dirty', () async {
       final c = makeContainer(seed);
       await c.read(configControllerProvider.future);
-      c.read(gestureUndoProvider.notifier).coalesceEnabled = false;
-      final notifier = c.read(configControllerProvider.notifier);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
 
       expect(notifier.isDirty, isFalse);
-      notifier.add(
-        UpdateGesture(
-          DeviceType.mouse,
-          0,
-          (g) => g.withCommon(g.common.copyWith(threshold: '99')),
-        ),
-      );
+      notifier.add(setThreshold(0, '99'), scope: loc);
       expect(notifier.isDirty, isTrue);
 
-      notifier.undoActiveGesture(DeviceType.mouse, 0);
+      notifier.undo(scope: loc);
       expect(notifier.isDirty, isFalse);
     });
   });

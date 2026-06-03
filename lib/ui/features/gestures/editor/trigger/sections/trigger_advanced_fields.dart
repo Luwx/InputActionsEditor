@@ -2,9 +2,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
@@ -38,46 +38,38 @@ class TriggerAdvancedFields extends ConsumerWidget {
       context.theme.colors.background,
     );
 
-    final idField = ref.gestureSchemaField(context, gestureIdField, common);
+    final idField = ref.gestureSchemaField(context, gestureIdField);
     final thresholdField = ref.gestureSchemaField(
       context,
       gestureThresholdField,
-      common,
     );
     final resumeTimeoutField = ref.gestureSchemaField(
       context,
       gestureResumeTimeoutField,
-      common,
     );
     final acceleratedField = ref.gestureSchemaField(
       context,
       gestureAcceleratedField,
-      common,
     );
     final blockEventsField = ref.gestureSchemaField(
       context,
       gestureBlockEventsField,
-      common,
     );
     final clearModifiersField = ref.gestureSchemaField(
       context,
       gestureClearModifiersField,
-      common,
     );
     final setLastTriggerField = ref.gestureSchemaField(
       context,
       gestureSetLastTriggerField,
-      common,
     );
     final conditionsField = ref.gestureSchemaField(
       context,
       gestureConditionsField,
-      common,
     );
     final endConditionsField = ref.gestureSchemaField(
       context,
       gestureEndConditionsField,
-      common,
     );
 
     return Column(

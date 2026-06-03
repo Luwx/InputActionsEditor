@@ -5,6 +5,16 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/settings_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureLocation;
+import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -17,13 +27,7 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/edit/config_edit.dart';
-import 'package:input_actions_editor/state/edit/edits/device_rule_edits.dart';
-import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
-import 'package:input_actions_editor/state/edit/edits/group_edits.dart';
-import 'package:input_actions_editor/state/edit/edits/settings_edits.dart';
-import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -182,19 +186,64 @@ void main() {
       expect(_names(out.mouseGestures), ['m3', 'm1', 'm2']);
     });
 
-    test('only in-place updates are GestureSnapshotEdits', () {
+    test('only in-place updates are CoalescingEdits', () {
       expect(
         UpdateGesture(DeviceType.mouse, 0, (g) => g),
-        isA<GestureSnapshotEdit>(),
+        isA<CoalescingEdit>(),
       );
       expect(
         UpdateGestureCommon(DeviceType.mouse, 0, (c) => c),
-        isA<GestureSnapshotEdit>(),
+        isA<CoalescingEdit>(),
       );
       expect(
         AddGesture(DeviceType.mouse, _mouse1),
-        isNot(isA<GestureSnapshotEdit>()),
+        isNot(isA<CoalescingEdit>()),
       );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  group('Action edits', () {
+    const loc = GestureLocation(device: DeviceType.mouse, index: 0);
+
+    TriggerAction sleep(int ms) =>
+        TriggerAction(action: Action.sleep(milliseconds: ms));
+
+    Config seed(List<int> ms) => Config(
+      mouseGestures: [
+        PressGesture(
+          common: TriggerCommon(actions: [for (final m in ms) sleep(m)]),
+        ),
+      ],
+    );
+
+    List<int> msOf(Config c) => [
+      for (final a in c.mouseGestures[0].common.actions)
+        (a.action as SleepAction).milliseconds,
+    ];
+
+    test('AddAction appends to the gesture action list', () {
+      expect(msOf(AddAction(loc, sleep(9)).apply(seed([1, 2]))), [1, 2, 9]);
+    });
+
+    test('RemoveAction deletes at index, ignores out of bounds', () {
+      expect(msOf(RemoveAction(loc, 0).apply(seed([1, 2]))), [2]);
+      final c = seed([1, 2]);
+      expect(RemoveAction(loc, 5).apply(c), c);
+    });
+
+    test('DuplicateAction inserts a copy after the original', () {
+      expect(msOf(DuplicateAction(loc, 0).apply(seed([1, 2]))), [1, 1, 2]);
+    });
+
+    test('ReorderAction moves by plain list indices', () {
+      expect(msOf(ReorderAction(loc, 0, 1).apply(seed([1, 2, 3]))), [2, 1, 3]);
+    });
+
+    test('edits no-op when the gesture is missing', () {
+      const empty = Config();
+      expect(AddAction(loc, sleep(9)).apply(empty), empty);
+      expect(RemoveAction(loc, 0).apply(empty), empty);
     });
   });
 

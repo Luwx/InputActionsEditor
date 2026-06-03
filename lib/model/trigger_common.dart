@@ -1,12 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'trigger_common.freezed.dart';
+part 'trigger_common.g.dart';
 
 @freezed
+@withMeta
 abstract class TriggerCommon with _$TriggerCommon {
   const factory TriggerCommon({
     String? name,
@@ -41,6 +43,7 @@ abstract class TriggerCommon with _$TriggerCommon {
 }
 
 @freezed
+@withMeta
 abstract class MotionCommon with _$MotionCommon {
   const factory MotionCommon({TriggerSpeed? speed, bool? lockPointer}) =
       _MotionCommon;

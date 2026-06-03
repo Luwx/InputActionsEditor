@@ -487,6 +487,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
+  meta_generator:
+    dependency: "direct main"
+    description:
+      path: "../../flutter_pkg/meta_generator"
+      relative: true
+    source: path
+    version: "0.1.0"
   mime:
     dependency: transitive
     description:

@@ -12,7 +12,7 @@ import 'package:input_actions_editor/model/recognition_event.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/path_preview.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';

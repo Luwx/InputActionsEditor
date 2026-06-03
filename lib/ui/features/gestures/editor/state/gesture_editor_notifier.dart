@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -8,42 +12,41 @@ import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/dirty/dirty_model_access.dart';
-import 'package:input_actions_editor/state/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
 part 'gesture_editor_notifier.freezed.dart';
 
 final NotifierProviderFamily<
   GestureEditorNotifier,
-  GestureEditorVm,
+  GestureEditorState,
   GestureLocation
 >
 gestureEditorProvider =
     NotifierProvider.family<
       GestureEditorNotifier,
-      GestureEditorVm,
+      GestureEditorState,
       GestureLocation
     >(GestureEditorNotifier.new);
 
 @freezed
-abstract class GestureEditorVm with _$GestureEditorVm {
-  const factory GestureEditorVm({
+abstract class GestureEditorState with _$GestureEditorState {
+  const factory GestureEditorState({
     required GestureLocation location,
     required Object? gesture,
     required TriggerCommon? common,
     required DirtyMarkState triggerDirtyState,
     required TriggerCommon? savedCommon,
-  }) = _GestureEditorVm;
+  }) = _GestureEditorState;
 
-  const GestureEditorVm._();
+  const GestureEditorState._();
 
   bool get exists => gesture != null && common != null;
 }
 
-class GestureEditorNotifier extends Notifier<GestureEditorVm> {
+class GestureEditorNotifier extends Notifier<GestureEditorState> {
   GestureEditorNotifier(this.location);
 
   final GestureLocation location;
@@ -51,7 +54,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
   ConfigController get _config => ref.read(configControllerProvider.notifier);
 
   @override
-  GestureEditorVm build() {
+  GestureEditorState build() {
     final gesture = ref.watch(
       configControllerProvider.select(
         (state) => gestureAt(state.value, location),
@@ -61,17 +64,20 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
       gestureTriggerConfigDirtyStateProvider(location),
     );
     final savedCommon = ref.watch(savedGestureCommonProvider(location));
-    return GestureEditorVm(
+    return GestureEditorState(
       location: location,
       gesture: gesture,
-      common: gestureCommonOf(gesture),
+      common: gesture?.common,
       triggerDirtyState: triggerDirtyState,
       savedCommon: savedCommon,
     );
   }
 
   void updateCommon(TriggerCommon Function(TriggerCommon) update) {
-    _config.add(UpdateGestureCommon(location.device, location.index, update));
+    _config.add(
+      UpdateGestureCommon(location.device, location.index, update),
+      scope: location,
+    );
   }
 
   void replaceCommon(TriggerCommon common) => updateCommon((_) => common);
@@ -103,6 +109,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
         location.index,
         (gesture) => update(gesture) as Gesture,
       ),
+      scope: location,
     );
   }
 
@@ -140,19 +147,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorVm> {
     );
   }
 
-  void undo() {
-    if (_config.canUndo(scope: location)) {
-      _config.undo(scope: location);
-    } else {
-      _config.undoActiveGesture(location.device, location.index);
-    }
-  }
+  void undo() => _config.undo(scope: location);
 
-  void redo() {
-    if (_config.canRedo(scope: location)) {
-      _config.redo(scope: location);
-    } else {
-      _config.redoActiveGesture(location.device, location.index);
-    }
-  }
+  void redo() => _config.redo(scope: location);
 }

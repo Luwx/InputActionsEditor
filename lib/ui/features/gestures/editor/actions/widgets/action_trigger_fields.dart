@@ -2,9 +2,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
@@ -40,7 +40,6 @@ class ActionTriggerFields extends ConsumerWidget {
     final limitField = ref.actionSchemaField(
       context,
       actionLimitField,
-      triggerAction,
     );
     final conflictingField = ref.actionField(
       context,
@@ -104,7 +103,6 @@ class ActionTriggerFields extends ConsumerWidget {
                   final intervalField = ref.actionSchemaField(
                     context,
                     actionIntervalField,
-                    triggerAction,
                   );
                   return SizedBox(
                     width: 180,
@@ -145,7 +143,6 @@ class ActionTriggerFields extends ConsumerWidget {
                   final thresholdField = ref.actionSchemaField(
                     context,
                     actionThresholdField,
-                    triggerAction,
                   );
                   return SizedBox(
                     width: 180,

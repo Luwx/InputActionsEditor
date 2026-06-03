@@ -1,14 +1,27 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/ui/common/resize_divider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-class GestureSplitLayout extends StatelessWidget {
+class GestureListWidthController extends Notifier<double> {
+  @override
+  double build() => 0.3;
+
+  @override
+  set state(double value) => super.state = value;
+}
+
+final gestureListWidthProvider =
+    NotifierProvider<GestureListWidthController, double>(
+      GestureListWidthController.new,
+    );
+
+class GestureSplitLayout extends ConsumerWidget {
   const GestureSplitLayout({
-    required this.gestureListWidthFraction,
-    required this.onGestureListWidthFractionChanged,
+    // required this.onGestureListWidthFractionChanged,
     this.dividerLayout = ResizeDividerLayout.float,
     this.dividerWidth = 12,
     this.dividerLinePlacement = ResizeDividerLinePlacement.center,
@@ -18,18 +31,22 @@ class GestureSplitLayout extends StatelessWidget {
   static const _minGestureListWidth = 260.0;
   static const _minGestureDetailWidth = 360.0;
 
-  final double gestureListWidthFraction;
-  final ValueChanged<double> onGestureListWidthFractionChanged;
+  // final double gestureListWidthFraction;
+  // final ValueChanged<double> onGestureListWidthFractionChanged;
   final ResizeDividerLayout dividerLayout;
   final double dividerWidth;
   final ResizeDividerLinePlacement dividerLinePlacement;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fraction = ref.watch(gestureListWidthProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = _availableWidth(constraints.maxWidth);
-        final gestureListWidth = _resolvedGestureListWidth(availableWidth);
+        final gestureListWidth = _resolvedGestureListWidth(
+          availableWidth,
+          fraction,
+        );
         final gestureDetailWidth = math.max(
           0,
           availableWidth - gestureListWidth,
@@ -47,7 +64,15 @@ class GestureSplitLayout extends StatelessWidget {
                 width: dividerWidth,
                 linePlacement: dividerLinePlacement,
                 onDragUpdate: (delta) {
-                  _updateGestureListWidth(delta, availableWidth);
+                  final newFraction = _calculateGestureListWidth(
+                    delta,
+                    availableWidth,
+                    fraction,
+                  );
+                  if (newFraction != null) {
+                    ref.read(gestureListWidthProvider.notifier).state =
+                        newFraction;
+                  }
                 },
               ),
               SizedBox(
@@ -80,7 +105,15 @@ class GestureSplitLayout extends StatelessWidget {
                   width: dividerWidth,
                   linePlacement: dividerLinePlacement,
                   onDragUpdate: (delta) {
-                    _updateGestureListWidth(delta, availableWidth);
+                    final newFraction = _calculateGestureListWidth(
+                      delta,
+                      availableWidth,
+                      fraction,
+                    );
+                    if (newFraction != null) {
+                      ref.read(gestureListWidthProvider.notifier).state =
+                          newFraction;
+                    }
                   },
                 ),
               ),
@@ -104,12 +137,12 @@ class GestureSplitLayout extends StatelessWidget {
     return (gestureList: minGestureWidth, gestureDetail: minDetailWidth);
   }
 
-  double _resolvedGestureListWidth(double availableWidth) {
+  double _resolvedGestureListWidth(double availableWidth, double fraction) {
     if (availableWidth <= 0) {
       return 0;
     }
 
-    final preferredWidth = availableWidth * gestureListWidthFraction;
+    final preferredWidth = availableWidth * fraction;
     final minimumWidths = _minimumWidths(availableWidth);
     final maxGestureWidth = math.max(
       minimumWidths.gestureList,
@@ -127,12 +160,17 @@ class GestureSplitLayout extends StatelessWidget {
         ResizeDividerLinePlacement.right => gestureListWidth - dividerWidth,
       };
 
-  void _updateGestureListWidth(double delta, double availableWidth) {
+  double? _calculateGestureListWidth(
+    double delta,
+    double availableWidth,
+    double fraction,
+  ) {
     if (availableWidth <= 0) {
-      return;
+      return null;
     }
 
-    final nextWidth = _resolvedGestureListWidth(availableWidth) + delta;
+    final nextWidth =
+        _resolvedGestureListWidth(availableWidth, fraction) + delta;
     final minimumWidths = _minimumWidths(availableWidth);
     final maxGestureWidth = math.max(
       minimumWidths.gestureList,
@@ -143,6 +181,6 @@ class GestureSplitLayout extends StatelessWidget {
       maxGestureWidth,
     );
 
-    onGestureListWidthFractionChanged(clampedWidth / availableWidth);
+    return clampedWidth / availableWidth;
   }
 }

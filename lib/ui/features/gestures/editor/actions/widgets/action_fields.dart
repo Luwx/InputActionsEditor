@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
@@ -28,7 +28,6 @@ class ActionFields extends ConsumerWidget {
               final schemaField = ref.actionSchemaField(
                 context,
                 actionCommandField,
-                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -93,7 +92,6 @@ class ActionFields extends ConsumerWidget {
               final schemaField = ref.actionSchemaField(
                 context,
                 actionComponentField,
-                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -122,7 +120,6 @@ class ActionFields extends ConsumerWidget {
               final schemaField = ref.actionSchemaField(
                 context,
                 actionShortcutField,
-                TriggerAction(action: action),
               );
               return FTextField(
                 control: FTextFieldControl.managed(
@@ -181,7 +178,6 @@ class ActionFields extends ConsumerWidget {
           final schemaField = ref.actionSchemaField(
             context,
             actionRawField,
-            TriggerAction(action: action),
           );
           return FTextField(
             control: FTextFieldControl.managed(

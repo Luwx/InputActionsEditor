@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:dbus/dbus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
-import 'package:input_actions_editor/services/daemon_client.dart';
+import 'package:input_actions_editor/services/daemon/daemon_client.dart';
 
 const _maxEvents = 200;
 

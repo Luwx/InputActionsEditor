@@ -3,16 +3,20 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show RootConfigDirtyField, globalSettingsLens;
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/edit/config_edit.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/fields/editable_field.dart';
 
 class EffectSettingsScreen extends ConsumerWidget {
   const EffectSettingsScreen({super.key});
@@ -60,19 +64,19 @@ class EffectSettingsScreen extends ConsumerWidget {
       SetLens<GlobalSettings>(globalSettingsLens, next),
     );
     final autoreloadField = ref.field(
-      globalAutoreloadLens,
+      globalSettingsAutoreloadLens(),
       fallbackValue: () => gs.autoreload,
     );
     final externalVariableAccessField = ref.field(
-      globalExternalVariableAccessLens,
+      globalSettingsExternalVariableAccessLens(),
       fallbackValue: () => gs.externalVariableAccess,
     );
     final notificationsConfigErrorField = ref.field(
-      globalNotificationsConfigErrorLens,
+      globalSettingsNotificationsConfigErrorLens(),
       fallbackValue: () => gs.notificationsConfigError,
     );
     final emergencyCombinationField = ref.field(
-      globalEmergencyCombinationLens,
+      globalSettingsEmergencyCombinationLens(),
       fallbackValue: () => gs.emergencyCombination,
     );
 

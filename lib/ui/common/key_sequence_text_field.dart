@@ -5,7 +5,7 @@ import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/data/key_sequence_parser.dart';
+import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 
 /// A text field that accepts key sequences in two formats and decorates them

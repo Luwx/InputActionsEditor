@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 
 const Color kUnsavedMarkerColor = Color(0xFFF59E0B);
 

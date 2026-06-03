@@ -265,7 +265,6 @@ Map<String, dynamic> mouseGestureToMap(MouseGesture g) {
   return m;
 }
 
-// Keep old name as alias so existing callers still compile.
 Map<String, dynamic> gestureToMap(MouseGesture g) => mouseGestureToMap(g);
 
 Map<String, dynamic> keyboardGestureToMap(KeyboardGesture g) {

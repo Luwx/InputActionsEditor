@@ -3,8 +3,8 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart' show Colors, Curves, Material;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/condition.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 

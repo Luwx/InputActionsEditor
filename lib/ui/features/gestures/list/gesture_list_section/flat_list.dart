@@ -14,7 +14,7 @@ List<_FlatItem> _buildFlatList(
     final ungrouped = <(int, Object)>[];
 
     for (final (index, gesture) in gestures.indexed) {
-      final groupId = gestureCommon(gesture as Object).groupId;
+      final groupId = gestureCommon(gesture).groupId;
       if (groupId != null && groupIdSet.contains(groupId)) {
         grouped.putIfAbsent(groupId, () => []).add((index, gesture));
       } else {

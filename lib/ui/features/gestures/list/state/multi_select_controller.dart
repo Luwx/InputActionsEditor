@@ -1,31 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:input_actions_editor/state/app_router.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 
-class MultiSelectController extends Notifier<Set<GestureKey>?> {
+class MultiSelectController extends Notifier<Set<GestureLocation>?> {
   @override
-  Set<GestureKey>? build() => null;
+  Set<GestureLocation>? build() => null;
 
   bool get isActive => state != null;
-  Set<GestureKey>? get selection => state;
+  Set<GestureLocation>? get selection => state;
 
-  void enter(GestureKey initial) {
+  void enter(GestureLocation initial) {
     state = {initial};
   }
 
-  void toggle(GestureKey item) {
+  void toggle(GestureLocation item) {
     final current = state;
     if (current == null) return;
-    final next = Set<GestureKey>.of(current);
+    final next = Set<GestureLocation>.of(current);
     if (!next.remove(item)) next.add(item);
     state = next;
   }
 
-  set selection(Set<GestureKey>? items) => state = items;
+  set selection(Set<GestureLocation>? items) => state = items;
 
   void exit() => state = null;
 }
 
 final multiSelectControllerProvider =
-    NotifierProvider<MultiSelectController, Set<GestureKey>?>(
+    NotifierProvider<MultiSelectController, Set<GestureLocation>?>(
       MultiSelectController.new,
     );

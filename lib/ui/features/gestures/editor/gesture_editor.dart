@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -10,8 +12,6 @@ import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
-import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
@@ -48,15 +48,15 @@ class GestureDetailSection extends HookConsumerWidget {
       });
     });
 
-    void enableSelected(Set<GestureKey> selected) {
+    void enableSelected(Set<GestureLocation> selected) {
       ref.read(gestureListProvider.notifier).enableGestures(selected);
     }
 
-    void disableSelected(Set<GestureKey> selected) {
+    void disableSelected(Set<GestureLocation> selected) {
       ref.read(gestureListProvider.notifier).disableGestures(selected);
     }
 
-    void deleteSelected(Set<GestureKey> selected) {
+    void deleteSelected(Set<GestureLocation> selected) {
       final byDevice = <DeviceType, List<int>>{};
       for (final s in selected) {
         byDevice.putIfAbsent(s.device, () => []).add(s.index);
@@ -83,8 +83,7 @@ class GestureDetailSection extends HookConsumerWidget {
             if (selection.index <
                 config.gesturesForDevice(selection.device).length)
               gestureCommon(
-                    config.gesturesForDevice(selection.device)[selection.index]
-                        as Object,
+                    config.gesturesForDevice(selection.device)[selection.index],
                   ).enabled !=
                   false,
       ];
@@ -124,7 +123,7 @@ class GestureDetailSection extends HookConsumerWidget {
       );
     }
 
-    final gesture = gestures[selection.index] as Object;
+    final gesture = gestures[selection.index];
     final gestureLocation = GestureLocation(
       device: selection.device,
       index: selection.index,

@@ -83,7 +83,7 @@ String gestureDeviceLabel(DeviceType device) => switch (device) {
     final ungrouped = <int>[];
 
     for (final (index, gesture) in gestures.indexed) {
-      final groupId = gestureCommon(gesture as Object).groupId;
+      final groupId = gestureCommon(gesture).groupId;
       if (groupId != null && groupIdSet.contains(groupId)) {
         grouped.putIfAbsent(groupId, () => []).add(index);
       } else {

@@ -5,15 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart'
     hide gestureCommon, gestureTypeLabel;
 import 'package:input_actions_editor/model/gesture_group.dart';
-import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/conflict_provider.dart';
-import 'package:input_actions_editor/state/navigation/app_destination.dart';
-import 'package:input_actions_editor/state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
@@ -50,7 +51,7 @@ class GestureListSection extends HookConsumerWidget {
     final scrollController = useScrollController();
     final pendingAutoSelect = useRef(false);
     final pendingAutoSelectFilter = useRef<DeviceType?>(null);
-    final scrollTarget = useState<({DeviceType device, int index})?>(null);
+    final scrollTarget = useState<GestureLocation?>(null);
     final scrollTargetFlatIndex = useRef<int?>(null);
     final scrollTargetQueued = useRef(false);
     final scrollTargetKey = useMemoized(GlobalKey.new);
@@ -123,7 +124,7 @@ class GestureListSection extends HookConsumerWidget {
       pendingAutoSelectFilter.value = null;
     }
 
-    void queueScrollToGesture(({DeviceType device, int index}) target) {
+    void queueScrollToGesture(GestureLocation target) {
       scrollTarget.value = target;
       scrollTargetFlatIndex.value = null;
       scrollTargetQueued.value = false;
@@ -186,7 +187,7 @@ class GestureListSection extends HookConsumerWidget {
       final newIndex = existingGestures.length;
       final typeLabel = gestureTypeLabel(gesture);
       final sameTypeCount = existingGestures
-          .where((g) => gestureTypeLabel(g as Object) == typeLabel)
+          .where((g) => gestureTypeLabel(g) == typeLabel)
           .length;
       final defaultName = '$typeLabel #${sameTypeCount + 1}';
       final named = gestureWithCommon(
@@ -196,7 +197,7 @@ class GestureListSection extends HookConsumerWidget {
       ref.read(gestureListProvider.notifier).addGesture(device, named);
       ref.read(addedGestureProvider.notifier).markAdded(newIndex);
       context.selectGesture(device, newIndex);
-      scrollTarget.value = (device: device, index: newIndex);
+      scrollTarget.value = GestureLocation(device: device, index: newIndex);
       scrollToTarget();
     }
 
@@ -298,27 +299,27 @@ class GestureListSection extends HookConsumerWidget {
                 );
                 prepareScrollTarget(viewModel);
                 final reorderEntries =
-                    <ReorderableGroupableListEntry<GestureKey, String>>[];
-                final gestureItemsByKey = <GestureKey, _GestureRowItem>{};
+                    <ReorderableGroupableListEntry<GestureLocation, String>>[];
+                final gestureItemsByKey = <GestureLocation, _GestureRowItem>{};
                 final groupItemsById = <String, _GroupHeaderItem>{};
                 for (final flatItem in viewModel.flatItems) {
                   switch (flatItem) {
                     case _GroupHeaderItem():
                       groupItemsById[flatItem.group.id] = flatItem;
                       reorderEntries.add(
-                        ReorderableGroupableGroup<GestureKey, String>(
+                        ReorderableGroupableGroup<GestureLocation, String>(
                           key: ValueKey('group:${flatItem.group.id}'),
                           id: flatItem.group.id,
                         ),
                       );
                     case _GestureRowItem():
-                      final key = (
+                      final key = GestureLocation(
                         device: flatItem.device,
                         index: flatItem.configIndex,
                       );
                       gestureItemsByKey[key] = flatItem;
                       reorderEntries.add(
-                        ReorderableGroupableItem<GestureKey, String>(
+                        ReorderableGroupableItem<GestureLocation, String>(
                           key: ValueKey(
                             '${flatItem.device.name}:${flatItem.configIndex}',
                           ),
@@ -368,7 +369,7 @@ class GestureListSection extends HookConsumerWidget {
                           ),
                         )
                       else
-                        ReorderableGroupableList<GestureKey, String>(
+                        ReorderableGroupableList<GestureLocation, String>(
                           entries: reorderEntries,
                           scrollController: scrollController,
                           borderColor: colors.border,

@@ -1,9 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/model/condition.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'device_rule.freezed.dart';
+part 'device_rule.g.dart';
 
 @freezed
+@withMeta
 abstract class DeviceRuleProperties with _$DeviceRuleProperties {
   const factory DeviceRuleProperties({
     bool? grab,
@@ -44,6 +47,7 @@ abstract class DeviceRuleProperties with _$DeviceRuleProperties {
 }
 
 @freezed
+@withMeta
 abstract class DeviceRule with _$DeviceRule {
   const factory DeviceRule({
     Condition? conditions,

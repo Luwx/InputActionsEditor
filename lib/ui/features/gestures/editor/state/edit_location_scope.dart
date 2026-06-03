@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:input_actions_editor/state/dirty/dirty_locations.dart';
-import 'package:input_actions_editor/state/dirty/dirty_mark_state.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lens.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/ui/fields/editable_field.dart';
 import 'package:lens_geneartor/lens_geneartor.dart';
 
 class EditLocationScope extends InheritedWidget {
@@ -87,8 +87,8 @@ extension ScopedFieldAccess on WidgetRef {
 
   SchemaEditableField<T> gestureSchemaField<TRoot, T>(
     BuildContext context,
-    GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field,
-    TRoot fallbackRoot, {
+    GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field, {
+    TRoot? fallbackRoot,
     DirtyMarkState? dirty,
   }) {
     final location = context.gestureLocation;
@@ -103,8 +103,8 @@ extension ScopedFieldAccess on WidgetRef {
 
   SchemaEditableField<T> actionSchemaField<TRoot, T>(
     BuildContext context,
-    GeneratedEditField<TRoot, ActionLocation, T, Lens<T>> field,
-    TRoot fallbackRoot, {
+    GeneratedEditField<TRoot, ActionLocation, T, Lens<T>> field, {
+    TRoot? fallbackRoot,
     DirtyMarkState? dirty,
   }) {
     final location = context.actionLocation;

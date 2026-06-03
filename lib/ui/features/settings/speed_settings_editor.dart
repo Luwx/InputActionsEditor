@@ -2,12 +2,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/fields/editable_field.dart';
 
 class SpeedSettingsEditor extends ConsumerWidget {
   const SpeedSettingsEditor({

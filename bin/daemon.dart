@@ -19,9 +19,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dbus/dbus.dart';
-import 'package:input_actions_editor/daemon/daemon_server_object.dart';
-import 'package:input_actions_editor/daemon/recognition_watcher.dart';
-import 'package:input_actions_editor/daemon/sni_object.dart';
+import 'package:input_actions_editor/services/daemon/daemon_server_object.dart';
+import 'package:input_actions_editor/services/daemon/recognition_watcher.dart';
+import 'package:input_actions_editor/services/daemon/sni_object.dart';
 
 Future<void> main() async {
   final client = DBusClient.session();

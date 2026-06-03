@@ -1,12 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'mouse_gesture.freezed.dart';
+part 'mouse_gesture.g.dart';
 
 @freezed
+@withMeta
 sealed class SwipeMode with _$SwipeMode {
   const factory SwipeMode.direction({required SwipeDirection direction}) =
       SwipeDirectionMode;
@@ -19,6 +21,7 @@ sealed class SwipeMode with _$SwipeMode {
 }
 
 @freezed
+@withMeta
 sealed class MouseGesture with _$MouseGesture implements Gesture {
   const MouseGesture._();
 

@@ -2,18 +2,20 @@ import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/edit/editable_field.dart';
-import 'package:input_actions_editor/state/edit/edits/device_rule_edits.dart';
-import 'package:input_actions_editor/state/edit/lenses/config_schema.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/device_variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rule_properties_form.dart';
+import 'package:input_actions_editor/ui/fields/editable_field.dart';
 
 class DeviceRulesEditor extends ConsumerWidget {
   const DeviceRulesEditor({super.key});
@@ -154,7 +156,7 @@ class _DeviceRuleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final condLabel = _conditionLabel(rule.conditions);
     final conditionsField = ref.field(
-      deviceRuleConditionsLens(index),
+      deviceRuleConditionsLens(DeviceRuleLocation(deviceRuleIndex: index)),
       fallbackValue: () => rule.conditions,
     );
 

@@ -1,12 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'pointer_gesture.freezed.dart';
+part 'pointer_gesture.g.dart';
 
 @freezed
+@withMeta
 sealed class PointerGesture with _$PointerGesture implements Gesture {
   const PointerGesture._();
 
