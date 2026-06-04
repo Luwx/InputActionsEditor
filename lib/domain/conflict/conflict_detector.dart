@@ -72,10 +72,7 @@ List<GestureConflict> _detectForDevice(DeviceType device, List<Object> raw) {
 
 /// Whether two gestures can be activated by the same physical input.
 bool _sharesContext(DeviceType device, _G x, _G y) {
-  if (_conditionKey(x.common.conditions) !=
-      _conditionKey(y.common.conditions)) {
-    return false;
-  }
+  if (x.conditionKey != y.conditionKey) return false;
   return switch (device) {
     DeviceType.mouse => _buttonsOverlap(
       x.common.mouseButtons,
@@ -447,7 +444,10 @@ class _G {
       speed = _speedOf(gesture),
       instant = gesture is PressGesture ? gesture.instant : null,
       swipeMode = _swipeModeOf(gesture),
-      dirTokens = _dirTokensOf(gesture);
+      dirTokens = _dirTokensOf(gesture),
+      // Serialized once per gesture; the O(n^2) pair loop then compares the
+      // cached strings instead of rebuilding the condition key for every pair.
+      conditionKey = _conditionKey(common.conditions);
 
   final int index;
   final Object gesture;
@@ -458,6 +458,7 @@ class _G {
   final bool? instant;
   final SwipeMode? swipeMode;
   final Set<String> dirTokens;
+  final String conditionKey;
 }
 
 _Kind _kindOf(Object g) => switch (g) {

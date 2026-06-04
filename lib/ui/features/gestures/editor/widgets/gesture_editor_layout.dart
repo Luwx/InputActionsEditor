@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -11,40 +10,42 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/trigger
 
 class GestureEditorLayout extends ConsumerWidget {
   const GestureEditorLayout({
-    required this.device,
+    required this.location,
     required this.sections,
-    required this.common,
-    required this.gestureIndex,
     super.key,
   });
 
-  final DeviceType device;
+  final GestureLocation location;
   final List<Widget> sections;
-  final TriggerCommon common;
-  final int gestureIndex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasAdvanced = TriggerAdvancedFields.hasNonDefaultFields(common);
-    final gestureLocation = GestureLocation(
-      device: device,
-      index: gestureIndex,
+    final hasAdvanced = ref.watch(
+      gestureEditorProvider(location).select(
+        (s) => TriggerAdvancedFields.hasNonDefaultFields(
+          s.common ?? const TriggerCommon(),
+        ),
+      ),
     );
-    final vm = ref.watch(gestureEditorProvider(gestureLocation));
-    final notifier = ref.read(gestureEditorProvider(gestureLocation).notifier);
+    final triggerDirtyState = ref.watch(
+      gestureEditorProvider(location).select((s) => s.triggerDirtyState),
+    );
+    final savedCommon = ref.watch(
+      gestureEditorProvider(location).select((s) => s.savedCommon),
+    );
+    final notifier = ref.read(gestureEditorProvider(location).notifier);
+
     return EditLocationScope(
-      gesture: gestureLocation,
+      gesture: location,
       child: Column(
         children: [
           TriggerEditor(
             sections: sections,
             hasAdvanced: hasAdvanced,
-            common: common,
-            onCommonChanged: notifier.replaceCommon,
-            dirtyState: vm.triggerDirtyState,
-            onRevert: vm.savedCommon == null
+            dirtyState: triggerDirtyState,
+            onRevert: savedCommon == null
                 ? null
-                : () => notifier.revertTriggerConfig(common, vm.savedCommon!),
+                : () => notifier.revertTriggerConfig(savedCommon),
           ),
           const SizedBox(height: 16),
           const ActionListEditor(),

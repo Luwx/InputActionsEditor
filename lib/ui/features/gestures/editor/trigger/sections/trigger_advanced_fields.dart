@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -12,14 +11,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TriggerAdvancedFields extends ConsumerWidget {
-  const TriggerAdvancedFields({
-    required this.common,
-    required this.onChanged,
-    super.key,
-  });
-
-  final TriggerCommon common;
-  final void Function(TriggerCommon) onChanged;
+  const TriggerAdvancedFields({super.key});
 
   static bool hasNonDefaultFields(TriggerCommon c) =>
       c.conditions != null ||
@@ -139,7 +131,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
           spacing: 8,
           children: [
             FCheckbox(
-              value: common.effectiveAccelerated,
+              value: acceleratedField.value ?? false,
               onChange: (v) => acceleratedField.onChanged(v ? true : null),
               label: UnsavedLabel(
                 state: acceleratedField.dirty,
@@ -151,7 +143,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
               ),
             ),
             FCheckbox(
-              value: common.effectiveBlockEvents,
+              value: blockEventsField.value ?? true,
               onChange: (v) => blockEventsField.onChanged(v ? null : false),
               label: UnsavedLabel(
                 state: blockEventsField.dirty,
@@ -163,7 +155,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
               ),
             ),
             FCheckbox(
-              value: common.effectiveClearModifiers,
+              value: clearModifiersField.value ?? false,
               onChange: (v) => clearModifiersField.onChanged(v ? true : null),
               label: UnsavedLabel(
                 state: clearModifiersField.dirty,
@@ -175,7 +167,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
               ),
             ),
             FCheckbox(
-              value: common.effectiveSetLastTrigger,
+              value: setLastTriggerField.value ?? true,
               onChange: (v) => setLastTriggerField.onChanged(v ? null : false),
               label: UnsavedLabel(
                 state: setLastTriggerField.dirty,

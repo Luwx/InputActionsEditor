@@ -6,11 +6,7 @@ import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/model/pointer_gesture.dart';
-import 'package:input_actions_editor/model/touchpad_gesture.dart';
-import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
@@ -35,7 +31,7 @@ gestureEditorProvider =
 abstract class GestureEditorState with _$GestureEditorState {
   const factory GestureEditorState({
     required GestureLocation location,
-    required Object? gesture,
+    required Gesture? gesture,
     required TriggerCommon? common,
     required DirtyMarkState triggerDirtyState,
     required TriggerCommon? savedCommon,
@@ -80,8 +76,6 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
     );
   }
 
-  void replaceCommon(TriggerCommon common) => updateCommon((_) => common);
-
   void rename(String name) {
     updateCommon((common) => common.copyWith(name: name.isEmpty ? null : name));
   }
@@ -116,22 +110,10 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   void updateMouse(MouseGesture Function(MouseGesture) update) =>
       updateGesture((g) => update(g as MouseGesture));
 
-  void updateKeyboard(KeyboardGesture Function(KeyboardGesture) update) =>
-      updateGesture((g) => update(g as KeyboardGesture));
 
-  void updatePointer(PointerGesture Function(PointerGesture) update) =>
-      updateGesture((g) => update(g as PointerGesture));
-
-  void updateTouchpad(TouchpadGesture Function(TouchpadGesture) update) =>
-      updateGesture((g) => update(g as TouchpadGesture));
-
-  void updateTouchscreen(
-    TouchscreenGesture Function(TouchscreenGesture) update,
-  ) => updateGesture((g) => update(g as TouchscreenGesture));
-
-  void revertTriggerConfig(TriggerCommon current, TriggerCommon saved) {
-    replaceCommon(
-      current.copyWith(
+  void revertTriggerConfig(TriggerCommon saved) {
+    updateCommon(
+      (current) => current.copyWith(
         mouseButtons: saved.mouseButtons,
         mouseButtonsExactOrder: saved.mouseButtonsExactOrder,
         conditions: saved.conditions,

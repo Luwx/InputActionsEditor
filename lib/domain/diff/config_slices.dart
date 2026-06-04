@@ -9,17 +9,31 @@ library;
 
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/config.dart';
-import 'package:input_actions_editor/model/enums.dart';
 
 /// Returns [onto] with its whole gesture slice replaced by [from]'s, leaving
 /// every settings field of [onto] intact.
-Config withGestureSliceFrom(Config onto, Config from) {
-  var out = onto.copyWith(gestureGroups: from.gestureGroups);
-  for (final device in DeviceType.values) {
-    out = out.withGesturesForDevice(device, from.gesturesForDevice(device));
-  }
-  return out;
-}
+///
+/// Copies [from]'s gesture lists straight through `copyWith` (no per-device
+/// `.cast()` wrappers), so this allocates one [Config] instead of six and
+/// shares the underlying gesture *instances* with [from]. The shared instances
+/// keep the subsequent `==`'s per-element comparison to cheap identity checks.
+/// This runs on every keystroke against the whole config, so the reduced
+/// allocation churn matters.
+Config withGestureSliceFrom(Config onto, Config from) => onto.copyWith(
+  mouseGestures: from.mouseGestures,
+  keyboardGestures: from.keyboardGestures,
+  pointerGestures: from.pointerGestures,
+  touchpadGestures: from.touchpadGestures,
+  touchscreenGestures: from.touchscreenGestures,
+  gestureGroups: from.gestureGroups,
+);
+
+/// Whether [a] and [b] have identical gesture slices (per-device gesture lists
+/// plus grouping metadata), ignoring all settings. Derived from
+/// [withGestureSliceFrom] so the partition stays single-sourced, and fast for
+/// the same identity-sharing reason.
+bool gestureSliceEqual(Config a, Config b) =>
+    identical(a, b) || withGestureSliceFrom(a, b) == a;
 
 DirtyMarkState settingsDirtyState(Config? draft, Config? saved) {
   if (draft == null) return DirtyMarkState.clean;
@@ -32,7 +46,7 @@ DirtyMarkState settingsDirtyState(Config? draft, Config? saved) {
 DirtyMarkState gesturesDirtyState(Config? draft, Config? saved) {
   if (draft == null) return DirtyMarkState.clean;
   if (saved == null) return DirtyMarkState.newUnsaved;
-  return withGestureSliceFrom(saved, draft) == saved
+  return gestureSliceEqual(draft, saved)
       ? DirtyMarkState.clean
       : DirtyMarkState.changedFromSaved;
 }

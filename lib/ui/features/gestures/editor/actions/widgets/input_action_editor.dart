@@ -8,12 +8,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class InputEntriesEditor extends ConsumerWidget {
-  const InputEntriesEditor({
-    required this.entries,
-    super.key,
-  });
-
-  final List<InputEntry> entries;
+  const InputEntriesEditor({super.key});
 
   static const Map<String, InputDevice> deviceOptions = {
     'Keyboard': InputDevice.keyboard,
@@ -51,7 +46,7 @@ class InputEntriesEditor extends ConsumerWidget {
     final entriesField = ref.actionField(
       context,
       actionInputEntriesLens,
-      fallbackValue: () => entries,
+      fallbackValue: () => const <InputEntry>[],
     );
     final currentEntries = entriesField.value;
     return Column(

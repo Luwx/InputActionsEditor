@@ -9,30 +9,17 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class CircleSection extends ConsumerWidget {
-  const CircleSection({
-    required this.direction,
-    this.location,
-    this.onDirectionChanged,
-    super.key,
-  });
-
-  final GestureLocation? location;
-  final CircleDirection direction;
-  final void Function(CircleDirection)? onDirectionChanged;
+  const CircleSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final location =
-        this.location ?? EditLocationScope.maybeOf(context)?.gesture;
-    final directionField = location == null
-        ? null
-        : ref.gestureField(
-            context,
-            circleDirectionLens,
-            fallbackValue: () => direction,
-          );
-    final value = directionField?.value ?? direction;
+    final directionField = ref.gestureField(
+      context,
+      circleDirectionLens,
+      fallbackValue: () => CircleDirection.any,
+    );
+    final value = directionField.value;
     final directions = {
       l10n.directionAny: CircleDirection.any,
       l10n.directionClockwise: CircleDirection.clockwise,
@@ -48,12 +35,7 @@ class CircleSection extends ConsumerWidget {
           control: FSelectManagedControl<CircleDirection>(
             initial: value,
             onChange: (v) {
-              if (v == null) return;
-              if (directionField != null) {
-                directionField.onChanged(v);
-              } else {
-                onDirectionChanged?.call(v);
-              }
+              if (v != null) directionField.onChanged(v);
             },
           ),
           label: LabelWithTooltip(

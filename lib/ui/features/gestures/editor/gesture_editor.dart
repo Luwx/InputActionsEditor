@@ -7,11 +7,7 @@ import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/keyboard_gesture.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/model/pointer_gesture.dart';
-import 'package:input_actions_editor/model/touchpad_gesture.dart';
-import 'package:input_actions_editor/model/touchscreen_gesture.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
@@ -29,8 +25,30 @@ import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_tit
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
-class GestureDetailSection extends HookConsumerWidget {
+
+class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final multiSelect = ref.watch(multiSelectControllerProvider);
+    if (multiSelect != null) {
+      return _MultiSelectPanel(selected: multiSelect);
+    }
+
+    final location = ref.watch(selectedGestureProvider);
+    if (location == null) {
+      return const _GestureSelectPrompt();
+    }
+
+    return _GestureEditorView(location: location);
+  }
+}
+
+class _GestureEditorView extends HookConsumerWidget {
+  const _GestureEditorView({required this.location});
+
+  final GestureLocation location;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,98 +68,29 @@ class GestureDetailSection extends HookConsumerWidget {
       });
     });
 
-    void enableSelected(Set<GestureLocation> selected) {
-      ref.read(gestureListProvider.notifier).enableGestures(selected);
-    }
-
-    void disableSelected(Set<GestureLocation> selected) {
-      ref.read(gestureListProvider.notifier).disableGestures(selected);
-    }
-
-    void deleteSelected(Set<GestureLocation> selected) {
-      final byDevice = <DeviceType, List<int>>{};
-      for (final s in selected) {
-        byDevice.putIfAbsent(s.device, () => []).add(s.index);
-      }
-      final listNotifier = ref.read(gestureListProvider.notifier);
-      for (final entry in byDevice.entries) {
-        final indices = entry.value..sort();
-        for (final i in indices.reversed) {
-          listNotifier.removeGesture(entry.key, i);
-        }
-      }
-      context.clearGestureSelection();
-      ref.read(multiSelectControllerProvider.notifier).exit();
-    }
-
-    final multiSelect = ref.watch(multiSelectControllerProvider);
-    final listVm = ref.watch(gestureListProvider);
-    final config = listVm.config;
-
-    if (multiSelect != null) {
-      final selectedEnabledStates = [
-        if (config != null)
-          for (final selection in multiSelect)
-            if (selection.index <
-                config.gesturesForDevice(selection.device).length)
-              gestureCommon(
-                    config.gesturesForDevice(selection.device)[selection.index],
-                  ).enabled !=
-                  false,
-      ];
-      final canDisable = selectedEnabledStates.any((isEnabled) => isEnabled);
-      final canEnable = selectedEnabledStates.any((isEnabled) => !isEnabled);
-
-      return _MultiSelectPanel(
-        count: multiSelect.length,
-        canDisable: canDisable,
-        canEnable: canEnable,
-        onEnable: () => enableSelected(multiSelect),
-        onDisable: () => disableSelected(multiSelect),
-        onDelete: () => deleteSelected(multiSelect),
-      );
-    }
-
-    final selection = ref.watch(selectedGestureProvider);
-    final colors = context.theme.colors;
-    final typography = context.theme.typography;
-
-    if (selection == null || config == null) {
-      return Center(
-        child: Text(
-          context.l10n.gestureSelectPrompt,
-          style: typography.sm.copyWith(color: colors.mutedForeground),
-        ),
-      );
-    }
-
-    final gestures = config.gesturesForDevice(selection.device);
-    if (selection.index >= gestures.length) {
-      return Center(
-        child: Text(
-          context.l10n.gestureSelectPrompt,
-          style: typography.sm.copyWith(color: colors.mutedForeground),
-        ),
-      );
-    }
-
-    final gesture = gestures[selection.index];
-    final gestureLocation = GestureLocation(
-      device: selection.device,
-      index: selection.index,
-    );
-    final gestureEditor = ref.read(
-      gestureEditorProvider(gestureLocation).notifier,
-    );
     final l10n = context.l10n;
-    final common = gestureCommon(gesture);
-    final name = (common.name?.isNotEmpty ?? false)
-        ? common.name!
-        : gestureTypeLabel(gesture, l10n);
-    final subtitle =
-        '${gestureTypeLabel(gesture, l10n)} '
-        '· ${gestureDeviceLabel(selection.device, l10n)}';
-    final isEnabled = common.effectiveEnabled;
+    final header = ref.watch(
+      gestureEditorProvider(location).select((state) {
+        final gesture = state.gesture;
+        if (gesture == null) return null;
+        final common = gestureCommon(gesture);
+        final typeLabel = gestureTypeLabel(gesture, l10n);
+        return (
+          name: (common.name?.isNotEmpty ?? false) ? common.name! : typeLabel,
+          subtitle:
+              '$typeLabel · ${gestureDeviceLabel(location.device, l10n)}',
+          isEnabled: common.effectiveEnabled,
+        );
+      }),
+    );
+
+    // The selected gesture was removed (e.g. deleted or undone) while this view
+    // was still mounted.
+    if (header == null) {
+      return const _GestureSelectPrompt();
+    }
+
+    final gestureEditor = ref.read(gestureEditorProvider(location).notifier);
 
     final editor = ScrollbarMediaPadding(
       topInset: GrowingFrostedHeaderDelegate.maxHeight,
@@ -152,40 +101,34 @@ class GestureDetailSection extends HookConsumerWidget {
             pinned: true,
             delegate: GrowingFrostedHeaderDelegate(
               titleBuilder: (style) => RenameableTitle(
-                name: name,
+                name: header.name,
                 titleStyle: style,
-                onRename: (newName) {
-                  final sel = ref.read(selectedGestureProvider);
-                  if (sel == null) return;
-                  ref
-                      .read(
-                        gestureEditorProvider(
-                          GestureLocation(
-                            device: sel.device,
-                            index: sel.index,
-                          ),
-                        ).notifier,
-                      )
-                      .rename(newName);
-                },
+                onRename: gestureEditor.rename,
               ),
-              subtitle: subtitle,
+              subtitle: header.subtitle,
               trailing: _GestureHeaderMenu(
-                isEnabled: isEnabled,
-                onToggleEnabled: () => gestureEditor.setEnabled(!isEnabled),
-                onResetDefaults: () => gestureEditor.resetDefaults(gesture),
+                isEnabled: header.isEnabled,
+                onToggleEnabled: () =>
+                    gestureEditor.setEnabled(!header.isEnabled),
+                onResetDefaults: () {
+                  final gesture = ref
+                      .read(gestureEditorProvider(location))
+                      .gesture;
+                  if (gesture != null) gestureEditor.resetDefaults(gesture);
+                },
                 onDuplicate: () {
                   gestureEditor.duplicate();
-                  context.selectGesture(
-                    selection.device,
-                    selection.index + 1,
-                  );
+                  context.selectGesture(location.device, location.index + 1);
                 },
                 onCopyYaml: () async {
+                  final gesture = ref
+                      .read(gestureEditorProvider(location))
+                      .gesture;
+                  if (gesture == null) return;
                   await Clipboard.setData(
                     ClipboardData(
                       text: gestureYamlSnippet(
-                        device: selection.device,
+                        device: location.device,
                         gesture: gesture,
                       ),
                     ),
@@ -218,12 +161,7 @@ class GestureDetailSection extends HookConsumerWidget {
                   : null,
               child: ScrollAnchorScope(
                 controller: anchorController,
-                child: _buildEditor(
-                  key: ValueKey('${selection.device.name}:${selection.index}'),
-                  device: selection.device,
-                  index: selection.index,
-                  gesture: gesture,
-                ),
+                child: _GestureEditorBody(location: location),
               ),
             ),
           ),
@@ -242,13 +180,13 @@ class GestureDetailSection extends HookConsumerWidget {
         actions: <Type, Action<Intent>>{
           _UndoIntent: CallbackAction<_UndoIntent>(
             onInvoke: (_) {
-              ref.read(gestureEditorProvider(gestureLocation).notifier).undo();
+              gestureEditor.undo();
               return null;
             },
           ),
           _RedoIntent: CallbackAction<_RedoIntent>(
             onInvoke: (_) {
-              ref.read(gestureEditorProvider(gestureLocation).notifier).redo();
+              gestureEditor.redo();
               return null;
             },
           ),
@@ -267,6 +205,52 @@ class GestureDetailSection extends HookConsumerWidget {
   }
 }
 
+class _GestureEditorBody extends StatelessWidget {
+  const _GestureEditorBody({required this.location});
+
+  final GestureLocation location;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = ValueKey('${location.device.name}:${location.index}');
+    return switch (location.device) {
+      DeviceType.mouse => MouseGestureEditor(key: key, index: location.index),
+      DeviceType.keyboard => KeyboardGestureEditor(
+        key: key,
+        index: location.index,
+      ),
+      DeviceType.pointer => PointerGestureEditor(
+        key: key,
+        index: location.index,
+      ),
+      DeviceType.touchpad => TouchpadGestureEditor(
+        key: key,
+        index: location.index,
+      ),
+      DeviceType.touchscreen => TouchscreenGestureEditor(
+        key: key,
+        index: location.index,
+      ),
+    };
+  }
+}
+
+class _GestureSelectPrompt extends StatelessWidget {
+  const _GestureSelectPrompt();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+    return Center(
+      child: Text(
+        context.l10n.gestureSelectPrompt,
+        style: typography.sm.copyWith(color: colors.mutedForeground),
+      ),
+    );
+  }
+}
+
 class _UndoIntent extends Intent {
   const _UndoIntent();
 }
@@ -275,58 +259,59 @@ class _RedoIntent extends Intent {
   const _RedoIntent();
 }
 
-Widget _buildEditor({
-  required Key key,
-  required DeviceType device,
-  required int index,
-  required Object gesture,
-}) => switch (device) {
-  DeviceType.mouse => MouseGestureEditor(
-    key: key,
-    index: index,
-    gesture: gesture as MouseGesture,
-  ),
-  DeviceType.keyboard => KeyboardGestureEditor(
-    key: key,
-    index: index,
-    gesture: gesture as KeyboardGesture,
-  ),
-  DeviceType.pointer => PointerGestureEditor(
-    key: key,
-    index: index,
-    gesture: gesture as PointerGesture,
-  ),
-  DeviceType.touchpad => TouchpadGestureEditor(
-    key: key,
-    index: index,
-    gesture: gesture as TouchpadGesture,
-  ),
-  DeviceType.touchscreen => TouchscreenGestureEditor(
-    key: key,
-    index: index,
-    gesture: gesture as TouchscreenGesture,
-  ),
-};
+class _MultiSelectPanel extends ConsumerWidget {
+  const _MultiSelectPanel({required this.selected});
 
-class _MultiSelectPanel extends StatelessWidget {
-  const _MultiSelectPanel({
-    required this.count,
-    required this.canDisable,
-    required this.canEnable,
-    required this.onEnable,
-    required this.onDisable,
-    required this.onDelete,
-  });
+  final Set<GestureLocation> selected;
 
-  final int count;
-  final bool canDisable;
-  final bool canEnable;
-  final VoidCallback onEnable;
-  final VoidCallback onDisable;
-  final VoidCallback onDelete;
+  void _enable(WidgetRef ref) {
+    ref.read(gestureListProvider.notifier).enableGestures(selected);
+  }
+
+  void _disable(WidgetRef ref) {
+    ref.read(gestureListProvider.notifier).disableGestures(selected);
+  }
+
+  void _delete(BuildContext context, WidgetRef ref) {
+    final byDevice = <DeviceType, List<int>>{};
+    for (final s in selected) {
+      byDevice.putIfAbsent(s.device, () => []).add(s.index);
+    }
+    final listNotifier = ref.read(gestureListProvider.notifier);
+    for (final entry in byDevice.entries) {
+      final indices = entry.value..sort();
+      for (final i in indices.reversed) {
+        listNotifier.removeGesture(entry.key, i);
+      }
+    }
+    context.clearGestureSelection();
+    ref.read(multiSelectControllerProvider.notifier).exit();
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (:canEnable, :canDisable) = ref.watch(
+      configControllerProvider.select((state) {
+        final config = state.value;
+        var canEnable = false;
+        var canDisable = false;
+        if (config != null) {
+          for (final sel in selected) {
+            final gestures = config.gesturesForDevice(sel.device);
+            if (sel.index < 0 || sel.index >= gestures.length) continue;
+            final isEnabled =
+                gestureCommon(gestures[sel.index]).enabled != false;
+            if (isEnabled) {
+              canDisable = true;
+            } else {
+              canEnable = true;
+            }
+          }
+        }
+        return (canEnable: canEnable, canDisable: canDisable);
+      }),
+    );
+
     final typography = context.theme.typography;
 
     return Center(
@@ -334,7 +319,7 @@ class _MultiSelectPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            context.l10n.multiSelectCount(count),
+            context.l10n.multiSelectCount(selected.length),
             style: typography.lg.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
@@ -343,7 +328,7 @@ class _MultiSelectPanel extends StatelessWidget {
             children: [
               FButton(
                 variant: .outline,
-                onPress: canEnable ? onEnable : null,
+                onPress: canEnable ? () => _enable(ref) : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -356,7 +341,7 @@ class _MultiSelectPanel extends StatelessWidget {
               const SizedBox(width: 12),
               FButton(
                 variant: .outline,
-                onPress: canDisable ? onDisable : null,
+                onPress: canDisable ? () => _disable(ref) : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -369,7 +354,7 @@ class _MultiSelectPanel extends StatelessWidget {
               const SizedBox(width: 12),
               FButton(
                 variant: .destructive,
-                onPress: onDelete,
+                onPress: () => _delete(context, ref),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

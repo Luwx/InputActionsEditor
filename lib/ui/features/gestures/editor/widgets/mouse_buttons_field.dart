@@ -4,19 +4,13 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class MouseButtonsField extends ConsumerWidget {
-  const MouseButtonsField({
-    required this.gesture,
-    super.key,
-  });
-
-  final MouseGesture gesture;
+  const MouseButtonsField({super.key});
 
   static String _label(MouseButtonValue b) => switch (b) {
     MouseButtonValue.left => 'Left',
@@ -31,18 +25,17 @@ class MouseButtonsField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final common = gesture.common;
-    final buttons = common.mouseButtons;
     final buttonsField = ref.gestureField(
       context,
       gestureMouseButtonsLens,
-      fallbackValue: () => common.mouseButtons,
+      fallbackValue: () => const <MouseButtonValue>[],
     );
     final exactOrderField = ref.gestureField(
       context,
       gestureMouseButtonsExactOrderLens,
-      fallbackValue: () => common.mouseButtonsExactOrder,
+      fallbackValue: () => false,
     );
+    final buttons = buttonsField.value;
     final dirtyState = _combineDirty([
       buttonsField.dirty,
       exactOrderField.dirty,

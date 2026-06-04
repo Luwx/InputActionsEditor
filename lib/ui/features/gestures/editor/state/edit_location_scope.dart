@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show actionAt, gestureAt;
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:lens_geneartor/lens_geneartor.dart';
@@ -67,6 +69,7 @@ extension ScopedFieldAccess on WidgetRef {
       dirty: dirty,
       fallbackValue: fallbackValue,
       scope: location,
+      canRead: (config) => gestureAt(config, location) != null,
     );
   }
 
@@ -82,6 +85,7 @@ extension ScopedFieldAccess on WidgetRef {
       dirty: dirty,
       fallbackValue: fallbackValue,
       scope: location.gesture,
+      canRead: (config) => actionAt(config, location) != null,
     );
   }
 
@@ -98,6 +102,7 @@ extension ScopedFieldAccess on WidgetRef {
       fallbackRoot: fallbackRoot,
       dirty: dirty,
       scope: location,
+      canRead: (config) => gestureAt(config, location) != null,
     );
   }
 
@@ -114,6 +119,7 @@ extension ScopedFieldAccess on WidgetRef {
       fallbackRoot: fallbackRoot,
       dirty: dirty,
       scope: location.gesture,
+      canRead: (config) => actionAt(config, location) != null,
     );
   }
 }

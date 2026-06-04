@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:lens_geneartor/lens_geneartor.dart';
@@ -59,24 +60,31 @@ extension FieldAccess on WidgetRef {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
     Object? scope,
+    bool Function(Config config)? canRead,
   }) {
     final controller = read(configControllerProvider.notifier);
-    final hasConfig = watch(
-      configControllerProvider.select((state) => state.value != null),
+    final readable = watch(
+      configControllerProvider.select((state) {
+        final config = state.value;
+        return config != null && (canRead == null || canRead(config));
+      }),
     );
     final selected = watch(
       configControllerProvider.select((state) {
         final config = state.value;
-        return config == null ? null : lens.get(config);
+        if (config == null || (canRead != null && !canRead(config))) {
+          return null;
+        }
+        return lens.get(config);
       }),
     );
-    if (!hasConfig && fallbackValue == null) {
+    if (!readable && fallbackValue == null) {
       throw StateError(
         'No config value or fallback available for field ${lens.name}',
       );
     }
     final dirtyState = dirty ?? watch(lensDirtyStateProvider(lens))!;
-    final value = hasConfig ? selected as T : fallbackValue!();
+    final value = readable ? selected as T : fallbackValue!();
     return EditableField<T>(
       value: value,
       dirty: dirtyState,
@@ -94,6 +102,7 @@ extension FieldAccess on WidgetRef {
     TRoot? fallbackRoot,
     DirtyMarkState? dirty,
     Object? scope,
+    bool Function(Config config)? canRead,
   }) {
     final fallback = field.fallback;
     final root = fallbackRoot;
@@ -104,6 +113,7 @@ extension FieldAccess on WidgetRef {
           ? null
           : () => fallback(root),
       scope: scope,
+      canRead: canRead,
     );
     return SchemaEditableField<T>(
       value: editable.value,

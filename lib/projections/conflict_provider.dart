@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/conflict/conflict_detector.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -37,10 +40,41 @@ class ConflictReport {
   }
 }
 
-/// Recomputed whenever the config changes. While the config is loading or
-/// errored, reports no conflicts.
-final conflictReportProvider = Provider<ConflictReport>((ref) {
-  final config = ref.watch(configControllerProvider).value;
-  if (config == null) return ConflictReport.empty;
-  return ConflictReport(detectConflicts(config));
-});
+
+class ConflictReportNotifier extends Notifier<ConflictReport> {
+  @visibleForTesting
+  Duration debounce = const Duration(milliseconds: 300);
+
+  Timer? _timer;
+
+  @override
+  ConflictReport build() {
+    // Drive recomputation ourselves rather than rebuilding the provider, so we
+    // control the cadence instead of tracking the config one-for-one.
+    ref
+      ..onDispose(() => _timer?.cancel())
+      ..listen(configControllerProvider, (_, _) => _schedule());
+    return _compute();
+  }
+
+  ConflictReport _compute() {
+    final config = ref.read(configControllerProvider).value;
+    return config == null
+        ? ConflictReport.empty
+        : ConflictReport(detectConflicts(config));
+  }
+
+  void _schedule() {
+    _timer?.cancel();
+    _timer = Timer(debounce, () {
+      _timer = null;
+      state = _compute();
+    });
+  }
+}
+
+
+final conflictReportProvider =
+    NotifierProvider<ConflictReportNotifier, ConflictReport>(
+      ConflictReportNotifier.new,
+    );

@@ -4,7 +4,6 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
-import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
@@ -18,8 +17,6 @@ class TriggerEditor extends ConsumerWidget {
   const TriggerEditor({
     required this.sections,
     required this.hasAdvanced,
-    required this.common,
-    required this.onCommonChanged,
     this.dirtyState,
     this.onRevert,
     super.key,
@@ -27,8 +24,6 @@ class TriggerEditor extends ConsumerWidget {
 
   final List<Widget> sections;
   final bool hasAdvanced;
-  final TriggerCommon common;
-  final void Function(TriggerCommon) onCommonChanged;
   final DirtyMarkState? dirtyState;
   final VoidCallback? onRevert;
 
@@ -85,10 +80,7 @@ class TriggerEditor extends ConsumerWidget {
               FAccordionItem(
                 title: Text(context.l10n.triggerOtherOptions),
                 initiallyExpanded: hasAdvanced,
-                child: TriggerAdvancedFields(
-                  common: common,
-                  onChanged: onCommonChanged,
-                ),
+                child: const TriggerAdvancedFields(),
               ),
             ],
           ),

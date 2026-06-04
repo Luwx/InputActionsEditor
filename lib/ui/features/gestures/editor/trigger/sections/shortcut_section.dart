@@ -36,19 +36,14 @@ final List<String> _nonModifierKeys = keyboardScancodes
     .toList();
 
 class ShortcutSection extends ConsumerWidget {
-  const ShortcutSection({
-    required this.keys,
-    super.key,
-  });
-
-  final List<String> keys;
+  const ShortcutSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final keysField = ref.gestureField(
       context,
       shortcutKeysLens,
-      fallbackValue: () => keys,
+      fallbackValue: () => const <String>[],
     );
     final currentKeys = keysField.value;
     final mainKey = currentKeys

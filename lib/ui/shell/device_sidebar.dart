@@ -7,6 +7,7 @@ import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
@@ -26,10 +27,9 @@ class DeviceSidebar extends HookConsumerWidget {
     final deviceFilter = ref.watch(deviceFilterProvider);
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
-    ref.watch(configControllerProvider.select((s) => s.value));
     final configController = ref.read(configControllerProvider.notifier);
-    final canDiscard =
-        configController.isDirty && configController.savedConfig != null;
+    // Only rebuilds when discardability flips, not on every edit.
+    final canDiscard = ref.watch(canDiscardChangesProvider);
 
     void goToDevice(DeviceType? device) {
       final currentView = ref.read(currentViewProvider);

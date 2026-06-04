@@ -2,25 +2,25 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
     as input_entries_editor;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class ActionFields extends ConsumerWidget {
   const ActionFields({
-    required this.action,
+    required this.kind,
     super.key,
   });
 
-  final Action action;
+  final ActionKind kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return switch (action) {
-      CommandAction(:final wait) => Column(
+    return switch (kind) {
+      ActionKind.command => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -61,7 +61,7 @@ class ActionFields extends ConsumerWidget {
               final field = ref.actionField(
                 context,
                 actionWaitLens,
-                fallbackValue: () => wait,
+                fallbackValue: () => null,
               );
               return FCheckbox(
                 value: field.value ?? false,
@@ -81,10 +81,8 @@ class ActionFields extends ConsumerWidget {
           ),
         ],
       ),
-      InputAction(:final entries) => input_entries_editor.InputEntriesEditor(
-        entries: entries,
-      ),
-      PlasmaShortcutAction() => Column(
+      ActionKind.input => const input_entries_editor.InputEntriesEditor(),
+      ActionKind.plasmaShortcut => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -143,12 +141,12 @@ class ActionFields extends ConsumerWidget {
           ),
         ],
       ),
-      SleepAction(:final milliseconds) => Builder(
+      ActionKind.sleep => Builder(
         builder: (context) {
           final field = ref.actionField(
             context,
             actionDurationLens,
-            fallbackValue: () => milliseconds,
+            fallbackValue: () => 0,
           );
           return FTextField(
             control: FTextFieldControl.managed(
@@ -173,7 +171,7 @@ class ActionFields extends ConsumerWidget {
           );
         },
       ),
-      RawAction() => Builder(
+      ActionKind.raw => Builder(
         builder: (context) {
           final schemaField = ref.actionSchemaField(
             context,
@@ -193,6 +191,7 @@ class ActionFields extends ConsumerWidget {
           );
         },
       ),
+      ActionKind.missing => const SizedBox.shrink(),
     };
   }
 }

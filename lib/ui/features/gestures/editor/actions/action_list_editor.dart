@@ -175,36 +175,19 @@ class ActionListEditor extends HookConsumerWidget {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final gestureLocation = context.gestureLocation;
-    final vm = ref.watch(actionListEditorProvider(gestureLocation));
-    final actions = vm.actions;
+    final count = ref.watch(
+      actionListEditorProvider(
+        gestureLocation,
+      ).select((vm) => vm.actions.length),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 4),
-        Row(
-          children: [
-            UnsavedLabel(
-              state: vm.dirtyState,
-              onRevert: vm.savedActions == null
-                  ? null
-                  : () => ref
-                        .read(
-                          actionListEditorProvider(gestureLocation).notifier,
-                        )
-                        .revert(),
-              child: Text(
-                'Actions',
-                style: context.theme.typography.sm.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const Spacer(),
-          ],
-        ),
+        _ActionsHeader(location: gestureLocation),
         const SizedBox(height: 8),
-        if (actions.isEmpty)
+        if (count == 0)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
@@ -217,7 +200,7 @@ class ActionListEditor extends HookConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
-            itemCount: actions.length,
+            itemCount: count,
             onReorderItem: reorder,
             proxyDecorator: (child, index, animation) =>
                 Material(color: Colors.transparent, child: child),
@@ -225,7 +208,6 @@ class ActionListEditor extends HookConsumerWidget {
               return _ActionRow(
                 key: ValueKey('action-row-$index'),
                 index: index,
-                triggerAction: actions[index],
                 expanded: expanded.value.contains(index),
                 onToggle: () => toggle(index),
                 onOptionsExpanded: () => beginAnchor(index),
@@ -249,10 +231,47 @@ class ActionListEditor extends HookConsumerWidget {
   }
 }
 
-class _ActionRow extends ConsumerWidget {
+class _ActionsHeader extends ConsumerWidget {
+  const _ActionsHeader({required this.location});
+
+  final GestureLocation location;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dirtyState = ref.watch(
+      actionListEditorProvider(location).select((vm) => vm.dirtyState),
+    );
+    final canRevert = ref.watch(
+      actionListEditorProvider(
+        location,
+      ).select((vm) => vm.savedActions != null),
+    );
+
+    return Row(
+      children: [
+        UnsavedLabel(
+          state: dirtyState,
+          onRevert: !canRevert
+              ? null
+              : () => ref
+                    .read(actionListEditorProvider(location).notifier)
+                    .revert(),
+          child: Text(
+            'Actions',
+            style: context.theme.typography.sm.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.index,
-    required this.triggerAction,
     required this.expanded,
     required this.onToggle,
     required this.onOptionsExpanded,
@@ -264,7 +283,6 @@ class _ActionRow extends ConsumerWidget {
   });
 
   final int index;
-  final TriggerAction triggerAction;
   final bool expanded;
   final VoidCallback onToggle;
   final VoidCallback onOptionsExpanded;
@@ -280,17 +298,12 @@ class _ActionRow extends ConsumerWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final gestureLocation = context.gestureLocation;
+  Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final actionLocation = ActionLocation(
-      gesture: gestureLocation,
+      gesture: context.gestureLocation,
       actionIndex: index,
     );
-    final isDirty = ref.watch(actionDirtyProvider(actionLocation));
-    final l10n = context.l10n;
-    final meta = actionMeta(triggerAction.action);
-    final chips = actionMetaChips(triggerAction, l10n);
 
     return AnimatedContainer(
       duration: Durations.medium1,
@@ -307,10 +320,7 @@ class _ActionRow extends ConsumerWidget {
         children: [
           _Header(
             index: index,
-            meta: meta,
-            isDirty: isDirty,
-            triggerAction: triggerAction,
-            chips: chips,
+            actionLocation: actionLocation,
             expanded: expanded,
             onToggle: onToggle,
             onDuplicate: onDuplicate,
@@ -325,7 +335,6 @@ class _ActionRow extends ConsumerWidget {
                 ? EditLocationScope(
                     action: actionLocation,
                     child: _ExpandedEditor(
-                      triggerAction: triggerAction,
                       onOptionsExpanded: onOptionsExpanded,
                       footerKey: ValueKey('action-footer-$index'),
                     ),
@@ -341,13 +350,10 @@ class _ActionRow extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({
     required this.index,
-    required this.meta,
-    required this.isDirty,
-    required this.triggerAction,
-    required this.chips,
+    required this.actionLocation,
     required this.expanded,
     required this.onToggle,
     required this.onDuplicate,
@@ -355,20 +361,24 @@ class _Header extends StatelessWidget {
   });
 
   final int index;
-  final ActionMetaInfo meta;
-  final bool isDirty;
-  final TriggerAction triggerAction;
-  final List<({String label, String value})> chips;
+  final ActionLocation actionLocation;
   final bool expanded;
   final VoidCallback onToggle;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
+    final action = ref.watch(
+      actionEditorProvider(actionLocation).select((vm) => vm.action),
+    );
+    final isDirty = ref.watch(actionDirtyProvider(actionLocation));
+    if (action == null) return const SizedBox.shrink();
+    final meta = actionMeta(action.action);
+    final chips = actionMetaChips(action, l10n);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -426,7 +436,7 @@ class _Header extends StatelessWidget {
                   UnsavedLabel(
                     isDirty: isDirty,
                     child: Text(
-                      actionRowTitle(triggerAction.action, l10n),
+                      actionRowTitle(action.action, l10n),
                       style: typography.sm.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -435,7 +445,7 @@ class _Header extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      actionValueSummary(triggerAction.action, l10n),
+                      actionValueSummary(action.action, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: typography.sm.copyWith(
@@ -510,23 +520,26 @@ class _MetaChips extends StatelessWidget {
   }
 }
 
-class _ExpandedEditor extends HookWidget {
+class _ExpandedEditor extends HookConsumerWidget {
   const _ExpandedEditor({
-    required this.triggerAction,
     required this.footerKey,
     this.onOptionsExpanded,
   });
 
-  final TriggerAction triggerAction;
   final Key footerKey;
   final VoidCallback? onOptionsExpanded;
 
   @override
-  Widget build(BuildContext context) {
-    final optionsExpanded = useState(
-      actionHasNonDefaultTriggerOptions(triggerAction),
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
     final actionLocation = context.actionLocation;
+    final kind = ref.watch(
+      actionEditorProvider(actionLocation).select((vm) => vm.kind),
+    );
+    final optionsExpanded = useState(
+      ref
+          .read(actionEditorProvider(actionLocation))
+          .hasNonDefaultTriggerOptions,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -534,7 +547,7 @@ class _ExpandedEditor extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          ActionFields(action: triggerAction.action),
+          ActionFields(kind: kind),
           const SizedBox(height: 16),
           FAccordion(
             key: ValueKey(actionLocation.actionIndex),
@@ -552,10 +565,10 @@ class _ExpandedEditor extends HookWidget {
                 padding: .value(EdgeInsets.zero),
               ),
             ),
-            children: [
+            children: const [
               FAccordionItem(
-                title: const Text('Other Options'),
-                child: ActionTriggerFields(triggerAction: triggerAction),
+                title: Text('Other Options'),
+                child: ActionTriggerFields(),
               ),
             ],
           ),

@@ -1,24 +1,21 @@
 import 'package:flutter/widgets.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 
 class PointerGestureEditor extends StatelessWidget {
   const PointerGestureEditor({
     required this.index,
-    required this.gesture,
     super.key,
   });
 
   final int index;
-  final PointerGesture gesture;
 
   @override
   Widget build(BuildContext context) {
     return GestureEditorLayout(
-      device: DeviceType.pointer,
-      gestureIndex: index,
+      location: GestureLocation(device: DeviceType.pointer, index: index),
       sections: const [
         InfoSection(
           title: 'Hover',
@@ -27,7 +24,6 @@ class PointerGestureEditor extends StatelessWidget {
               "trigger's conditions, and ends when it leaves.",
         ),
       ],
-      common: gesture.common,
     );
   }
 }

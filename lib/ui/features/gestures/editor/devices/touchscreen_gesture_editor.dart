@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart' show SwipeMode;
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -16,78 +17,57 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_count_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 
-class TouchscreenGestureEditor extends ConsumerWidget {
+class TouchscreenGestureEditor extends StatelessWidget {
   const TouchscreenGestureEditor({
     required this.index,
-    required this.gesture,
     super.key,
   });
 
   final int index;
-  final TouchscreenGesture gesture;
-
-  void _update(
-    WidgetRef ref,
-    TouchscreenGesture Function(TouchscreenGesture) mutator,
-  ) {
-    ref
-        .read(
-          gestureEditorProvider(
-            GestureLocation(device: DeviceType.touchscreen, index: index),
-          ).notifier,
-        )
-        .updateTouchscreen(mutator);
-  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return GestureEditorLayout(
-      device: DeviceType.touchscreen,
-      gestureIndex: index,
-      sections: [
+      location: GestureLocation(device: DeviceType.touchscreen, index: index),
+      sections: const [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FingerCountField(
-              fingers: gesture.fingers,
-              onChanged: (f) => _update(ref, (g) => g.withFingers(f)),
-            ),
-            TouchscreenTriggerSection(
-              gesture: gesture,
-            ),
+            FingerCountField(),
+            _TouchscreenTriggerSection(),
           ],
         ),
       ],
-      common: gesture.common,
     );
   }
 }
 
-class TouchscreenTriggerSection extends ConsumerWidget {
-  const TouchscreenTriggerSection({
-    required this.gesture,
-    super.key,
-  });
-
-  final TouchscreenGesture gesture;
+class _TouchscreenTriggerSection extends ConsumerWidget {
+  const _TouchscreenTriggerSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final location = context.gestureLocation;
+    final kind = ref.watch(
+      gestureEditorProvider(location).select((s) {
+        return switch (s.gesture) {
+          TouchscreenGesture(:final triggerType) => triggerType,
+          _ => null,
+        };
+      }),
+    );
     final motionField = ref.gestureField(
       context,
       touchscreenMotionLens,
-      fallbackValue: () => switch (gesture) {
-        TouchscreenSwipeGesture(:final motion) => motion,
-        TouchscreenPinchGesture(:final motion) => motion,
-        TouchscreenRotateGesture(:final motion) => motion,
-        TouchscreenCircleGesture(:final motion) => motion,
-        TouchscreenStrokeGesture(:final motion) => motion,
-        _ => const MotionCommon(),
-      },
+      fallbackValue: () => const MotionCommon(),
+    );
+    final motion = MotionField(
+      motion: motionField.value,
+      onChanged: motionField.onChanged,
     );
 
-    return switch (gesture) {
-      TouchscreenSwipeGesture(:final mode) => Column(
+    return switch (kind) {
+      TouchscreenTriggerType.swipe => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -95,7 +75,8 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               final modeField = ref.gestureField(
                 context,
                 touchscreenSwipeModeLens,
-                fallbackValue: () => mode,
+                fallbackValue: () =>
+                    const SwipeMode.direction(direction: SwipeDirection.any),
               );
               return SwipeModeSelector(
                 mode: modeField.value,
@@ -103,13 +84,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               );
             },
           ),
-          MotionField(
-            motion: motionField.value,
-            onChanged: motionField.onChanged,
-          ),
+          motion,
         ],
       ),
-      TouchscreenPinchGesture(:final direction) => Column(
+      TouchscreenTriggerType.pinch => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -117,7 +95,7 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               final directionField = ref.gestureField(
                 context,
                 touchscreenPinchDirectionLens,
-                fallbackValue: () => direction,
+                fallbackValue: () => PinchDirection.any,
               );
               return PinchSection(
                 direction: directionField.value,
@@ -125,13 +103,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               );
             },
           ),
-          MotionField(
-            motion: motionField.value,
-            onChanged: motionField.onChanged,
-          ),
+          motion,
         ],
       ),
-      TouchscreenRotateGesture(:final direction) => Column(
+      TouchscreenTriggerType.rotate => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -139,7 +114,7 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               final directionField = ref.gestureField(
                 context,
                 touchscreenRotateDirectionLens,
-                fallbackValue: () => direction,
+                fallbackValue: () => RotateDirection.any,
               );
               return RotateSection(
                 direction: directionField.value,
@@ -147,34 +122,25 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               );
             },
           ),
-          MotionField(
-            motion: motionField.value,
-            onChanged: motionField.onChanged,
-          ),
+          motion,
         ],
       ),
-      TouchscreenCircleGesture(:final direction) => Column(
+      TouchscreenTriggerType.circle => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleSection(direction: direction),
-          MotionField(
-            motion: motionField.value,
-            onChanged: motionField.onChanged,
-          ),
-        ],
+        children: [const CircleSection(), motion],
       ),
-      TouchscreenTapGesture() => const InfoSection(
+      TouchscreenTriggerType.tap => const InfoSection(
         title: 'Tap',
         description:
             'Activates when the specified number of fingers tap the screen.',
       ),
-      TouchscreenHoldGesture() => const InfoSection(
+      TouchscreenTriggerType.hold => const InfoSection(
         title: 'Hold',
         description:
             'Activates while the specified number of fingers are held on the '
             'screen.',
       ),
-      TouchscreenStrokeGesture(:final strokes) => Column(
+      TouchscreenTriggerType.stroke => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -182,7 +148,7 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               final strokesField = ref.gestureField(
                 context,
                 touchscreenStrokeStrokesLens,
-                fallbackValue: () => strokes,
+                fallbackValue: () => const <String>[],
               );
               return StrokesField(
                 strokes: strokesField.value,
@@ -190,12 +156,10 @@ class TouchscreenTriggerSection extends ConsumerWidget {
               );
             },
           ),
-          MotionField(
-            motion: motionField.value,
-            onChanged: motionField.onChanged,
-          ),
+          motion,
         ],
       ),
+      null => const SizedBox.shrink(),
     };
   }
 }

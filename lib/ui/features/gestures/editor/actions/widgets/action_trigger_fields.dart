@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -12,12 +11,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cond
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 class ActionTriggerFields extends ConsumerWidget {
-  const ActionTriggerFields({
-    required this.triggerAction,
-    super.key,
-  });
-
-  final TriggerAction triggerAction;
+  const ActionTriggerFields({super.key});
 
   static const Map<String, TriggerOn> onOptions = {
     'begin': TriggerOn.begin,
@@ -31,11 +25,18 @@ class ActionTriggerFields extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final actionLocation = context.actionLocation;
-    final vm = ref.watch(actionEditorProvider(actionLocation));
+    final (:showInterval, :showThreshold) = ref.watch(
+      actionEditorProvider(actionLocation).select(
+        (vm) => (
+          showInterval: vm.showInterval,
+          showThreshold: vm.showThreshold,
+        ),
+      ),
+    );
     final triggerOnField = ref.actionField(
       context,
       actionTriggerOnLens,
-      fallbackValue: () => triggerAction.on,
+      fallbackValue: () => null,
     );
     final limitField = ref.actionSchemaField(
       context,
@@ -44,12 +45,12 @@ class ActionTriggerFields extends ConsumerWidget {
     final conflictingField = ref.actionField(
       context,
       actionConflictingLens,
-      fallbackValue: () => triggerAction.conflicting,
+      fallbackValue: () => true,
     );
     final conditionsField = ref.actionField(
       context,
       actionConditionsLens,
-      fallbackValue: () => triggerAction.conditions,
+      fallbackValue: () => null,
     );
 
     return Column(
@@ -87,7 +88,7 @@ class ActionTriggerFields extends ConsumerWidget {
                         '               (e.g. auto-repeat a key every 500 ms)',
                   ),
                 ),
-                key: ValueKey(triggerAction.on),
+                key: ValueKey(triggerOnField.value),
                 items: onOptions,
                 control: FSelectManagedControl<TriggerOn>(
                   initial: triggerOnField.value,
@@ -97,7 +98,7 @@ class ActionTriggerFields extends ConsumerWidget {
                 ),
               ),
             ),
-            if (vm.showInterval)
+            if (showInterval)
               Builder(
                 builder: (context) {
                   final intervalField = ref.actionSchemaField(
@@ -137,7 +138,7 @@ class ActionTriggerFields extends ConsumerWidget {
                   );
                 },
               ),
-            if (vm.showThreshold)
+            if (showThreshold)
               Builder(
                 builder: (context) {
                   final thresholdField = ref.actionSchemaField(

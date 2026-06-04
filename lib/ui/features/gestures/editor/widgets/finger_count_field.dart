@@ -6,48 +6,28 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
-/// Compact finger count selector. [maxFingers] caps the available buttons.
-/// Null means "any finger count" and is always available.
 class FingerCountField extends ConsumerWidget {
   const FingerCountField({
-    required this.fingers,
-    required this.onChanged,
-    this.location,
     this.minFingers = 1,
     this.maxFingers = 4,
     super.key,
   });
 
-  final int? fingers;
-  final void Function(int?) onChanged;
-  final GestureLocation? location;
   final int minFingers;
   final int maxFingers;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final typography = context.theme.typography;
-    final location =
-        this.location ?? EditLocationScope.maybeOf(context)?.gesture;
-    final fingersField = location == null
-        ? null
-        : ref.gestureField(
-            context,
-            switch (location.device) {
-              DeviceType.touchpad => touchpadFingersLens,
-              DeviceType.touchscreen => touchscreenFingersLens,
-              _ => touchpadFingersLens,
-            },
-            fallbackValue: () => fingers,
-          );
-    final value = fingersField?.value ?? fingers;
-    void update(int? next) {
-      if (fingersField != null) {
-        fingersField.onChanged(next);
-      } else {
-        onChanged(next);
-      }
-    }
+    final field = ref.gestureField(
+      context,
+      switch (context.gestureLocation.device) {
+        DeviceType.touchscreen => touchscreenFingersLens,
+        _ => touchpadFingersLens,
+      },
+      fallbackValue: () => null,
+    );
+    final value = field.value;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -68,14 +48,14 @@ class FingerCountField extends ConsumerWidget {
               FButton(
                 variant: value == null ? .primary : .outline,
                 size: .sm,
-                onPress: () => update(null),
+                onPress: () => field.onChanged(null),
                 child: const Text('Any'),
               ),
               for (int n = minFingers; n <= maxFingers; n++)
                 FButton(
                   variant: value == n ? .primary : .outline,
                   size: .sm,
-                  onPress: () => update(n),
+                  onPress: () => field.onChanged(n),
                   child: Text('$n'),
                 ),
             ],

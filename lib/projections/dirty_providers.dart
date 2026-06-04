@@ -30,6 +30,20 @@ final gesturesDirtyStateProvider = Provider<DirtyMarkState>((ref) {
   );
 });
 
+/// Whether the draft has changes that can be reverted to a saved baseline.
+///
+/// Drives the sidebar's Discard action. Derived as a `bool` so consumers
+/// rebuild only when discardability actually flips, rather than on every edit
+/// (which is what watching the raw config value forces).
+final canDiscardChangesProvider = Provider<bool>((ref) {
+  // Recompute whenever the draft or the saved baseline changes.
+  ref
+    ..watch(configControllerProvider)
+    ..watch(savedConfigProvider);
+  final controller = ref.read(configControllerProvider.notifier);
+  return controller.isDirty && controller.savedConfig != null;
+});
+
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
     Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {
       final currentRead = _readLens(
