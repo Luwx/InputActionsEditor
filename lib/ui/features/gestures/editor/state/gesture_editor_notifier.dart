@@ -110,7 +110,6 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   void updateMouse(MouseGesture Function(MouseGesture) update) =>
       updateGesture((g) => update(g as MouseGesture));
 
-
   void revertTriggerConfig(TriggerCommon saved) {
     updateCommon(
       (current) => current.copyWith(

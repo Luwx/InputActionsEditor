@@ -25,7 +25,6 @@ import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_tit
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
-
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
 
@@ -77,8 +76,7 @@ class _GestureEditorView extends HookConsumerWidget {
         final typeLabel = gestureTypeLabel(gesture, l10n);
         return (
           name: (common.name?.isNotEmpty ?? false) ? common.name! : typeLabel,
-          subtitle:
-              '$typeLabel · ${gestureDeviceLabel(location.device, l10n)}',
+          subtitle: '$typeLabel · ${gestureDeviceLabel(location.device, l10n)}',
           isEnabled: common.effectiveEnabled,
         );
       }),

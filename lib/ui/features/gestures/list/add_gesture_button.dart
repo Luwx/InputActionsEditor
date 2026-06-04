@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart' show Durations, Easing, Icons;
+import 'package:animations/animations.dart';
+import 'package:flutter/material.dart' show Colors, Durations, Easing, Icons;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -11,6 +12,8 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
+
+enum _DialogStep { device, type }
 
 class AddGestureButton extends StatelessWidget {
   const AddGestureButton({
@@ -46,48 +49,12 @@ class AddGestureButton extends StatelessWidget {
     }
   }
 
-  Future<void> _showDeviceThenTypePicker(BuildContext context) async {
-    await showFDialog<void>(
+  Future<void> _showDeviceThenTypePicker(BuildContext context) {
+    return showFDialog<void>(
       context: context,
-      builder: (ctx, style, animation) => AppDialog(
-        animation: animation,
-        title: Text(context.l10n.addGestureTitle),
-        body: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.addGestureChooseDevice,
-                style: context.theme.typography.sm.copyWith(
-                  color: context.theme.colors.mutedForeground,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final device in DeviceType.values)
-                _DeviceTile(
-                  device: device,
-                  onTap: () async {
-                    Navigator.of(ctx).pop();
-                    await Future<void>.delayed(
-                      Durations.short4,
-                    );
-                    if (context.mounted) {
-                      await _showTypePickerOrAdd(context, device);
-                    }
-                  },
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          FButton(
-            variant: .outline,
-            onPress: () => Navigator.of(ctx).pop(),
-            child: Text(context.l10n.actionCancel),
-          ),
-        ],
+      builder: (ctx, style, animation) => _AddGestureDialogContent(
+        dialogAnimation: animation,
+        onGestureAdded: onGestureAdded,
       ),
     );
   }
@@ -98,7 +65,6 @@ class AddGestureButton extends StatelessWidget {
       onGestureAdded(device, types.single.factory());
       return Future.value();
     }
-
     return _showTypePicker(context, device, types: types);
   }
 
@@ -150,6 +116,159 @@ class AddGestureButton extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Single-dialog with shared-axis transition (no-filter case)
+// ---------------------------------------------------------------------------
+
+class _AddGestureDialogContent extends StatefulWidget {
+  const _AddGestureDialogContent({
+    required this.dialogAnimation,
+    required this.onGestureAdded,
+  });
+
+  final Animation<double> dialogAnimation;
+  final void Function(DeviceType device, Object gesture) onGestureAdded;
+
+  @override
+  State<_AddGestureDialogContent> createState() =>
+      _AddGestureDialogContentState();
+}
+
+class _AddGestureDialogContentState extends State<_AddGestureDialogContent> {
+  _DialogStep _step = _DialogStep.device;
+  DeviceType? _selectedDevice;
+  bool _forward = true;
+
+  void _onDeviceSelected(DeviceType device) {
+    final types = _triggerTypesFor(device, context.l10n);
+    if (types.length == 1) {
+      Navigator.of(context).pop();
+      widget.onGestureAdded(device, types.single.factory());
+      return;
+    }
+    setState(() {
+      _selectedDevice = device;
+      _step = _DialogStep.type;
+      _forward = true;
+    });
+  }
+
+  void _onBack() {
+    setState(() {
+      _step = _DialogStep.device;
+      _forward = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final device = _selectedDevice;
+
+    return AppDialog(
+      animation: widget.dialogAnimation,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedCrossFade(
+            firstChild: const SizedBox(
+              width: 1,
+              height: 34,
+            ),
+            secondChild: FButton(
+              size: .sm,
+              variant: .ghost,
+              onPress: _onBack,
+              child: const Icon(FLucideIcons.arrowLeft, size: 16),
+            ),
+            crossFadeState: _step == _DialogStep.device
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            duration: Durations.medium1,
+            reverseDuration: Durations.medium1,
+            sizeCurve: Easing.emphasizedDecelerate,
+            firstCurve: Easing.emphasizedDecelerate,
+          ),
+          const SizedBox(width: 4),
+          if (_step == _DialogStep.type)
+            Text(
+              l10n.addGestureForDevice(gestureDeviceLabel(device!, l10n)),
+            )
+          else
+            Text(l10n.addGestureTitle),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: PageTransitionSwitcher(
+          reverse: !_forward,
+          transitionBuilder: (child, animation, secondaryAnimation) =>
+              SharedAxisTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                transitionType: SharedAxisTransitionType.horizontal,
+                fillColor: Colors.transparent,
+                child: child,
+              ),
+          child: _step == _DialogStep.device
+              ? _buildDeviceList(l10n)
+              : _buildTypeList(l10n, device!),
+        ),
+      ),
+      actions: [
+        FButton(
+          variant: .outline,
+          onPress: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeviceList(AppLocalizations l10n) {
+    return Column(
+      key: const ValueKey(_DialogStep.device),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.addGestureChooseDevice,
+          style: context.theme.typography.sm.copyWith(
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final d in DeviceType.values)
+          _DeviceTile(device: d, onTap: () => _onDeviceSelected(d)),
+      ],
+    );
+  }
+
+  Widget _buildTypeList(AppLocalizations l10n, DeviceType device) {
+    return ListView(
+      key: const ValueKey(_DialogStep.type),
+      shrinkWrap: true,
+      children: [
+        Text(
+          l10n.addGestureSelectTemplate(gestureDeviceNoun(device, l10n)),
+          style: context.theme.typography.sm.copyWith(
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final type in _triggerTypesFor(device, l10n))
+          _TypeTile(
+            type: type,
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onGestureAdded(device, type.factory());
+            },
+          ),
+      ],
     );
   }
 }

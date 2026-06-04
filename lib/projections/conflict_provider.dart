@@ -40,7 +40,6 @@ class ConflictReport {
   }
 }
 
-
 class ConflictReportNotifier extends Notifier<ConflictReport> {
   @visibleForTesting
   Duration debounce = const Duration(milliseconds: 300);
@@ -72,7 +71,6 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
     });
   }
 }
-
 
 final conflictReportProvider =
     NotifierProvider<ConflictReportNotifier, ConflictReport>(

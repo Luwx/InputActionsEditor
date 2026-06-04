@@ -63,6 +63,7 @@ dependencies:
       url: https://github.com/Luwx/klutter
       path: kde_color_scheme
   flutter_animate: ^4.5.2
+  animations: ^2.2.0
   window_manager: ^0.5.1
   equatable: ^2.0.8
   meta: ^1.18.0
