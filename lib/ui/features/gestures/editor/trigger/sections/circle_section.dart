@@ -14,9 +14,14 @@ class CircleSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final lensFor = switch (context.gestureLocation.device) {
+          DeviceType.touchpad => touchpadCircleDirectionLens,
+          DeviceType.touchscreen => touchscreenCircleDirectionLens,
+          _ => circleDirectionLens,
+        };
     final directionField = ref.gestureField(
       context,
-      circleDirectionLens,
+      lensFor,
       fallbackValue: () => CircleDirection.any,
     );
     final value = directionField.value;
