@@ -4,11 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/app_routes.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // cached once, kdeglobals either exists or it doesn't
@@ -38,6 +43,8 @@ class App extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       scrollBehavior: const AppScrollBehavior(),
       theme: ThemeData(
         brightness: Brightness.light,
@@ -51,9 +58,12 @@ class App extends ConsumerWidget {
       routerDelegate: delegate,
       backButtonDispatcher: RootBackButtonDispatcher(),
       builder: (context, child) => Listener(
-        onPointerDown: (e) {
+        onPointerDown: (e) async {
+          // While an in-app recorder is capturing input, let the back / forward
+          // mouse buttons be recorded instead of navigating the app.
+          if (ref.read(isInputRecordingProvider)) return;
           if (e.buttons & kBackMouseButton != 0) {
-            ref.read(navProvider.notifier).back();
+            await _handleMouseBack(context, ref);
           } else if (e.buttons & kForwardMouseButton != 0) {
             ref.read(navProvider.notifier).forward();
           }
@@ -219,4 +229,26 @@ class _AppChromeBackground extends StatelessWidget {
       ],
     );
   }
+}
+
+Future<void> _handleMouseBack(BuildContext context, WidgetRef ref) async {
+  final nav = ref.read(navProvider);
+  // Only guard when back would actually leave settings.
+  final leavingSettings =
+      nav.current is SettingsDestination &&
+      (!nav.canBack || nav.history[nav.cursor - 1] is! SettingsDestination);
+  if (leavingSettings) {
+    final controller = ref.read(configControllerProvider.notifier);
+    if (controller.isSettingsDirty) {
+      final action = await showUnsavedChangesDialog(context);
+      if (action == null) return;
+      if (action == UnsavedChangesAction.apply) {
+        await controller.saveSettings();
+      } else {
+        controller.discardSettings();
+      }
+      if (!context.mounted) return;
+    }
+  }
+  ref.read(navProvider.notifier).back();
 }

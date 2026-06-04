@@ -29,40 +29,6 @@ Object gestureWithCommon(Object gesture, TriggerCommon common) =>
       _ => gesture,
     };
 
-String gestureTypeLabel(Object gesture) => switch (gesture) {
-  StrokeGesture() => 'Stroke',
-  SwipeGesture() => 'Swipe',
-  CircleGesture() => 'Circle',
-  PressGesture() => 'Press',
-  WheelGesture() => 'Wheel',
-  ShortcutGesture() => 'Shortcut',
-  HoverGesture() => 'Hover',
-  TouchpadSwipeGesture() => 'Swipe',
-  TouchpadPinchGesture() => 'Pinch',
-  TouchpadRotateGesture() => 'Rotate',
-  TouchpadCircleGesture() => 'Circle',
-  TouchpadTapGesture() => 'Tap',
-  TouchpadClickGesture() => 'Click',
-  TouchpadHoldGesture() => 'Hold',
-  TouchpadStrokeGesture() => 'Stroke',
-  TouchscreenSwipeGesture() => 'Swipe',
-  TouchscreenPinchGesture() => 'Pinch',
-  TouchscreenRotateGesture() => 'Rotate',
-  TouchscreenCircleGesture() => 'Circle',
-  TouchscreenTapGesture() => 'Tap',
-  TouchscreenHoldGesture() => 'Hold',
-  TouchscreenStrokeGesture() => 'Stroke',
-  _ => 'Gesture',
-};
-
-String gestureDeviceLabel(DeviceType device) => switch (device) {
-  DeviceType.mouse => 'Mouse',
-  DeviceType.keyboard => 'Keyboard',
-  DeviceType.pointer => 'Pointer',
-  DeviceType.touchpad => 'Touchpad',
-  DeviceType.touchscreen => 'Touchscreen',
-};
-
 /// Returns the first gesture that would appear in the flat gesture list for
 /// [filter], following the same ordering as `_buildFlatList` (groups before
 /// ungrouped; All view: mouse → keyboard → pointer → touchpad → touchscreen).
@@ -109,11 +75,3 @@ String gestureDeviceLabel(DeviceType device) => switch (device) {
   }
   return null;
 }
-
-String gestureDeviceNoun(DeviceType device) => switch (device) {
-  DeviceType.mouse => 'mouse',
-  DeviceType.keyboard => 'keyboard',
-  DeviceType.pointer => 'pointer',
-  DeviceType.touchpad => 'touchpad',
-  DeviceType.touchscreen => 'touchscreen',
-};

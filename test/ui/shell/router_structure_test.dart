@@ -8,6 +8,7 @@ import 'package:input_actions_editor/app_state/app/local_settings_provider.dart'
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/app_routes.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -76,6 +77,8 @@ void main() {
         child: FTheme(
           data: FThemes.zinc.light.desktop,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerDelegate: container.read(appRouterDelegateProvider),
             backButtonDispatcher: RootBackButtonDispatcher(),
           ),

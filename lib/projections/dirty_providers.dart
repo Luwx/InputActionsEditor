@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:input_actions_editor/domain/diff/config_slices.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
@@ -9,6 +10,25 @@ import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+
+/// Dirty state of the settings slice (everything that is not gesture data).
+/// Drives the settings-wide Save/Discard control: `.isDirty` enables Save,
+/// `.canRevert` enables Discard. Reactive companion to
+/// `ConfigController.isSettingsDirty`.
+final settingsDirtyStateProvider = Provider<DirtyMarkState>((ref) {
+  return settingsDirtyState(
+    ref.watch(configControllerProvider).value,
+    ref.watch(savedConfigProvider),
+  );
+});
+
+/// Dirty state of the gesture slice. Mirror of [settingsDirtyStateProvider].
+final gesturesDirtyStateProvider = Provider<DirtyMarkState>((ref) {
+  return gesturesDirtyState(
+    ref.watch(configControllerProvider).value,
+    ref.watch(savedConfigProvider),
+  );
+});
 
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
     Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {

@@ -9,7 +9,8 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 class AddGestureButton extends StatelessWidget {
   const AddGestureButton({
@@ -26,12 +27,12 @@ class AddGestureButton extends StatelessWidget {
     return FButton(
       size: .sm,
       onPress: () => _show(context),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(FLucideIcons.plus),
-          SizedBox(width: 4),
-          Text('Add gesture'),
+          const Icon(FLucideIcons.plus),
+          const SizedBox(width: 4),
+          Text(context.l10n.addGestureTitle),
         ],
       ),
     );
@@ -50,7 +51,7 @@ class AddGestureButton extends StatelessWidget {
       context: context,
       builder: (ctx, style, animation) => AppDialog(
         animation: animation,
-        title: const Text('Add gesture'),
+        title: Text(context.l10n.addGestureTitle),
         body: Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Column(
@@ -58,7 +59,7 @@ class AddGestureButton extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Choose the device you want to add a gesture for.',
+                context.l10n.addGestureChooseDevice,
                 style: context.theme.typography.sm.copyWith(
                   color: context.theme.colors.mutedForeground,
                 ),
@@ -84,7 +85,7 @@ class AddGestureButton extends StatelessWidget {
           FButton(
             variant: .outline,
             onPress: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.actionCancel),
           ),
         ],
       ),
@@ -92,7 +93,7 @@ class AddGestureButton extends StatelessWidget {
   }
 
   Future<void> _showTypePickerOrAdd(BuildContext context, DeviceType device) {
-    final types = _triggerTypesFor(device);
+    final types = _triggerTypesFor(device, context.l10n);
     if (types.length == 1) {
       onGestureAdded(device, types.single.factory());
       return Future.value();
@@ -106,20 +107,25 @@ class AddGestureButton extends StatelessWidget {
     DeviceType device, {
     List<_TriggerEntry>? types,
   }) async {
-    final availableTypes = types ?? _triggerTypesFor(device);
+    final availableTypes = types ?? _triggerTypesFor(device, context.l10n);
     await showFDialog<void>(
       context: context,
       builder: (ctx, style, animation) => AppDialog(
         animation: animation,
-        title: Text('Add ${_deviceTitle(device)} gesture'),
+        title: Text(
+          context.l10n.addGestureForDevice(
+            gestureDeviceLabel(device, context.l10n),
+          ),
+        ),
         body: Padding(
           padding: const EdgeInsets.only(top: 8),
           child: ListView(
             shrinkWrap: true,
             children: [
               Text(
-                'Select a gesture template'
-                ' for ${gestureDeviceNoun(device)} input.',
+                context.l10n.addGestureSelectTemplate(
+                  gestureDeviceNoun(device, context.l10n),
+                ),
                 style: context.theme.typography.sm.copyWith(
                   color: context.theme.colors.mutedForeground,
                 ),
@@ -140,7 +146,7 @@ class AddGestureButton extends StatelessWidget {
           FButton(
             variant: .outline,
             onPress: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.actionCancel),
           ),
         ],
       ),
@@ -157,17 +163,20 @@ typedef _TriggerEntry = ({
 
 const _common = TriggerCommon();
 
-List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
+List<_TriggerEntry> _triggerTypesFor(
+  DeviceType device,
+  AppLocalizations l10n,
+) => switch (device) {
   DeviceType.mouse => [
     (
-      label: 'Stroke',
-      description: 'Draw a freeform path with the mouse.',
+      label: l10n.gestureTypeStroke,
+      description: l10n.templateMouseStrokeDescription,
       icon: Icons.gesture_outlined,
       factory: () => const StrokeGesture(common: _common),
     ),
     (
-      label: 'Swipe',
-      description: 'Recognize directional mouse movement.',
+      label: l10n.gestureTypeSwipe,
+      description: l10n.templateMouseSwipeDescription,
       icon: Icons.swipe_outlined,
       factory: () => const SwipeGesture(
         common: _common,
@@ -175,8 +184,8 @@ List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
       ),
     ),
     (
-      label: 'Circle',
-      description: 'Match circular movement in either direction.',
+      label: l10n.gestureTypeCircle,
+      description: l10n.templateMouseCircleDescription,
       icon: Icons.rotate_right_rounded,
       factory: () => const CircleGesture(
         common: _common,
@@ -184,14 +193,14 @@ List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
       ),
     ),
     (
-      label: 'Press',
-      description: 'Trigger from a button press or hold.',
+      label: l10n.gestureTypePress,
+      description: l10n.templateMousePressDescription,
       icon: Icons.touch_app_rounded,
       factory: () => const PressGesture(common: _common),
     ),
     (
-      label: 'Wheel',
-      description: 'Use scroll wheel direction as the trigger.',
+      label: l10n.gestureTypeWheel,
+      description: l10n.templateMouseWheelDescription,
       icon: Icons.unfold_more_rounded,
       factory: () => const WheelGesture(
         common: _common,
@@ -201,24 +210,24 @@ List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
   ],
   DeviceType.keyboard => [
     (
-      label: 'Shortcut',
-      description: 'Match a keyboard shortcut or key chord.',
+      label: l10n.gestureTypeShortcut,
+      description: l10n.templateKeyboardShortcutDescription,
       icon: Icons.keyboard_alt_outlined,
       factory: () => const ShortcutGesture(common: _common),
     ),
   ],
   DeviceType.pointer => [
     (
-      label: 'Hover',
-      description: 'Trigger while the pointer hovers over a region.',
+      label: l10n.gestureTypeHover,
+      description: l10n.templatePointerHoverDescription,
       icon: Icons.ads_click_outlined,
       factory: () => const HoverGesture(common: _common),
     ),
   ],
   DeviceType.touchpad => [
     (
-      label: 'Swipe',
-      description: 'Track directional touchpad swipes.',
+      label: l10n.gestureTypeSwipe,
+      description: l10n.templateTouchpadSwipeDescription,
       icon: Icons.swipe_outlined,
       factory: () => const TouchpadSwipeGesture(
         common: _common,
@@ -226,52 +235,52 @@ List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
       ),
     ),
     (
-      label: 'Pinch',
-      description: 'Detect pinch-in and pinch-out gestures.',
+      label: l10n.gestureTypePinch,
+      description: l10n.templateTouchpadPinchDescription,
       icon: Icons.pinch_outlined,
       factory: () => const TouchpadPinchGesture(common: _common),
     ),
     (
-      label: 'Rotate',
-      description: 'Recognize two-finger rotation.',
+      label: l10n.gestureTypeRotate,
+      description: l10n.templateTouchpadRotateDescription,
       icon: Icons.rotate_right_rounded,
       factory: () => const TouchpadRotateGesture(common: _common),
     ),
     (
-      label: 'Circle',
-      description: 'Track circular movement on the pad.',
+      label: l10n.gestureTypeCircle,
+      description: l10n.templateTouchpadCircleDescription,
       icon: Icons.motion_photos_on_outlined,
       factory: () => const TouchpadCircleGesture(common: _common),
     ),
     (
-      label: 'Tap',
-      description: 'Trigger on a touchpad tap.',
+      label: l10n.gestureTypeTap,
+      description: l10n.templateTouchpadTapDescription,
       icon: Icons.touch_app_rounded,
       factory: () => const TouchpadTapGesture(common: _common),
     ),
     (
-      label: 'Click',
-      description: 'Use a physical or integrated click.',
+      label: l10n.gestureTypeClick,
+      description: l10n.templateTouchpadClickDescription,
       icon: Icons.mouse_outlined,
       factory: () => const TouchpadClickGesture(common: _common),
     ),
     (
-      label: 'Hold',
-      description: 'Keep fingers down for a press-and-hold trigger.',
+      label: l10n.gestureTypeHold,
+      description: l10n.templateTouchpadHoldDescription,
       icon: Icons.pan_tool_outlined,
       factory: () => const TouchpadHoldGesture(common: _common),
     ),
     (
-      label: 'Stroke',
-      description: 'Draw a freeform path on the touchpad surface.',
+      label: l10n.gestureTypeStroke,
+      description: l10n.templateTouchpadStrokeDescription,
       icon: Icons.gesture_outlined,
       factory: () => const TouchpadStrokeGesture(common: _common),
     ),
   ],
   DeviceType.touchscreen => [
     (
-      label: 'Swipe',
-      description: 'Recognize directional finger swipes.',
+      label: l10n.gestureTypeSwipe,
+      description: l10n.templateTouchscreenSwipeDescription,
       icon: Icons.swipe_outlined,
       factory: () => const TouchscreenSwipeGesture(
         common: _common,
@@ -279,53 +288,52 @@ List<_TriggerEntry> _triggerTypesFor(DeviceType device) => switch (device) {
       ),
     ),
     (
-      label: 'Pinch',
-      description: 'Detect zoom-style pinch gestures.',
+      label: l10n.gestureTypePinch,
+      description: l10n.templateTouchscreenPinchDescription,
       icon: Icons.pinch_outlined,
       factory: () => const TouchscreenPinchGesture(common: _common),
     ),
     (
-      label: 'Rotate',
-      description: 'Track multi-finger rotation on the screen.',
+      label: l10n.gestureTypeRotate,
+      description: l10n.templateTouchscreenRotateDescription,
       icon: Icons.rotate_right_rounded,
       factory: () => const TouchscreenRotateGesture(common: _common),
     ),
     (
-      label: 'Circle',
-      description: 'Match a circular finger motion.',
+      label: l10n.gestureTypeCircle,
+      description: l10n.templateTouchscreenCircleDescription,
       icon: Icons.motion_photos_on_outlined,
       factory: () => const TouchscreenCircleGesture(common: _common),
     ),
     (
-      label: 'Tap',
-      description: 'Trigger on a screen tap.',
+      label: l10n.gestureTypeTap,
+      description: l10n.templateTouchscreenTapDescription,
       icon: Icons.touch_app_rounded,
       factory: () => const TouchscreenTapGesture(common: _common),
     ),
     (
-      label: 'Hold',
-      description: 'Use a long press gesture.',
+      label: l10n.gestureTypeHold,
+      description: l10n.templateTouchscreenHoldDescription,
       icon: Icons.pan_tool_outlined,
       factory: () => const TouchscreenHoldGesture(common: _common),
     ),
     (
-      label: 'Stroke',
-      description: 'Draw a freeform path on the screen.',
+      label: l10n.gestureTypeStroke,
+      description: l10n.templateTouchscreenStrokeDescription,
       icon: Icons.gesture_outlined,
       factory: () => const TouchscreenStrokeGesture(common: _common),
     ),
   ],
 };
 
-String _deviceTitle(DeviceType device) => gestureDeviceLabel(device);
-
-String _deviceDescription(DeviceType device) => switch (device) {
-  DeviceType.mouse => 'Buttons, wheel movement, strokes, and pointer motion.',
-  DeviceType.keyboard => 'Shortcuts and key combinations.',
-  DeviceType.pointer => 'Pointer hover gestures.',
-  DeviceType.touchpad => 'Multi-finger gestures on a trackpad surface.',
-  DeviceType.touchscreen => 'Direct touch gestures on a screen.',
-};
+String _deviceDescription(DeviceType device, AppLocalizations l10n) =>
+    switch (device) {
+      DeviceType.mouse => l10n.deviceDescriptionMouse,
+      DeviceType.keyboard => l10n.deviceDescriptionKeyboard,
+      DeviceType.pointer => l10n.deviceDescriptionPointer,
+      DeviceType.touchpad => l10n.deviceDescriptionTouchpad,
+      DeviceType.touchscreen => l10n.deviceDescriptionTouchscreen,
+    };
 
 IconData _deviceIcon(DeviceType device) => switch (device) {
   DeviceType.mouse => Icons.mouse_outlined,
@@ -350,12 +358,13 @@ class _DeviceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gestureCount = _triggerTypesFor(device).length;
+    final l10n = context.l10n;
+    final gestureCount = _triggerTypesFor(device, l10n).length;
     return _OptionTile(
       icon: _deviceIcon(device),
-      title: _deviceTitle(device),
+      title: gestureDeviceLabel(device, l10n),
       description:
-          '${_deviceDescription(device)} $gestureCount'
+          '${_deviceDescription(device, l10n)} $gestureCount'
           'gesture type${gestureCount == 1 ? '' : 's'} available.',
       onTap: onTap,
     );

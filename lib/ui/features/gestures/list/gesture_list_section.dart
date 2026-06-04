@@ -12,7 +12,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart'
-    hide gestureCommon, gestureTypeLabel;
+    hide gestureCommon, gestureDisplayName, gestureTypeLabel;
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
@@ -27,6 +27,8 @@ import 'package:input_actions_editor/ui/features/gestures/list/state/added_gestu
 import 'package:input_actions_editor/ui/features/gestures/list/state/collapsed_groups_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 part 'gesture_list_section/dialogs/rename_dialog.dart';
 part 'gesture_list_section/flat_list.dart';
@@ -185,9 +187,10 @@ class GestureListSection extends HookConsumerWidget {
       if (config == null) return;
       final existingGestures = config.gesturesForDevice(device);
       final newIndex = existingGestures.length;
-      final typeLabel = gestureTypeLabel(gesture);
+      final l10n = context.l10n;
+      final typeLabel = gestureTypeLabel(gesture, l10n);
       final sameTypeCount = existingGestures
-          .where((g) => gestureTypeLabel(g) == typeLabel)
+          .where((g) => gestureTypeLabel(g, l10n) == typeLabel)
           .length;
       final defaultName = '$typeLabel #${sameTypeCount + 1}';
       final named = gestureWithCommon(
@@ -296,6 +299,7 @@ class GestureListSection extends HookConsumerWidget {
                   collapsedGroups: collapsedGroups,
                   isMultiSelectMode: isMultiSelectMode,
                   selectedCount: multiSelect?.length ?? 0,
+                  l10n: context.l10n,
                 );
                 prepareScrollTarget(viewModel);
                 final reorderEntries =

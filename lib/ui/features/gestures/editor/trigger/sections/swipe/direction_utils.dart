@@ -36,22 +36,6 @@ Set<int> activeSectors(SwipeDirection direction) => switch (direction) {
   SwipeDirection.any => {0, 1, 2, 3, 4, 5, 6, 7},
 };
 
-String directionLabel(SwipeDirection direction) => switch (direction) {
-  SwipeDirection.left => 'Left',
-  SwipeDirection.right => 'Right',
-  SwipeDirection.up => 'Up',
-  SwipeDirection.down => 'Down',
-  SwipeDirection.leftUp => 'Left-Up',
-  SwipeDirection.leftDown => 'Left-Down',
-  SwipeDirection.rightUp => 'Right-Up',
-  SwipeDirection.rightDown => 'Right-Down',
-  SwipeDirection.leftRight => 'Left / Right',
-  SwipeDirection.upDown => 'Up / Down',
-  SwipeDirection.leftUpRightDown => 'Left-Up / Right-Down',
-  SwipeDirection.leftDownRightUp => 'Left-Down / Right-Up',
-  SwipeDirection.any => 'Any direction',
-};
-
 SwipeDirection toBidirectional(SwipeDirection dir) => switch (dir) {
   SwipeDirection.left || SwipeDirection.right => SwipeDirection.leftRight,
   SwipeDirection.up || SwipeDirection.down => SwipeDirection.upDown,

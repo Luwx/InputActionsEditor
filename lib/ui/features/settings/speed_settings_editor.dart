@@ -8,7 +8,8 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
-import 'package:input_actions_editor/ui/fields/editable_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class SpeedSettingsEditor extends ConsumerWidget {
   const SpeedSettingsEditor({
@@ -22,6 +23,7 @@ class SpeedSettingsEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final s = settings ?? const SpeedSettings();
     final sectionState = ref.watch(
       rootConfigDirtyStateProvider(switch (device) {
@@ -64,22 +66,17 @@ class SpeedSettingsEditor extends ConsumerWidget {
           label: UnsavedLabel(
             state: sectionState,
             onRevert: sectionField.onRevert,
-            child: const Text('Speed Settings'),
+            child: Text(l10n.speedSettingsTitle),
           ),
-          description: const Text(
-            'Controls how motion trigger speed is determined.',
-          ),
+          description: Text(l10n.speedSettingsDescription),
           children: [
             FTile(
               title: UnsavedLabel(
                 state: eventsField.dirty,
                 onRevert: eventsField.onRevert,
-                child: const Text('Input Events to Sample'),
+                child: Text(l10n.speedEventsLabel),
               ),
-              subtitle: const Text(
-                'How many input events to sample to determine speed.'
-                ' No triggers start until all events are sampled.',
-              ),
+              subtitle: Text(l10n.speedEventsSubtitle),
               suffix: _SpeedField(
                 value: eventsField.value?.toDouble(),
                 isInt: true,
@@ -91,11 +88,9 @@ class SpeedSettingsEditor extends ConsumerWidget {
               title: UnsavedLabel(
                 state: swipeThresholdField.dirty,
                 onRevert: swipeThresholdField.onRevert,
-                child: const Text('Swipe Threshold'),
+                child: Text(l10n.speedSwipeThresholdLabel),
               ),
-              subtitle: const Text(
-                'Delta threshold to consider a swipe as "fast".',
-              ),
+              subtitle: Text(l10n.speedSwipeThresholdSubtitle),
               suffix: _SpeedField(
                 value: swipeThresholdField.value,
                 hint: '20',
@@ -106,11 +101,9 @@ class SpeedSettingsEditor extends ConsumerWidget {
               title: UnsavedLabel(
                 state: pinchInThresholdField.dirty,
                 onRevert: pinchInThresholdField.onRevert,
-                child: const Text('Pinch-In Threshold'),
+                child: Text(l10n.speedPinchInThresholdLabel),
               ),
-              subtitle: const Text(
-                'Delta threshold to consider a pinch-in as "fast".',
-              ),
+              subtitle: Text(l10n.speedPinchInThresholdSubtitle),
               suffix: _SpeedField(
                 value: pinchInThresholdField.value,
                 hint: '0.04',
@@ -121,11 +114,9 @@ class SpeedSettingsEditor extends ConsumerWidget {
               title: UnsavedLabel(
                 state: pinchOutThresholdField.dirty,
                 onRevert: pinchOutThresholdField.onRevert,
-                child: const Text('Pinch-Out Threshold'),
+                child: Text(l10n.speedPinchOutThresholdLabel),
               ),
-              subtitle: const Text(
-                'Delta threshold to consider a pinch-out as "fast".',
-              ),
+              subtitle: Text(l10n.speedPinchOutThresholdSubtitle),
               suffix: _SpeedField(
                 value: pinchOutThresholdField.value,
                 hint: '0.08',
@@ -136,11 +127,9 @@ class SpeedSettingsEditor extends ConsumerWidget {
               title: UnsavedLabel(
                 state: rotateThresholdField.dirty,
                 onRevert: rotateThresholdField.onRevert,
-                child: const Text('Rotate Threshold'),
+                child: Text(l10n.speedRotateThresholdLabel),
               ),
-              subtitle: const Text(
-                'Delta threshold to consider a rotation as "fast".',
-              ),
+              subtitle: Text(l10n.speedRotateThresholdSubtitle),
               suffix: _SpeedField(
                 value: rotateThresholdField.value,
                 hint: '5',

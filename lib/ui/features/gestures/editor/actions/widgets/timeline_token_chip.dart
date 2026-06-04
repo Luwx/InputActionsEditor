@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TimelineTokenChip extends StatelessWidget {
   const TimelineTokenChip({
@@ -17,7 +18,12 @@ class TimelineTokenChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visual = tokenVisual(token, device, context.theme.colors);
+    final visual = tokenVisual(
+      token,
+      device,
+      context.theme.colors,
+      context.l10n,
+    );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(

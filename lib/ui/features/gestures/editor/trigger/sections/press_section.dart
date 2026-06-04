@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class PressSection extends ConsumerWidget {
   const PressSection({
@@ -16,6 +17,7 @@ class PressSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final instantField = ref.gestureField(
       context,
       pressInstantLens,
@@ -25,20 +27,16 @@ class PressSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Press',
+          l10n.sectionPress,
           style: context.theme.typography.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
         FCheckbox(
-          label: const LabelWithTooltip(
-            label: 'Instant',
-            tooltip:
-                'Start the trigger immediately when the button is pressed. '
-                'By default there is a short delay to allow swipe gestures '
-                'and normal clicks to work. Enabling this prevents normal '
-                'clicks on that button.',
+          label: LabelWithTooltip(
+            label: l10n.pressInstantLabel,
+            tooltip: l10n.pressInstantTooltip,
           ),
           value: instantField.value ?? false,
           onChange: (v) => instantField.onChanged(v ? true : null),

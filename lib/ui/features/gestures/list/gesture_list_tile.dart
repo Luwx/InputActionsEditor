@@ -16,6 +16,8 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
@@ -57,7 +59,7 @@ class GestureListTile extends ConsumerWidget {
     final firstAction = _firstActionSummary(common);
     final nameText = (common.name?.isNotEmpty ?? false)
         ? common.name!
-        : gestureTypeLabel(gesture);
+        : gestureTypeLabel(gesture, context.l10n);
     final effectiveSelected = isMultiSelectMode ? isMultiSelected : isSelected;
     final showAccent = effectiveSelected;
 

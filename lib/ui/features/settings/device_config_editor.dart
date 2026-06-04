@@ -12,10 +12,12 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
-import 'package:input_actions_editor/ui/fields/editable_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class DeviceConfigEditor extends ConsumerWidget {
   const DeviceConfigEditor({required this.section, super.key});
@@ -24,6 +26,7 @@ class DeviceConfigEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final config = ref.watch(
       configControllerProvider.select((state) => state.value),
     );
@@ -35,7 +38,7 @@ class DeviceConfigEditor extends ConsumerWidget {
     }
 
     final deviceType = _sectionToDeviceType(section);
-    final deviceLabel = _sectionLabel(section);
+    final deviceLabel = _sectionLabel(section, l10n);
 
     final speedSettings = deviceType != null
         ? config.speedForDevice(deviceType)
@@ -50,13 +53,16 @@ class DeviceConfigEditor extends ConsumerWidget {
       topInset: SliverFrostedAppBar.maxHeight,
       child: CustomScrollView(
         slivers: [
-          SliverFrostedAppBar(title: deviceLabel),
+          SliverFrostedAppBar(
+            title: deviceLabel,
+            trailing: const ScopedSaveActions(scope: SaveScope.settings),
+          ),
           if (section == DeviceSettingsSection.pointer)
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
                 child: Text(
-                  'No configurable properties for Pointer devices.',
+                  l10n.devicePropertiesNoPointer,
                   style: typography.sm.copyWith(color: colors.mutedForeground),
                 ),
               ),
@@ -102,13 +108,14 @@ DeviceType? _sectionToDeviceType(DeviceSettingsSection s) => switch (s) {
   DeviceSettingsSection.touchscreen => DeviceType.touchscreen,
 };
 
-String _sectionLabel(DeviceSettingsSection s) => switch (s) {
-  DeviceSettingsSection.mouse => 'Mouse',
-  DeviceSettingsSection.pointer => 'Pointer',
-  DeviceSettingsSection.keyboard => 'Keyboard',
-  DeviceSettingsSection.touchpad => 'Touchpad',
-  DeviceSettingsSection.touchscreen => 'Touchscreen',
-};
+String _sectionLabel(DeviceSettingsSection s, AppLocalizations l10n) =>
+    switch (s) {
+      DeviceSettingsSection.mouse => l10n.deviceTypeMouse,
+      DeviceSettingsSection.pointer => l10n.deviceTypePointer,
+      DeviceSettingsSection.keyboard => l10n.deviceTypeKeyboard,
+      DeviceSettingsSection.touchpad => l10n.deviceTypeTouchpad,
+      DeviceSettingsSection.touchscreen => l10n.deviceTypeTouchscreen,
+    };
 
 // ---------------------------------------------------------------------------
 // Device Properties Section
@@ -129,6 +136,7 @@ class _DevicePropertiesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final device = _sectionToDeviceType(section)!;
     final savedProperties = ref.watch(savedDevicePropertiesProvider(device));
     final sectionState = ref.watch(
@@ -219,16 +227,14 @@ class _DevicePropertiesSection extends ConsumerWidget {
           label: UnsavedLabel(
             state: sectionState,
             onRevert: savedProperties == null ? null : propertiesField.onRevert,
-            child: const Text('Device Properties'),
+            child: Text(l10n.devicePropertiesTitle),
           ),
           description: Text.rich(
             TextSpan(
               children: [
-                const TextSpan(
-                  text: 'Applies to all devices of this type. Use ',
-                ),
+                TextSpan(text: l10n.devicePropertiesDescriptionBefore),
                 TextSpan(
-                  text: 'Device Rules',
+                  text: l10n.deviceRulesLinkText,
                   style: TextStyle(
                     color: colors.primary,
                     decoration: TextDecoration.underline,
@@ -237,132 +243,114 @@ class _DevicePropertiesSection extends ConsumerWidget {
                   recognizer: TapGestureRecognizer()
                     ..onTap = onDeviceRulesPress,
                 ),
-                const TextSpan(text: ' to override per device.'),
+                TextSpan(text: l10n.devicePropertiesDescriptionAfter),
               ],
             ),
           ),
           children: [
             boolTile(
-              title: 'Ignore',
-              subtitle: 'Ignore all events from this device type.',
+              title: l10n.devicePropertiesIgnoreLabel,
+              subtitle: l10n.devicePropertiesIgnoreSubtitle,
               lens: defaultDeviceIgnoreLens,
             ),
             boolTile(
-              title: 'Grab',
-              subtitle: 'Grab the evdev device (standalone only).',
+              title: l10n.devicePropertiesGrabLabel,
+              subtitle: l10n.devicePropertiesGrabSubtitle,
               lens: defaultDeviceGrabLens,
             ),
             if (section == DeviceSettingsSection.mouse) ...[
               intTile(
-                title: 'Motion Timeout',
-                subtitle:
-                    'Time (ms) during which a motion trigger must be '
-                    'performed.',
+                title: l10n.devicePropertiesMotionTimeoutLabel,
+                subtitle: l10n.devicePropertiesMotionTimeoutSubtitle,
                 lens: defaultDeviceMotionTimeoutLens,
               ),
               numberTile(
-                title: 'Motion Threshold',
-                subtitle:
-                    'For accurately determining the direction of swipe '
-                    'triggers.',
+                title: l10n.devicePropertiesMotionThresholdLabel,
+                subtitle: l10n.devicePropertiesMotionThresholdSubtitle,
                 lens: defaultDeviceMotionThresholdLens,
               ),
               intTile(
-                title: 'Press Timeout',
-                subtitle: 'Time (ms) before press triggers are started.',
+                title: l10n.devicePropertiesPressTimeoutLabel,
+                subtitle: l10n.devicePropertiesPressTimeoutSubtitle,
                 lens: defaultDevicePressTimeoutLens,
               ),
               numberTile(
-                title: 'Swipe Angle Tolerance',
-                subtitle:
-                    'Angle tolerance (0–45) for cardinal swipe directions.',
+                title: l10n.devicePropertiesSwipeAngleToleranceLabel,
+                subtitle: l10n.devicePropertiesSwipeAngleToleranceSubtitle,
                 lens: defaultDeviceSwipeAngleToleranceLens,
                 min: 0,
                 max: 45,
               ),
               boolTile(
-                title: 'Unblock Buttons On Timeout',
-                subtitle:
-                    'Press blocked buttons immediately on motion timeout.',
+                title: l10n.devicePropertiesUnblockButtonsOnTimeoutLabel,
+                subtitle: l10n.devicePropertiesUnblockButtonsOnTimeoutSubtitle,
                 lens: defaultDeviceUnblockButtonsOnTimeoutLens,
               ),
             ],
             if (section == DeviceSettingsSection.touchpad) ...[
               boolTile(
-                title: 'Buttonpad',
-                subtitle:
-                    'Whether the touchpad is a buttonpad '
-                    '(detected automatically).',
+                title: l10n.devicePropertiesButtonpadLabel,
+                subtitle: l10n.devicePropertiesButtonpadSubtitle,
                 lens: defaultDeviceButtonpadLens,
               ),
               intTile(
-                title: 'Click Timeout',
-                subtitle:
-                    'Time (ms) during which a click trigger must be performed.',
+                title: l10n.devicePropertiesClickTimeoutLabel,
+                subtitle: l10n.devicePropertiesClickTimeoutSubtitle,
                 lens: defaultDeviceClickTimeoutLens,
               ),
               boolTile(
-                title: 'Handle Evdev Events',
-                subtitle:
-                    'Disable if there are issues with evdev event processing.',
+                title: l10n.devicePropertiesHandleEvdevEventsLabel,
+                subtitle: l10n.devicePropertiesHandleEvdevEventsSubtitle,
                 lens: defaultDeviceHandleEvdevEventsLens,
               ),
               numberTile(
-                title: 'Motion Threshold (1-finger)',
-                subtitle:
-                    'For accurately determining 1-finger swipe direction.',
+                title: l10n.devicePropertiesMotionThreshold1FingerLabel,
+                subtitle: l10n.devicePropertiesMotionThreshold1FingerSubtitle,
                 lens: defaultDeviceMotionThresholdLens,
               ),
               numberTile(
-                title: 'Motion Threshold (2-finger)',
-                subtitle:
-                    'For accurately determining 2-finger swipe direction.',
+                title: l10n.devicePropertiesMotionThreshold2FingerLabel,
+                subtitle: l10n.devicePropertiesMotionThreshold2FingerSubtitle,
                 lens: defaultDeviceMotionThreshold2Lens,
               ),
               numberTile(
-                title: 'Motion Threshold (3+ finger)',
-                subtitle:
-                    'For accurately determining 3- and 4-finger swipe '
-                    'direction.',
+                title: l10n.devicePropertiesMotionThreshold3FingerLabel,
+                subtitle: l10n.devicePropertiesMotionThreshold3FingerSubtitle,
                 lens: defaultDeviceMotionThreshold3Lens,
               ),
               numberTile(
-                title: 'Swipe Angle Tolerance',
-                subtitle:
-                    'Angle tolerance (0–45) for cardinal swipe directions.',
+                title: l10n.devicePropertiesSwipeAngleToleranceLabel,
+                subtitle: l10n.devicePropertiesSwipeAngleToleranceSubtitle,
                 lens: defaultDeviceSwipeAngleToleranceLens,
                 min: 0,
                 max: 45,
               ),
               intTile(
-                title: 'Pressure: Finger',
-                subtitle:
-                    'Minimum pressure to consider a touch point as a finger.',
+                title: l10n.devicePropertiesPressureFingerLabel,
+                subtitle: l10n.devicePropertiesPressureFingerSubtitle,
                 lens: defaultDevicePressureRangesFingerLens,
               ),
               intTile(
-                title: 'Pressure: Thumb',
-                subtitle:
-                    'Minimum pressure to consider a touch point as a thumb.',
+                title: l10n.devicePropertiesPressureThumbLabel,
+                subtitle: l10n.devicePropertiesPressureThumbSubtitle,
                 lens: defaultDevicePressureRangesThumbLens,
               ),
               intTile(
-                title: 'Pressure: Palm',
-                subtitle:
-                    'Maximum pressure before a touch point is ignored as palm.',
+                title: l10n.devicePropertiesPressurePalmLabel,
+                subtitle: l10n.devicePropertiesPressurePalmSubtitle,
                 lens: defaultDevicePressureRangesPalmLens,
               ),
             ],
             if (section == DeviceSettingsSection.touchscreen) ...[
               numberTile(
-                title: 'Motion Threshold',
-                subtitle: 'For accurately determining swipe direction (mm).',
+                title: l10n.devicePropertiesMotionThresholdLabel,
+                subtitle:
+                    l10n.devicePropertiesMotionThresholdTouchscreenSubtitle,
                 lens: defaultDeviceMotionThresholdLens,
               ),
               numberTile(
-                title: 'Swipe Angle Tolerance',
-                subtitle:
-                    'Angle tolerance (0–45) for cardinal swipe directions.',
+                title: l10n.devicePropertiesSwipeAngleToleranceLabel,
+                subtitle: l10n.devicePropertiesSwipeAngleToleranceSubtitle,
                 lens: defaultDeviceSwipeAngleToleranceLens,
                 min: 0,
                 max: 45,
@@ -394,6 +382,7 @@ class _NullableBoolToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 6,
@@ -402,7 +391,7 @@ class _NullableBoolToggle extends StatelessWidget {
           GestureDetector(
             onTap: () => onChanged(null),
             child: Text(
-              'reset',
+              l10n.fieldResetButton,
               style: typography.xs.copyWith(color: colors.mutedForeground),
             ),
           ),
@@ -440,7 +429,6 @@ class _NumberField extends HookWidget {
     final controller = useTextEditingController(text: _fmt(value));
     final focused = useRef(false);
 
-    // Sync text when external value changes and field is not focused.
     final prevValue = usePrevious(value);
     if (prevValue != value && !focused.value) {
       controller.text = _fmt(value);
@@ -478,7 +466,7 @@ class _NumberField extends HookWidget {
             controller: controller,
             onChange: (_) {},
           ),
-          hint: 'default',
+          hint: context.l10n.fieldDefaultHint,
           onSubmit: commit,
         ),
       ),

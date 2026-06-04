@@ -15,8 +15,9 @@ import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
-import 'package:input_actions_editor/ui/fields/editable_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 
 class EffectSettingsScreen extends ConsumerWidget {
   const EffectSettingsScreen({super.key});
@@ -96,6 +97,7 @@ class EffectSettingsScreen extends ConsumerWidget {
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
+            trailing: const ScopedSaveActions(scope: SaveScope.settings),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),

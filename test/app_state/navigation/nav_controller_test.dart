@@ -744,4 +744,28 @@ void main() {
       expect(_state(container).history, before);
     });
   });
+
+  group('NavController.reset', () {
+    const mouse = DeviceType.mouse;
+
+    test('drops all history and returns to the gesture list root', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      _controller(container)
+        ..go(
+          const GesturesDestination(
+            open: GestureLocation(device: mouse, index: 0),
+          ),
+        )
+        ..go(const SettingsDestination(SettingsSection.deviceSettings))
+        ..reset();
+
+      expect(_state(container).history, const [GesturesDestination()]);
+      expect(_state(container).cursor, 0);
+      expect(_state(container).current, const GesturesDestination());
+      expect(_state(container).canBack, false);
+      expect(_state(container).canForward, false);
+    });
+  });
 }

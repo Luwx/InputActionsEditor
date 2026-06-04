@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/condition_labels.dart';
 
 class OperatorSelect extends HookWidget {
   const OperatorSelect({
@@ -54,7 +56,7 @@ class OperatorSelect extends HookWidget {
       onEnter: (_) => isHovered.value = true,
       onExit: (_) => isHovered.value = false,
       child: FSelect<String>.rich(
-        format: operatorLabel,
+        format: (op) => operatorLabel(op, context.l10n),
         textAlign: TextAlign.center,
         autofocus: true,
         focusNode: focusNode,
@@ -81,7 +83,7 @@ class OperatorSelect extends HookWidget {
             FSelectItem<String>.item(
               value: operator,
               title: Text(
-                operatorLabel(operator),
+                operatorLabel(operator, context.l10n),
                 overflow: TextOverflow.ellipsis,
               ),
               prefix: Icon(

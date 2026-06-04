@@ -9,6 +9,7 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TriggerAdvancedFields extends ConsumerWidget {
   const TriggerAdvancedFields({
@@ -33,6 +34,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
       context.theme.colors.background,
@@ -83,72 +85,43 @@ class TriggerAdvancedFields extends ConsumerWidget {
               label: UnsavedLabel(
                 state: idField.dirty,
                 onRevert: idField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'ID',
-                  tooltip:
-                      'Unique name for this trigger.\n\n'
-                      'When set, the daemon exposes variables:\n'
-                      '  \$<id>_active  - true while running\n'
-                      '  \$last_trigger - equals this id after it fires\n\n'
-                      "Use these in other gestures' conditions to chain "
-                      'or block behaviors.\n'
-                      'Example: id: swipe_right, then another gesture can '
-                      r'check $last_trigger == swipe_right.',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldIdLabel,
+                  tooltip: l10n.triggerFieldIdTooltip,
                 ),
               ),
               control: FTextFieldControl.managed(
                 initial: idField.textEditingValue,
                 onChange: idField.onTextChanged,
               ),
-              hint: 'e.g. my_trigger',
+              hint: l10n.triggerFieldIdHint,
             ),
             FTextField(
               label: UnsavedLabel(
                 state: thresholdField.dirty,
                 onRevert: thresholdField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Threshold',
-                  tooltip:
-                      'Minimum accumulated input before the gesture is '
-                      'recognized as started.\n\n'
-                      '"Progress" units by gesture type:\n'
-                      '  Swipe / stroke  - pixels of movement\n'
-                      '  Wheel           - scroll ticks\n'
-                      '  Pinch           - scale factor (e.g. 0.1 = 10%)\n'
-                      '  Rotate / circle - degrees\n'
-                      '  Press           - not applicable '
-                      '(press has no movement phase)\n\n'
-                      'Below the threshold the input is passed through '
-                      'to the application normally.\n'
-                      'Use a range like 50-200 to require at least 50 '
-                      'and cancel if it exceeds 200.\n\n'
-                      'Note: this is distinct from the per-action Threshold, '
-                      'which gates a specific action after recognition.',
-                  textStyle: TextStyle(height: 1.4, fontFamily: 'monospaced'),
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldThresholdLabel,
+                  tooltip: l10n.triggerFieldThresholdTooltip,
+                  textStyle: const TextStyle(
+                    height: 1.4,
+                    fontFamily: 'monospaced',
+                  ),
                 ),
               ),
               control: FTextFieldControl.managed(
                 initial: thresholdField.textEditingValue,
                 onChange: thresholdField.onTextChanged,
               ),
-              hint: 'e.g. 100 or 50-200',
+              hint: l10n.triggerFieldThresholdHint,
             ),
             FTextField(
               label: UnsavedLabel(
                 state: resumeTimeoutField.dirty,
                 onRevert: resumeTimeoutField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Resume timeout',
-                  tooltip:
-                      'If another identical gesture starts within this many '
-                      'milliseconds after this one ends, it resumes as a '
-                      'continuation rather than starting fresh.\n\n'
-                      'Useful for:\n'
-                      '  • Multi-tap sequences where a brief pause between '
-                      'taps should not reset state\n'
-                      '  • Repeated wheel scrolls that accumulate delta '
-                      'across short gaps\n\n'
-                      '0 = disabled (every gesture starts from scratch).',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldResumeTimeoutLabel,
+                  tooltip: l10n.triggerFieldResumeTimeoutTooltip,
                 ),
               ),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -157,7 +130,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 initial: resumeTimeoutField.textEditingValue,
                 onChange: resumeTimeoutField.onTextChanged,
               ),
-              hint: '0 = disabled',
+              hint: l10n.triggerFieldResumeTimeoutHint,
             ),
           ],
         ),
@@ -171,15 +144,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
               label: UnsavedLabel(
                 state: acceleratedField.dirty,
                 onRevert: acceleratedField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Accelerated',
-                  tooltip:
-                      'Scale delta values by pointer acceleration, matching '
-                      'how fast the cursor moves on screen.\n\n'
-                      'Enable for actions that should feel proportional to '
-                      'movement speed (e.g. move_by_delta input actions).\n'
-                      'Disable for uniform responses regardless of speed '
-                      '(e.g. a fixed key press per scroll tick).',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldAcceleratedLabel,
+                  tooltip: l10n.triggerFieldAcceleratedTooltip,
                 ),
               ),
             ),
@@ -189,15 +156,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
               label: UnsavedLabel(
                 state: blockEventsField.dirty,
                 onRevert: blockEventsField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Block events',
-                  tooltip:
-                      'Suppress the raw input events used by this gesture '
-                      'so they do not reach other applications.\n\n'
-                      'Example: holding right-click to draw a stroke gesture '
-                      'prevents the context menu from opening.\n\n'
-                      'Disable if the application should also receive those '
-                      'events while the gesture is active.',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldBlockEventsLabel,
+                  tooltip: l10n.triggerFieldBlockEventsTooltip,
                 ),
               ),
             ),
@@ -207,16 +168,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
               label: UnsavedLabel(
                 state: clearModifiersField.dirty,
                 onRevert: clearModifiersField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Clear modifiers',
-                  tooltip:
-                      'Release all held modifier keys (Ctrl, Shift, Alt, '
-                      'Super) when this gesture begins.\n\n'
-                      'Automatically enabled when an input: action is '
-                      'present, to prevent those modifiers from leaking '
-                      'into the replayed key events.\n'
-                      'Disable only if you intentionally need the modifiers '
-                      'to remain held during the action.',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldClearModifiersLabel,
+                  tooltip: l10n.triggerFieldClearModifiersTooltip,
                 ),
               ),
             ),
@@ -226,16 +180,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
               label: UnsavedLabel(
                 state: setLastTriggerField.dirty,
                 onRevert: setLastTriggerField.onRevert,
-                child: const LabelWithTooltip(
-                  label: 'Set last trigger',
-                  tooltip:
-                      r"Update $last_trigger to this trigger's ID when it "
-                      'executes.\n\n'
-                      r"Use $last_trigger in other gestures' conditions to "
-                      'build sequences - e.g. a second gesture that only '
-                      'fires if a specific gesture ran first.\n\n'
-                      'Disable for utility triggers you do not want to '
-                      r'pollute the $last_trigger state.',
+                child: LabelWithTooltip(
+                  label: l10n.triggerFieldSetLastTriggerLabel,
+                  tooltip: l10n.triggerFieldSetLastTriggerTooltip,
                 ),
               ),
             ),
@@ -245,46 +192,18 @@ class TriggerAdvancedFields extends ConsumerWidget {
         ConditionEditor.generic(
           condition: conditionsField.value,
           onConditionChanged: conditionsField.onChanged,
-          titleTooltip:
-              'Conditions that must ALL be true for this gesture to '
-              'activate.\n\n'
-              'Examples:\n'
-              r'  $window_class == firefox'
-              '\n'
-              '      → only fires inside Firefox\n'
-              r'  $window_class == konsole'
-              '\n'
-              '      → only fires inside the terminal\n'
-              r'  $window_id == $window_under_id'
-              '\n'
-              '      → cursor is over the focused window\n'
-              r'  $pointer_position_screen_percentage_x >= 0.95'
-              '\n'
-              '      → cursor is at the right screen edge\n'
-              r'  $fingers == 3'
-              '\n'
-              '      → exactly 3 fingers on touchpad\n\n'
-              'Multiple rows are ANDed together.\n'
-              'Use an "any" group inside for OR logic.',
+          title: l10n.triggerConditionsTitle,
+          titleTooltip: l10n.triggerConditionsTooltip,
           bodyBackgroundColor: conditionsBodyBackgroundColor,
           dirtyState: conditionsField.dirty,
           onRevert: conditionsField.onRevert,
         ),
         const SizedBox(height: 12),
         ConditionEditor.generic(
-          title: 'End conditions',
+          title: l10n.triggerEndConditionsTitle,
           dirtyState: endConditionsField.dirty,
           onRevert: endConditionsField.onRevert,
-          titleTooltip:
-              'Checked at the moment the gesture ends.\n\n'
-              '  • Met → gesture ends normally; on:end actions fire.\n'
-              '  • Not met → gesture is cancelled; on:cancel actions '
-              'fire instead.\n\n'
-              'Use this to require a minimum movement before the gesture '
-              '"counts".\n'
-              r'Example: $distance >= 100 cancels the gesture if the '
-              'finger did not travel at least 100 px, so a short '
-              'accidental movement is ignored.',
+          titleTooltip: l10n.triggerEndConditionsTooltip,
           condition: endConditionsField.value,
           bodyBackgroundColor: conditionsBodyBackgroundColor,
           onConditionChanged: endConditionsField.onChanged,

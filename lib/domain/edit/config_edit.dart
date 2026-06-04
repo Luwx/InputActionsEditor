@@ -40,8 +40,13 @@ final class SetLens<T> implements ConfigEdit {
   @override
   String get label => _label ?? 'set ${lens.name}';
 
+  // @override
+  // Config apply(Config config) => lens.set(config, value);
   @override
-  Config apply(Config config) => lens.set(config, value);
+  Config apply(Config config) {
+    // print('applying $label');
+    return lens.set(config, value);
+  }
 
   @override
   ConfigEdit inverse(Config config) => SetLens<T>(lens, lens.get(config));

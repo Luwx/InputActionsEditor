@@ -9,6 +9,7 @@ import 'package:input_actions_editor/app.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
+import 'package:input_actions_editor/services/window_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -24,9 +25,15 @@ void main() async {
   }
   // timeDilation = 10;
 
+  final windowService = WindowService();
+  await windowService.initialize();
+
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        windowServiceProvider.overrideWithValue(windowService),
+      ],
       child: const App(),
     ),
   );

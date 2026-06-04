@@ -12,6 +12,7 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TriggerEditor extends ConsumerWidget {
   const TriggerEditor({
@@ -47,7 +48,7 @@ class TriggerEditor extends ConsumerWidget {
             state: dirtyState,
             onRevert: onRevert,
             child: Text(
-              'Trigger Config',
+              context.l10n.triggerConfigTitle,
               style: context.theme.typography.sm.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -82,7 +83,7 @@ class TriggerEditor extends ConsumerWidget {
             ),
             children: [
               FAccordionItem(
-                title: const Text('Other Options'),
+                title: Text(context.l10n.triggerOtherOptions),
                 initiallyExpanded: hasAdvanced,
                 child: TriggerAdvancedFields(
                   common: common,
@@ -127,7 +128,7 @@ class _TriggerConflictBadge extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Conflicts',
+              context.l10n.conflictsTitle,
               style: typography.sm.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
@@ -161,9 +162,7 @@ class _TriggerConflictBadge extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              conflicts.length == 1
-                  ? '1 conflict'
-                  : '${conflicts.length} conflicts',
+              context.l10n.conflictCount(conflicts.length),
               style: typography.xs.copyWith(
                 fontWeight: FontWeight.w600,
                 color: kGestureWarningColor,

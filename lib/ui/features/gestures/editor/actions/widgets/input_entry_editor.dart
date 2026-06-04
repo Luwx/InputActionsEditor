@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart'
     show
         PointerDeviceKind,
@@ -14,14 +16,18 @@ import 'package:flutter/services.dart'
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
 const Map<int, String> _mouseButtonNames = {
   kPrimaryMouseButton: 'left',
@@ -172,19 +178,25 @@ class InputEntryEditor extends HookWidget {
                 onPress: controller.toggle,
                 child: child,
               ),
-              popoverBuilder: (context, controller) => Padding(
-                padding: const EdgeInsets.all(12),
-                child: isKeyboardRecording.value
-                    ? _buildKeyboardRecordingView(
-                        context,
-                        controller,
-                        liveKeyTokens.value,
-                        stopRecording: stopRecording,
-                      )
-                    : _buildKeyboardRecordStart(
-                        context,
-                        startRecording: startRecording,
-                      ),
+              popoverBuilder: (context, controller) => Focus(
+                autofocus: isKeyboardRecording.value,
+                onKeyEvent: isKeyboardRecording.value
+                    ? (_, _) => KeyEventResult.handled
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: isKeyboardRecording.value
+                      ? _buildKeyboardRecordingView(
+                          context,
+                          controller,
+                          liveKeyTokens.value,
+                          stopRecording: stopRecording,
+                        )
+                      : _buildKeyboardRecordStart(
+                          context,
+                          startRecording: startRecording,
+                        ),
+                ),
               ),
               child: const Icon(Icons.radio_button_checked, size: 16),
             ),
@@ -223,16 +235,18 @@ class InputEntryEditor extends HookWidget {
                 onPress: controller.toggle,
                 child: child,
               ),
-              popoverBuilder: (context, controller) => Padding(
-                padding: const EdgeInsets.all(12),
-                child: _buildMouseRecordPopover(
-                  context,
-                  controller,
-                  liveMouseTokens: liveMouseTokens.value,
-                  mouseSeqController: mouseSeqController,
-                  onPointerDown: onRecordAreaPointerDown,
-                  onPointerUp: onRecordAreaPointerUp,
-                  onClearTokens: () => liveMouseTokens.value = [],
+              popoverBuilder: (context, controller) => _RecordingScope(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _buildMouseRecordPopover(
+                    context,
+                    controller,
+                    liveMouseTokens: liveMouseTokens.value,
+                    mouseSeqController: mouseSeqController,
+                    onPointerDown: onRecordAreaPointerDown,
+                    onPointerUp: onRecordAreaPointerUp,
+                    onClearTokens: () => liveMouseTokens.value = [],
+                  ),
                 ),
               ),
               child: const Icon(Icons.radio_button_checked, size: 16),
@@ -247,7 +261,6 @@ class InputEntryEditor extends HookWidget {
       InputEntryMode.keyboardTimeline => buildKeyboardTimelineEditor(),
       InputEntryMode.mouseTimeline => buildMouseTimelineEditor(),
       InputEntryMode.keyboardText => FTextField(
-        key: ValueKey(entry.tokens.join('|')),
         control: FTextFieldControl.managed(
           initial: TextEditingValue(text: keyboardTextValue(entry.tokens)),
           onChange: (value) => replaceSingleToken('text: ${value.text}'),
@@ -277,7 +290,10 @@ class InputEntryEditor extends HookWidget {
       ),
     };
 
-    final options = modeOptions(entry.device);
+    final optionsList = inputModeOptions(entry.device, context.l10n);
+    final options = {
+      for (final o in optionsList) o.label: o.mode,
+    };
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -369,6 +385,35 @@ class InputEntryEditor extends HookWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Marks an in-app recorder as active for as long as it is mounted, so the
+/// app's global input handlers (mouse back / forward navigation, undo / redo
+/// shortcuts) stand down and let the captured events be recorded instead.
+///
+/// Also absorbs key events so stray keypresses during recording don't trigger
+/// focused-widget behavior.
+class _RecordingScope extends HookConsumerWidget {
+  const _RecordingScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    useEffect(() {
+      // Deferred: hooks run effects during build, and Riverpod forbids
+      // modifying a provider mid-build.
+      final notifier = ref.read(inputRecordingProvider.notifier);
+      scheduleMicrotask(notifier.begin);
+      return () => scheduleMicrotask(notifier.end);
+    }, const []);
+
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, _) => KeyEventResult.handled,
+      child: child,
     );
   }
 }
@@ -534,6 +579,7 @@ Widget _buildMouseRecordPopover(
                             token,
                             InputDevice.mouse,
                             colors,
+                            context.l10n,
                           );
                           return DecoratedBox(
                             decoration: BoxDecoration(

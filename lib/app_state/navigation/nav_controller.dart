@@ -71,6 +71,15 @@ class NavController extends Notifier<NavState> {
 
   void openSettings() => go(_lastSettingsDestination);
 
+  /// Discard all navigation history and return to the gesture list root.
+  ///
+  /// Used when the whole document is replaced (e.g. loading a new file): every
+  /// open editor is keyed to a positional location that no longer refers to the
+  /// same gesture/action, so nothing in the old history is safe to keep.
+  void reset() {
+    state = const NavState(history: [GesturesDestination()], cursor: 0);
+  }
+
   void _rememberCurrentSettings() {
     if (state.current case final SettingsDestination settings) {
       _lastSettingsDestination = settings;

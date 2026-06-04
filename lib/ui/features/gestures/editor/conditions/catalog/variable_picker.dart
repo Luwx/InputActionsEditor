@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/condition_labels.dart';
 
 Future<VariableInfo?> showVariablePicker(
   BuildContext context, {
@@ -217,7 +219,7 @@ class _VariableItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return FTooltip(
       tipBuilder: (context, controller) => Text(
-        '${info.label}\nType: ${info.type.typeName}',
+        '${info.label}\nType: ${info.type.typeName(context.l10n)}',
       ),
       child: FItem(
         prefix: _TypeBadge(type: info.type, typography: typography),
@@ -260,7 +262,7 @@ class _TypeBadge extends StatelessWidget {
       ),
       width: 42,
       child: Text(
-        type.badge,
+        type.badge(context.l10n),
         textAlign: TextAlign.center,
         style: typography.xs.copyWith(
           color: type.fgColor,

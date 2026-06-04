@@ -26,6 +26,8 @@ import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 class GestureDetailSection extends HookConsumerWidget {
   const GestureDetailSection({super.key});
@@ -107,7 +109,7 @@ class GestureDetailSection extends HookConsumerWidget {
     if (selection == null || config == null) {
       return Center(
         child: Text(
-          'Select a gesture to edit',
+          context.l10n.gestureSelectPrompt,
           style: typography.sm.copyWith(color: colors.mutedForeground),
         ),
       );
@@ -117,7 +119,7 @@ class GestureDetailSection extends HookConsumerWidget {
     if (selection.index >= gestures.length) {
       return Center(
         child: Text(
-          'Select a gesture to edit',
+          context.l10n.gestureSelectPrompt,
           style: typography.sm.copyWith(color: colors.mutedForeground),
         ),
       );
@@ -131,13 +133,14 @@ class GestureDetailSection extends HookConsumerWidget {
     final gestureEditor = ref.read(
       gestureEditorProvider(gestureLocation).notifier,
     );
+    final l10n = context.l10n;
     final common = gestureCommon(gesture);
     final name = (common.name?.isNotEmpty ?? false)
         ? common.name!
-        : gestureTypeLabel(gesture);
+        : gestureTypeLabel(gesture, l10n);
     final subtitle =
-        '${gestureTypeLabel(gesture)} '
-        '· ${gestureDeviceLabel(selection.device)}';
+        '${gestureTypeLabel(gesture, l10n)} '
+        '· ${gestureDeviceLabel(selection.device, l10n)}';
     final isEnabled = common.effectiveEnabled;
 
     final editor = ScrollbarMediaPadding(
@@ -190,7 +193,7 @@ class GestureDetailSection extends HookConsumerWidget {
                   if (!context.mounted) return;
                   showFToast(
                     context: context,
-                    title: const Text('Gesture YAML copied.'),
+                    title: Text(context.l10n.gestureCopyYamlSuccess),
                     suffixBuilder: (context, entry) => FButton.icon(
                       onPress: entry.dismiss,
                       child: const Icon(FLucideIcons.x),
@@ -331,7 +334,7 @@ class _MultiSelectPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '$count gesture${count == 1 ? '' : 's'} selected',
+            context.l10n.multiSelectCount(count),
             style: typography.lg.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
@@ -341,12 +344,12 @@ class _MultiSelectPanel extends StatelessWidget {
               FButton(
                 variant: .outline,
                 onPress: canEnable ? onEnable : null,
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(FLucideIcons.eye),
-                    SizedBox(width: 6),
-                    Text('Enable'),
+                    const Icon(FLucideIcons.eye),
+                    const SizedBox(width: 6),
+                    Text(context.l10n.actionEnable),
                   ],
                 ),
               ),
@@ -354,12 +357,12 @@ class _MultiSelectPanel extends StatelessWidget {
               FButton(
                 variant: .outline,
                 onPress: canDisable ? onDisable : null,
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(FLucideIcons.eyeOff),
-                    SizedBox(width: 6),
-                    Text('Disable'),
+                    const Icon(FLucideIcons.eyeOff),
+                    const SizedBox(width: 6),
+                    Text(context.l10n.actionDisable),
                   ],
                 ),
               ),
@@ -367,12 +370,12 @@ class _MultiSelectPanel extends StatelessWidget {
               FButton(
                 variant: .destructive,
                 onPress: onDelete,
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(FLucideIcons.trash),
-                    SizedBox(width: 6),
-                    Text('Delete'),
+                    const Icon(FLucideIcons.trash),
+                    const SizedBox(width: 6),
+                    Text(context.l10n.actionDelete),
                   ],
                 ),
               ),
@@ -416,7 +419,11 @@ class _GestureHeaderMenu extends StatelessWidget {
           children: [
             FItem(
               prefix: Icon(isEnabled ? Icons.visibility_off : Icons.visibility),
-              title: Text(isEnabled ? 'Disable' : 'Enable'),
+              title: Text(
+                isEnabled
+                    ? context.l10n.gestureMenuDisable
+                    : context.l10n.gestureMenuEnable,
+              ),
               onPress: () async {
                 await controller.hide();
                 onToggleEnabled();
@@ -427,11 +434,11 @@ class _GestureHeaderMenu extends StatelessWidget {
               title: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Reset To Defaults'),
+                  Text(context.l10n.gestureMenuResetToDefaults),
                   const SizedBox(width: 6),
                   AppTooltip(
-                    tipBuilder: (context, _) => const Text(
-                      resetGestureDefaultsTooltip,
+                    tipBuilder: (context, _) => Text(
+                      context.l10n.resetGestureDefaultsTooltip,
                     ),
                     child: const Icon(Icons.info_outline, size: 14),
                   ),
@@ -444,7 +451,7 @@ class _GestureHeaderMenu extends StatelessWidget {
             ),
             FItem(
               prefix: const Icon(Icons.copy_all),
-              title: const Text('Duplicate'),
+              title: Text(context.l10n.gestureMenuDuplicate),
               onPress: () async {
                 await controller.hide();
                 onDuplicate();
@@ -452,7 +459,7 @@ class _GestureHeaderMenu extends StatelessWidget {
             ),
             FItem(
               prefix: const Icon(Icons.content_copy),
-              title: const Text('Copy YAML'),
+              title: Text(context.l10n.gestureMenuCopyYaml),
               onPress: () async {
                 await controller.hide();
                 await onCopyYaml();
@@ -461,7 +468,7 @@ class _GestureHeaderMenu extends StatelessWidget {
             FItem(
               variant: FItemVariant.destructive,
               prefix: const Icon(Icons.delete_outline),
-              title: const Text('Delete'),
+              title: Text(context.l10n.gestureMenuDelete),
               onPress: () async {
                 await controller.hide();
                 onDelete();

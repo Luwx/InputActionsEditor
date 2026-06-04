@@ -1,53 +1,69 @@
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
+import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
 /// A short, human-readable summary of an action's value for the collapsed row.
-String actionValueSummary(Action action) => switch (action) {
-  CommandAction(:final command) =>
-    command.trim().isEmpty ? 'No command' : command.trim(),
-  InputAction(:final entries) => _inputEntriesSummary(entries),
-  PlasmaShortcutAction(:final component, :final shortcut) => [
-    component,
-    shortcut,
-  ].where((s) => s.trim().isNotEmpty).join('  ·  ').ifEmpty('Not configured'),
-  SleepAction(:final milliseconds) => '$milliseconds ms',
-  RawAction(:final raw) =>
-    raw.trim().isEmpty ? 'Empty' : raw.trim().split('\n').first,
-};
+String actionValueSummary(Action action, AppLocalizations l10n) =>
+    switch (action) {
+      CommandAction(:final command) =>
+        command.trim().isEmpty ? l10n.actionSummaryNoCommand : command.trim(),
+      InputAction(:final entries) => _inputEntriesSummary(entries, l10n),
+      PlasmaShortcutAction(:final component, :final shortcut) =>
+        [
+              component,
+              shortcut,
+            ]
+            .where((s) => s.trim().isNotEmpty)
+            .join('  ·  ')
+            .ifEmpty(l10n.actionSummaryNotConfigured),
+      SleepAction(:final milliseconds) => '$milliseconds ms',
+      RawAction(:final raw) =>
+        raw.trim().isEmpty
+            ? l10n.actionSummaryEmpty
+            : raw.trim().split('\n').first,
+    };
 
 /// A specific title for the collapsed row. For input actions this reflects the
 /// input mode (e.g. "Key sequence", "Text input") rather than the generic
 /// "Input" so the row reads like the screenshot.
-String actionRowTitle(Action action) => switch (action) {
-  CommandAction() => 'Command',
+String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
+  CommandAction() => l10n.actionMetaCommandLabel,
   InputAction(:final entries) =>
-    entries.isEmpty ? 'Input' : _inputModeLabel(entries.first),
-  PlasmaShortcutAction() => 'Plasma shortcut',
-  SleepAction() => 'Sleep',
-  RawAction() => 'Raw YAML',
+    entries.isEmpty
+        ? l10n.inputModeGeneric
+        : _inputModeLabel(entries.first, l10n),
+  PlasmaShortcutAction() => l10n.actionMetaPlasmaLabel,
+  SleepAction() => l10n.actionMetaSleepLabel,
+  RawAction() => l10n.actionMetaRawLabel,
 };
 
-String _inputModeLabel(InputEntry entry) {
+String _inputModeLabel(InputEntry entry, AppLocalizations l10n) {
   final mode = inferInputEntryMode(entry);
-  for (final option in modeOptions(entry.device).entries) {
-    if (option.value == mode) return option.key;
+  for (final option in inputModeOptions(entry.device, l10n)) {
+    if (option.mode == mode) return option.label;
   }
-  return 'Input';
+  return l10n.inputModeGeneric;
 }
 
-String _inputEntriesSummary(List<InputEntry> entries) {
-  if (entries.isEmpty) return 'No input';
-  return entries.map(_entrySummary).where((s) => s.isNotEmpty).join('  →  ');
+String _inputEntriesSummary(List<InputEntry> entries, AppLocalizations l10n) {
+  if (entries.isEmpty) return l10n.actionSummaryNoInput;
+  return entries
+      .map((e) => _entrySummary(e, l10n))
+      .where((s) => s.isNotEmpty)
+      .join('  →  ');
 }
 
-String _entrySummary(InputEntry entry) {
+String _entrySummary(InputEntry entry, AppLocalizations l10n) {
   if (entry.tokens.isEmpty) {
-    return entry.device == InputDevice.keyboard ? 'No keys' : 'No buttons';
+    return entry.device == InputDevice.keyboard
+        ? l10n.actionSummaryNoKeys
+        : l10n.actionSummaryNoButtons;
   }
-  return entry.tokens.map((t) => _tokenLabel(t, entry.device)).join(' ');
+  return entry.tokens.map((t) => _tokenLabel(t, entry.device, l10n)).join(' ');
 }
 
-String _tokenLabel(String token, InputDevice device) {
+String _tokenLabel(String token, InputDevice device, AppLocalizations l10n) {
   if (device == InputDevice.keyboard) {
     final (:type, :val) = parseKeyToken(token);
     return switch (type) {
@@ -61,26 +77,35 @@ String _tokenLabel(String token, InputDevice device) {
   return switch (type) {
     MouseTokenType.press => '↓$v1',
     MouseTokenType.release => '↑$v1',
-    MouseTokenType.moveBy => 'move by $v1,$v2',
-    MouseTokenType.moveByDelta => v1.isEmpty ? 'move by delta' : 'delta $v1',
-    MouseTokenType.moveTo => 'move to $v1,$v2',
-    MouseTokenType.wheel => 'wheel $v1,$v2',
+    MouseTokenType.moveBy => tokenLabel(token, device, l10n),
+    MouseTokenType.moveByDelta => tokenLabel(token, device, l10n),
+    MouseTokenType.moveTo => tokenLabel(token, device, l10n),
+    MouseTokenType.wheel => tokenLabel(token, device, l10n),
     MouseTokenType.combo => v1,
   };
 }
 
 /// The non-default trigger fields, shown as chips on the collapsed row.
-/// Defaults (matching the daemon): no `on`, no interval/threshold,
-/// limit 0/unset, conflicting on.
-List<({String label, String value})> actionMetaChips(TriggerAction t) {
+List<({String label, String value})> actionMetaChips(
+  TriggerAction t,
+  AppLocalizations l10n,
+) {
   final chips = <({String label, String value})>[];
-  if (t.on != null) chips.add((label: 'On', value: t.on!.toYaml()));
-  if (t.interval != null) chips.add((label: 'Interval', value: t.interval!));
-  if (t.threshold != null) chips.add((label: 'Threshold', value: t.threshold!));
-  if (t.limit != null && t.limit != 0) {
-    chips.add((label: 'Limit', value: '${t.limit}'));
+  if (t.on != null) {
+    chips.add((label: l10n.actionChipOn, value: t.on!.toYaml()));
   }
-  if (!t.conflicting) chips.add((label: 'Conflicting', value: 'off'));
+  if (t.interval != null) {
+    chips.add((label: l10n.actionChipInterval, value: t.interval!));
+  }
+  if (t.threshold != null) {
+    chips.add((label: l10n.actionChipThreshold, value: t.threshold!));
+  }
+  if (t.limit != null && t.limit != 0) {
+    chips.add((label: l10n.actionChipLimit, value: '${t.limit}'));
+  }
+  if (!t.conflicting) {
+    chips.add((label: l10n.actionChipConflicting, value: 'off'));
+  }
   return chips;
 }
 

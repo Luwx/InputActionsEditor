@@ -468,4 +468,68 @@ void main() {
       expect(_config(c).mouseSpeed?.events, 8);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Settings ⇄ gestures partition (scoped dirty + scoped discard). The save*
+  // paths hit the repository and are covered separately; here we exercise the
+  // pure partitioning that everything else derives from.
+  group('settings / gestures partition', () {
+    const seed = Config(mouseGestures: [_mouse1], mouseSpeed: _speed1);
+
+    Future<ConfigController> ready(ProviderContainer c) async {
+      await c.read(configControllerProvider.future);
+      return _notifier(c);
+    }
+
+    test('a settings edit marks only the settings slice dirty', () async {
+      final c = _makeContainer(seed);
+      final n = await ready(c)
+        ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
+      expect(n.isSettingsDirty, isTrue);
+      expect(n.isGesturesDirty, isFalse);
+      expect(n.isDirty, isTrue);
+    });
+
+    test('a gesture edit marks only the gesture slice dirty', () async {
+      final c = _makeContainer(seed);
+      final n = await ready(c)
+        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')));
+      expect(n.isGesturesDirty, isTrue);
+      expect(n.isSettingsDirty, isFalse);
+    });
+
+    test('gesture groups count as gesture data, not settings', () async {
+      final c = _makeContainer(seed);
+      final n = await ready(c)
+        ..add(AddGestureGroup(_group1));
+      expect(n.isGesturesDirty, isTrue);
+      expect(n.isSettingsDirty, isFalse);
+    });
+
+    test('discardSettings reverts settings but keeps gesture edits', () async {
+      final c = _makeContainer(seed);
+      final n = await ready(c)
+        ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
+        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
+        ..discardSettings();
+
+      expect(_config(c).mouseSpeed?.events, 4); // settings restored
+      expect(_config(c).mouseGestures.single.common.name, 'renamed'); // kept
+      expect(n.isSettingsDirty, isFalse);
+      expect(n.isGesturesDirty, isTrue);
+    });
+
+    test('discardGestures reverts gestures but keeps settings edits', () async {
+      final c = _makeContainer(seed);
+      final n = await ready(c)
+        ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
+        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
+        ..discardGestures();
+
+      expect(_config(c).mouseGestures.single.common.name, 'm1'); // restored
+      expect(_config(c).mouseSpeed?.events, 8); // kept
+      expect(n.isGesturesDirty, isFalse);
+      expect(n.isSettingsDirty, isTrue);
+    });
+  });
 }

@@ -41,31 +41,17 @@ class SchemaEditableField<T> {
   bool get isDirty => dirty.isDirty;
 
   TextEditingValue get textEditingValue =>
-      TextEditingValue(text: _formatTextValue(value));
+      TextEditingValue(text: adapter.format(value));
 
   void onTextChanged(TextEditingValue value) {
-    final parsed = _parseTextValue(value.text);
-    if (parsed == _invalidTextValue) return;
-    onChanged(parsed as T);
+    switch (adapter.parse(value.text)) {
+      case FieldParseAccepted<T>(value: final parsed):
+        onChanged(parsed);
+      case FieldParseRejected<T>():
+        break;
+    }
   }
-
-  String _formatTextValue(T value) => switch (adapter.kind) {
-    FieldAdapterKind.identity => value is String ? value : value.toString(),
-    FieldAdapterKind.nullableText => (value as String?) ?? '',
-    FieldAdapterKind.nullableInt => (value as int?)?.toString() ?? '',
-    FieldAdapterKind.nullableDouble => (value as double?)?.toString() ?? '',
-  };
-
-  Object? _parseTextValue(String value) => switch (adapter.kind) {
-    FieldAdapterKind.identity => value,
-    FieldAdapterKind.nullableText => value.isEmpty ? null : value,
-    FieldAdapterKind.nullableInt => value.isEmpty ? null : int.tryParse(value),
-    FieldAdapterKind.nullableDouble =>
-      value.isEmpty ? null : double.tryParse(value),
-  };
 }
-
-const Object _invalidTextValue = Object();
 
 extension FieldAccess on WidgetRef {
   EditableField<T> field<T>(

@@ -7,10 +7,13 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/app_state/app/window_title_provider.dart';
+import 'package:input_actions_editor/services/window_service.dart'
+    show windowServiceProvider;
+import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
 import 'package:kwin_blur/kwin_blur.dart';
-import 'package:window_manager/window_manager.dart';
 
 /// Persistent app shell: device sidebar + content area.
 ///
@@ -25,17 +28,38 @@ class MainShell extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // use the current mounted BuildContext.
+    final contextRef = useRef(context)..value = context;
+
     useEffect(() {
+      final windowSvc = ref.read(windowServiceProvider)
+        ..onCloseRequested = () async {
+          final controller = ref.read(configControllerProvider.notifier);
+          if (!controller.isDirty) return true;
+
+          final ctx = contextRef.value;
+          if (!ctx.mounted) return true;
+          final action = await showUnsavedChangesDialog(ctx);
+          if (action == null) return false;
+          if (action == UnsavedChangesAction.apply) {
+            await controller.save();
+          } else {
+            controller.discardChanges();
+          }
+          return true;
+        };
+
       ref
         // listens to dbus events and updates the history list
         ..read(recognitionHistoryProvider.notifier)
         // update window title with '*'
         ..listenManual<String>(
           windowTitleProvider,
-          (_, title) => unawaited(windowManager.setTitle(title)),
+          (_, title) => unawaited(windowSvc.setTitle(title)),
           fireImmediately: true,
         );
-      return null;
+
+      return () => windowSvc.onCloseRequested = null;
     }, const []);
 
     final transparent = ref.watch(

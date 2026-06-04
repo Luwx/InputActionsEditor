@@ -5,7 +5,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/ui/fields/editable_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 
 /// A compact form for editing all device rule properties.
 class DeviceRulePropertiesForm extends ConsumerWidget {

@@ -16,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_trigger_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/add_action_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// An alternative to [ActionsEditor]: a reorderable list of collapsible action
 /// rows. Collapsed rows show a one-line summary plus chips for any non-default
@@ -287,8 +288,9 @@ class _ActionRow extends ConsumerWidget {
       actionIndex: index,
     );
     final isDirty = ref.watch(actionDirtyProvider(actionLocation));
+    final l10n = context.l10n;
     final meta = actionMeta(triggerAction.action);
-    final chips = actionMetaChips(triggerAction);
+    final chips = actionMetaChips(triggerAction, l10n);
 
     return AnimatedContainer(
       duration: Durations.medium1,
@@ -364,6 +366,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
 
@@ -423,7 +426,7 @@ class _Header extends StatelessWidget {
                   UnsavedLabel(
                     isDirty: isDirty,
                     child: Text(
-                      actionRowTitle(triggerAction.action),
+                      actionRowTitle(triggerAction.action, l10n),
                       style: typography.sm.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -432,7 +435,7 @@ class _Header extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      actionValueSummary(triggerAction.action),
+                      actionValueSummary(triggerAction.action, l10n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: typography.sm.copyWith(

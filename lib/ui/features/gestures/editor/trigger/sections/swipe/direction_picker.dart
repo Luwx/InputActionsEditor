@@ -7,6 +7,8 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/direction_utils.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/direction_wheel_painter.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/enum_labels.dart';
 
 class DirectionPicker extends HookWidget {
   const DirectionPicker({
@@ -51,11 +53,12 @@ class DirectionPicker extends HookWidget {
     final colors = context.theme.colors;
     final active = activeSectors(direction);
     final isAny = direction == SwipeDirection.any;
+    final l10n = context.l10n;
     final displayLabel = hovered.value != null
         ? (hovered.value == 8
-              ? 'Any direction'
-              : directionLabel(kSectorDirs[hovered.value!]))
-        : directionLabel(direction);
+              ? l10n.swipeDirectionAny
+              : kSectorDirs[hovered.value!].label(l10n))
+        : direction.label(l10n);
 
     return Column(
       children: [

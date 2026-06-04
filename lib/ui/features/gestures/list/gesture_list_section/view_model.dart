@@ -15,6 +15,7 @@ final class _GestureListViewModel {
     required Set<String> collapsedGroups,
     required bool isMultiSelectMode,
     required int selectedCount,
+    required AppLocalizations l10n,
   }) {
     final flatItems = _buildFlatList(config, deviceFilter, collapsedGroups);
     final gestureCount = deviceFilter == null
@@ -24,10 +25,10 @@ final class _GestureListViewModel {
     return _GestureListViewModel(
       flatItems: flatItems,
       title: isMultiSelectMode
-          ? '$selectedCount selected'
+          ? l10n.multiSelectCount(selectedCount)
           : (deviceFilter == null
-                ? 'All gestures'
-                : gestureDeviceLabel(deviceFilter)),
+                ? l10n.sidebarAllDevices
+                : gestureDeviceLabel(deviceFilter, l10n)),
       countLabel: isMultiSelectMode
           ? null
           : '$gestureCount gesture${gestureCount == 1 ? '' : 's'}',
