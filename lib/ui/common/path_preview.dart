@@ -61,7 +61,7 @@ class PathPreview extends HookWidget {
       initialValue: animatePath ? 0 : 1,
     );
     final progress = useMemoized(
-      () => CurvedAnimation(parent: controller, curve: Curves.easeInOut),
+      () => CurvedAnimation(parent: controller, curve: Curves.easeInOutCubic),
       [controller],
     );
 
@@ -93,12 +93,11 @@ class PathPreview extends HookWidget {
     final prevAnimatePath = usePrevious(animatePath);
     if (prevPoints != null && !listEquals(prevPoints, points)) {
       syncAnimation(startFromZero: true);
-    } else if (prevAnimatePath != null) {
+    } else if (prevAnimatePath != null && prevAnimatePath != animatePath) {
       if (!prevAnimatePath && animatePath) {
         syncAnimation(startFromZero: true);
-      } else if (!animatePath && controller.value != 1) {
-        controller.value = 1;
       }
+      // true → false: no-op, let in-progress animation complete naturally
     }
 
     // Rebuild on animation tick.
