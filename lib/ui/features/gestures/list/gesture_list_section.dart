@@ -11,6 +11,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart'
     hide gestureCommon, gestureDisplayName, gestureTypeLabel;
 import 'package:input_actions_editor/model/gesture_group.dart';
@@ -182,7 +183,7 @@ class GestureListSection extends HookConsumerWidget {
       });
     }
 
-    void handleGestureAdded(DeviceType device, Object gesture) {
+    void handleGestureAdded(DeviceType device, Gesture gesture) {
       final config = ref.read(gestureListProvider).config;
       if (config == null) return;
       final existingGestures = config.gesturesForDevice(device);
@@ -193,9 +194,8 @@ class GestureListSection extends HookConsumerWidget {
           .where((g) => gestureTypeLabel(g, l10n) == typeLabel)
           .length;
       final defaultName = '$typeLabel #${sameTypeCount + 1}';
-      final named = gestureWithCommon(
-        gesture,
-        gestureCommon(gesture).copyWith(name: defaultName),
+      final named = gesture.withCommon(
+        gesture.common.copyWith(name: defaultName),
       );
       ref.read(gestureListProvider.notifier).addGesture(device, named);
       ref.read(addedGestureProvider.notifier).markAdded(newIndex);

@@ -18,7 +18,6 @@ import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchpa
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchscreen_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
@@ -72,7 +71,7 @@ class _GestureEditorView extends HookConsumerWidget {
       gestureEditorProvider(location).select((state) {
         final gesture = state.gesture;
         if (gesture == null) return null;
-        final common = gestureCommon(gesture);
+        final common = gesture.common;
         final typeLabel = gestureTypeLabel(gesture, l10n);
         return (
           name: (common.name?.isNotEmpty ?? false) ? common.name! : typeLabel,
@@ -297,8 +296,7 @@ class _MultiSelectPanel extends ConsumerWidget {
           for (final sel in selected) {
             final gestures = config.gesturesForDevice(sel.device);
             if (sel.index < 0 || sel.index >= gestures.length) continue;
-            final isEnabled =
-                gestureCommon(gestures[sel.index]).enabled != false;
+            final isEnabled = gestures[sel.index].common.enabled != false;
             if (isEnabled) {
               canDisable = true;
             } else {

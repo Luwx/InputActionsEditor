@@ -41,7 +41,7 @@ class StrokeRow extends StatelessWidget {
                   onTap: () => unawaited(_showDetail(context)),
                   child: StrokePreview(
                     strokeBase64: stroke,
-                    size: 150,
+                    size: 160,
                     startColor: colors.mutedForeground,
                     endColor: colors.primary,
                     surface: colors.secondary,

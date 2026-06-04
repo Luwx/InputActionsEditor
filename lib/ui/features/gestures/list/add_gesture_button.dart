@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' show Colors, Durations, Easing, Icons;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -23,7 +24,7 @@ class AddGestureButton extends StatelessWidget {
   });
 
   final DeviceType? deviceFilter;
-  final void Function(DeviceType device, Object gesture) onGestureAdded;
+  final void Function(DeviceType device, Gesture gesture) onGestureAdded;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +132,7 @@ class _AddGestureDialogContent extends StatefulWidget {
   });
 
   final Animation<double> dialogAnimation;
-  final void Function(DeviceType device, Object gesture) onGestureAdded;
+  final void Function(DeviceType device, Gesture gesture) onGestureAdded;
 
   @override
   State<_AddGestureDialogContent> createState() =>
@@ -277,7 +278,7 @@ typedef _TriggerEntry = ({
   String label,
   String description,
   IconData icon,
-  Object Function() factory,
+  Gesture Function() factory,
 });
 
 const _common = TriggerCommon();

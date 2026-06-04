@@ -10,11 +10,11 @@ List<_FlatItem> _buildFlatList(
     final groups = config.groupsForDevice(deviceFilter);
     final groupIdSet = groups.map((group) => group.id).toSet();
 
-    final grouped = <String, List<(int, Object)>>{};
-    final ungrouped = <(int, Object)>[];
+    final grouped = <String, List<(int, Gesture)>>{};
+    final ungrouped = <(int, Gesture)>[];
 
     for (final (index, gesture) in gestures.indexed) {
-      final groupId = gestureCommon(gesture).groupId;
+      final groupId = gesture.common.groupId;
       if (groupId != null && groupIdSet.contains(groupId)) {
         grouped.putIfAbsent(groupId, () => []).add((index, gesture));
       } else {

@@ -1,12 +1,11 @@
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart'
-    show gestureCommon;
 
 String gestureTypeLabel(Object gesture, AppLocalizations l10n) =>
     switch (gesture) {
@@ -51,8 +50,8 @@ String gestureDeviceNoun(DeviceType device, AppLocalizations l10n) =>
       DeviceType.touchscreen => l10n.deviceNounTouchscreen,
     };
 
-String gestureDisplayName(Object gesture, AppLocalizations l10n) {
-  final common = gestureCommon(gesture);
+String gestureDisplayName(Gesture gesture, AppLocalizations l10n) {
+  final common = gesture.common;
   if (common.name != null && common.name!.isNotEmpty) return common.name!;
   return gestureTypeLabel(gesture, l10n);
 }

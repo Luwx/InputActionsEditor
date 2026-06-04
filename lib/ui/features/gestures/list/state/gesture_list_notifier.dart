@@ -11,28 +11,28 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:meta/meta.dart';
 
 final gestureListProvider =
-    NotifierProvider<GestureListNotifier, GestureListVm>(
+    NotifierProvider<GestureListNotifier, GestureListState>(
       GestureListNotifier.new,
     );
 
 @immutable
-class GestureListVm {
-  const GestureListVm({required this.config});
+class GestureListState {
+  const GestureListState({required this.config});
 
   final Config? config;
 
   @override
   bool operator ==(Object other) =>
-      other is GestureListVm && other.config == config;
+      other is GestureListState && other.config == config;
 
   @override
   int get hashCode => config.hashCode;
 }
 
-class GestureListNotifier extends Notifier<GestureListVm> {
+class GestureListNotifier extends Notifier<GestureListState> {
   @override
-  GestureListVm build() {
-    return GestureListVm(
+  GestureListState build() {
+    return GestureListState(
       config: ref.watch(
         configControllerProvider.select((state) => state.value),
       ),
@@ -41,8 +41,8 @@ class GestureListNotifier extends Notifier<GestureListVm> {
 
   ConfigController get _config => ref.read(configControllerProvider.notifier);
 
-  void addGesture(DeviceType device, Object gesture) {
-    _config.add(AddGesture(device, gesture as Gesture));
+  void addGesture(DeviceType device, Gesture gesture) {
+    _config.add(AddGesture(device, gesture));
   }
 
   void duplicateGesture(DeviceType device, int index) {

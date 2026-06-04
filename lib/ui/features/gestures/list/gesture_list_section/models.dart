@@ -28,11 +28,11 @@ final class _GestureRowItem extends _FlatItem {
 
   final DeviceType device;
   final int configIndex;
-  final Object gesture;
+  final Gesture gesture;
   final int? localGroupIndex;
   final bool isLastInGroup;
   final bool isVisible;
 
-  String? get groupId => gestureCommon(gesture).groupId;
+  String? get groupId => gesture.common.groupId;
   bool get isFirstInGroup => localGroupIndex == 0;
 }

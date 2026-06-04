@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -15,7 +16,6 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
@@ -35,7 +35,7 @@ class GestureListTile extends ConsumerWidget {
 
   final DeviceType device;
   final int index;
-  final Object gesture;
+  final Gesture gesture;
   final int? newlyAddedMarkerId;
   final bool isSelected;
   final bool isMultiSelectMode;
@@ -50,7 +50,7 @@ class GestureListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final common = gestureCommon(gesture);
+    final common = gesture.common;
     final isDirty = ref.watch(
       gestureDirtyProvider(GestureLocation(device: device, index: index)),
     );
@@ -182,7 +182,7 @@ class GestureListTile extends ConsumerWidget {
 /// Amber/orange accent used to flag gestures that conflict with others.
 /// forui's zinc theme has no dedicated warning colour, so this is a fixed
 /// value that reads well on both light and dark backgrounds.
-String _summary(Object g) {
+String _summary(Gesture g) {
   final parts = <String>[];
   switch (g) {
     // Mouse
@@ -217,7 +217,7 @@ String _summary(Object g) {
   if (g is MouseGesture && g.common.mouseButtons.isNotEmpty) {
     parts.add(g.common.mouseButtons.map((b) => b.toYaml()).join('+'));
   }
-  final common = gestureCommon(g);
+  final common = g.common;
   if (common.id != null) parts.add('#${common.id}');
   return parts.join(' · ');
 }

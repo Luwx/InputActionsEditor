@@ -1,33 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/keyboard_gesture.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/model/pointer_gesture.dart';
-import 'package:input_actions_editor/model/touchpad_gesture.dart';
-import 'package:input_actions_editor/model/touchscreen_gesture.dart';
-import 'package:input_actions_editor/model/trigger_common.dart';
 
 const Color kGestureWarningColor = Color(0xFFF59E0B);
-
-TriggerCommon gestureCommon(Object gesture) => switch (gesture) {
-  MouseGesture(:final common) => common,
-  KeyboardGesture(:final common) => common,
-  PointerGesture(:final common) => common,
-  TouchpadGesture(:final common) => common,
-  TouchscreenGesture(:final common) => common,
-  _ => const TriggerCommon(),
-};
-
-Object gestureWithCommon(Object gesture, TriggerCommon common) =>
-    switch (gesture) {
-      MouseGesture() => gesture.withCommon(common),
-      KeyboardGesture() => gesture.withCommon(common),
-      PointerGesture() => gesture.withCommon(common),
-      TouchpadGesture() => gesture.withCommon(common),
-      TouchscreenGesture() => gesture.withCommon(common),
-      _ => gesture,
-    };
 
 /// Returns the first gesture that would appear in the flat gesture list for
 /// [filter], following the same ordering as `_buildFlatList` (groups before
@@ -49,7 +24,7 @@ Object gestureWithCommon(Object gesture, TriggerCommon common) =>
     final ungrouped = <int>[];
 
     for (final (index, gesture) in gestures.indexed) {
-      final groupId = gestureCommon(gesture).groupId;
+      final groupId = gesture.common.groupId;
       if (groupId != null && groupIdSet.contains(groupId)) {
         grouped.putIfAbsent(groupId, () => []).add(index);
       } else {
