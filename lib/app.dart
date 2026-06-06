@@ -63,7 +63,12 @@ class App extends ConsumerWidget {
           // mouse buttons be recorded instead of navigating the app.
           if (ref.read(isInputRecordingProvider)) return;
           if (e.buttons & kBackMouseButton != 0) {
-            await _handleMouseBack(context, ref);
+            final navigator =
+                ref.read(appRouterDelegateProvider).navigatorKey.currentState;
+            final didPop = await navigator?.maybePop() ?? false;
+            if (!didPop && context.mounted) {
+              await _handleMouseBack(context, ref);
+            }
           } else if (e.buttons & kForwardMouseButton != 0) {
             ref.read(navProvider.notifier).forward();
           }
