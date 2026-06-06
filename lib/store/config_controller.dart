@@ -44,11 +44,11 @@ class ConfigController extends AsyncNotifier<Config> {
     return config != saved;
   }
 
-    /// Dirty only for settings part (not gesture part).
+  /// Dirty only for settings part (not gesture part).
   bool get isSettingsDirty =>
       settingsDirtyState(state.value, savedConfig).isDirty;
 
-    /// Dirty only for gesture part. Mirror of [isSettingsDirty].
+  /// Dirty only for gesture part. Mirror of [isSettingsDirty].
   bool get isGesturesDirty =>
       gesturesDirtyState(state.value, savedConfig).isDirty;
 

@@ -292,10 +292,13 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
   return switch (action) {
     CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
     InputAction(:final entries) when entries.isEmpty => '(empty)',
-    InputAction(:final entries) => entries.map((e) {
-        final seq = inputEntrySummary(e, l10n);
-        return '${e.device.name} $seq';
-      }).join(' · '),
+    InputAction(:final entries) =>
+      entries
+          .map((e) {
+            final seq = inputEntrySummary(e, l10n);
+            return '${e.device.name} $seq';
+          })
+          .join(' · '),
     PlasmaShortcutAction(:final shortcut) =>
       shortcut.isEmpty ? 'plasma shortcut' : shortcut,
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',

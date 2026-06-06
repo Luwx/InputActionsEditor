@@ -123,9 +123,9 @@ class DeviceSidebar extends HookConsumerWidget {
                                       title: Text(l10n.configSaveSuccess),
                                       suffixBuilder: (context, entry) =>
                                           FButton.icon(
-                                        onPress: entry.dismiss,
-                                        child: const Icon(FLucideIcons.x),
-                                      ),
+                                            onPress: entry.dismiss,
+                                            child: const Icon(FLucideIcons.x),
+                                          ),
                                       duration: const Duration(seconds: 3),
                                     );
                                   },

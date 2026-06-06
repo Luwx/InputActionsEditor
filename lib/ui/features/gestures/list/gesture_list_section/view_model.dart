@@ -1,6 +1,5 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-
 final class _GestureListViewModel extends Equatable {
   const _GestureListViewModel({
     required this.flatItems,
@@ -45,7 +44,6 @@ final class _GestureListViewModel extends Equatable {
   final int gestureCount;
   final bool reorderEnabled;
   final DeviceType? deviceFilter;
-
 
   final Set<String> disabledGroupIds;
 

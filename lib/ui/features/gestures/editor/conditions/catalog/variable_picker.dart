@@ -222,7 +222,7 @@ class _VariableItem extends StatelessWidget {
     return FTooltip(
       tipBuilder: (context, controller) => Text(
         '${info.localizedLabel(context.l10n)}\n'
-            'Type: ${info.type.typeName(context.l10n)}',
+        'Type: ${info.type.typeName(context.l10n)}',
       ),
       child: FItem(
         prefix: _TypeBadge(type: info.type, typography: typography),
