@@ -9,7 +9,8 @@ import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
-import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart'
+    show savedGestureProvider;
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
@@ -34,7 +35,7 @@ abstract class GestureEditorState with _$GestureEditorState {
     required Gesture? gesture,
     required TriggerCommon? common,
     required DirtyMarkState triggerDirtyState,
-    required TriggerCommon? savedCommon,
+    required Gesture? savedGesture,
   }) = _GestureEditorState;
 
   const GestureEditorState._();
@@ -59,13 +60,13 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
     final triggerDirtyState = ref.watch(
       gestureTriggerConfigDirtyStateProvider(location),
     );
-    final savedCommon = ref.watch(savedGestureCommonProvider(location));
+    final savedGesture = ref.watch(savedGestureProvider(location));
     return GestureEditorState(
       location: location,
       gesture: gesture,
       common: gesture?.common,
       triggerDirtyState: triggerDirtyState,
-      savedCommon: savedCommon,
+      savedGesture: savedGesture,
     );
   }
 
@@ -110,22 +111,19 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   void updateMouse(MouseGesture Function(MouseGesture) update) =>
       updateGesture((g) => update(g as MouseGesture));
 
-  void revertTriggerConfig(TriggerCommon saved) {
-    updateCommon(
-      (current) => current.copyWith(
-        mouseButtons: saved.mouseButtons,
-        mouseButtonsExactOrder: saved.mouseButtonsExactOrder,
-        conditions: saved.conditions,
-        id: saved.id,
-        threshold: saved.threshold,
-        resumeTimeout: saved.resumeTimeout,
-        accelerated: saved.accelerated,
-        blockEvents: saved.blockEvents,
-        clearModifiers: saved.clearModifiers,
-        setLastTrigger: saved.setLastTrigger,
-        endConditions: saved.endConditions,
-      ),
-    );
+  void revertTriggerConfig(Gesture saved) {
+    updateGesture((g) {
+      final current = g as Gesture;
+      return saved.withCommon(
+        saved.common.copyWith(
+          name: current.common.name,
+          enabled: current.common.enabled,
+          groupId: current.common.groupId,
+          editId: current.common.editId,
+          actions: current.common.actions,
+        ),
+      );
+    });
   }
 
   void undo() => _config.undo(scope: location);

@@ -116,15 +116,20 @@ gestureSectionDirtyStateProvider =
 final ProviderFamily<DirtyMarkState, GestureLocation>
 gestureTriggerConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, GestureLocation>((ref, location) {
-      final current = gestureAt(
+      final currentGesture = gestureAt(
         ref.watch(configControllerProvider).value,
         location,
-      )?.common;
+      );
       final savedGesture = gestureAt(ref.watch(savedConfigProvider), location);
-      final saved = savedGesture?.common;
       return dirtyMarkState(
-        current: comparableTriggerConfigValue(current),
-        saved: comparableTriggerConfigValue(saved),
+        current: [
+          comparableTriggerConfigValue(currentGesture?.common),
+          comparableGestureTypeValue(currentGesture),
+        ],
+        saved: [
+          comparableTriggerConfigValue(savedGesture?.common),
+          comparableGestureTypeValue(savedGesture),
+        ],
         hasSavedBacking: savedGesture != null,
       );
     });

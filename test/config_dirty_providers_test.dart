@@ -228,6 +228,164 @@ void main() {
       );
     });
 
+    group('gestureTriggerConfigDirtyState', () {
+      const location = GestureLocation(device: DeviceType.mouse, index: 0);
+
+      test(
+        'is changedFromSaved when swipe mode changes direction→angle',
+        () async {
+          const savedConfig = Config(
+            mouseGestures: [
+              SwipeGesture(
+                common: TriggerCommon(),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
+            ],
+          );
+          const currentConfig = Config(
+            mouseGestures: [
+              SwipeGesture(
+                common: TriggerCommon(),
+                mode: SwipeMode.angle(minAngle: 0, maxAngle: 90),
+              ),
+            ],
+          );
+
+          final container = _containerWith(
+            current: currentConfig,
+            saved: savedConfig,
+          );
+          addTearDown(container.dispose);
+          await container.read(configControllerProvider.future);
+
+          expect(
+            container.read(gestureTriggerConfigDirtyStateProvider(location)),
+            DirtyMarkState.changedFromSaved,
+          );
+        },
+      );
+
+      test('is changedFromSaved when swipe direction changes', () async {
+        const savedConfig = Config(
+          mouseGestures: [
+            SwipeGesture(
+              common: TriggerCommon(),
+              mode: SwipeMode.direction(direction: SwipeDirection.right),
+            ),
+          ],
+        );
+        const currentConfig = Config(
+          mouseGestures: [
+            SwipeGesture(
+              common: TriggerCommon(),
+              mode: SwipeMode.direction(direction: SwipeDirection.left),
+            ),
+          ],
+        );
+
+        final container = _containerWith(
+          current: currentConfig,
+          saved: savedConfig,
+        );
+        addTearDown(container.dispose);
+        await container.read(configControllerProvider.future);
+
+        expect(
+          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          DirtyMarkState.changedFromSaved,
+        );
+      });
+
+      test('is clean when swipe mode is identical to saved', () async {
+        const config = Config(
+          mouseGestures: [
+            SwipeGesture(
+              common: TriggerCommon(),
+              mode: SwipeMode.direction(direction: SwipeDirection.right),
+            ),
+          ],
+        );
+
+        final container = _containerWith(current: config, saved: config);
+        addTearDown(container.dispose);
+        await container.read(configControllerProvider.future);
+
+        expect(
+          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          DirtyMarkState.clean,
+        );
+      });
+
+      test('is changedFromSaved when a TriggerCommon field changes', () async {
+        const savedConfig = Config(
+          mouseGestures: [
+            SwipeGesture(
+              common: TriggerCommon(threshold: '5'),
+              mode: SwipeMode.direction(direction: SwipeDirection.right),
+            ),
+          ],
+        );
+        const currentConfig = Config(
+          mouseGestures: [
+            SwipeGesture(
+              common: TriggerCommon(threshold: '10'),
+              mode: SwipeMode.direction(direction: SwipeDirection.right),
+            ),
+          ],
+        );
+
+        final container = _containerWith(
+          current: currentConfig,
+          saved: savedConfig,
+        );
+        addTearDown(container.dispose);
+        await container.read(configControllerProvider.future);
+
+        expect(
+          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          DirtyMarkState.changedFromSaved,
+        );
+      });
+
+      test(
+        'is clean when only action changes (actions are excluded)',
+        () async {
+          const savedConfig = Config(
+            mouseGestures: [
+              SwipeGesture(
+                common: TriggerCommon(
+                  actions: [TriggerAction(action: CommandAction(command: 'a'))],
+                ),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
+            ],
+          );
+          const currentConfig = Config(
+            mouseGestures: [
+              SwipeGesture(
+                common: TriggerCommon(
+                  actions: [TriggerAction(action: CommandAction(command: 'b'))],
+                ),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
+            ],
+          );
+
+          final container = _containerWith(
+            current: currentConfig,
+            saved: savedConfig,
+          );
+          addTearDown(container.dispose);
+          await container.read(configControllerProvider.future);
+
+          expect(
+            container.read(gestureTriggerConfigDirtyStateProvider(location)),
+            DirtyMarkState.clean,
+          );
+        },
+      );
+    });
+
     test(
       'gesture becomes clean when block events is toggled back to default',
       () async {

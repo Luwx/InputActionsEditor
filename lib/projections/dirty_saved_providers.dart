@@ -6,6 +6,7 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -15,6 +16,11 @@ final savedConfigProvider = Provider<Config?>((ref) {
   ref.watch(configControllerProvider);
   return ref.read(configControllerProvider.notifier).savedConfig;
 });
+
+final ProviderFamily<Gesture?, GestureLocation> savedGestureProvider =
+    Provider.family<Gesture?, GestureLocation>(
+      (ref, location) => gestureAt(ref.watch(savedConfigProvider), location),
+    );
 
 final ProviderFamily<TriggerCommon?, GestureLocation>
 savedGestureCommonProvider = Provider.family<TriggerCommon?, GestureLocation>(

@@ -30,8 +30,8 @@ class GestureEditorLayout extends ConsumerWidget {
     final triggerDirtyState = ref.watch(
       gestureEditorProvider(location).select((s) => s.triggerDirtyState),
     );
-    final savedCommon = ref.watch(
-      gestureEditorProvider(location).select((s) => s.savedCommon),
+    final savedGesture = ref.watch(
+      gestureEditorProvider(location).select((s) => s.savedGesture),
     );
     final notifier = ref.read(gestureEditorProvider(location).notifier);
 
@@ -43,9 +43,9 @@ class GestureEditorLayout extends ConsumerWidget {
             sections: sections,
             hasAdvanced: hasAdvanced,
             dirtyState: triggerDirtyState,
-            onRevert: savedCommon == null
+            onRevert: savedGesture == null
                 ? null
-                : () => notifier.revertTriggerConfig(savedCommon),
+                : () => notifier.revertTriggerConfig(savedGesture),
           ),
           const SizedBox(height: 16),
           const ActionListEditor(),
