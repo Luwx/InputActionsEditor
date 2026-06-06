@@ -63,28 +63,18 @@ extension FieldAccess on WidgetRef {
     bool Function(Config config)? canRead,
   }) {
     final controller = read(configControllerProvider.notifier);
-    final readable = watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        return config != null && (canRead == null || canRead(config));
-      }),
+    final result = watch(
+      configControllerProvider.select(
+        (state) => _readLens(state, lens, canRead),
+      ),
     );
-    final selected = watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        if (config == null || (canRead != null && !canRead(config))) {
-          return null;
-        }
-        return lens.get(config);
-      }),
-    );
-    if (!readable && fallbackValue == null) {
+    if (!result.readable && fallbackValue == null) {
       throw StateError(
         'No config value or fallback available for field ${lens.name}',
       );
     }
     final dirtyState = dirty ?? watch(lensDirtyStateProvider(lens))!;
-    final value = readable ? selected as T : fallbackValue!();
+    final value = result.readable ? result.value as T : fallbackValue!();
     return EditableField<T>(
       value: value,
       dirty: dirtyState,
@@ -117,4 +107,18 @@ extension FieldAccess on WidgetRef {
       adapter: field.adapter,
     );
   }
+}
+
+({bool readable, T? value}) _readLens<T>(
+  AsyncValue<Config> state,
+  Lens<T> lens,
+  bool Function(Config config)? canRead,
+) {
+  final config = state.value;
+  if (config == null ||
+      !lens.canGet(config) ||
+      (canRead != null && !canRead(config))) {
+    return (readable: false, value: null);
+  }
+  return (readable: true, value: lens.get(config));
 }

@@ -12,7 +12,7 @@ import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/settings_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation;
+    show ActionLocation, GestureLocation, actionComponentField;
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -244,6 +244,32 @@ void main() {
       const empty = Config();
       expect(AddAction(loc, sleep(9)).apply(empty), empty);
       expect(RemoveAction(loc, 0).apply(empty), empty);
+    });
+
+    // A subtype lens (`Action` -> `PlasmaShortcutAction`) must report itself
+    // as unreadable when the action is a different union member, rather than
+    // letting the `as` cast throw. This keeps revert/discard/undo from crashing
+    // a still-mounted plasma field after the action type was changed.
+    test('subtype lens canGet narrows by union member', () {
+      const actionLoc = ActionLocation(gesture: loc, actionIndex: 0);
+      final componentLens = actionComponentField.lens(actionLoc);
+
+      Config withAction(Action action) => Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(actions: [TriggerAction(action: action)]),
+          ),
+        ],
+      );
+
+      final input = withAction(const Action.input());
+      expect(componentLens.canGet(input), isFalse);
+
+      final plasma = withAction(
+        const Action.plasmaShortcut(component: 'kwin', shortcut: 'Overview'),
+      );
+      expect(componentLens.canGet(plasma), isTrue);
+      expect(componentLens.get(plasma), 'kwin');
     });
   });
 
