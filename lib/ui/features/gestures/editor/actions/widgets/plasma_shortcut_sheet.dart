@@ -67,13 +67,14 @@ class _PlasmaShortcutSheetPickerState
         currentShortcut;
 
     Future<void> openSheet() async {
+      final container = ProviderScope.containerOf(context);
       await showFSheet<void>(
         context: context,
         side: FLayout.rtl,
         mainAxisMaxRatio: null,
         draggable: false,
         builder: (sheetContext) => UncontrolledProviderScope(
-          container: ProviderScope.containerOf(context),
+          container: container,
           child: _ShortcutPickerSheet(
             initialComponent: currentComponent,
             initialShortcut: currentShortcut,
@@ -275,6 +276,14 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
                   context.l10n.plasmaShortcutPickerCombinedLabel,
                   style: typography.md.copyWith(fontWeight: FontWeight.w600),
                 ),
+                const Spacer(),
+                FButton.icon(
+                  variant: .ghost,
+                  size: .xs,
+                  onPress: () => Navigator.of(context).pop(),
+                  child: const Icon(FLucideIcons.x),
+                ),
+                const SizedBox(width: 8),
               ],
             ),
             const SizedBox(height: 8),
