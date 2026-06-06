@@ -131,6 +131,14 @@ class DeviceSidebar extends HookConsumerWidget {
                                   },
                                 ),
                                 .item(
+                                  prefix: const Icon(FLucideIcons.filePlus),
+                                  title: Text(l10n.actionSaveAs),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    await configController.saveAs();
+                                  },
+                                ),
+                                .item(
                                   prefix: const Icon(FLucideIcons.undo2),
                                   title: Text(l10n.actionDiscardChanges),
                                   enabled: canDiscard,

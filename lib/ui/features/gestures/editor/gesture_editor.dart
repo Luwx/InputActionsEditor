@@ -141,9 +141,6 @@ class _GestureEditorView extends HookConsumerWidget {
                     duration: const Duration(seconds: 3),
                   );
                 },
-                onSaveAs: () async {
-                  await ref.read(configControllerProvider.notifier).saveAs();
-                },
                 onDelete: () {
                   context.clearGestureSelection();
                   gestureEditor.delete();
@@ -400,7 +397,6 @@ class _GestureHeaderMenu extends StatelessWidget {
     required this.onDuplicate,
     required this.onCopyYaml,
     required this.onDelete,
-    required this.onSaveAs,
   });
 
   final bool isEnabled;
@@ -409,7 +405,6 @@ class _GestureHeaderMenu extends StatelessWidget {
   final VoidCallback onDuplicate;
   final Future<void> Function() onCopyYaml;
   final VoidCallback onDelete;
-  final Future<void> Function() onSaveAs;
 
   @override
   Widget build(BuildContext context) {
@@ -465,14 +460,6 @@ class _GestureHeaderMenu extends StatelessWidget {
               onPress: () async {
                 await controller.hide();
                 await onCopyYaml();
-              },
-            ),
-            .item(
-              prefix: const Icon(FLucideIcons.filePlus),
-              title: Text(context.l10n.actionSaveAs),
-              onPress: () async {
-                await controller.hide();
-                await onSaveAs();
               },
             ),
             .item(
