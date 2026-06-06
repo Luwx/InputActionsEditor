@@ -46,9 +46,10 @@ class ConflictReport extends Equatable {
 
 class ConflictReportNotifier extends Notifier<ConflictReport> {
   @visibleForTesting
-  Duration debounce = const Duration(milliseconds: 300);
+  Duration interval = const Duration(milliseconds: 300);
 
   Timer? _timer;
+  final _sinceLastRun = Stopwatch();
 
   @override
   ConflictReport build() {
@@ -56,7 +57,7 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
     // control the cadence instead of tracking the config one-for-one.
     ref
       ..onDispose(() => _timer?.cancel())
-      ..listen(configControllerProvider, (_, _) => _schedule());
+      ..listen(configControllerProvider, (_, _) => _onConfigChanged());
     return _compute();
   }
 
@@ -67,12 +68,23 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
         : ConflictReport(detectConflicts(config));
   }
 
-  void _schedule() {
-    _timer?.cancel();
-    _timer = Timer(debounce, () {
-      _timer = null;
-      state = _compute();
-    });
+
+  void _onConfigChanged() {
+    if (_timer != null) return; // a trailing run is already pending
+    final elapsed = _sinceLastRun.isRunning ? _sinceLastRun.elapsed : interval;
+    if (elapsed >= interval) {
+      _run();
+    } else {
+      _timer = Timer(interval - elapsed, _run);
+    }
+  }
+
+  void _run() {
+    _timer = null;
+    _sinceLastRun
+      ..reset()
+      ..start();
+    state = _compute();
   }
 }
 
