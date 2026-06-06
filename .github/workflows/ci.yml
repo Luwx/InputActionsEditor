@@ -6,7 +6,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -23,9 +23,8 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-14-dev \
-            qt6-base-dev extra-cmake-modules \
-            libkf6iconthemes-dev libkf6service-dev
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            qt6-base-dev
 
       - name: Flutter pub get
         run: flutter pub get
