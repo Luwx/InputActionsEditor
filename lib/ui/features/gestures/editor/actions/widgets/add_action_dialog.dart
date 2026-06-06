@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
+import 'package:input_actions_editor/ui/common/plasma_icons.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 Future<Action?> showAddActionDialog(BuildContext context) {
@@ -61,7 +62,7 @@ enum _ActionKind {
   IconData get icon => switch (this) {
     _ActionKind.command => Icons.terminal,
     _ActionKind.input => Icons.keyboard_alt_outlined,
-    _ActionKind.plasmaShortcut => Icons.flash_on_outlined,
+    _ActionKind.plasmaShortcut => PlasmaIcons.plasma,
     _ActionKind.sleep => Icons.schedule_outlined,
     _ActionKind.raw => Icons.code_outlined,
   };

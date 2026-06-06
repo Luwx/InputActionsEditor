@@ -10,6 +10,7 @@
 //  - the default-device-by-condition rule stays a hand-written escape hatch
 //    (see config_tree_extra.dart).
 
+import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -26,7 +27,6 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:lens_geneartor/lens_geneartor.dart';
 
 part 'edit_schema.g.dart';
 

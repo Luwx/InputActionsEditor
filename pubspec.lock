@@ -185,6 +185,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.13"
+  edit_schema_generator:
+    dependency: "direct main"
+    description:
+      path: edit_schema_generator
+      ref: HEAD
+      resolved-ref: "767b7ff5d15db9490815da84c9c95a671105fae7"
+      url: "https://github.com/Luwx/dart_generators"
+    source: git
+    version: "0.0.1"
   equatable:
     dependency: "direct main"
     description:
@@ -464,13 +473,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  lens_geneartor:
-    dependency: "direct main"
-    description:
-      path: "../../flutter_pkg/lens_geneartor"
-      relative: true
-    source: path
-    version: "0.0.1"
   lints:
     dependency: transitive
     description:
@@ -514,9 +516,11 @@ packages:
   meta_generator:
     dependency: "direct main"
     description:
-      path: "../../flutter_pkg/meta_generator"
-      relative: true
-    source: path
+      path: meta_generator
+      ref: HEAD
+      resolved-ref: "767b7ff5d15db9490815da84c9c95a671105fae7"
+      url: "https://github.com/Luwx/dart_generators"
+    source: git
     version: "0.1.0"
   mime:
     dependency: transitive

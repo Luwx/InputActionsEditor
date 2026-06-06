@@ -1,3 +1,4 @@
+import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
@@ -6,7 +7,6 @@ import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
-import 'package:lens_geneartor/lens_geneartor.dart';
 
 class EditableField<T> {
   const EditableField({

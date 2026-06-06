@@ -11,6 +11,7 @@
 // Everything else lives in config_tree.dart. Together these two files replace
 // the former flat schema forest.
 
+import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -21,7 +22,6 @@ import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
-import 'package:lens_geneartor/lens_geneartor.dart';
 
 part 'edit_schema_extra.g.dart';
 

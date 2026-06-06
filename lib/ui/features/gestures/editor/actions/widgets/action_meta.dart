@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/ui/common/plasma_icons.dart';
 
 class ActionMetaInfo {
   const ActionMetaInfo({
@@ -29,7 +30,7 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
       PlasmaShortcutAction() => ActionMetaInfo(
         label: l10n.actionMetaPlasmaLabel,
         subtitle: l10n.actionMetaPlasmaSubtitle,
-        icon: Icons.flash_on_outlined,
+        icon: PlasmaIcons.plasma,
       ),
       SleepAction() => ActionMetaInfo(
         label: l10n.actionMetaSleepLabel,

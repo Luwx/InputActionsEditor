@@ -68,10 +68,14 @@ dependencies:
   window_manager: ^0.5.1
   equatable: ^2.0.8
   meta: ^1.18.0
-  lens_geneartor:
-    path: ../../flutter_pkg/lens_geneartor
+  edit_schema_generator:
+    git:
+      url: https://github.com/Luwx/dart_generators
+      path: edit_schema_generator
   meta_generator:
-    path: ../../flutter_pkg/meta_generator
+    git:
+      url: https://github.com/Luwx/dart_generators
+      path: meta_generator
   flutter_hooks: ^0.21.3+1
   hooks_riverpod: ^3.3.1
 dev_dependencies:
@@ -105,6 +109,11 @@ flutter:
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
+
+  fonts:
+    - family: PlasmaIcons
+      fonts:
+        - asset: assets/fonts/PlasmaIcons.ttf
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
