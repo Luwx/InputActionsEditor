@@ -350,7 +350,7 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-class _Header extends ConsumerWidget {
+class _Header extends HookConsumerWidget {
   const _Header({
     required this.index,
     required this.actionLocation,
@@ -369,6 +369,7 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isTitleHovered = useState(false);
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
@@ -382,101 +383,115 @@ class _Header extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.grab,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 8,
-                    ),
-                    child: Icon(
-                      FLucideIcons.gripVertical,
-                      size: 14,
-                      color: colors.mutedForeground.withValues(alpha: 0.45),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${index + 1}',
-                    style: context.theme.typography.xs,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onToggle,
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: colors.secondary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      meta.icon,
-                      size: 17,
-                      color: colors.secondaryForeground,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  UnsavedLabel(
-                    isDirty: isDirty,
-                    child: Text(
-                      actionRowTitle(action.action, l10n),
-                      style: typography.sm.copyWith(
-                        fontWeight: FontWeight.w700,
+      child: MouseRegion(
+        onEnter: (_) => isTitleHovered.value = true,
+        onExit: (_) => isTitleHovered.value = false,
+        child: Row(
+          children: [
+            ReorderableDragStartListener(
+              index: index,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.grab,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
+                      child: Icon(
+                        FLucideIcons.gripVertical,
+                        size: 14,
+                        color: colors.mutedForeground.withValues(alpha: 0.45),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      actionValueSummary(action.action, l10n),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.sm.copyWith(
-                        color: colors.mutedForeground,
-                      ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${index + 1}',
+                      style: context.theme.typography.xs,
                     ),
-                  ),
-                  if (chips.isNotEmpty) ...[
-                    const SizedBox(width: 14),
-                    _MetaChips(chips: chips),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          FButton.icon(
-            variant: .ghost,
-            onPress: onToggle,
-            child: Icon(
-              expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+            const SizedBox(width: 4),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggle,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: colors.secondary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        meta.icon,
+                        size: 17,
+                        color: colors.secondaryForeground,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    UnsavedLabel(
+                      isDirty: isDirty,
+                      child: Text(
+                        actionRowTitle(action.action, l10n),
+                        style: typography.sm.copyWith(
+                          fontWeight: FontWeight.w700,
+                          decoration: isTitleHovered.value
+                              ? TextDecoration.underline
+                              : TextDecoration.none,
+                          decorationColor: colors.foreground.withValues(
+                            alpha: 0.5,
+                          ),
+                          decorationThickness: 2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        actionValueSummary(action.action, l10n),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.sm.copyWith(
+                          color: colors.mutedForeground,
+                        ),
+                      ),
+                    ),
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(width: 14),
+                      _MetaChips(chips: chips),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
-          FButton.icon(
-            variant: .ghost,
-            onPress: onDelete,
-            child: const Icon(FLucideIcons.trash),
-          ),
-          // TODO(me): disable checkbox
-          // const FCheckbox(),
-        ],
+            const SizedBox(width: 8),
+            FButton.icon(
+              variant: .ghost,
+              onPress: onToggle,
+              child: Icon(
+                expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+              ),
+            ),
+            FButton.icon(
+              variant: .ghost,
+              onPress: onDelete,
+              child: const Icon(FLucideIcons.trash),
+            ),
+            // TODO(me): disable checkbox
+            const FCheckbox(
+              value: true,
+              enabled: false,
+            ),
+          ],
+        ),
       ),
     );
   }
