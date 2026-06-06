@@ -114,8 +114,11 @@ FThemeData _withAppChromeStyle(
   required bool transparentSidebar,
 }) {
   final colors = baseTheme.colors;
+  final hoverColor = colors.primary.withValues(alpha: 0.14);
+  final pressedColor = colors.primary.withValues(alpha: 0.30);
   final selectedColor = colors.primary.withValues(alpha: 0.18);
-  final pressedSelectedColor = colors.primary.withValues(alpha: 0.24);
+  final selectedHoverColor = colors.primary.withValues(alpha: 0.38);
+  final selectedPressedColor = colors.primary.withValues(alpha: 0.34);
 
   return baseTheme.copyWith(
     scaffoldStyle: transparentSidebar
@@ -135,11 +138,11 @@ FThemeData _withAppChromeStyle(
                 backgroundColor: FVariants(
                   Colors.transparent,
                   variants: {
+                    [.hovered]: hoverColor,
+                    [.pressed]: pressedColor,
                     [.selected]: selectedColor,
-                    [
-                      .selected.and(.hovered),
-                      .selected.and(.pressed),
-                    ]: pressedSelectedColor,
+                    [.selected.and(.hovered)]: selectedHoverColor,
+                    [.selected.and(.pressed)]: selectedPressedColor,
                     [.disabled]: Colors.transparent,
                   },
                 ),

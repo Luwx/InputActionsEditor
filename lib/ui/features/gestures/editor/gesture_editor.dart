@@ -18,7 +18,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchpa
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchscreen_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
-import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -141,6 +141,9 @@ class _GestureEditorView extends HookConsumerWidget {
                     duration: const Duration(seconds: 3),
                   );
                 },
+                onSaveAs: () async {
+                  await ref.read(configControllerProvider.notifier).saveAs();
+                },
                 onDelete: () {
                   context.clearGestureSelection();
                   gestureEditor.delete();
@@ -172,6 +175,7 @@ class _GestureEditorView extends HookConsumerWidget {
         SingleActivator(LogicalKeyboardKey.keyZ, control: true, shift: true):
             _RedoIntent(),
         SingleActivator(LogicalKeyboardKey.keyY, control: true): _RedoIntent(),
+        SingleActivator(LogicalKeyboardKey.keyS, control: true): _SaveIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -184,6 +188,22 @@ class _GestureEditorView extends HookConsumerWidget {
           _RedoIntent: CallbackAction<_RedoIntent>(
             onInvoke: (_) {
               gestureEditor.redo();
+              return null;
+            },
+          ),
+          _SaveIntent: CallbackAction<_SaveIntent>(
+            onInvoke: (_) async {
+              await ref.read(configControllerProvider.notifier).save();
+              if (!context.mounted) return null;
+              showFToast(
+                context: context,
+                title: Text(context.l10n.configSaveSuccess),
+                suffixBuilder: (context, entry) => FButton.icon(
+                  onPress: entry.dismiss,
+                  child: const Icon(FLucideIcons.x),
+                ),
+                duration: const Duration(seconds: 3),
+              );
               return null;
             },
           ),
@@ -256,17 +276,21 @@ class _RedoIntent extends Intent {
   const _RedoIntent();
 }
 
+class _SaveIntent extends Intent {
+  const _SaveIntent();
+}
+
 class _MultiSelectPanel extends ConsumerWidget {
   const _MultiSelectPanel({required this.selected});
 
   final Set<GestureLocation> selected;
 
   void _enable(WidgetRef ref) {
-    ref.read(gestureListProvider.notifier).enableGestures(selected);
+    ref.read(gestureCommandsProvider).enableGestures(selected);
   }
 
   void _disable(WidgetRef ref) {
-    ref.read(gestureListProvider.notifier).disableGestures(selected);
+    ref.read(gestureCommandsProvider).disableGestures(selected);
   }
 
   void _delete(BuildContext context, WidgetRef ref) {
@@ -274,7 +298,7 @@ class _MultiSelectPanel extends ConsumerWidget {
     for (final s in selected) {
       byDevice.putIfAbsent(s.device, () => []).add(s.index);
     }
-    final listNotifier = ref.read(gestureListProvider.notifier);
+    final listNotifier = ref.read(gestureCommandsProvider);
     for (final entry in byDevice.entries) {
       final indices = entry.value..sort();
       for (final i in indices.reversed) {
@@ -376,6 +400,7 @@ class _GestureHeaderMenu extends StatelessWidget {
     required this.onDuplicate,
     required this.onCopyYaml,
     required this.onDelete,
+    required this.onSaveAs,
   });
 
   final bool isEnabled;
@@ -384,21 +409,17 @@ class _GestureHeaderMenu extends StatelessWidget {
   final VoidCallback onDuplicate;
   final Future<void> Function() onCopyYaml;
   final VoidCallback onDelete;
+  final Future<void> Function() onSaveAs;
 
   @override
   Widget build(BuildContext context) {
-    return FPopover(
-      builder: (context, controller, child) => FButton(
-        variant: .outline,
-        size: .sm,
-        onPress: controller.toggle,
-        child: child,
-      ),
-      popoverBuilder: (context, controller) => ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-        child: FItemGroup(
+    return FPopoverMenu(
+      menuAnchor: .topLeft,
+      childAnchor: .bottomRight,
+      menuBuilder: (context, controller, _) => [
+        .group(
           children: [
-            FItem(
+            .item(
               prefix: Icon(isEnabled ? Icons.visibility_off : Icons.visibility),
               title: Text(
                 isEnabled
@@ -410,7 +431,7 @@ class _GestureHeaderMenu extends StatelessWidget {
                 onToggleEnabled();
               },
             ),
-            FItem(
+            .item(
               prefix: const Icon(Icons.restart_alt),
               title: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -430,7 +451,7 @@ class _GestureHeaderMenu extends StatelessWidget {
                 onResetDefaults();
               },
             ),
-            FItem(
+            .item(
               prefix: const Icon(Icons.copy_all),
               title: Text(context.l10n.gestureMenuDuplicate),
               onPress: () async {
@@ -438,7 +459,7 @@ class _GestureHeaderMenu extends StatelessWidget {
                 onDuplicate();
               },
             ),
-            FItem(
+            .item(
               prefix: const Icon(Icons.content_copy),
               title: Text(context.l10n.gestureMenuCopyYaml),
               onPress: () async {
@@ -446,7 +467,15 @@ class _GestureHeaderMenu extends StatelessWidget {
                 await onCopyYaml();
               },
             ),
-            FItem(
+            .item(
+              prefix: const Icon(FLucideIcons.filePlus),
+              title: Text(context.l10n.actionSaveAs),
+              onPress: () async {
+                await controller.hide();
+                await onSaveAs();
+              },
+            ),
+            .item(
               variant: FItemVariant.destructive,
               prefix: const Icon(Icons.delete_outline),
               title: Text(context.l10n.gestureMenuDelete),
@@ -457,8 +486,13 @@ class _GestureHeaderMenu extends StatelessWidget {
             ),
           ],
         ),
+      ],
+      builder: (context, controller, _) => FButton.icon(
+        variant: .ghost,
+        size: .sm,
+        onPress: controller.toggle,
+        child: const Icon(FLucideIcons.menu, size: 13),
       ),
-      child: const Icon(Icons.menu),
     );
   }
 }

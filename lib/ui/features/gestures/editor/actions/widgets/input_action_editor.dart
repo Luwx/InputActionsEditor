@@ -6,6 +6,7 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_entry_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class InputEntriesEditor extends ConsumerWidget {
   const InputEntriesEditor({super.key});
@@ -56,7 +57,7 @@ class InputEntriesEditor extends ConsumerWidget {
           state: entriesField.dirty,
           onRevert: entriesField.onRevert,
           child: Text(
-            'Input devices',
+            context.l10n.inputDevicesLabel,
             style: context.theme.typography.sm.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -96,12 +97,12 @@ class InputEntriesEditor extends ConsumerWidget {
           variant: .outline,
           size: .sm,
           onPress: () => _addEntry(currentEntries, entriesField.onChanged),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(FLucideIcons.plus),
-              SizedBox(width: 4),
-              Text('Add device'),
+              const Icon(FLucideIcons.plus),
+              const SizedBox(width: 4),
+              Text(context.l10n.inputAddDevice),
             ],
           ),
         ),

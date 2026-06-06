@@ -49,12 +49,12 @@ String _inputModeLabel(InputEntry entry, AppLocalizations l10n) {
 String _inputEntriesSummary(List<InputEntry> entries, AppLocalizations l10n) {
   if (entries.isEmpty) return l10n.actionSummaryNoInput;
   return entries
-      .map((e) => _entrySummary(e, l10n))
+      .map((e) => inputEntrySummary(e, l10n))
       .where((s) => s.isNotEmpty)
       .join('  →  ');
 }
 
-String _entrySummary(InputEntry entry, AppLocalizations l10n) {
+String inputEntrySummary(InputEntry entry, AppLocalizations l10n) {
   if (entry.tokens.isEmpty) {
     return entry.device == InputDevice.keyboard
         ? l10n.actionSummaryNoKeys

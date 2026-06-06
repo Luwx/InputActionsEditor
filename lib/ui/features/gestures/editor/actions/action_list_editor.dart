@@ -191,7 +191,7 @@ class ActionListEditor extends HookConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'No actions configured yet.',
+              context.l10n.actionsEmpty,
               style: typography.sm.copyWith(color: colors.mutedForeground),
             ),
           )
@@ -223,7 +223,7 @@ class ActionListEditor extends HookConsumerWidget {
           variant: .outline,
           onPress: pickAndAdd,
           prefix: const Icon(FLucideIcons.plus, size: 14),
-          child: const Text('Add'),
+          child: Text(context.l10n.actionAdd),
         ),
         SizedBox(key: bottomKey, height: 0),
       ],
@@ -257,7 +257,7 @@ class _ActionsHeader extends ConsumerWidget {
                     .read(actionListEditorProvider(location).notifier)
                     .revert(),
           child: Text(
-            'Actions',
+            context.l10n.actionsTitle,
             style: context.theme.typography.sm.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -377,7 +377,7 @@ class _Header extends ConsumerWidget {
     );
     final isDirty = ref.watch(actionDirtyProvider(actionLocation));
     if (action == null) return const SizedBox.shrink();
-    final meta = actionMeta(action.action);
+    final meta = actionMeta(action.action, l10n);
     final chips = actionMetaChips(action, l10n);
 
     return Padding(
@@ -474,6 +474,8 @@ class _Header extends ConsumerWidget {
             onPress: onDelete,
             child: const Icon(FLucideIcons.trash),
           ),
+          // TODO(me): disable checkbox
+          // const FCheckbox(),
         ],
       ),
     );
@@ -565,10 +567,10 @@ class _ExpandedEditor extends HookConsumerWidget {
                 padding: .value(EdgeInsets.zero),
               ),
             ),
-            children: const [
+            children: [
               FAccordionItem(
-                title: Text('Other Options'),
-                child: ActionTriggerFields(),
+                title: Text(context.l10n.triggerOtherOptions),
+                child: const ActionTriggerFields(),
               ),
             ],
           ),

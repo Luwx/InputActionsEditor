@@ -3,6 +3,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Speed + lock-pointer fields for motion-based triggers
 /// (swipe, pinch, rotate, circle, stroke).
@@ -48,13 +49,9 @@ class MotionField extends StatelessWidget {
                       }
                     },
                   ),
-                  label: const LabelWithTooltip(
-                    label: 'Motion Speed',
-                    tooltip:
-                        'Required speed for this gesture. '
-                        '"Fast" requires quick movement, '
-                        '"Slow" requires deliberate movement. '
-                        '"Any" matches both.',
+                  label: LabelWithTooltip(
+                    label: context.l10n.motionSpeedLabel,
+                    tooltip: context.l10n.motionSpeedTooltip,
                   ),
                 ),
               ),
@@ -62,11 +59,9 @@ class MotionField extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           FCheckbox(
-            label: const LabelWithTooltip(
-              label: 'Lock pointer',
-              tooltip:
-                  'Prevent the pointer from moving on screen '
-                  'while this gesture is active.',
+            label: LabelWithTooltip(
+              label: context.l10n.motionLockPointerLabel,
+              tooltip: context.l10n.motionLockPointerTooltip,
             ),
             value: motion.lockPointer ?? false,
             onChange: (v) =>

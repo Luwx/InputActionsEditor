@@ -2,44 +2,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
-// import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
-import 'package:meta/meta.dart';
 
-final gestureListProvider =
-    NotifierProvider<GestureListNotifier, GestureListState>(
-      GestureListNotifier.new,
-    );
+/// Stateless facade for the *structural* gesture/group operations the list view
+/// triggers — add / remove / duplicate / reorder / (un)group. These are the
+/// edits a single lens cannot express.
+///
+/// It is deliberately not a `Notifier`: a list section owns no state of its own
+/// (selection, multi-select, collapsed groups, the added-marker all live in
+/// their own providers, and the structure it renders is derived by
+/// [gestureListStructureProvider]). Single-address reads/writes go through
+/// `ref.field(lens)` and the per-row gesture watch; only the irreducible
+/// structural intents live here. This replaced `GestureListNotifier`, whose
+/// `state` was an unused whole-config passthrough the command methods never
+/// read — a stateful notifier was the wrong shape for a pure command surface.
+class GestureCommands {
+  const GestureCommands(this._ref);
 
-@immutable
-class GestureListState {
-  const GestureListState({required this.config});
+  final Ref _ref;
 
-  final Config? config;
-
-  @override
-  bool operator ==(Object other) =>
-      other is GestureListState && other.config == config;
-
-  @override
-  int get hashCode => config.hashCode;
-}
-
-class GestureListNotifier extends Notifier<GestureListState> {
-  @override
-  GestureListState build() {
-    return GestureListState(
-      config: ref.watch(
-        configControllerProvider.select((state) => state.value),
-      ),
-    );
-  }
-
-  ConfigController get _config => ref.read(configControllerProvider.notifier);
+  ConfigController get _config => _ref.read(configControllerProvider.notifier);
 
   void addGesture(DeviceType device, Gesture gesture) {
     _config.add(AddGesture(device, gesture));
@@ -105,3 +90,5 @@ class GestureListNotifier extends Notifier<GestureListState> {
     _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
   }
 }
+
+final gestureCommandsProvider = Provider<GestureCommands>(GestureCommands.new);

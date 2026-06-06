@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -16,6 +18,7 @@ import 'package:input_actions_editor/model/gesture_conflict.dart'
     hide gestureCommon, gestureDisplayName, gestureTypeLabel;
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
@@ -26,15 +29,17 @@ import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_butto
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/added_gesture_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/collapsed_groups_provider.dart';
-import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_list_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
+part 'gesture_list_section/choreography.dart';
 part 'gesture_list_section/dialogs/rename_dialog.dart';
 part 'gesture_list_section/flat_list.dart';
 part 'gesture_list_section/models.dart';
 part 'gesture_list_section/reordering.dart';
+part 'gesture_list_section/transitions.dart';
 part 'gesture_list_section/view_model.dart';
 part 'gesture_list_section/widgets/gesture_item_widgets.dart';
 part 'gesture_list_section/widgets/group_widgets.dart';
@@ -52,139 +57,11 @@ class GestureListSection extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scrollController = useScrollController();
-    final pendingAutoSelect = useRef(false);
-    final pendingAutoSelectFilter = useRef<DeviceType?>(null);
-    final scrollTarget = useState<GestureLocation?>(null);
-    final scrollTargetFlatIndex = useRef<int?>(null);
-    final scrollTargetQueued = useRef(false);
-    final scrollTargetKey = useMemoized(GlobalKey.new);
-
-    void clearScrollTarget() {
-      scrollTarget.value = null;
-      scrollTargetFlatIndex.value = null;
-      scrollTargetQueued.value = false;
-    }
-
-    void scrollToTarget([int attempt = 0]) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!scrollController.hasClients) {
-          if (attempt < 12) {
-            scrollToTarget(attempt + 1);
-          } else {
-            clearScrollTarget();
-          }
-          return;
-        }
-        final ctx = scrollTargetKey.currentContext;
-        if (ctx != null) {
-          await Scrollable.ensureVisible(
-            ctx,
-            alignment: 1,
-            duration: Durations.medium2,
-            curve: Curves.easeOutCubic,
-          );
-          clearScrollTarget();
-          return;
-        }
-        final position = scrollController.position;
-        final flatIndex = scrollTargetFlatIndex.value;
-        if (attempt < 12 && flatIndex != null) {
-          final viewport = position.viewportDimension;
-          final targetOffset =
-              GestureListSection._headerHeight +
-              flatIndex * 62.0 -
-              viewport / 3;
-          await scrollController.animateTo(
-            targetOffset.clamp(
-              position.minScrollExtent,
-              position.maxScrollExtent,
-            ),
-            duration: Durations.short3,
-            curve: Curves.easeOut,
-          );
-          scrollToTarget(attempt + 1);
-        } else if (attempt < 12 &&
-            position.pixels < position.maxScrollExtent - 1) {
-          await scrollController.animateTo(
-            position.maxScrollExtent,
-            duration: Durations.short3,
-            curve: Curves.easeOut,
-          );
-          scrollToTarget(attempt + 1);
-        } else {
-          clearScrollTarget();
-        }
-      });
-    }
-
-    void queueAutoSelectFirstGesture(DeviceType? filter) {
-      pendingAutoSelect.value = true;
-      pendingAutoSelectFilter.value = filter;
-    }
-
-    void clearQueuedAutoSelect() {
-      pendingAutoSelect.value = false;
-      pendingAutoSelectFilter.value = null;
-    }
-
-    void queueScrollToGesture(GestureLocation target) {
-      scrollTarget.value = target;
-      scrollTargetFlatIndex.value = null;
-      scrollTargetQueued.value = false;
-    }
-
-    void prepareScrollTarget(_GestureListViewModel viewModel) {
-      final target = scrollTarget.value;
-      if (target == null) return;
-      final flatIndex = viewModel.flatItems.indexWhere(
-        (item) =>
-            item is _GestureRowItem &&
-            item.device == target.device &&
-            item.configIndex == target.index,
-      );
-      if (flatIndex < 0) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => clearScrollTarget(),
-        );
-        return;
-      }
-      final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
-      final groupId = item.groupId;
-      if (!item.isVisible && groupId != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(collapsedGroupsProvider.notifier).expand(groupId);
-        });
-        return;
-      }
-      scrollTargetFlatIndex.value = flatIndex;
-      if (scrollTargetQueued.value) return;
-      scrollTargetQueued.value = true;
-      scrollToTarget();
-    }
-
-    void tryAutoSelectFirstGesture({
-      required Config config,
-      required Set<String> collapsedGroups,
-    }) {
-      if (!pendingAutoSelect.value) return;
-      final filter = pendingAutoSelectFilter.value;
-      final items = _buildFlatList(config, filter, collapsedGroups);
-      final gestureItems = items.whereType<_GestureRowItem>();
-      final first =
-          gestureItems.where((item) => item.isVisible).firstOrNull ??
-          gestureItems.firstOrNull;
-      if (first == null) {
-        clearQueuedAutoSelect();
-        return;
-      }
-      clearQueuedAutoSelect();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.selectGesture(first.device, first.configIndex);
-      });
-    }
+    final choreo = _useGestureListChoreography(ref, context, scrollController);
+    final transitions = _useGestureTransitions(ref, context);
 
     void handleGestureAdded(DeviceType device, Gesture gesture) {
-      final config = ref.read(gestureListProvider).config;
+      final config = ref.read(configControllerProvider).value;
       if (config == null) return;
       final existingGestures = config.gesturesForDevice(device);
       final newIndex = existingGestures.length;
@@ -197,11 +74,10 @@ class GestureListSection extends HookConsumerWidget {
       final named = gesture.withCommon(
         gesture.common.copyWith(name: defaultName),
       );
-      ref.read(gestureListProvider.notifier).addGesture(device, named);
+      ref.read(gestureCommandsProvider).addGesture(device, named);
       ref.read(addedGestureProvider.notifier).markAdded(newIndex);
       context.selectGesture(device, newIndex);
-      scrollTarget.value = GestureLocation(device: device, index: newIndex);
-      scrollToTarget();
+      choreo.scrollToGesture(GestureLocation(device: device, index: newIndex));
     }
 
     Future<void> addGroupDialog(DeviceType device) {
@@ -213,7 +89,7 @@ class GestureListSection extends HookConsumerWidget {
           if (name.trim().isEmpty) return;
           final id = _generateGroupId();
           ref
-              .read(gestureListProvider.notifier)
+              .read(gestureCommandsProvider)
               .addGroup(
                 GestureGroup(id: id, name: name.trim(), device: device),
               );
@@ -221,59 +97,36 @@ class GestureListSection extends HookConsumerWidget {
       );
     }
 
-    ref
-      ..listen(currentViewProvider, (prevView, nextView) {
-        if (nextView != AppView.gestures) {
-          clearQueuedAutoSelect();
-        } else if (prevView != AppView.gestures) {
-          if (ref.read(selectedGestureProvider) == null) {
-            queueAutoSelectFirstGesture(ref.read(deviceFilterProvider));
-          }
-        }
-      })
-      ..listen(deviceFilterProvider, (prevFilter, nextFilter) {
-        if (ref.read(currentViewProvider) != AppView.gestures) return;
-        if (prevFilter == nextFilter) return;
-        if (ref.read(selectedGestureProvider) == null) {
-          queueAutoSelectFirstGesture(nextFilter);
-        } else {
-          clearQueuedAutoSelect();
-        }
-      })
-      ..listen(selectedGestureProvider, (_, next) {
-        if (next != null) clearQueuedAutoSelect();
-      })
-      ..listen(gestureRedirectTargetProvider, (_, next) {
-        if (next == null) return;
-        queueScrollToGesture(next);
-        ref.read(gestureRedirectTargetProvider.notifier).clear();
-      })
-      ..listen(navProvider, (prev, next) {
-        if (prev == null) return;
-        final isHistoryCursorMove =
-            prev.history.length == next.history.length &&
-            prev.cursor != next.cursor;
-        if (!isHistoryCursorMove) return;
-        if (next.current case GesturesDestination(open: final open?)) {
-          queueScrollToGesture(open);
-        }
-      });
-
-    final config = ref.watch(gestureListProvider).config;
+    // Structure only — content edits are absorbed by the provider's value
+    // equality, so they rebuild the affected row (which reads its own gesture),
+    // not this section.
+    final viewModel = ref.watch(gestureListStructureProvider);
+    final hasConfig = ref.watch(
+      configControllerProvider.select((s) => s.value != null),
+    );
     final selection = ref.watch(selectedGestureProvider);
     final multiSelect = ref.watch(multiSelectControllerProvider);
     final multiSelectNotifier = ref.read(
       multiSelectControllerProvider.notifier,
     );
-    final listNotifier = ref.read(gestureListProvider.notifier);
+    final listNotifier = ref.read(gestureCommandsProvider);
     final deviceFilter = ref.watch(deviceFilterProvider);
     final addedMarker = ref.watch(addedGestureProvider);
     final conflicts = ref.watch(conflictReportProvider);
-    final collapsedGroups = ref.watch(collapsedGroupsProvider);
     final collapsedNotifier = ref.read(collapsedGroupsProvider.notifier);
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isMultiSelectMode = multiSelect != null;
+
+    final title = isMultiSelectMode
+        ? context.l10n.multiSelectCount(multiSelect.length)
+        : (deviceFilter == null
+              ? context.l10n.sidebarAllDevices
+              : gestureDeviceLabel(deviceFilter, context.l10n));
+    final countLabel = isMultiSelectMode
+        ? null
+        : '${viewModel.gestureCount} '
+              'gesture${viewModel.gestureCount == 1 ? '' : 's'}';
 
     return KeyboardListener(
       focusNode: FocusNode(),
@@ -284,24 +137,11 @@ class GestureListSection extends HookConsumerWidget {
           multiSelectNotifier.exit();
         }
       },
-      child: config == null
+      child: !hasConfig
           ? const Center(child: CircularProgressIndicator.adaptive())
           : Builder(
               builder: (context) {
-                tryAutoSelectFirstGesture(
-                  config: config,
-                  collapsedGroups: collapsedGroups,
-                );
-
-                final viewModel = _GestureListViewModel.fromConfig(
-                  config: config,
-                  deviceFilter: deviceFilter,
-                  collapsedGroups: collapsedGroups,
-                  isMultiSelectMode: isMultiSelectMode,
-                  selectedCount: multiSelect?.length ?? 0,
-                  l10n: context.l10n,
-                );
-                prepareScrollTarget(viewModel);
+                choreo.prepare(viewModel);
                 final reorderEntries =
                     <ReorderableGroupableListEntry<GestureLocation, String>>[];
                 final gestureItemsByKey = <GestureLocation, _GestureRowItem>{};
@@ -322,19 +162,64 @@ class GestureListSection extends HookConsumerWidget {
                         index: flatItem.configIndex,
                       );
                       gestureItemsByKey[key] = flatItem;
+                      final editId = flatItem.editId;
+                      // A reordered row enters at its new slot from a fresh
+                      // element, so its key is bumped to force a remount and it
+                      // renders invisible for one frame so the expand starts at
+                      // height 0.
+                      final isEntering =
+                          editId != null &&
+                          transitions.entering.contains(editId);
+                      final isHidden =
+                          editId != null &&
+                          transitions.enteringHidden.contains(editId);
                       reorderEntries.add(
                         ReorderableGroupableItem<GestureLocation, String>(
+                          // Keyed by stable identity (editId), not position, so
+                          // a removed row disposes its own element instead of
+                          // its collapsed cross-fade bleeding onto the row that
+                          // shifts up. Falls back to position only for the
+                          // impossible null editId.
                           key: ValueKey(
-                            '${flatItem.device.name}:${flatItem.configIndex}',
+                            editId != null
+                                ? (isEntering
+                                      ? 'gid:$editId:enter'
+                                      : 'gid:$editId')
+                                : '${flatItem.device.name}:'
+                                      '${flatItem.configIndex}',
                           ),
                           id: key,
                           groupId: flatItem.groupId,
                           isFirstInGroup: flatItem.isFirstInGroup,
                           isLastInGroup: flatItem.isLastInGroup,
-                          isVisible: flatItem.isVisible,
+                          isVisible: flatItem.isVisible && !isHidden,
                         ),
                       );
                   }
+                }
+
+                // Insert collapsing ghosts at the slots their rows vacated,
+                // from the highest anchor down so earlier inserts don't shift
+                // later anchors.
+                final ghostByKey = <Key, _GhostRow>{};
+                final orderedGhosts = [...transitions.ghosts]
+                  ..sort((a, b) => b.anchorIndex.compareTo(a.anchorIndex));
+                for (final ghost in orderedGhosts) {
+                  final ghostKey = ValueKey('ghost:${ghost.editId}');
+                  ghostByKey[ghostKey] = ghost;
+                  reorderEntries.insert(
+                    ghost.anchorIndex.clamp(0, reorderEntries.length),
+                    ReorderableGroupableItem<GestureLocation, String>(
+                      key: ghostKey,
+                      id: GestureLocation(
+                        device: ghost.device,
+                        index: -1 - ghost.editId,
+                      ),
+                      groupId: ghost.groupId,
+                      isVisible: !ghost.collapsing,
+                      interactive: false,
+                    ),
+                  );
                 }
 
                 return ScrollbarMediaPadding(
@@ -348,8 +233,8 @@ class GestureListSection extends HookConsumerWidget {
                           minExtentValue: GestureListSection._headerHeight,
                           maxExtentValue: GestureListSection._headerHeight,
                           child: _GestureListHeader(
-                            title: viewModel.title,
-                            countLabel: viewModel.countLabel,
+                            title: title,
+                            countLabel: countLabel,
                             deviceFilter: deviceFilter,
                             isMultiSelectMode: isMultiSelectMode,
                             onGestureAdded: handleGestureAdded,
@@ -394,12 +279,10 @@ class GestureListSection extends HookConsumerWidget {
                               groupItemsById[group.id]?.group.name ??
                               'Move group',
                           onItemsReordered: (result) =>
-                              _GestureListController(
-                                ref,
-                                context,
-                              ).applyItemsReorder(
-                                viewModel.deviceFilter!,
-                                result,
+                              transitions.requestItemsReorder(
+                                device: viewModel.deviceFilter!,
+                                result: result,
+                                flatItems: viewModel.flatItems,
                               ),
                           onGroupReordered: (from, to) =>
                               _GestureListController(
@@ -471,6 +354,24 @@ class GestureListSection extends HookConsumerWidget {
                                 : null;
                           },
                           itemBuilder: (context, itemEntry, _, isDragging) {
+                            final ghost = ghostByKey[itemEntry.key];
+                            if (ghost != null) {
+                              return GestureListTile(
+                                device: ghost.device,
+                                index: -1,
+                                gestureOverride: ghost.gesture,
+                                newlyAddedMarkerId: null,
+                                isSelected: false,
+                                isMultiSelectMode: false,
+                                isMultiSelected: false,
+                                groupDisabled:
+                                    ghost.groupId != null &&
+                                    viewModel.disabledGroupIds.contains(
+                                      ghost.groupId,
+                                    ),
+                                onTap: () {},
+                              );
+                            }
                             final item = gestureItemsByKey[itemEntry.id]!;
                             final selectionKey = itemEntry.id;
                             final isSelected =
@@ -485,12 +386,11 @@ class GestureListSection extends HookConsumerWidget {
                                     addedMarker?.index == item.configIndex)
                                 ? addedMarker?.id
                                 : null;
-                            final group = item.groupId != null
-                                ? config.gestureGroups
-                                      .where((g) => g.id == item.groupId)
-                                      .firstOrNull
-                                : null;
-                            final groupDisabled = group?.enabled == false;
+                            final groupDisabled =
+                                item.groupId != null &&
+                                viewModel.disabledGroupIds.contains(
+                                  item.groupId,
+                                );
                             final row = AnimatedOpacity(
                               duration: Durations.short2,
                               opacity: isDragging ? 0.45 : 1,
@@ -524,27 +424,20 @@ class GestureListSection extends HookConsumerWidget {
                                       item.device,
                                       item.configIndex,
                                     ),
-                                onDelete: () {
-                                  listNotifier.removeGesture(
-                                    item.device,
-                                    item.configIndex,
-                                  );
-                                  ref
-                                      .read(navProvider.notifier)
-                                      .onGestureDeleted(
-                                        item.device,
-                                        item.configIndex,
-                                      );
-                                },
+                                onDelete: () => transitions.requestDelete(
+                                  device: item.device,
+                                  configIndex: item.configIndex,
+                                  flatItems: viewModel.flatItems,
+                                ),
                               ),
                             );
 
                             final isScrollTarget =
-                                scrollTarget.value?.device == item.device &&
-                                scrollTarget.value?.index == item.configIndex;
+                                choreo.scrollTarget?.device == item.device &&
+                                choreo.scrollTarget?.index == item.configIndex;
                             return isScrollTarget
                                 ? KeyedSubtree(
-                                    key: scrollTargetKey,
+                                    key: choreo.scrollTargetKey,
                                     child: row,
                                   )
                                 : row;

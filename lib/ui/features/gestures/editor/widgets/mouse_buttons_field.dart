@@ -8,6 +8,7 @@ import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MouseButtonsField extends ConsumerWidget {
   const MouseButtonsField({super.key});
@@ -41,8 +42,9 @@ class MouseButtonsField extends ConsumerWidget {
       exactOrderField.dirty,
     ]);
 
+    final l10n = context.l10n;
     return _Section(
-      title: 'Mouse buttons',
+      title: l10n.mouseButtonsSectionTitle,
       dirtyState: dirtyState,
       onRevert: dirtyState.canRevert
           ? () {
@@ -50,8 +52,7 @@ class MouseButtonsField extends ConsumerWidget {
               exactOrderField.onRevert?.call();
             }
           : null,
-      titleTooltip:
-          'Mouse buttons that must be held while performing this gesture.',
+      titleTooltip: l10n.mouseButtonsSectionTooltip,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -77,12 +78,9 @@ class MouseButtonsField extends ConsumerWidget {
             child: FCheckbox(
               value: exactOrderField.value,
               onChange: exactOrderField.onChanged,
-              label: const LabelWithTooltip(
-                label: 'Exact order',
-                tooltip:
-                    'Require buttons to be pressed in exactly the order shown. '
-                    'When disabled, all selected buttons must be held '
-                    'but in any order.',
+              label: LabelWithTooltip(
+                label: context.l10n.mouseButtonsExactOrderLabel,
+                tooltip: context.l10n.mouseButtonsExactOrderTooltip,
               ),
             ),
           ).appearToggle(visible: buttons.length > 1),
@@ -215,7 +213,7 @@ class _Section extends StatelessWidget {
               onRevert: onRevert,
               child: LabelWithTooltip(
                 label: title,
-                tooltip: titleTooltip!,
+                tooltip: titleTooltip,
                 textStyle: titleStyle,
               ),
             )

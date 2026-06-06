@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class FingerCountField extends ConsumerWidget {
   const FingerCountField({
@@ -35,10 +36,8 @@ class FingerCountField extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           LabelWithTooltip(
-            label: 'Fingers',
-            tooltip:
-                'Number of fingers required on the input device. '
-                '"Any" matches regardless of how many fingers are used.',
+            label: context.l10n.sectionFingersLabel,
+            tooltip: context.l10n.sectionFingersTooltip,
             textStyle: typography.sm.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -49,7 +48,7 @@ class FingerCountField extends ConsumerWidget {
                 variant: value == null ? .primary : .outline,
                 size: .sm,
                 onPress: () => field.onChanged(null),
-                child: const Text('Any'),
+                child: Text(context.l10n.sectionFingersAny),
               ),
               for (int n = minFingers; n <= maxFingers; n++)
                 FButton(

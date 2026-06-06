@@ -15,6 +15,11 @@ class ConfigRepository {
 
   Future<String?> pickPath() => yaml_io.pickConfigFilePath();
 
+  Future<String?> pickSavePath() => yaml_io.pickSaveFilePath();
+
   Future<void> save(Config config, String originalText) =>
       yaml_io.saveConfig(config, originalText);
+
+  Future<void> saveToPath(Config config, String originalText, String path) =>
+      yaml_io.saveConfigToPath(config, originalText, path);
 }

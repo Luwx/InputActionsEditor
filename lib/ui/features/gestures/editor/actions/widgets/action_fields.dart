@@ -7,7 +7,9 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
     as input_entries_editor;
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/plasma_shortcut_sheet.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ActionFields extends ConsumerWidget {
   const ActionFields({
@@ -19,6 +21,7 @@ class ActionFields extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return switch (kind) {
       ActionKind.command => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,14 +40,12 @@ class ActionFields extends ConsumerWidget {
                 label: UnsavedLabel(
                   state: schemaField.dirty,
                   onRevert: schemaField.onRevert,
-                  child: const LabelWithTooltip(
-                    label: 'Command',
-                    tooltip:
-                        r'Shell command to run. Variables like $window_class, '
-                        r'$window_pid are passed as environment variables.',
+                  child: LabelWithTooltip(
+                    label: l10n.actionCommandLabel,
+                    tooltip: l10n.actionCommandTooltip,
                   ),
                 ),
-                hint: 'e.g. xdg-open ~',
+                hint: l10n.actionCommandHint,
                 style: .delta(
                   contentTextStyle: FVariantsDelta.delta([
                     FVariantOperation.all(
@@ -69,11 +70,9 @@ class ActionFields extends ConsumerWidget {
                 label: UnsavedLabel(
                   state: field.dirty,
                   onRevert: field.onRevert,
-                  child: const LabelWithTooltip(
-                    label: 'Wait for completion',
-                    tooltip:
-                        'Wait up to 30 seconds for the command to exit before '
-                        'executing the next action in the sequence.',
+                  child: LabelWithTooltip(
+                    label: l10n.actionWaitForCompletionLabel,
+                    tooltip: l10n.actionWaitForCompletionTooltip,
                   ),
                 ),
               );
@@ -82,65 +81,7 @@ class ActionFields extends ConsumerWidget {
         ],
       ),
       ActionKind.input => const input_entries_editor.InputEntriesEditor(),
-      ActionKind.plasmaShortcut => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Builder(
-            builder: (context) {
-              final schemaField = ref.actionSchemaField(
-                context,
-                actionComponentField,
-              );
-              return FTextField(
-                control: FTextFieldControl.managed(
-                  initial: schemaField.textEditingValue,
-                  onChange: schemaField.onTextChanged,
-                ),
-                label: UnsavedLabel(
-                  state: schemaField.dirty,
-                  onRevert: schemaField.onRevert,
-                  child: const LabelWithTooltip(
-                    label: 'Component',
-                    tooltip:
-                        'Plasma shortcut component. Find in '
-                        '~/.config/kglobalshortcutsrc - text inside '
-                        'brackets. Replace dots and dashes with underscores. '
-                        'Example: org_kde_dolphin_desktop',
-                  ),
-                ),
-                hint: 'e.g. org_kde_dolphin_desktop',
-              );
-            },
-          ),
-          const SizedBox(height: 6),
-          Builder(
-            builder: (context) {
-              final schemaField = ref.actionSchemaField(
-                context,
-                actionShortcutField,
-              );
-              return FTextField(
-                control: FTextFieldControl.managed(
-                  initial: schemaField.textEditingValue,
-                  onChange: schemaField.onTextChanged,
-                ),
-                label: UnsavedLabel(
-                  state: schemaField.dirty,
-                  onRevert: schemaField.onRevert,
-                  child: const LabelWithTooltip(
-                    label: 'Shortcut',
-                    tooltip:
-                        'Shortcut name within the component. '
-                        'In kglobalshortcutsrc, it is the text '
-                        'before "=" on each line.',
-                  ),
-                ),
-                hint: 'e.g. Show Desktop',
-              );
-            },
-          ),
-        ],
-      ),
+      ActionKind.plasmaShortcut => const PlasmaShortcutSheetPicker(),
       ActionKind.sleep => Builder(
         builder: (context) {
           final field = ref.actionField(
@@ -159,15 +100,12 @@ class ActionFields extends ConsumerWidget {
             label: UnsavedLabel(
               state: field.dirty,
               onRevert: field.onRevert,
-              child: const LabelWithTooltip(
-                label: 'Duration (ms)',
-                tooltip:
-                    'How long to pause before the next action executes. '
-                    'Useful to work around timing issues with input or '
-                    'window focus.',
+              child: LabelWithTooltip(
+                label: l10n.actionSleepDurationLabel,
+                tooltip: l10n.actionSleepDurationTooltip,
               ),
             ),
-            hint: '500',
+            hint: l10n.actionSleepDurationHint,
           );
         },
       ),
@@ -185,7 +123,7 @@ class ActionFields extends ConsumerWidget {
             label: UnsavedLabel(
               state: schemaField.dirty,
               onRevert: schemaField.onRevert,
-              child: const Text('Raw YAML'),
+              child: Text(l10n.actionMetaRawLabel),
             ),
             maxLines: null,
           );

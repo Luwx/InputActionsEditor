@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Action;
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 
 class ActionMetaInfo {
@@ -13,30 +14,31 @@ class ActionMetaInfo {
   final IconData icon;
 }
 
-ActionMetaInfo actionMeta(Action action) => switch (action) {
-  CommandAction() => const ActionMetaInfo(
-    label: 'Command',
-    subtitle: 'Run a shell command',
-    icon: Icons.terminal,
-  ),
-  InputAction() => const ActionMetaInfo(
-    label: 'Input',
-    subtitle: 'Simulate keyboard or mouse events',
-    icon: Icons.keyboard_alt_outlined,
-  ),
-  PlasmaShortcutAction() => const ActionMetaInfo(
-    label: 'Plasma shortcut',
-    subtitle: 'Trigger a KDE global shortcut',
-    icon: Icons.flash_on_outlined,
-  ),
-  SleepAction() => const ActionMetaInfo(
-    label: 'Sleep',
-    subtitle: 'Pause before continuing',
-    icon: Icons.schedule_outlined,
-  ),
-  RawAction() => const ActionMetaInfo(
-    label: 'Raw YAML',
-    subtitle: 'Hand-authored unsupported action config',
-    icon: Icons.code_outlined,
-  ),
-};
+ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
+    switch (action) {
+      CommandAction() => ActionMetaInfo(
+        label: l10n.actionMetaCommandLabel,
+        subtitle: l10n.actionMetaCommandSubtitle,
+        icon: Icons.terminal,
+      ),
+      InputAction() => ActionMetaInfo(
+        label: l10n.actionMetaInputLabel,
+        subtitle: l10n.actionMetaInputSubtitle,
+        icon: Icons.keyboard_alt_outlined,
+      ),
+      PlasmaShortcutAction() => ActionMetaInfo(
+        label: l10n.actionMetaPlasmaLabel,
+        subtitle: l10n.actionMetaPlasmaSubtitle,
+        icon: Icons.flash_on_outlined,
+      ),
+      SleepAction() => ActionMetaInfo(
+        label: l10n.actionMetaSleepLabel,
+        subtitle: l10n.actionMetaSleepSubtitle,
+        icon: Icons.schedule_outlined,
+      ),
+      RawAction() => ActionMetaInfo(
+        label: l10n.actionMetaRawLabel,
+        subtitle: l10n.actionMetaRawSubtitle,
+        icon: Icons.code_outlined,
+      ),
+    };

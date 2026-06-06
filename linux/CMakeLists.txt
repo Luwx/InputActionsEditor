@@ -57,6 +57,8 @@ pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
+add_subdirectory("kde_icon_lookup")
+add_subdirectory("kde_key_lookup")
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)

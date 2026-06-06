@@ -92,14 +92,12 @@ extension ScopedFieldAccess on WidgetRef {
   SchemaEditableField<T> gestureSchemaField<TRoot, T>(
     BuildContext context,
     GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field, {
-    TRoot? fallbackRoot,
     DirtyMarkState? dirty,
   }) {
     final location = context.gestureLocation;
     return schemaField(
       field,
       location: location,
-      fallbackRoot: fallbackRoot,
       dirty: dirty,
       scope: location,
       canRead: (config) => gestureAt(config, location) != null,
@@ -109,14 +107,12 @@ extension ScopedFieldAccess on WidgetRef {
   SchemaEditableField<T> actionSchemaField<TRoot, T>(
     BuildContext context,
     GeneratedEditField<TRoot, ActionLocation, T, Lens<T>> field, {
-    TRoot? fallbackRoot,
     DirtyMarkState? dirty,
   }) {
     final location = context.actionLocation;
     return schemaField(
       field,
       location: location,
-      fallbackRoot: fallbackRoot,
       dirty: dirty,
       scope: location.gesture,
       canRead: (config) => actionAt(config, location) != null,

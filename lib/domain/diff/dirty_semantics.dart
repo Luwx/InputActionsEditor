@@ -10,7 +10,8 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
         comparableTriggerCommonActionsSectionValue,
         comparableTriggerCommonMouseButtonsSectionValue,
         comparableTriggerCommonTriggerConditionsValue,
-        comparableTriggerCommonTriggerConfigValue;
+        comparableTriggerCommonTriggerConfigValue,
+        comparableTriggerCommonValue;
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -43,11 +44,26 @@ DirtyMarkState dirtyMarkState({
 }
 
 Object? comparableGesture(Gesture? gesture) => switch (gesture) {
-  MouseGesture() => comparableMouseGestureValue(gesture),
-  KeyboardGesture() => comparableKeyboardGestureValue(gesture),
-  PointerGesture() => comparablePointerGestureValue(gesture),
-  TouchpadGesture() => comparableTouchpadGestureValue(gesture),
-  TouchscreenGesture() => comparableTouchscreenGestureValue(gesture),
+  MouseGesture() => [
+    comparableTriggerCommonValue(gesture.common),
+    comparableMouseGestureValue(gesture),
+  ],
+  KeyboardGesture() => [
+    comparableTriggerCommonValue(gesture.common),
+    comparableKeyboardGestureValue(gesture),
+  ],
+  PointerGesture() => [
+    comparableTriggerCommonValue(gesture.common),
+    comparablePointerGestureValue(gesture),
+  ],
+  TouchpadGesture() => [
+    comparableTriggerCommonValue(gesture.common),
+    comparableTouchpadGestureValue(gesture),
+  ],
+  TouchscreenGesture() => [
+    comparableTriggerCommonValue(gesture.common),
+    comparableTouchscreenGestureValue(gesture),
+  ],
   _ => null,
 };
 

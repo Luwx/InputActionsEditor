@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/ui/common/extensions.dart';
 
 const Color kUnsavedMarkerColor = Color(0xFFF59E0B);
 
@@ -121,12 +122,11 @@ class UnsavedLabel extends StatelessWidget {
             onRevert: onRevert,
             revertLabel: revertLabel,
           ),
+        ).appearToggle(
+          visible: _state.isDirty,
+          duration: Durations.medium1,
+          axis: Axis.horizontal,
         ),
-        // ).appearToggle(
-        //   visible: _state.isDirty,
-        //   duration: Durations.medium1,
-        //   axis: Axis.horizontal,
-        // ),
       ],
     );
   }

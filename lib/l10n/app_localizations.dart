@@ -118,6 +118,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get actionSave;
 
+  /// No description provided for @actionSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save As'**
+  String get actionSaveAs;
+
   /// No description provided for @actionDiscardChanges.
   ///
   /// In en, this message translates to:
@@ -832,6 +838,12 @@ abstract class AppLocalizations {
   /// **'Select a gesture to edit'**
   String get gestureSelectPrompt;
 
+  /// No description provided for @configSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Config saved.'**
+  String get configSaveSuccess;
+
   /// No description provided for @gestureCopyYamlSuccess.
   ///
   /// In en, this message translates to:
@@ -910,23 +922,11 @@ abstract class AppLocalizations {
   /// **'Trigger Conditions'**
   String get triggerConditionsTitle;
 
-  /// No description provided for @triggerConditionsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Conditions that must ALL be true for this gesture to activate.\n\nExamples:\n  \$window_class == firefox\n      → only fires inside Firefox\n  \$window_class == konsole\n      → only fires inside the terminal\n  \$window_id == \$window_under_id\n      → cursor is over the focused window\n  \$pointer_position_screen_percentage_x >= 0.95\n      → cursor is at the right screen edge\n  \$fingers == 3\n      → exactly 3 fingers on touchpad\n\nMultiple rows are ANDed together.\nUse an \"any\" group inside for OR logic.'**
-  String get triggerConditionsTooltip;
-
   /// No description provided for @triggerEndConditionsTitle.
   ///
   /// In en, this message translates to:
   /// **'End conditions'**
   String get triggerEndConditionsTitle;
-
-  /// No description provided for @triggerEndConditionsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Checked at the moment the gesture ends.\n\n  • Met → gesture ends normally; on:end actions fire.\n  • Not met → gesture is cancelled; on:cancel actions fire instead.\n\nUse this to require a minimum movement before the gesture \"counts\".\nExample: \$distance >= 100 cancels the gesture if the finger did not travel at least 100 px, so a short accidental movement is ignored.'**
-  String get triggerEndConditionsTooltip;
 
   /// No description provided for @triggerConditionsEmpty.
   ///
@@ -940,12 +940,6 @@ abstract class AppLocalizations {
   /// **'ID'**
   String get triggerFieldIdLabel;
 
-  /// No description provided for @triggerFieldIdTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Unique name for this trigger.\n\nWhen set, the daemon exposes variables:\n  \$<id>_active  - true while running\n  \$last_trigger - equals this id after it fires\n\nUse these in other gestures\' conditions to chain or block behaviors.\nExample: id: swipe_right, then another gesture can check \$last_trigger == swipe_right.'**
-  String get triggerFieldIdTooltip;
-
   /// No description provided for @triggerFieldIdHint.
   ///
   /// In en, this message translates to:
@@ -957,12 +951,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Threshold'**
   String get triggerFieldThresholdLabel;
-
-  /// No description provided for @triggerFieldThresholdTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Minimum accumulated input before the gesture is recognized as started.\n\n\"Progress\" units by gesture type:\n  Swipe / stroke  - pixels of movement\n  Wheel           - scroll ticks\n  Pinch           - scale factor (e.g. 0.1 = 10%)\n  Rotate / circle - degrees\n  Press           - not applicable (press has no movement phase)\n\nBelow the threshold the input is passed through to the application normally.\nUse a range like 50-200 to require at least 50 and cancel if it exceeds 200.\n\nNote: this is distinct from the per-action Threshold, which gates a specific action after recognition.'**
-  String get triggerFieldThresholdTooltip;
 
   /// No description provided for @triggerFieldThresholdHint.
   ///
@@ -976,12 +964,6 @@ abstract class AppLocalizations {
   /// **'Resume timeout'**
   String get triggerFieldResumeTimeoutLabel;
 
-  /// No description provided for @triggerFieldResumeTimeoutTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'If another identical gesture starts within this many milliseconds after this one ends, it resumes as a continuation rather than starting fresh.\n\nUseful for:\n  • Multi-tap sequences where a brief pause between taps should not reset state\n  • Repeated wheel scrolls that accumulate delta across short gaps\n\n0 = disabled (every gesture starts from scratch).'**
-  String get triggerFieldResumeTimeoutTooltip;
-
   /// No description provided for @triggerFieldResumeTimeoutHint.
   ///
   /// In en, this message translates to:
@@ -994,23 +976,11 @@ abstract class AppLocalizations {
   /// **'Accelerated'**
   String get triggerFieldAcceleratedLabel;
 
-  /// No description provided for @triggerFieldAcceleratedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Scale delta values by pointer acceleration, matching how fast the cursor moves on screen.\n\nEnable for actions that should feel proportional to movement speed (e.g. move_by_delta input actions).\nDisable for uniform responses regardless of speed (e.g. a fixed key press per scroll tick).'**
-  String get triggerFieldAcceleratedTooltip;
-
   /// No description provided for @triggerFieldBlockEventsLabel.
   ///
   /// In en, this message translates to:
   /// **'Block events'**
   String get triggerFieldBlockEventsLabel;
-
-  /// No description provided for @triggerFieldBlockEventsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Suppress the raw input events used by this gesture so they do not reach other applications.\n\nExample: holding right-click to draw a stroke gesture prevents the context menu from opening.\n\nDisable if the application should also receive those events while the gesture is active.'**
-  String get triggerFieldBlockEventsTooltip;
 
   /// No description provided for @triggerFieldClearModifiersLabel.
   ///
@@ -1018,23 +988,11 @@ abstract class AppLocalizations {
   /// **'Clear modifiers'**
   String get triggerFieldClearModifiersLabel;
 
-  /// No description provided for @triggerFieldClearModifiersTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Release all held modifier keys (Ctrl, Shift, Alt, Super) when this gesture begins.\n\nAutomatically enabled when an input: action is present, to prevent those modifiers from leaking into the replayed key events.\nDisable only if you intentionally need the modifiers to remain held during the action.'**
-  String get triggerFieldClearModifiersTooltip;
-
   /// No description provided for @triggerFieldSetLastTriggerLabel.
   ///
   /// In en, this message translates to:
   /// **'Set last trigger'**
   String get triggerFieldSetLastTriggerLabel;
-
-  /// No description provided for @triggerFieldSetLastTriggerTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Update \$last_trigger to this trigger\'s ID when it executes.\n\nUse \$last_trigger in other gestures\' conditions to build sequences - e.g. a second gesture that only fires if a specific gesture ran first.\n\nDisable for utility triggers you do not want to pollute the \$last_trigger state.'**
-  String get triggerFieldSetLastTriggerTooltip;
 
   /// No description provided for @sectionPress.
   ///
@@ -1222,23 +1180,11 @@ abstract class AppLocalizations {
   /// **'Trigger on'**
   String get actionTriggerOnLabel;
 
-  /// No description provided for @actionTriggerOnTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'When during the gesture lifecycle this action fires.'**
-  String get actionTriggerOnTooltip;
-
   /// No description provided for @actionIntervalLabel.
   ///
   /// In en, this message translates to:
   /// **'Interval'**
   String get actionIntervalLabel;
-
-  /// No description provided for @actionIntervalTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Controls how often the action repeats for continuous gestures (wheel, swipe update, etc).'**
-  String get actionIntervalTooltip;
 
   /// No description provided for @actionThresholdLabel.
   ///
@@ -1246,23 +1192,11 @@ abstract class AppLocalizations {
   /// **'Threshold'**
   String get actionThresholdLabel;
 
-  /// No description provided for @actionThresholdTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Accumulated movement since the gesture began before this action fires. Same units as the trigger threshold.'**
-  String get actionThresholdTooltip;
-
   /// No description provided for @actionLimitLabel.
   ///
   /// In en, this message translates to:
   /// **'Limit'**
   String get actionLimitLabel;
-
-  /// No description provided for @actionLimitTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum times this action can fire during a single gesture.'**
-  String get actionLimitTooltip;
 
   /// No description provided for @actionConflictingLabel.
   ///
@@ -1270,23 +1204,11 @@ abstract class AppLocalizations {
   /// **'Conflicting'**
   String get actionConflictingLabel;
 
-  /// No description provided for @actionConflictingTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Whether this action participates in conflict resolution.'**
-  String get actionConflictingTooltip;
-
   /// No description provided for @actionConditionsTitle.
   ///
   /// In en, this message translates to:
   /// **'Action Conditions'**
   String get actionConditionsTitle;
-
-  /// No description provided for @actionConditionsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Conditions checked just before this action executes. The gesture fires regardless; only this action is skipped if unmet.'**
-  String get actionConditionsTooltip;
 
   /// No description provided for @actionChipOn.
   ///
@@ -2361,6 +2283,1608 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Draw a freeform path on the screen.'**
   String get templateTouchscreenStrokeDescription;
+
+  /// No description provided for @tooltip_actionConditions_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluated just before this action runs. The gesture still fires; only this action is skipped when conditions fail.'**
+  String get tooltip_actionConditions_body;
+
+  /// No description provided for @tooltip_actionConditions_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Same gesture, different action per context'**
+  String get tooltip_actionConditions_sectionLabel;
+
+  /// No description provided for @tooltip_actionConditions_ex1Label.
+  ///
+  /// In en, this message translates to:
+  /// **'Action 1 → Ctrl+T  (new tab)'**
+  String get tooltip_actionConditions_ex1Label;
+
+  /// No description provided for @tooltip_actionConditions_ex2Label.
+  ///
+  /// In en, this message translates to:
+  /// **'Action 2 → Ctrl+N  (new file)'**
+  String get tooltip_actionConditions_ex2Label;
+
+  /// No description provided for @tooltip_actionTriggerOn_body.
+  ///
+  /// In en, this message translates to:
+  /// **'When during the gesture lifecycle this action fires.'**
+  String get tooltip_actionTriggerOn_body;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleBegin.
+  ///
+  /// In en, this message translates to:
+  /// **'immediately on recognition'**
+  String get tooltip_actionTriggerOn_lifecycleBegin;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'every input move while active'**
+  String get tooltip_actionTriggerOn_lifecycleUpdate;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'gesture completes normally'**
+  String get tooltip_actionTriggerOn_lifecycleEnd;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'gesture is aborted'**
+  String get tooltip_actionTriggerOn_lifecycleCancel;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleEndCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'on both end AND cancel'**
+  String get tooltip_actionTriggerOn_lifecycleEndCancel;
+
+  /// No description provided for @tooltip_actionTriggerOn_lifecycleTick.
+  ///
+  /// In en, this message translates to:
+  /// **'at fixed time intervals while active'**
+  String get tooltip_actionTriggerOn_lifecycleTick;
+
+  /// No description provided for @tooltip_actionInterval_body.
+  ///
+  /// In en, this message translates to:
+  /// **'How often the action repeats on update and tick events.'**
+  String get tooltip_actionInterval_body;
+
+  /// No description provided for @tooltip_actionInterval_unitEmptyKey.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get tooltip_actionInterval_unitEmptyKey;
+
+  /// No description provided for @tooltip_actionInterval_unitEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'every input event or tick'**
+  String get tooltip_actionInterval_unitEmptyDesc;
+
+  /// No description provided for @tooltip_actionInterval_unitPlusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'only while delta is increasing'**
+  String get tooltip_actionInterval_unitPlusDesc;
+
+  /// No description provided for @tooltip_actionInterval_unitMinusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'only while delta is decreasing'**
+  String get tooltip_actionInterval_unitMinusDesc;
+
+  /// No description provided for @tooltip_actionInterval_unitNDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'once per N units of accumulated delta'**
+  String get tooltip_actionInterval_unitNDesc;
+
+  /// No description provided for @tooltip_actionInterval_exLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'fires every 4 scroll ticks'**
+  String get tooltip_actionInterval_exLabel;
+
+  /// No description provided for @tooltip_actionThreshold_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement since gesture start before this action fires. Same units as the trigger threshold.'**
+  String get tooltip_actionThreshold_body;
+
+  /// No description provided for @tooltip_actionThreshold_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get tooltip_actionThreshold_sectionLabel;
+
+  /// No description provided for @tooltip_actionThreshold_unitPinchScale.
+  ///
+  /// In en, this message translates to:
+  /// **'scale factor  (0.1 = 10%)'**
+  String get tooltip_actionThreshold_unitPinchScale;
+
+  /// No description provided for @tooltip_actionThreshold_noteTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlike the trigger threshold, this gates only this action after the gesture is already active.'**
+  String get tooltip_actionThreshold_noteTrigger;
+
+  /// No description provided for @tooltip_actionThreshold_noteRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a range like 50-200 to fire only within that movement window.'**
+  String get tooltip_actionThreshold_noteRange;
+
+  /// No description provided for @tooltip_actionConflicting_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Whether this action holds back competing gestures.'**
+  String get tooltip_actionConflicting_body;
+
+  /// No description provided for @tooltip_actionConflicting_onLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get tooltip_actionConflicting_onLabel;
+
+  /// No description provided for @tooltip_actionConflicting_onDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'hold back competing gestures until one wins'**
+  String get tooltip_actionConflicting_onDesc;
+
+  /// No description provided for @tooltip_actionConflicting_offLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get tooltip_actionConflicting_offLabel;
+
+  /// No description provided for @tooltip_actionConflicting_offDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'fire immediately, no blocking'**
+  String get tooltip_actionConflicting_offDesc;
+
+  /// No description provided for @tooltip_actionConflicting_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get tooltip_actionConflicting_sectionLabel;
+
+  /// No description provided for @tooltip_actionConflicting_exCode.
+  ///
+  /// In en, this message translates to:
+  /// **'2-finger swipe  +  3-finger swipe'**
+  String get tooltip_actionConflicting_exCode;
+
+  /// No description provided for @tooltip_actionConflicting_exLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'daemon waits to see which one completes'**
+  String get tooltip_actionConflicting_exLabel;
+
+  /// No description provided for @tooltip_actionLimit_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Max times this action fires in a single gesture.'**
+  String get tooltip_actionLimit_body;
+
+  /// No description provided for @tooltip_actionLimit_bulletUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'0 = unlimited (default)'**
+  String get tooltip_actionLimit_bulletUnlimited;
+
+  /// No description provided for @tooltip_actionLimit_bulletN.
+  ///
+  /// In en, this message translates to:
+  /// **'N = fires at most N times'**
+  String get tooltip_actionLimit_bulletN;
+
+  /// No description provided for @tooltip_actionLimit_exLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'fires once no matter how far the gesture travels'**
+  String get tooltip_actionLimit_exLabel;
+
+  /// No description provided for @tooltip_thresholdUnit_swipeStroke.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe / stroke'**
+  String get tooltip_thresholdUnit_swipeStroke;
+
+  /// No description provided for @tooltip_thresholdUnit_pixels.
+  ///
+  /// In en, this message translates to:
+  /// **'pixels'**
+  String get tooltip_thresholdUnit_pixels;
+
+  /// No description provided for @tooltip_thresholdUnit_wheel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wheel'**
+  String get tooltip_thresholdUnit_wheel;
+
+  /// No description provided for @tooltip_thresholdUnit_scrollTicks.
+  ///
+  /// In en, this message translates to:
+  /// **'scroll ticks'**
+  String get tooltip_thresholdUnit_scrollTicks;
+
+  /// No description provided for @tooltip_thresholdUnit_pinch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch'**
+  String get tooltip_thresholdUnit_pinch;
+
+  /// No description provided for @tooltip_thresholdUnit_rotateCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate / circle'**
+  String get tooltip_thresholdUnit_rotateCircle;
+
+  /// No description provided for @tooltip_thresholdUnit_degrees.
+  ///
+  /// In en, this message translates to:
+  /// **'degrees'**
+  String get tooltip_thresholdUnit_degrees;
+
+  /// No description provided for @tooltip_triggerConditions_body.
+  ///
+  /// In en, this message translates to:
+  /// **'All conditions must be true for this gesture to activate.'**
+  String get tooltip_triggerConditions_body;
+
+  /// No description provided for @tooltip_triggerConditions_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get tooltip_triggerConditions_sectionLabel;
+
+  /// No description provided for @tooltip_triggerConditions_ex1Label.
+  ///
+  /// In en, this message translates to:
+  /// **'Firefox only'**
+  String get tooltip_triggerConditions_ex1Label;
+
+  /// No description provided for @tooltip_triggerConditions_ex2Label.
+  ///
+  /// In en, this message translates to:
+  /// **'terminal only'**
+  String get tooltip_triggerConditions_ex2Label;
+
+  /// No description provided for @tooltip_triggerConditions_ex3Label.
+  ///
+  /// In en, this message translates to:
+  /// **'cursor over focused window'**
+  String get tooltip_triggerConditions_ex3Label;
+
+  /// No description provided for @tooltip_triggerConditions_ex4Label.
+  ///
+  /// In en, this message translates to:
+  /// **'cursor at right edge'**
+  String get tooltip_triggerConditions_ex4Label;
+
+  /// No description provided for @tooltip_triggerConditions_ex5Label.
+  ///
+  /// In en, this message translates to:
+  /// **'exactly 3 fingers'**
+  String get tooltip_triggerConditions_ex5Label;
+
+  /// No description provided for @tooltip_triggerConditions_noteAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows are AND-ed. Use an \"any\" group inside for OR logic.'**
+  String get tooltip_triggerConditions_noteAnd;
+
+  /// No description provided for @tooltip_triggerEndConditions_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked at the moment the gesture ends.'**
+  String get tooltip_triggerEndConditions_body;
+
+  /// No description provided for @tooltip_triggerEndConditions_metLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get tooltip_triggerEndConditions_metLabel;
+
+  /// No description provided for @tooltip_triggerEndConditions_metDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'gesture ends normally · on:end actions fire'**
+  String get tooltip_triggerEndConditions_metDesc;
+
+  /// No description provided for @tooltip_triggerEndConditions_notMetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not met'**
+  String get tooltip_triggerEndConditions_notMetLabel;
+
+  /// No description provided for @tooltip_triggerEndConditions_notMetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'gesture cancelled · on:cancel fires instead'**
+  String get tooltip_triggerEndConditions_notMetDesc;
+
+  /// No description provided for @tooltip_triggerEndConditions_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get tooltip_triggerEndConditions_sectionLabel;
+
+  /// No description provided for @tooltip_triggerEndConditions_exLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'cancel if finger travelled < 100 px'**
+  String get tooltip_triggerEndConditions_exLabel;
+
+  /// No description provided for @tooltip_triggerId_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Unique name for this trigger.'**
+  String get tooltip_triggerId_body;
+
+  /// No description provided for @tooltip_triggerId_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables exposed when set'**
+  String get tooltip_triggerId_sectionLabel;
+
+  /// No description provided for @tooltip_triggerId_ex1Label.
+  ///
+  /// In en, this message translates to:
+  /// **'true while gesture is running'**
+  String get tooltip_triggerId_ex1Label;
+
+  /// No description provided for @tooltip_triggerId_ex2Label.
+  ///
+  /// In en, this message translates to:
+  /// **'equals this id after it fires'**
+  String get tooltip_triggerId_ex2Label;
+
+  /// No description provided for @tooltip_triggerId_noteChain.
+  ///
+  /// In en, this message translates to:
+  /// **'Use in other gestures\' conditions to chain or block behaviors.'**
+  String get tooltip_triggerId_noteChain;
+
+  /// No description provided for @tooltip_triggerThreshold_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Min accumulated input before gesture is recognized.'**
+  String get tooltip_triggerThreshold_body;
+
+  /// No description provided for @tooltip_triggerThreshold_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Units by gesture type'**
+  String get tooltip_triggerThreshold_sectionLabel;
+
+  /// No description provided for @tooltip_triggerThreshold_unitPinchScale.
+  ///
+  /// In en, this message translates to:
+  /// **'scale factor  (e.g. 0.1 = 10%)'**
+  String get tooltip_triggerThreshold_unitPinchScale;
+
+  /// No description provided for @tooltip_triggerThreshold_unitPressKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Press'**
+  String get tooltip_triggerThreshold_unitPressKey;
+
+  /// No description provided for @tooltip_triggerThreshold_unitPressDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'n/a'**
+  String get tooltip_triggerThreshold_unitPressDesc;
+
+  /// No description provided for @tooltip_triggerThreshold_notePassthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Below threshold, input passes through to the app normally.'**
+  String get tooltip_triggerThreshold_notePassthrough;
+
+  /// No description provided for @tooltip_triggerThreshold_noteRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a range like 50-200: require ≥ 50, cancel if > 200.'**
+  String get tooltip_triggerThreshold_noteRange;
+
+  /// No description provided for @tooltip_triggerResumeTimeout_body.
+  ///
+  /// In en, this message translates to:
+  /// **'If the same gesture starts within N ms, it resumes instead of starting fresh.'**
+  String get tooltip_triggerResumeTimeout_body;
+
+  /// No description provided for @tooltip_triggerResumeTimeout_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Useful for'**
+  String get tooltip_triggerResumeTimeout_sectionLabel;
+
+  /// No description provided for @tooltip_triggerResumeTimeout_bulletMultiTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-tap sequences; brief pause keeps state.'**
+  String get tooltip_triggerResumeTimeout_bulletMultiTap;
+
+  /// No description provided for @tooltip_triggerResumeTimeout_bulletWheel.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeated wheel scrolls accumulating delta across gaps.'**
+  String get tooltip_triggerResumeTimeout_bulletWheel;
+
+  /// No description provided for @tooltip_triggerResumeTimeout_noteDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'0 = disabled (every gesture starts from scratch).'**
+  String get tooltip_triggerResumeTimeout_noteDisabled;
+
+  /// No description provided for @tooltip_triggerAccelerated_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale delta values by pointer acceleration.'**
+  String get tooltip_triggerAccelerated_body;
+
+  /// No description provided for @tooltip_triggerAccelerated_bulletOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable for proportional feel, e.g. move_by_delta actions.'**
+  String get tooltip_triggerAccelerated_bulletOn;
+
+  /// No description provided for @tooltip_triggerAccelerated_bulletOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable for uniform response, e.g. fixed key per tick.'**
+  String get tooltip_triggerAccelerated_bulletOff;
+
+  /// No description provided for @tooltip_triggerBlockEvents_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppress raw input from reaching other applications.'**
+  String get tooltip_triggerBlockEvents_body;
+
+  /// No description provided for @tooltip_triggerBlockEvents_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get tooltip_triggerBlockEvents_sectionLabel;
+
+  /// No description provided for @tooltip_triggerBlockEvents_exCode.
+  ///
+  /// In en, this message translates to:
+  /// **'right-click stroke gesture'**
+  String get tooltip_triggerBlockEvents_exCode;
+
+  /// No description provided for @tooltip_triggerBlockEvents_exLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'context menu blocked'**
+  String get tooltip_triggerBlockEvents_exLabel;
+
+  /// No description provided for @tooltip_triggerBlockEvents_noteDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable if the app should also receive those events while the gesture is active.'**
+  String get tooltip_triggerBlockEvents_noteDisable;
+
+  /// No description provided for @tooltip_triggerClearModifiers_prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Release'**
+  String get tooltip_triggerClearModifiers_prefix;
+
+  /// No description provided for @tooltip_triggerClearModifiers_suffix.
+  ///
+  /// In en, this message translates to:
+  /// **'when the gesture begins.'**
+  String get tooltip_triggerClearModifiers_suffix;
+
+  /// No description provided for @tooltip_triggerClearModifiers_noteAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-enabled when an input: action is present; prevents modifier keys from leaking into replayed events.'**
+  String get tooltip_triggerClearModifiers_noteAuto;
+
+  /// No description provided for @tooltip_triggerClearModifiers_noteDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable only if you intentionally need the modifiers held during the action.'**
+  String get tooltip_triggerClearModifiers_noteDisable;
+
+  /// No description provided for @tooltip_triggerSetLastTrigger_prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get tooltip_triggerSetLastTrigger_prefix;
+
+  /// No description provided for @tooltip_triggerSetLastTrigger_suffix.
+  ///
+  /// In en, this message translates to:
+  /// **'to this trigger\'s ID when it fires.'**
+  String get tooltip_triggerSetLastTrigger_suffix;
+
+  /// No description provided for @tooltip_triggerSetLastTrigger_noteChain.
+  ///
+  /// In en, this message translates to:
+  /// **'Use in other gestures\' conditions to build sequences.'**
+  String get tooltip_triggerSetLastTrigger_noteChain;
+
+  /// No description provided for @tooltip_triggerSetLastTrigger_noteDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable for utility triggers you don\'t want polluting state.'**
+  String get tooltip_triggerSetLastTrigger_noteDisable;
+
+  /// No description provided for @tooltip_keySequence_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Two formats available, pick whichever feels right.'**
+  String get tooltip_keySequence_body;
+
+  /// No description provided for @tooltip_keySequence_chordSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chord format'**
+  String get tooltip_keySequence_chordSectionLabel;
+
+  /// No description provided for @tooltip_keySequence_chordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and release all keys as one chord.'**
+  String get tooltip_keySequence_chordDesc;
+
+  /// No description provided for @tooltip_keySequence_tokenSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Token format'**
+  String get tooltip_keySequence_tokenSectionLabel;
+
+  /// No description provided for @tooltip_keySequence_tokenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full control over press / release timing.'**
+  String get tooltip_keySequence_tokenDesc;
+
+  /// No description provided for @tooltip_keySequence_pressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'press'**
+  String get tooltip_keySequence_pressLabel;
+
+  /// No description provided for @tooltip_keySequence_releaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'release'**
+  String get tooltip_keySequence_releaseLabel;
+
+  /// No description provided for @tooltip_buttonSequence_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse button press / release sequence.'**
+  String get tooltip_buttonSequence_body;
+
+  /// No description provided for @tooltip_buttonSequence_pressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'press'**
+  String get tooltip_buttonSequence_pressLabel;
+
+  /// No description provided for @tooltip_buttonSequence_releaseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'release'**
+  String get tooltip_buttonSequence_releaseLabel;
+
+  /// No description provided for @tooltip_buttonSequence_noteButtons.
+  ///
+  /// In en, this message translates to:
+  /// **'Available buttons: left, right, middle, back, forward.'**
+  String get tooltip_buttonSequence_noteButtons;
+
+  /// No description provided for @dialogUnsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Changes'**
+  String get dialogUnsavedChangesTitle;
+
+  /// No description provided for @dialogUnsavedChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes. Apply them or discard before leaving.'**
+  String get dialogUnsavedChangesBody;
+
+  /// No description provided for @actionApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get actionApply;
+
+  /// No description provided for @dialogAddActionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add action'**
+  String get dialogAddActionTitle;
+
+  /// No description provided for @actionIntervalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'+, -, or number'**
+  String get actionIntervalHint;
+
+  /// No description provided for @actionLimitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 = unlimited'**
+  String get actionLimitHint;
+
+  /// No description provided for @actionPlasmaComponentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Component'**
+  String get actionPlasmaComponentLabel;
+
+  /// No description provided for @actionPlasmaComponentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Plasma shortcut component. Find in ~/.config/kglobalshortcutsrc, text inside brackets. Replace dots and dashes with underscores. Example: org_kde_dolphin_desktop'**
+  String get actionPlasmaComponentTooltip;
+
+  /// No description provided for @actionPlasmaComponentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. org_kde_dolphin_desktop'**
+  String get actionPlasmaComponentHint;
+
+  /// No description provided for @actionPlasmaShortcutLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut'**
+  String get actionPlasmaShortcutLabel;
+
+  /// No description provided for @actionPlasmaShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut name within the component. In kglobalshortcutsrc, it is the text before \"=\" on each line.'**
+  String get actionPlasmaShortcutTooltip;
+
+  /// No description provided for @actionPlasmaShortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Show Desktop'**
+  String get actionPlasmaShortcutHint;
+
+  /// No description provided for @plasmaShortcutPickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search…'**
+  String get plasmaShortcutPickerSearch;
+
+  /// No description provided for @plasmaShortcutPickerSelectComponent.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a component'**
+  String get plasmaShortcutPickerSelectComponent;
+
+  /// No description provided for @plasmaShortcutPickerNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No shortcuts found'**
+  String get plasmaShortcutPickerNoResults;
+
+  /// No description provided for @plasmaShortcutPickerApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get plasmaShortcutPickerApplications;
+
+  /// No description provided for @plasmaShortcutPickerSystemServices.
+  ///
+  /// In en, this message translates to:
+  /// **'System Services'**
+  String get plasmaShortcutPickerSystemServices;
+
+  /// No description provided for @plasmaShortcutPickerSelectShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Select shortcut'**
+  String get plasmaShortcutPickerSelectShortcut;
+
+  /// No description provided for @plasmaShortcutPickerCombinedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Component & Shortcut'**
+  String get plasmaShortcutPickerCombinedLabel;
+
+  /// No description provided for @plasmaShortcutPickerCombinedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a Plasma component and one of its registered shortcuts from the picker. Use Manual entry if your shortcut is not listed.'**
+  String get plasmaShortcutPickerCombinedTooltip;
+
+  /// No description provided for @plasmaShortcutPickerUsePicker.
+  ///
+  /// In en, this message translates to:
+  /// **'Use picker'**
+  String get plasmaShortcutPickerUsePicker;
+
+  /// No description provided for @plasmaShortcutPickerManualEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual entry'**
+  String get plasmaShortcutPickerManualEntry;
+
+  /// No description provided for @actionSleepDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration (ms)'**
+  String get actionSleepDurationLabel;
+
+  /// No description provided for @actionSleepDurationTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'How long to pause before the next action runs. Useful for timing issues with input or window focus.'**
+  String get actionSleepDurationTooltip;
+
+  /// No description provided for @actionSleepDurationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'500'**
+  String get actionSleepDurationHint;
+
+  /// No description provided for @groupMenuRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get groupMenuRename;
+
+  /// No description provided for @groupMenuBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakdown'**
+  String get groupMenuBreakdown;
+
+  /// No description provided for @groupMenuDeleteWithGestures.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete with gestures'**
+  String get groupMenuDeleteWithGestures;
+
+  /// No description provided for @strokeRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke {n}'**
+  String strokeRowTitle(int n);
+
+  /// No description provided for @strokeRowPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} sample points'**
+  String strokeRowPoints(int n);
+
+  /// No description provided for @strokeRowInvalidData.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid stroke data'**
+  String get strokeRowInvalidData;
+
+  /// No description provided for @strokePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke preview'**
+  String get strokePreviewTitle;
+
+  /// No description provided for @inputDevicesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input devices'**
+  String get inputDevicesLabel;
+
+  /// No description provided for @inputAddDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Add device'**
+  String get inputAddDevice;
+
+  /// No description provided for @inputKeySequenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Sequence'**
+  String get inputKeySequenceLabel;
+
+  /// No description provided for @inputKeySequenceRecordTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a sequence of keystrokes.'**
+  String get inputKeySequenceRecordTip;
+
+  /// No description provided for @inputKeySequenceRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record keystrokes'**
+  String get inputKeySequenceRecordTitle;
+
+  /// No description provided for @inputKeySequenceRecordingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording keystrokes...'**
+  String get inputKeySequenceRecordingTitle;
+
+  /// No description provided for @inputKeySequenceRecordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Press any key to record.'**
+  String get inputKeySequenceRecordPrompt;
+
+  /// No description provided for @inputKeySequenceStopAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop & Add'**
+  String get inputKeySequenceStopAdd;
+
+  /// No description provided for @inputButtonSequenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Button Sequence'**
+  String get inputButtonSequenceLabel;
+
+  /// No description provided for @inputButtonSequenceRecordTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Record mouse button clicks.'**
+  String get inputButtonSequenceRecordTip;
+
+  /// No description provided for @inputButtonSequenceRecordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record mouse buttons'**
+  String get inputButtonSequenceRecordTitle;
+
+  /// No description provided for @inputButtonSequenceRecordPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Click any mouse button here'**
+  String get inputButtonSequenceRecordPrompt;
+
+  /// No description provided for @inputButtonSequenceAddToSeq.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to sequence'**
+  String get inputButtonSequenceAddToSeq;
+
+  /// No description provided for @inputTextToTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text to type'**
+  String get inputTextToTypeLabel;
+
+  /// No description provided for @inputDeviceFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get inputDeviceFieldLabel;
+
+  /// No description provided for @inputDeviceFieldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Whether to simulate keyboard or mouse input.'**
+  String get inputDeviceFieldTooltip;
+
+  /// No description provided for @inputActionTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Action type'**
+  String get inputActionTypeLabel;
+
+  /// No description provided for @inputActionTypeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.'**
+  String get inputActionTypeTooltip;
+
+  /// No description provided for @mouseDeltaMultiplierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiplier'**
+  String get mouseDeltaMultiplierLabel;
+
+  /// No description provided for @mouseDeltaMultiplierTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Scale factor applied to the gesture movement delta. 1 moves the pointer by the same distance as the gesture, 2 doubles it, 0.5 halves it.'**
+  String get mouseDeltaMultiplierTooltip;
+
+  /// No description provided for @motionSpeedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Motion Speed'**
+  String get motionSpeedLabel;
+
+  /// No description provided for @motionSpeedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.'**
+  String get motionSpeedTooltip;
+
+  /// No description provided for @motionLockPointerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock pointer'**
+  String get motionLockPointerLabel;
+
+  /// No description provided for @motionLockPointerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Prevent the pointer from moving on screen while this gesture is active.'**
+  String get motionLockPointerTooltip;
+
+  /// No description provided for @swipeMinAngleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Min angle °'**
+  String get swipeMinAngleLabel;
+
+  /// No description provided for @swipeMinAngleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start of the angle range. 0° = right, 90° = up, 180° = left, 270° = down. Drag the handle on the wheel or type a value.'**
+  String get swipeMinAngleTooltip;
+
+  /// No description provided for @swipeMaxAngleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max angle °'**
+  String get swipeMaxAngleLabel;
+
+  /// No description provided for @swipeMaxAngleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'End of the angle range. If min < max the range is between them. If min > max, the range wraps around (e.g. 330-30 covers rightward motion).'**
+  String get swipeMaxAngleTooltip;
+
+  /// No description provided for @swipeAngleBidirectionalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bidirectional'**
+  String get swipeAngleBidirectionalLabel;
+
+  /// No description provided for @swipeAngleBidirectionalTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Also match motion in the opposite angle range. That motion will have a negative delta value.\n\nWhen angle ranges overlap, the normal one takes priority over the opposite one.'**
+  String get swipeAngleBidirectionalTooltip;
+
+  /// No description provided for @swipeDirectionBidirectionalTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Also match motion in the opposite direction. Motion in the opposite direction will have a negative delta value.'**
+  String get swipeDirectionBidirectionalTooltip;
+
+  /// No description provided for @mouseButtonsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse buttons'**
+  String get mouseButtonsSectionTitle;
+
+  /// No description provided for @mouseButtonsSectionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse buttons that must be held while performing this gesture.'**
+  String get mouseButtonsSectionTooltip;
+
+  /// No description provided for @mouseButtonsExactOrderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact order'**
+  String get mouseButtonsExactOrderLabel;
+
+  /// No description provided for @mouseButtonsExactOrderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Require buttons to be pressed in exactly the order shown. When disabled, all selected buttons must be held but in any order.'**
+  String get mouseButtonsExactOrderTooltip;
+
+  /// No description provided for @conditionMenuAddConditionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition'**
+  String get conditionMenuAddConditionTitle;
+
+  /// No description provided for @conditionMenuAddConditionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A single condition'**
+  String get conditionMenuAddConditionSubtitle;
+
+  /// No description provided for @conditionMenuAddGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get conditionMenuAddGroupTitle;
+
+  /// No description provided for @conditionMenuAddGroupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection of conditions.'**
+  String get conditionMenuAddGroupSubtitle;
+
+  /// No description provided for @renameGroupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get renameGroupHint;
+
+  /// No description provided for @varGroupActiveWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Window'**
+  String get varGroupActiveWindow;
+
+  /// No description provided for @varGroupWindowUnderPointer.
+  ///
+  /// In en, this message translates to:
+  /// **'Window Under Pointer'**
+  String get varGroupWindowUnderPointer;
+
+  /// No description provided for @varGroupWindowUnderFingers.
+  ///
+  /// In en, this message translates to:
+  /// **'Window Under Fingers'**
+  String get varGroupWindowUnderFingers;
+
+  /// No description provided for @varGroupPointer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer'**
+  String get varGroupPointer;
+
+  /// No description provided for @varGroupFingerPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger Position'**
+  String get varGroupFingerPosition;
+
+  /// No description provided for @varGroupFingerInitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger Initial Position'**
+  String get varGroupFingerInitialPosition;
+
+  /// No description provided for @varGroupFingerPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger Pressure'**
+  String get varGroupFingerPressure;
+
+  /// No description provided for @varGroupThumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb'**
+  String get varGroupThumb;
+
+  /// No description provided for @varGroupInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get varGroupInput;
+
+  /// No description provided for @varGroupState.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get varGroupState;
+
+  /// No description provided for @varGroupDeviceIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Identity'**
+  String get varGroupDeviceIdentity;
+
+  /// No description provided for @varGroupDeviceType.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Type'**
+  String get varGroupDeviceType;
+
+  /// No description provided for @varLabel_windowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window - title'**
+  String get varLabel_windowTitle;
+
+  /// No description provided for @varLabel_windowClass.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window - app class'**
+  String get varLabel_windowClass;
+
+  /// No description provided for @varLabel_windowName.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window - name'**
+  String get varLabel_windowName;
+
+  /// No description provided for @varLabel_windowId.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window - ID'**
+  String get varLabel_windowId;
+
+  /// No description provided for @varLabel_windowPid.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window - process ID'**
+  String get varLabel_windowPid;
+
+  /// No description provided for @varLabel_windowFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window is fullscreen'**
+  String get varLabel_windowFullscreen;
+
+  /// No description provided for @varLabel_windowMaximized.
+  ///
+  /// In en, this message translates to:
+  /// **'Active window is maximized'**
+  String get varLabel_windowMaximized;
+
+  /// No description provided for @varLabel_windowUnderPointerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window - title'**
+  String get varLabel_windowUnderPointerTitle;
+
+  /// No description provided for @varLabel_windowUnderPointerClass.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window - app class'**
+  String get varLabel_windowUnderPointerClass;
+
+  /// No description provided for @varLabel_windowUnderPointerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window - name'**
+  String get varLabel_windowUnderPointerName;
+
+  /// No description provided for @varLabel_windowUnderPointerId.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window - ID'**
+  String get varLabel_windowUnderPointerId;
+
+  /// No description provided for @varLabel_windowUnderPointerPid.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window - process ID'**
+  String get varLabel_windowUnderPointerPid;
+
+  /// No description provided for @varLabel_windowUnderPointerFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window is fullscreen'**
+  String get varLabel_windowUnderPointerFullscreen;
+
+  /// No description provided for @varLabel_windowUnderPointerMaximized.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer window is maximized'**
+  String get varLabel_windowUnderPointerMaximized;
+
+  /// No description provided for @varLabel_windowUnderFingersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window - title'**
+  String get varLabel_windowUnderFingersTitle;
+
+  /// No description provided for @varLabel_windowUnderFingersClass.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window - app class'**
+  String get varLabel_windowUnderFingersClass;
+
+  /// No description provided for @varLabel_windowUnderFingersName.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window - name'**
+  String get varLabel_windowUnderFingersName;
+
+  /// No description provided for @varLabel_windowUnderFingersId.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window - ID'**
+  String get varLabel_windowUnderFingersId;
+
+  /// No description provided for @varLabel_windowUnderFingersPid.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window - process ID'**
+  String get varLabel_windowUnderFingersPid;
+
+  /// No description provided for @varLabel_windowUnderFingersFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window is fullscreen'**
+  String get varLabel_windowUnderFingersFullscreen;
+
+  /// No description provided for @varLabel_windowUnderFingersMaximized.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingers window is maximized'**
+  String get varLabel_windowUnderFingersMaximized;
+
+  /// No description provided for @varLabel_pointerPositionScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position (screen %)'**
+  String get varLabel_pointerPositionScreen;
+
+  /// No description provided for @varLabel_pointerPositionScreenX.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position X (screen %)'**
+  String get varLabel_pointerPositionScreenX;
+
+  /// No description provided for @varLabel_pointerPositionScreenY.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position Y (screen %)'**
+  String get varLabel_pointerPositionScreenY;
+
+  /// No description provided for @varLabel_pointerPositionWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position (window %)'**
+  String get varLabel_pointerPositionWindow;
+
+  /// No description provided for @varLabel_pointerPositionWindowX.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position X (window %)'**
+  String get varLabel_pointerPositionWindowX;
+
+  /// No description provided for @varLabel_pointerPositionWindowY.
+  ///
+  /// In en, this message translates to:
+  /// **'Pointer position Y (window %)'**
+  String get varLabel_pointerPositionWindowY;
+
+  /// No description provided for @varLabel_finger1Position.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 position %'**
+  String get varLabel_finger1Position;
+
+  /// No description provided for @varLabel_finger1PositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 position X %'**
+  String get varLabel_finger1PositionX;
+
+  /// No description provided for @varLabel_finger1PositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 position Y %'**
+  String get varLabel_finger1PositionY;
+
+  /// No description provided for @varLabel_finger2Position.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 position %'**
+  String get varLabel_finger2Position;
+
+  /// No description provided for @varLabel_finger2PositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 position X %'**
+  String get varLabel_finger2PositionX;
+
+  /// No description provided for @varLabel_finger2PositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 position Y %'**
+  String get varLabel_finger2PositionY;
+
+  /// No description provided for @varLabel_finger3Position.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 position %'**
+  String get varLabel_finger3Position;
+
+  /// No description provided for @varLabel_finger3PositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 position X %'**
+  String get varLabel_finger3PositionX;
+
+  /// No description provided for @varLabel_finger3PositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 position Y %'**
+  String get varLabel_finger3PositionY;
+
+  /// No description provided for @varLabel_finger4Position.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 position %'**
+  String get varLabel_finger4Position;
+
+  /// No description provided for @varLabel_finger4PositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 position X %'**
+  String get varLabel_finger4PositionX;
+
+  /// No description provided for @varLabel_finger4PositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 position Y %'**
+  String get varLabel_finger4PositionY;
+
+  /// No description provided for @varLabel_finger5Position.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 position %'**
+  String get varLabel_finger5Position;
+
+  /// No description provided for @varLabel_finger5PositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 position X %'**
+  String get varLabel_finger5PositionX;
+
+  /// No description provided for @varLabel_finger5PositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 position Y %'**
+  String get varLabel_finger5PositionY;
+
+  /// No description provided for @varLabel_finger1InitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 initial position %'**
+  String get varLabel_finger1InitialPosition;
+
+  /// No description provided for @varLabel_finger1InitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 initial position X %'**
+  String get varLabel_finger1InitialPositionX;
+
+  /// No description provided for @varLabel_finger1InitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 initial position Y %'**
+  String get varLabel_finger1InitialPositionY;
+
+  /// No description provided for @varLabel_finger2InitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 initial position %'**
+  String get varLabel_finger2InitialPosition;
+
+  /// No description provided for @varLabel_finger2InitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 initial position X %'**
+  String get varLabel_finger2InitialPositionX;
+
+  /// No description provided for @varLabel_finger2InitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 initial position Y %'**
+  String get varLabel_finger2InitialPositionY;
+
+  /// No description provided for @varLabel_finger3InitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 initial position %'**
+  String get varLabel_finger3InitialPosition;
+
+  /// No description provided for @varLabel_finger3InitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 initial position X %'**
+  String get varLabel_finger3InitialPositionX;
+
+  /// No description provided for @varLabel_finger3InitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 initial position Y %'**
+  String get varLabel_finger3InitialPositionY;
+
+  /// No description provided for @varLabel_finger4InitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 initial position %'**
+  String get varLabel_finger4InitialPosition;
+
+  /// No description provided for @varLabel_finger4InitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 initial position X %'**
+  String get varLabel_finger4InitialPositionX;
+
+  /// No description provided for @varLabel_finger4InitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 initial position Y %'**
+  String get varLabel_finger4InitialPositionY;
+
+  /// No description provided for @varLabel_finger5InitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 initial position %'**
+  String get varLabel_finger5InitialPosition;
+
+  /// No description provided for @varLabel_finger5InitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 initial position X %'**
+  String get varLabel_finger5InitialPositionX;
+
+  /// No description provided for @varLabel_finger5InitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 initial position Y %'**
+  String get varLabel_finger5InitialPositionY;
+
+  /// No description provided for @varLabel_finger1Pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 1 pressure'**
+  String get varLabel_finger1Pressure;
+
+  /// No description provided for @varLabel_finger2Pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 2 pressure'**
+  String get varLabel_finger2Pressure;
+
+  /// No description provided for @varLabel_finger3Pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 3 pressure'**
+  String get varLabel_finger3Pressure;
+
+  /// No description provided for @varLabel_finger4Pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 4 pressure'**
+  String get varLabel_finger4Pressure;
+
+  /// No description provided for @varLabel_finger5Pressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger 5 pressure'**
+  String get varLabel_finger5Pressure;
+
+  /// No description provided for @varLabel_thumbPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb present'**
+  String get varLabel_thumbPresent;
+
+  /// No description provided for @varLabel_thumbPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb position %'**
+  String get varLabel_thumbPosition;
+
+  /// No description provided for @varLabel_thumbPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb position X %'**
+  String get varLabel_thumbPositionX;
+
+  /// No description provided for @varLabel_thumbPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb position Y %'**
+  String get varLabel_thumbPositionY;
+
+  /// No description provided for @varLabel_thumbInitialPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb initial position %'**
+  String get varLabel_thumbInitialPosition;
+
+  /// No description provided for @varLabel_thumbInitialPositionX.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb initial position X %'**
+  String get varLabel_thumbInitialPositionX;
+
+  /// No description provided for @varLabel_thumbInitialPositionY.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb initial position Y %'**
+  String get varLabel_thumbInitialPositionY;
+
+  /// No description provided for @varLabel_fingers.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of fingers'**
+  String get varLabel_fingers;
+
+  /// No description provided for @varLabel_keyboardModifiers.
+  ///
+  /// In en, this message translates to:
+  /// **'Held modifier keys'**
+  String get varLabel_keyboardModifiers;
+
+  /// No description provided for @varLabel_cursorShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Cursor shape'**
+  String get varLabel_cursorShape;
+
+  /// No description provided for @varLabel_screenName.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen name'**
+  String get varLabel_screenName;
+
+  /// No description provided for @varLabel_plasmaOverviewActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Plasma overview active'**
+  String get varLabel_plasmaOverviewActive;
+
+  /// No description provided for @varLabel_lastTriggerId.
+  ///
+  /// In en, this message translates to:
+  /// **'Last trigger ID'**
+  String get varLabel_lastTriggerId;
+
+  /// No description provided for @varLabel_timeSinceLastTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Time since last trigger'**
+  String get varLabel_timeSinceLastTrigger;
+
+  /// No description provided for @varLabel_deviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get varLabel_deviceName;
+
+  /// No description provided for @varLabel_deviceTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Device types'**
+  String get varLabel_deviceTypes;
+
+  /// No description provided for @varLabel_deviceIsKeyboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Is keyboard'**
+  String get varLabel_deviceIsKeyboard;
+
+  /// No description provided for @varLabel_deviceIsMouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Is mouse'**
+  String get varLabel_deviceIsMouse;
+
+  /// No description provided for @varLabel_deviceIsTouchpad.
+  ///
+  /// In en, this message translates to:
+  /// **'Is touchpad'**
+  String get varLabel_deviceIsTouchpad;
+
+  /// No description provided for @varLabel_deviceIsTouchscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Is touchscreen'**
+  String get varLabel_deviceIsTouchscreen;
 }
 
 class _AppLocalizationsDelegate

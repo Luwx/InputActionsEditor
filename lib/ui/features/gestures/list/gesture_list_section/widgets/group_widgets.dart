@@ -218,25 +218,29 @@ class _GroupContextMenu extends StatelessWidget {
                 children: [
                   FItem(
                     prefix: const Icon(FLucideIcons.pencil),
-                    title: const Text('Rename'),
+                    title: Text(context.l10n.groupMenuRename),
                     onPress: onRename,
                   ),
                   FItem(
                     prefix: Icon(
                       group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye,
                     ),
-                    title: Text(group.enabled ? 'Disable' : 'Enable'),
+                    title: Text(
+                      group.enabled
+                          ? context.l10n.gestureMenuDisable
+                          : context.l10n.gestureMenuEnable,
+                    ),
                     onPress: onToggleEnabled,
                   ),
                   FItem(
                     prefix: const Icon(FLucideIcons.folderOpen),
-                    title: const Text('Breakdown'),
+                    title: Text(context.l10n.groupMenuBreakdown),
                     onPress: onBreakdown,
                   ),
                   FItem(
                     variant: FItemVariant.destructive,
                     prefix: const Icon(FLucideIcons.trash2),
-                    title: const Text('Delete with gestures'),
+                    title: Text(context.l10n.groupMenuDeleteWithGestures),
                     onPress: onDelete,
                   ),
                 ],

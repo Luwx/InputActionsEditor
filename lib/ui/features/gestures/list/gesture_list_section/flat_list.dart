@@ -41,7 +41,8 @@ List<_FlatItem> _buildFlatList(
           _GestureRowItem(
             device: deviceFilter,
             configIndex: index,
-            gesture: gesture,
+            groupId: gesture.common.groupId,
+            editId: gesture.common.editId,
             localGroupIndex: localIndex,
             isLastInGroup: localIndex == groupGestures.length - 1,
             isVisible: !isCollapsed,
@@ -55,7 +56,8 @@ List<_FlatItem> _buildFlatList(
         _GestureRowItem(
           device: deviceFilter,
           configIndex: index,
-          gesture: gesture,
+          groupId: gesture.common.groupId,
+          editId: gesture.common.editId,
         ),
       );
     }
@@ -67,31 +69,36 @@ List<_FlatItem> _buildFlatList(
       _GestureRowItem(
         device: DeviceType.mouse,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.keyboardGestures.indexed)
       _GestureRowItem(
         device: DeviceType.keyboard,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.pointerGestures.indexed)
       _GestureRowItem(
         device: DeviceType.pointer,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.touchpadGestures.indexed)
       _GestureRowItem(
         device: DeviceType.touchpad,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.touchscreenGestures.indexed)
       _GestureRowItem(
         device: DeviceType.touchscreen,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
   ];
 }

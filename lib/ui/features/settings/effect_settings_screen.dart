@@ -18,6 +18,7 @@ import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class EffectSettingsScreen extends ConsumerWidget {
   const EffectSettingsScreen({super.key});
@@ -64,21 +65,15 @@ class EffectSettingsScreen extends ConsumerWidget {
     void revertGlobalSettings(GlobalSettings next) => controller.add(
       SetLens<GlobalSettings>(globalSettingsLens, next),
     );
-    final autoreloadField = ref.field(
-      globalSettingsAutoreloadLens(),
-      fallbackValue: () => gs.autoreload,
-    );
+    final autoreloadField = ref.field(globalSettingsAutoreloadLens());
     final externalVariableAccessField = ref.field(
       globalSettingsExternalVariableAccessLens(),
-      fallbackValue: () => gs.externalVariableAccess,
     );
     final notificationsConfigErrorField = ref.field(
       globalSettingsNotificationsConfigErrorLens(),
-      fallbackValue: () => gs.notificationsConfigError,
     );
     final emergencyCombinationField = ref.field(
       globalSettingsEmergencyCombinationLens(),
-      fallbackValue: () => gs.emergencyCombination,
     );
 
     return ScrollbarMediaPadding(
@@ -86,14 +81,14 @@ class EffectSettingsScreen extends ConsumerWidget {
       child: CustomScrollView(
         slivers: [
           SliverFrostedAppBar(
-            title: 'Effect Settings',
+            title: context.l10n.effectSettingsTitle,
             titleWidget: UnsavedLabel(
               state: screenState,
               onRevert: savedSettings == null
                   ? null
                   : () => revertGlobalSettings(savedSettings),
               child: Text(
-                'Effect Settings',
+                context.l10n.effectSettingsTitle,
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
@@ -118,18 +113,19 @@ class EffectSettingsScreen extends ConsumerWidget {
                                     savedSettings.externalVariableAccess,
                               ),
                             ),
-                      child: const Text('General'),
+                      child: Text(context.l10n.effectSettingsGeneralTitle),
                     ),
                     children: [
                       FTile(
                         title: UnsavedLabel(
                           state: autoreloadField.dirty,
                           onRevert: autoreloadField.onRevert,
-                          child: const Text('Auto Reload'),
+                          child: Text(
+                            context.l10n.effectSettingsAutoReloadLabel,
+                          ),
                         ),
-                        subtitle: const Text(
-                          'Automatically reload the configuration'
-                          ' when the file changes.',
+                        subtitle: Text(
+                          context.l10n.effectSettingsAutoReloadSubtitle,
                         ),
                         suffix: FSwitch(
                           value: gs.effectiveAutoreload,
@@ -141,11 +137,12 @@ class EffectSettingsScreen extends ConsumerWidget {
                         title: UnsavedLabel(
                           state: externalVariableAccessField.dirty,
                           onRevert: externalVariableAccessField.onRevert,
-                          child: const Text('External Variable Access'),
+                          child: Text(
+                            context.l10n.effectSettingsExternalVarAccessLabel,
+                          ),
                         ),
-                        subtitle: const Text(
-                          'Allow dumping variables by'
-                          ' running "inputactions variables list".',
+                        subtitle: Text(
+                          context.l10n.effectSettingsExternalVarAccessSubtitle,
                         ),
                         suffix: FSwitch(
                           value: gs.effectiveExternalVariableAccess,
@@ -178,18 +175,21 @@ class EffectSettingsScreen extends ConsumerWidget {
                                     savedSettings.notificationsConfigError,
                               ),
                             ),
-                      child: const Text('Notifications'),
+                      child: Text(
+                        context.l10n.effectSettingsNotificationsTitle,
+                      ),
                     ),
                     children: [
                       FTile(
                         title: UnsavedLabel(
                           state: notificationsConfigErrorField.dirty,
                           onRevert: notificationsConfigErrorField.onRevert,
-                          child: const Text('Config Error Notification'),
+                          child: Text(
+                            context.l10n.effectSettingsConfigErrorLabel,
+                          ),
                         ),
-                        subtitle: const Text(
-                          'Send a desktop notification when the'
-                          ' configuration fails to load.',
+                        subtitle: Text(
+                          context.l10n.effectSettingsConfigErrorSubtitle,
                         ),
                         suffix: FSwitch(
                           value: gs.effectiveNotificationsConfigError,
@@ -284,7 +284,7 @@ class _EmergencyCombinationSection extends HookWidget {
         state: dirtyState,
         onRevert: onRevert,
         child: Text(
-          'Emergency Combination',
+          context.l10n.effectSettingsEmergencyComboTitle,
           style: typography.sm.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
@@ -304,17 +304,14 @@ class _EmergencyCombinationSection extends HookWidget {
                 controller: ctrl,
                 onChange: (_) {},
               ),
-              hint: 'backspace, enter, space',
+              hint: context.l10n.effectSettingsEmergencyComboKeysHint,
               label: UnsavedLabel(
                 state: fieldState,
                 onRevert: onRevert,
-                child: const Text('Keys (comma-separated scancodes)'),
+                child: Text(context.l10n.effectSettingsEmergencyComboKeysLabel),
               ),
-              description: const Text(
-                'Keyboard keys that can be pressed in any'
-                ' order and held for 2 seconds to suspend'
-                ' InputActions until the next config reload.'
-                ' Set to empty to disable.',
+              description: Text(
+                context.l10n.effectSettingsEmergencyComboDescription,
               ),
               onSubmit: commit,
             ),

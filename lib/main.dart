@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dbus/dbus.dart';
+// import 'package:flutter/rendering.dart';
 // import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,9 @@ void main() async {
     await _setupTrayMode();
   }
   // timeDilation = 10;
+
+  // rainbow debug
+  // debugRepaintRainbowEnabled = true; // Turn on rainbow overlays
 
   final windowService = WindowService();
   await windowService.initialize();

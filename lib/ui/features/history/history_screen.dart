@@ -16,6 +16,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/path_preview.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -38,12 +39,12 @@ class HistoryScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No recognition events yet.',
+              context.l10n.historyEmpty,
               style: typography.sm.copyWith(color: colors.mutedForeground),
             ),
             const SizedBox(height: 4),
             Text(
-              'Perform a gesture while the daemon is running.',
+              context.l10n.historyEmptyHint,
               style: typography.xs.copyWith(color: colors.mutedForeground),
             ),
           ],
@@ -72,12 +73,12 @@ class HistoryScreen extends ConsumerWidget {
                 size: .sm,
                 onPress: () =>
                     ref.read(recognitionHistoryProvider.notifier).clear(),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(FLucideIcons.trash2, size: 14),
-                    SizedBox(width: 4),
-                    Text('Clear'),
+                    const Icon(FLucideIcons.trash2, size: 14),
+                    const SizedBox(width: 4),
+                    Text(context.l10n.actionClear),
                   ],
                 ),
               ),
@@ -261,7 +262,7 @@ class _EventTile extends StatelessWidget {
       useRootNavigator: true,
       builder: (context, style, animation) => AppDialog(
         animation: animation,
-        title: Text(event.triggerType ?? 'Path preview'),
+        title: Text(event.triggerType ?? context.l10n.historyPathPreview),
         body: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -314,7 +315,7 @@ class _EventTile extends StatelessWidget {
         actions: [
           FButton(
             onPress: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(context.l10n.historyClose),
           ),
         ],
       ),

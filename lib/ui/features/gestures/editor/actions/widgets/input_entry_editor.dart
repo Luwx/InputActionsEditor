@@ -17,6 +17,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
@@ -26,6 +27,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/i
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
@@ -68,6 +70,23 @@ class InputEntryEditor extends HookWidget {
     );
 
     final mode = inferInputEntryMode(entry);
+
+    final tokenKey = entry.tokens.join(', ');
+    useEffect(() {
+      if (KeySequenceParser.toTokens(
+            KeySequenceParser.parse(keySeqController.text),
+          ).join(', ') !=
+          tokenKey) {
+        keySeqController.text = tokenKey;
+      }
+      if (KeySequenceParser.toTokens(
+            KeySequenceParser.parse(mouseSeqController.text),
+          ).join(', ') !=
+          tokenKey) {
+        mouseSeqController.text = tokenKey;
+      }
+      return null;
+    }, [tokenKey]);
 
     // Keyboard recording handler,
     // stored in a ref so cleanup always unregisters.
@@ -159,12 +178,16 @@ class InputEntryEditor extends HookWidget {
             child: KeySequenceTextField(
               controller: keySeqController,
               onChanged: replaceTokens,
+              labelWidget: LabelWithTooltip(
+                label: context.l10n.inputKeySequenceLabel,
+                tooltipContent: const KeySequenceTooltip(),
+              ),
             ),
           ),
           const SizedBox(width: 8),
           AppTooltip(
             tipBuilder: (context, _) => Text(
-              'Record a sequence of keystrokes.',
+              context.l10n.inputKeySequenceRecordTip,
               style: context.theme.typography.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
@@ -214,7 +237,10 @@ class InputEntryEditor extends HookWidget {
             child: KeySequenceTextField(
               controller: mouseSeqController,
               onChanged: replaceTokens,
-              label: 'Button Sequence',
+              labelWidget: LabelWithTooltip(
+                label: context.l10n.inputButtonSequenceLabel,
+                tooltipContent: const ButtonSequenceTooltip(),
+              ),
               hintText:
                   'e.g.  +left, -left   or   +right, +left, -left, -right',
             ),
@@ -222,7 +248,7 @@ class InputEntryEditor extends HookWidget {
           const SizedBox(width: 8),
           AppTooltip(
             tipBuilder: (context, _) => Text(
-              'Record mouse button clicks.',
+              context.l10n.inputButtonSequenceRecordTip,
               style: context.theme.typography.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
@@ -265,7 +291,7 @@ class InputEntryEditor extends HookWidget {
           initial: TextEditingValue(text: keyboardTextValue(entry.tokens)),
           onChange: (value) => replaceSingleToken('text: ${value.text}'),
         ),
-        label: const Text('Text to type'),
+        label: Text(context.l10n.inputTextToTypeLabel),
         maxLines: null,
         hint: 'Hello world',
       ),
@@ -303,9 +329,9 @@ class InputEntryEditor extends HookWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final deviceField = FSelect<InputDevice>(
-                label: const LabelWithTooltip(
-                  label: 'Device',
-                  tooltip: 'Whether to simulate keyboard or mouse input.',
+                label: LabelWithTooltip(
+                  label: context.l10n.inputDeviceFieldLabel,
+                  tooltip: context.l10n.inputDeviceFieldTooltip,
                 ),
                 key: ValueKey(entry.device),
                 items: deviceOptions,
@@ -319,11 +345,9 @@ class InputEntryEditor extends HookWidget {
                 ),
               );
               final actionTypeField = FSelect<InputEntryMode>(
-                label: const LabelWithTooltip(
-                  label: 'Action type',
-                  tooltip:
-                      'The kind of simulated input: key combination, '
-                      'typed text, mouse movement, scroll wheel, etc.',
+                label: LabelWithTooltip(
+                  label: context.l10n.inputActionTypeLabel,
+                  tooltip: context.l10n.inputActionTypeTooltip,
                 ),
                 key: ValueKey(mode),
                 items: options,
@@ -422,12 +446,13 @@ Widget _buildKeyboardRecordStart(
   BuildContext context, {
   required VoidCallback startRecording,
 }) {
+  final l10n = context.l10n;
   return Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'Record keystrokes',
+        l10n.inputKeySequenceRecordTitle,
         style: context.theme.typography.sm.copyWith(
           fontWeight: FontWeight.w600,
         ),
@@ -437,7 +462,7 @@ Widget _buildKeyboardRecordStart(
         variant: .outline,
         onPress: startRecording,
         prefix: const Icon(Icons.radio_button_checked),
-        child: const Text('Record'),
+        child: Text(l10n.actionRecord),
       ),
     ],
   );
@@ -462,7 +487,7 @@ Widget _buildKeyboardRecordingView(
           ),
           const SizedBox(width: 6),
           Text(
-            'Recording keystrokes...',
+            context.l10n.inputKeySequenceRecordingTitle,
             style: context.theme.typography.sm.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -472,7 +497,7 @@ Widget _buildKeyboardRecordingView(
       const SizedBox(height: 10),
       if (liveKeyTokens.isEmpty)
         Text(
-          'Press any key to record.',
+          context.l10n.inputKeySequenceRecordPrompt,
           style: context.theme.typography.sm.copyWith(
             color: context.theme.colors.mutedForeground,
           ),
@@ -507,7 +532,7 @@ Widget _buildKeyboardRecordingView(
               stopRecording(append: true);
               await controller.hide();
             },
-            child: const Text('Stop & Add'),
+            child: Text(context.l10n.inputKeySequenceStopAdd),
           ),
           const SizedBox(width: 8),
           FButton(
@@ -517,7 +542,7 @@ Widget _buildKeyboardRecordingView(
               stopRecording(append: false);
               await controller.hide();
             },
-            child: const Text('Cancel'),
+            child: Text(context.l10n.actionCancel),
           ),
         ],
       ),
@@ -540,7 +565,7 @@ Widget _buildMouseRecordPopover(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'Record mouse buttons',
+        context.l10n.inputButtonSequenceRecordTitle,
         style: context.theme.typography.sm.copyWith(
           fontWeight: FontWeight.w600,
         ),
@@ -562,7 +587,7 @@ Widget _buildMouseRecordPopover(
           child: liveMouseTokens.isEmpty
               ? Center(
                   child: Text(
-                    'Click any mouse button here',
+                    context.l10n.inputButtonSequenceRecordPrompt,
                     style: context.theme.typography.sm.copyWith(
                       color: colors.mutedForeground,
                     ),
@@ -622,7 +647,7 @@ Widget _buildMouseRecordPopover(
                     onClearTokens();
                     await controller.hide();
                   },
-            child: const Text('Add to sequence'),
+            child: Text(context.l10n.inputButtonSequenceAddToSeq),
           ),
           const SizedBox(width: 8),
           FButton(
@@ -632,7 +657,7 @@ Widget _buildMouseRecordPopover(
               onClearTokens();
               await controller.hide();
             },
-            child: const Text('Cancel'),
+            child: Text(context.l10n.actionCancel),
           ),
         ],
       ),

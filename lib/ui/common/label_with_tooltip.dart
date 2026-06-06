@@ -5,13 +5,23 @@ import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 class LabelWithTooltip extends StatelessWidget {
   const LabelWithTooltip({
     required this.label,
-    required this.tooltip,
+    this.tooltip,
+    this.tooltipContent,
     this.textStyle,
     super.key,
-  });
+  }) : assert(
+         tooltip != null || tooltipContent != null,
+         'Either tooltip or tooltipContent must be provided.',
+       );
 
   final String label;
-  final String tooltip;
+
+  /// Plain-text tooltip. Used when [tooltipContent] is null.
+  final String? tooltip;
+
+  /// Rich widget tooltip. Takes precedence over [tooltip] when both are set.
+  final Widget? tooltipContent;
+
   final TextStyle? textStyle;
 
   @override
@@ -23,10 +33,12 @@ class LabelWithTooltip extends StatelessWidget {
         Text(label, style: textStyle),
         const SizedBox(width: 4),
         AppTooltip(
-          tipBuilder: (context, _) => Text(
-            tooltip,
-            style: context.theme.typography.xs,
-          ),
+          tipBuilder: (context, _) =>
+              tooltipContent ??
+              Text(
+                tooltip!,
+                style: context.theme.typography.xs,
+              ),
           child: Icon(
             FLucideIcons.circleQuestionMark,
             size: 13,

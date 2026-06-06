@@ -14,31 +14,28 @@ import 'package:input_actions_editor/store/edit_history.dart';
 export 'package:input_actions_editor/domain/edit/edit_ids.dart'
     show assignEditIds, preserveEditIds;
 
-/// Wires edit events to state and persistence, and records them onto a single
-/// per-scope undo/redo history (an [EditHistory] per scope). There is one
-/// history per scope key (e.g. a [GestureLocation]), so each editor's Ctrl+Z is
-/// isolated.
+/// Handle edits + save/load.
+/// Keep undo/redo per scope key (like [GestureLocation]), so Ctrl+Z stay local.
 class ConfigController extends AsyncNotifier<Config> {
   String _originalText = '';
   Config? _savedConfig;
   final Map<Object?, EditHistory> _editStacks = {};
 
-  /// Window within which consecutive [CoalescingEdit]s sharing a key fold into
-  /// one undo step. Overridable in tests for deterministic coalescing.
+  /// Time window to merge same [CoalescingEdit] key into one undo step.
+  /// Tests can override this.
   @visibleForTesting
   Duration coalesceWindow = const Duration(milliseconds: 500);
 
-  /// Disable coalescing entirely. Tests set this to make every edit a discrete
-  /// undo step without depending on wall-clock timing.
+  /// Turn off merge if test need one-by-one undo.
   @visibleForTesting
   bool coalesceEnabled = true;
 
   @visibleForTesting
   DateTime Function() clock = DateTime.now;
 
-  /// Dirty is derived: the draft differs from the last saved snapshot. This
-  /// means undoing back to the saved state automatically clears the indicator.
-  /// (editId is excluded from equality, so identity churn never marks dirty.)
+  /// Dirty means draft != saved snapshot.
+  /// If undo goes back to saved, dirty clear by itself.
+  /// editId not in equality, so id changes dont mark dirty.
   bool get isDirty {
     final config = state.value;
     if (config == null) return false;
@@ -47,14 +44,11 @@ class ConfigController extends AsyncNotifier<Config> {
     return config != saved;
   }
 
-  /// Dirty restricted to the settings slice (everything that is *not* gesture
-  /// data). Together with [isGesturesDirty] this partitions [isDirty]. See
-  /// [settingsDirtyState] for the partition definition.
+    /// Dirty only for settings part (not gesture part).
   bool get isSettingsDirty =>
       settingsDirtyState(state.value, savedConfig).isDirty;
 
-  /// Dirty restricted to the gesture slice (per-device gesture lists plus the
-  /// UI grouping metadata). The mirror of [isSettingsDirty].
+    /// Dirty only for gesture part. Mirror of [isSettingsDirty].
   bool get isGesturesDirty =>
       gesturesDirtyState(state.value, savedConfig).isDirty;
 
@@ -71,10 +65,9 @@ class ConfigController extends AsyncNotifier<Config> {
     return normalized;
   }
 
-  /// Applies [edit] to the current draft and records it for undo under [scope]
-  /// (a `null` scope is the shared global stack; gesture/field editors pass a
-  /// per-location scope so their Ctrl+Z is isolated). [CoalescingEdit]s sharing
-  /// a key within [coalesceWindow] fold into a single undo step.
+  /// Apply [edit] to draft, then push undo in [scope].
+  /// null scope means shared stack.
+  /// Same coalesce key in [coalesceWindow] merge to one undo step.
   void add(ConfigEdit edit, {Object? scope}) {
     final before = state.value;
     if (before == null) return;
@@ -112,7 +105,7 @@ class ConfigController extends AsyncNotifier<Config> {
 
   bool canRedo({Object? scope}) => _editStacks[scope]?.canRedo ?? false;
 
-  /// Restores the saved value at [lens] as an undoable edit.
+  /// Put saved value from [lens] back, as undoable edit.
   void revert<T>(Lens<T> lens, {Object? scope}) {
     final saved = savedConfig;
     if (saved == null) return;
@@ -129,8 +122,8 @@ class ConfigController extends AsyncNotifier<Config> {
     state = AsyncData(saved);
   }
 
-  /// Reverts only the settings slice to the saved baseline, leaving the draft's
-  /// gesture edits intact. Non-undoable, like [discardChanges].
+  /// Reset only settings slice to saved baseline.
+  /// Keep gesture edits. Not undoable, same as [discardChanges].
   void discardSettings() {
     final draft = state.value;
     final saved = savedConfig;
@@ -138,8 +131,8 @@ class ConfigController extends AsyncNotifier<Config> {
     state = AsyncData(withGestureSliceFrom(saved, draft));
   }
 
-  /// Reverts only the gesture slice to the saved baseline, leaving the draft's
-  /// settings edits intact. Non-undoable, like [discardChanges].
+  /// Reset only gesture slice to saved baseline.
+  /// Keep settings edits. Not undoable, same as [discardChanges].
   void discardGestures() {
     final draft = state.value;
     final saved = savedConfig;
@@ -153,9 +146,8 @@ class ConfigController extends AsyncNotifier<Config> {
     state = const AsyncLoading();
     try {
       final reloaded = await _writeAndReload(config);
-      // Reload reconstructs gestures with fresh editIds; carry the pre-save ids
-      // over by position (save never reorders) so the undo history keyed by
-      // editId stays valid across a save.
+      // Reload makes new gesture editIds.
+      // Copy old ids by position (save dont reorder) so undo map still works.
       final remapped = preserveEditIds(from: config, to: reloaded);
       _savedConfig = remapped;
       state = AsyncData(remapped);
@@ -164,36 +156,34 @@ class ConfigController extends AsyncNotifier<Config> {
     }
   }
 
-  /// Persists only the settings slice: writes the on-disk gesture data back
-  /// untouched while committing the draft's settings, leaving the draft's
-  /// in-memory gesture edits unsaved. The mirror of [saveGestures].
+  /// Save only settings slice.
+  /// Gesture data from disk stay as-is, draft gesture edits stay unsaved.
+  /// Mirror of [saveGestures].
   Future<void> saveSettings() async {
     final draft = state.value;
     final saved = savedConfig;
     if (draft == null || !isSettingsDirty) return;
-    // No saved baseline yet (e.g. a freshly picked file): a slice write has
-    // nothing to graft onto, so fall back to a full save.
+    // No saved baseline yet (ex: just picked file), so do full save.
     if (saved == null) return save();
-    // draft settings grafted onto the saved gesture slice.
+    // Draft settings + saved gesture slice.
     await _saveSlice(withGestureSliceFrom(draft, saved), gestureSource: saved);
   }
 
-  /// Persists only the gesture slice: writes the draft's gesture data while
-  /// leaving the on-disk settings untouched, so unsaved settings edits stay in
-  /// memory. The mirror of [saveSettings].
+  /// Save only gesture slice.
+  /// Settings on disk stay same, unsaved settings edits stay in memory.
+  /// Mirror of [saveSettings].
   Future<void> saveGestures() async {
     final draft = state.value;
     final saved = savedConfig;
     if (draft == null || !isGesturesDirty) return;
     if (saved == null) return save();
-    // draft gesture slice grafted onto the saved settings.
+    // Draft gesture slice + saved settings.
     await _saveSlice(withGestureSliceFrom(saved, draft), gestureSource: draft);
   }
 
-  /// Writes a partial [toWrite] to disk and advances the saved baseline, while
-  /// keeping the live draft (with its other, unsaved slice) as [state].
-  /// [gestureSource] is whichever config supplied [toWrite]'s gesture slice, so
-  /// its editIds can be carried onto the reloaded baseline by position.
+  /// Write partial [toWrite] to disk, update saved baseline.
+  /// Keep current draft in [state] (other unsaved slice stays there).
+  /// [gestureSource] gives gesture editIds to carry by position after reload.
   Future<void> _saveSlice(
     Config toWrite, {
     required Config gestureSource,
@@ -210,8 +200,6 @@ class ConfigController extends AsyncNotifier<Config> {
     }
   }
 
-  /// Saves [toWrite], reloads it back as the new on-disk truth, and updates
-  /// [_originalText]. Returns the freshly parsed config.
   Future<Config> _writeAndReload(Config toWrite) async {
     await _repository.save(toWrite, _originalText);
     final (reloaded, text) = await _repository.load();
@@ -228,13 +216,15 @@ class ConfigController extends AsyncNotifier<Config> {
     state = AsyncData(normalized);
   }
 
-  /// Prompts for a file and loads it. Returns `true` when a file was picked and
-  /// loaded, `false` when the picker was dismissed.
-  ///
-  /// [onBeforeLoad] runs once a path is chosen but before the draft is
-  /// replaced, so callers can tear down per-document UI state (e.g. open
-  /// editors) while the old config is still present. It does not run when the
-  /// picker is dismissed.
+  Future<bool> saveAs() async {
+    final config = state.value;
+    if (config == null) return false;
+    final path = await _repository.pickSavePath();
+    if (path == null || path.isEmpty) return false;
+    await _repository.saveToPath(config, _originalText, path);
+    return true;
+  }
+
   Future<bool> loadFromPicker({void Function()? onBeforeLoad}) async {
     final path = await _repository.pickPath();
     if (path != null && path.isNotEmpty) {
@@ -250,8 +240,6 @@ class ConfigController extends AsyncNotifier<Config> {
     final (config, text) = await _repository.loadFromPath(path);
     final normalized = assignEditIds(config);
     _originalText = text;
-    // A freshly loaded file is the on-disk baseline, so it starts clean; the
-    // previous document's undo/redo history no longer applies.
     _savedConfig = normalized;
     _editStacks.clear();
     state = AsyncData(normalized);

@@ -117,6 +117,17 @@ class DeviceSidebar extends HookConsumerWidget {
                                   onPress: () async {
                                     await controller.hide();
                                     await configController.save();
+                                    if (!rootContext.mounted) return;
+                                    showFToast(
+                                      context: rootContext,
+                                      title: Text(l10n.configSaveSuccess),
+                                      suffixBuilder: (context, entry) =>
+                                          FButton.icon(
+                                        onPress: entry.dismiss,
+                                        child: const Icon(FLucideIcons.x),
+                                      ),
+                                      duration: const Duration(seconds: 3),
+                                    );
                                   },
                                 ),
                                 .item(

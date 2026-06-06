@@ -184,13 +184,10 @@ final class KsChord extends KsSegment {
 
   bool get isFullyValid => keys.isNotEmpty && keys.every((k) => k.isValid);
 
-  /// Expands to press-all-then-release-all-in-reverse token format.
   List<String> toTokens() {
     final valid = keys.where((k) => k.isValid).toList();
-    return [
-      for (final k in valid) '+${k.scancode}',
-      for (final k in valid.reversed) '-${k.scancode}',
-    ];
+    if (valid.isEmpty) return const [];
+    return [valid.map((k) => k.scancode).join('+')];
   }
 }
 

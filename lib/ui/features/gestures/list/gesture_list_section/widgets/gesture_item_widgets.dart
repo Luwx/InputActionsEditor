@@ -1,9 +1,5 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-// ---------------------------------------------------------------------------
-// Gesture context menu tile
-// ---------------------------------------------------------------------------
-
 class _ContextMenuTile extends HookWidget {
   const _ContextMenuTile({
     required this.item,
@@ -60,7 +56,6 @@ class _ContextMenuTile extends HookWidget {
       child: GestureListTile(
         device: item.device,
         index: item.configIndex,
-        gesture: item.gesture,
         newlyAddedMarkerId: newlyAddedMarkerId,
         isSelected: isSelected,
         isMultiSelectMode: isMultiSelectMode,
@@ -71,10 +66,6 @@ class _ContextMenuTile extends HookWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Gesture context menu
-// ---------------------------------------------------------------------------
 
 class _GestureContextMenu extends StatelessWidget {
   const _GestureContextMenu({
@@ -94,6 +85,7 @@ class _GestureContextMenu extends StatelessWidget {
     final colors = context.theme.colors;
     final style = context.theme.style;
 
+    final l10n = context.l10n;
     return Stack(
       children: [
         Positioned.fill(
@@ -137,13 +129,13 @@ class _GestureContextMenu extends StatelessWidget {
                 children: [
                   FItem(
                     prefix: const Icon(FLucideIcons.copy),
-                    title: const Text('Duplicate'),
+                    title: Text(l10n.gestureMenuDuplicate),
                     onPress: onDuplicate,
                   ),
                   FItem(
                     variant: FItemVariant.destructive,
                     prefix: const Icon(FLucideIcons.trash2),
-                    title: const Text('Delete'),
+                    title: Text(l10n.gestureMenuDelete),
                     onPress: onDelete,
                   ),
                 ],

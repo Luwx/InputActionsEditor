@@ -6,6 +6,7 @@ import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_codec.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_meta_chip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class StrokeRow extends StatelessWidget {
   const StrokeRow({
@@ -23,6 +24,7 @@ class StrokeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final data = decodeStrokeDetailed(stroke);
@@ -69,7 +71,6 @@ class StrokeRow extends StatelessWidget {
           const SizedBox(height: 6),
           SizedBox(
             width: 150,
-
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +82,7 @@ class StrokeRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'Stroke ${index + 1}',
+                        l10n.strokeRowTitle(index + 1),
                         style: typography.sm.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -90,7 +91,7 @@ class StrokeRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       if (data != null) ...[
                         Text(
-                          '${data.pointCount} sample points',
+                          l10n.strokeRowPoints(data.pointCount),
                           style: typography.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
@@ -103,7 +104,7 @@ class StrokeRow extends StatelessWidget {
                         ),
                       ] else
                         Text(
-                          'Invalid stroke data',
+                          l10n.strokeRowInvalidData,
                           style: typography.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
@@ -126,15 +127,15 @@ class StrokeRow extends StatelessWidget {
   }
 
   Future<void> _showDetail(BuildContext context) async {
+    final l10n = context.l10n;
     final colors = context.theme.colors;
     final data = decodeStrokeDetailed(stroke);
     await showFDialog<void>(
       context: context,
       useRootNavigator: true,
-      // builder: (_) => StrokeDetailDialog(stroke: stroke),
       builder: (context, style, animation) => AppDialog(
         animation: animation,
-        title: const Text('Stroke preview'),
+        title: Text(l10n.strokePreviewTitle),
         body: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -147,8 +148,6 @@ class StrokeRow extends StatelessWidget {
                 return StrokePreview(
                   strokeBase64: stroke,
                   size: size,
-                  // startColor: FThemes.violet.dark.desktop.colors.primary,
-                  // endColor: FThemes.zinc.dark.desktop.colors.primary,
                   startColor: colors.mutedForeground,
                   endColor: colors.primary,
                   surface: colors.secondary,
@@ -166,7 +165,7 @@ class StrokeRow extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  StrokeMetaChip(label: '${data.pointCount} points'),
+                  StrokeMetaChip(label: l10n.strokeRowPoints(data.pointCount)),
                   StrokeMetaChip(label: strokeAspect(data.points)),
                 ],
               ),
@@ -176,7 +175,7 @@ class StrokeRow extends StatelessWidget {
         actions: [
           FButton(
             onPress: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(l10n.actionClose),
           ),
         ],
       ),

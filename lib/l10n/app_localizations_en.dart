@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSave => 'Save';
 
   @override
+  String get actionSaveAs => 'Save As';
+
+  @override
   String get actionDiscardChanges => 'Discard changes';
 
   @override
@@ -388,6 +391,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gestureSelectPrompt => 'Select a gesture to edit';
 
   @override
+  String get configSaveSuccess => 'Config saved.';
+
+  @override
   String get gestureCopyYamlSuccess => 'Gesture YAML copied.';
 
   @override
@@ -443,15 +449,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerConditionsTitle => 'Trigger Conditions';
 
   @override
-  String get triggerConditionsTooltip =>
-      'Conditions that must ALL be true for this gesture to activate.\n\nExamples:\n  \$window_class == firefox\n      → only fires inside Firefox\n  \$window_class == konsole\n      → only fires inside the terminal\n  \$window_id == \$window_under_id\n      → cursor is over the focused window\n  \$pointer_position_screen_percentage_x >= 0.95\n      → cursor is at the right screen edge\n  \$fingers == 3\n      → exactly 3 fingers on touchpad\n\nMultiple rows are ANDed together.\nUse an \"any\" group inside for OR logic.';
-
-  @override
   String get triggerEndConditionsTitle => 'End conditions';
-
-  @override
-  String get triggerEndConditionsTooltip =>
-      'Checked at the moment the gesture ends.\n\n  • Met → gesture ends normally; on:end actions fire.\n  • Not met → gesture is cancelled; on:cancel actions fire instead.\n\nUse this to require a minimum movement before the gesture \"counts\".\nExample: \$distance >= 100 cancels the gesture if the finger did not travel at least 100 px, so a short accidental movement is ignored.';
 
   @override
   String get triggerConditionsEmpty =>
@@ -461,18 +459,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerFieldIdLabel => 'ID';
 
   @override
-  String get triggerFieldIdTooltip =>
-      'Unique name for this trigger.\n\nWhen set, the daemon exposes variables:\n  \$<id>_active  - true while running\n  \$last_trigger - equals this id after it fires\n\nUse these in other gestures\' conditions to chain or block behaviors.\nExample: id: swipe_right, then another gesture can check \$last_trigger == swipe_right.';
-
-  @override
   String get triggerFieldIdHint => 'e.g. my_trigger';
 
   @override
   String get triggerFieldThresholdLabel => 'Threshold';
-
-  @override
-  String get triggerFieldThresholdTooltip =>
-      'Minimum accumulated input before the gesture is recognized as started.\n\n\"Progress\" units by gesture type:\n  Swipe / stroke  - pixels of movement\n  Wheel           - scroll ticks\n  Pinch           - scale factor (e.g. 0.1 = 10%)\n  Rotate / circle - degrees\n  Press           - not applicable (press has no movement phase)\n\nBelow the threshold the input is passed through to the application normally.\nUse a range like 50-200 to require at least 50 and cancel if it exceeds 200.\n\nNote: this is distinct from the per-action Threshold, which gates a specific action after recognition.';
 
   @override
   String get triggerFieldThresholdHint => 'e.g. 100 or 50-200';
@@ -481,39 +471,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerFieldResumeTimeoutLabel => 'Resume timeout';
 
   @override
-  String get triggerFieldResumeTimeoutTooltip =>
-      'If another identical gesture starts within this many milliseconds after this one ends, it resumes as a continuation rather than starting fresh.\n\nUseful for:\n  • Multi-tap sequences where a brief pause between taps should not reset state\n  • Repeated wheel scrolls that accumulate delta across short gaps\n\n0 = disabled (every gesture starts from scratch).';
-
-  @override
   String get triggerFieldResumeTimeoutHint => '0 = disabled';
 
   @override
   String get triggerFieldAcceleratedLabel => 'Accelerated';
 
   @override
-  String get triggerFieldAcceleratedTooltip =>
-      'Scale delta values by pointer acceleration, matching how fast the cursor moves on screen.\n\nEnable for actions that should feel proportional to movement speed (e.g. move_by_delta input actions).\nDisable for uniform responses regardless of speed (e.g. a fixed key press per scroll tick).';
-
-  @override
   String get triggerFieldBlockEventsLabel => 'Block events';
-
-  @override
-  String get triggerFieldBlockEventsTooltip =>
-      'Suppress the raw input events used by this gesture so they do not reach other applications.\n\nExample: holding right-click to draw a stroke gesture prevents the context menu from opening.\n\nDisable if the application should also receive those events while the gesture is active.';
 
   @override
   String get triggerFieldClearModifiersLabel => 'Clear modifiers';
 
   @override
-  String get triggerFieldClearModifiersTooltip =>
-      'Release all held modifier keys (Ctrl, Shift, Alt, Super) when this gesture begins.\n\nAutomatically enabled when an input: action is present, to prevent those modifiers from leaking into the replayed key events.\nDisable only if you intentionally need the modifiers to remain held during the action.';
-
-  @override
   String get triggerFieldSetLastTriggerLabel => 'Set last trigger';
-
-  @override
-  String get triggerFieldSetLastTriggerTooltip =>
-      'Update \$last_trigger to this trigger\'s ID when it executes.\n\nUse \$last_trigger in other gestures\' conditions to build sequences - e.g. a second gesture that only fires if a specific gesture ran first.\n\nDisable for utility triggers you do not want to pollute the \$last_trigger state.';
 
   @override
   String get sectionPress => 'Press';
@@ -621,43 +591,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionTriggerOnLabel => 'Trigger on';
 
   @override
-  String get actionTriggerOnTooltip =>
-      'When during the gesture lifecycle this action fires.';
-
-  @override
   String get actionIntervalLabel => 'Interval';
-
-  @override
-  String get actionIntervalTooltip =>
-      'Controls how often the action repeats for continuous gestures (wheel, swipe update, etc).';
 
   @override
   String get actionThresholdLabel => 'Threshold';
 
   @override
-  String get actionThresholdTooltip =>
-      'Accumulated movement since the gesture began before this action fires. Same units as the trigger threshold.';
-
-  @override
   String get actionLimitLabel => 'Limit';
-
-  @override
-  String get actionLimitTooltip =>
-      'Maximum times this action can fire during a single gesture.';
 
   @override
   String get actionConflictingLabel => 'Conflicting';
 
   @override
-  String get actionConflictingTooltip =>
-      'Whether this action participates in conflict resolution.';
-
-  @override
   String get actionConditionsTitle => 'Action Conditions';
-
-  @override
-  String get actionConditionsTooltip =>
-      'Conditions checked just before this action executes. The gesture fires regardless; only this action is skipped if unmet.';
 
   @override
   String get actionChipOn => 'On';
@@ -1286,4 +1232,895 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get templateTouchscreenStrokeDescription =>
       'Draw a freeform path on the screen.';
+
+  @override
+  String get tooltip_actionConditions_body =>
+      'Evaluated just before this action runs. The gesture still fires; only this action is skipped when conditions fail.';
+
+  @override
+  String get tooltip_actionConditions_sectionLabel =>
+      'Same gesture, different action per context';
+
+  @override
+  String get tooltip_actionConditions_ex1Label =>
+      'Action 1 → Ctrl+T  (new tab)';
+
+  @override
+  String get tooltip_actionConditions_ex2Label =>
+      'Action 2 → Ctrl+N  (new file)';
+
+  @override
+  String get tooltip_actionTriggerOn_body =>
+      'When during the gesture lifecycle this action fires.';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleBegin =>
+      'immediately on recognition';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleUpdate =>
+      'every input move while active';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleEnd =>
+      'gesture completes normally';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleCancel => 'gesture is aborted';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleEndCancel =>
+      'on both end AND cancel';
+
+  @override
+  String get tooltip_actionTriggerOn_lifecycleTick =>
+      'at fixed time intervals while active';
+
+  @override
+  String get tooltip_actionInterval_body =>
+      'How often the action repeats on update and tick events.';
+
+  @override
+  String get tooltip_actionInterval_unitEmptyKey => '(empty)';
+
+  @override
+  String get tooltip_actionInterval_unitEmptyDesc =>
+      'every input event or tick';
+
+  @override
+  String get tooltip_actionInterval_unitPlusDesc =>
+      'only while delta is increasing';
+
+  @override
+  String get tooltip_actionInterval_unitMinusDesc =>
+      'only while delta is decreasing';
+
+  @override
+  String get tooltip_actionInterval_unitNDesc =>
+      'once per N units of accumulated delta';
+
+  @override
+  String get tooltip_actionInterval_exLabel => 'fires every 4 scroll ticks';
+
+  @override
+  String get tooltip_actionThreshold_body =>
+      'Movement since gesture start before this action fires. Same units as the trigger threshold.';
+
+  @override
+  String get tooltip_actionThreshold_sectionLabel => 'Units';
+
+  @override
+  String get tooltip_actionThreshold_unitPinchScale =>
+      'scale factor  (0.1 = 10%)';
+
+  @override
+  String get tooltip_actionThreshold_noteTrigger =>
+      'Unlike the trigger threshold, this gates only this action after the gesture is already active.';
+
+  @override
+  String get tooltip_actionThreshold_noteRange =>
+      'Use a range like 50-200 to fire only within that movement window.';
+
+  @override
+  String get tooltip_actionConflicting_body =>
+      'Whether this action holds back competing gestures.';
+
+  @override
+  String get tooltip_actionConflicting_onLabel => 'On';
+
+  @override
+  String get tooltip_actionConflicting_onDesc =>
+      'hold back competing gestures until one wins';
+
+  @override
+  String get tooltip_actionConflicting_offLabel => 'Off';
+
+  @override
+  String get tooltip_actionConflicting_offDesc =>
+      'fire immediately, no blocking';
+
+  @override
+  String get tooltip_actionConflicting_sectionLabel => 'Example';
+
+  @override
+  String get tooltip_actionConflicting_exCode =>
+      '2-finger swipe  +  3-finger swipe';
+
+  @override
+  String get tooltip_actionConflicting_exLabel =>
+      'daemon waits to see which one completes';
+
+  @override
+  String get tooltip_actionLimit_body =>
+      'Max times this action fires in a single gesture.';
+
+  @override
+  String get tooltip_actionLimit_bulletUnlimited => '0 = unlimited (default)';
+
+  @override
+  String get tooltip_actionLimit_bulletN => 'N = fires at most N times';
+
+  @override
+  String get tooltip_actionLimit_exLabel =>
+      'fires once no matter how far the gesture travels';
+
+  @override
+  String get tooltip_thresholdUnit_swipeStroke => 'Swipe / stroke';
+
+  @override
+  String get tooltip_thresholdUnit_pixels => 'pixels';
+
+  @override
+  String get tooltip_thresholdUnit_wheel => 'Wheel';
+
+  @override
+  String get tooltip_thresholdUnit_scrollTicks => 'scroll ticks';
+
+  @override
+  String get tooltip_thresholdUnit_pinch => 'Pinch';
+
+  @override
+  String get tooltip_thresholdUnit_rotateCircle => 'Rotate / circle';
+
+  @override
+  String get tooltip_thresholdUnit_degrees => 'degrees';
+
+  @override
+  String get tooltip_triggerConditions_body =>
+      'All conditions must be true for this gesture to activate.';
+
+  @override
+  String get tooltip_triggerConditions_sectionLabel => 'Examples';
+
+  @override
+  String get tooltip_triggerConditions_ex1Label => 'Firefox only';
+
+  @override
+  String get tooltip_triggerConditions_ex2Label => 'terminal only';
+
+  @override
+  String get tooltip_triggerConditions_ex3Label => 'cursor over focused window';
+
+  @override
+  String get tooltip_triggerConditions_ex4Label => 'cursor at right edge';
+
+  @override
+  String get tooltip_triggerConditions_ex5Label => 'exactly 3 fingers';
+
+  @override
+  String get tooltip_triggerConditions_noteAnd =>
+      'Rows are AND-ed. Use an \"any\" group inside for OR logic.';
+
+  @override
+  String get tooltip_triggerEndConditions_body =>
+      'Checked at the moment the gesture ends.';
+
+  @override
+  String get tooltip_triggerEndConditions_metLabel => 'Met';
+
+  @override
+  String get tooltip_triggerEndConditions_metDesc =>
+      'gesture ends normally · on:end actions fire';
+
+  @override
+  String get tooltip_triggerEndConditions_notMetLabel => 'Not met';
+
+  @override
+  String get tooltip_triggerEndConditions_notMetDesc =>
+      'gesture cancelled · on:cancel fires instead';
+
+  @override
+  String get tooltip_triggerEndConditions_sectionLabel => 'Example';
+
+  @override
+  String get tooltip_triggerEndConditions_exLabel =>
+      'cancel if finger travelled < 100 px';
+
+  @override
+  String get tooltip_triggerId_body => 'Unique name for this trigger.';
+
+  @override
+  String get tooltip_triggerId_sectionLabel => 'Variables exposed when set';
+
+  @override
+  String get tooltip_triggerId_ex1Label => 'true while gesture is running';
+
+  @override
+  String get tooltip_triggerId_ex2Label => 'equals this id after it fires';
+
+  @override
+  String get tooltip_triggerId_noteChain =>
+      'Use in other gestures\' conditions to chain or block behaviors.';
+
+  @override
+  String get tooltip_triggerThreshold_body =>
+      'Min accumulated input before gesture is recognized.';
+
+  @override
+  String get tooltip_triggerThreshold_sectionLabel => 'Units by gesture type';
+
+  @override
+  String get tooltip_triggerThreshold_unitPinchScale =>
+      'scale factor  (e.g. 0.1 = 10%)';
+
+  @override
+  String get tooltip_triggerThreshold_unitPressKey => 'Press';
+
+  @override
+  String get tooltip_triggerThreshold_unitPressDesc => 'n/a';
+
+  @override
+  String get tooltip_triggerThreshold_notePassthrough =>
+      'Below threshold, input passes through to the app normally.';
+
+  @override
+  String get tooltip_triggerThreshold_noteRange =>
+      'Use a range like 50-200: require ≥ 50, cancel if > 200.';
+
+  @override
+  String get tooltip_triggerResumeTimeout_body =>
+      'If the same gesture starts within N ms, it resumes instead of starting fresh.';
+
+  @override
+  String get tooltip_triggerResumeTimeout_sectionLabel => 'Useful for';
+
+  @override
+  String get tooltip_triggerResumeTimeout_bulletMultiTap =>
+      'Multi-tap sequences; brief pause keeps state.';
+
+  @override
+  String get tooltip_triggerResumeTimeout_bulletWheel =>
+      'Repeated wheel scrolls accumulating delta across gaps.';
+
+  @override
+  String get tooltip_triggerResumeTimeout_noteDisabled =>
+      '0 = disabled (every gesture starts from scratch).';
+
+  @override
+  String get tooltip_triggerAccelerated_body =>
+      'Scale delta values by pointer acceleration.';
+
+  @override
+  String get tooltip_triggerAccelerated_bulletOn =>
+      'Enable for proportional feel, e.g. move_by_delta actions.';
+
+  @override
+  String get tooltip_triggerAccelerated_bulletOff =>
+      'Disable for uniform response, e.g. fixed key per tick.';
+
+  @override
+  String get tooltip_triggerBlockEvents_body =>
+      'Suppress raw input from reaching other applications.';
+
+  @override
+  String get tooltip_triggerBlockEvents_sectionLabel => 'Example';
+
+  @override
+  String get tooltip_triggerBlockEvents_exCode => 'right-click stroke gesture';
+
+  @override
+  String get tooltip_triggerBlockEvents_exLabel => 'context menu blocked';
+
+  @override
+  String get tooltip_triggerBlockEvents_noteDisable =>
+      'Disable if the app should also receive those events while the gesture is active.';
+
+  @override
+  String get tooltip_triggerClearModifiers_prefix => 'Release';
+
+  @override
+  String get tooltip_triggerClearModifiers_suffix => 'when the gesture begins.';
+
+  @override
+  String get tooltip_triggerClearModifiers_noteAuto =>
+      'Auto-enabled when an input: action is present; prevents modifier keys from leaking into replayed events.';
+
+  @override
+  String get tooltip_triggerClearModifiers_noteDisable =>
+      'Disable only if you intentionally need the modifiers held during the action.';
+
+  @override
+  String get tooltip_triggerSetLastTrigger_prefix => 'Updates';
+
+  @override
+  String get tooltip_triggerSetLastTrigger_suffix =>
+      'to this trigger\'s ID when it fires.';
+
+  @override
+  String get tooltip_triggerSetLastTrigger_noteChain =>
+      'Use in other gestures\' conditions to build sequences.';
+
+  @override
+  String get tooltip_triggerSetLastTrigger_noteDisable =>
+      'Disable for utility triggers you don\'t want polluting state.';
+
+  @override
+  String get tooltip_keySequence_body =>
+      'Two formats available, pick whichever feels right.';
+
+  @override
+  String get tooltip_keySequence_chordSectionLabel => 'Chord format';
+
+  @override
+  String get tooltip_keySequence_chordDesc =>
+      'Press and release all keys as one chord.';
+
+  @override
+  String get tooltip_keySequence_tokenSectionLabel => 'Token format';
+
+  @override
+  String get tooltip_keySequence_tokenDesc =>
+      'Full control over press / release timing.';
+
+  @override
+  String get tooltip_keySequence_pressLabel => 'press';
+
+  @override
+  String get tooltip_keySequence_releaseLabel => 'release';
+
+  @override
+  String get tooltip_buttonSequence_body =>
+      'Mouse button press / release sequence.';
+
+  @override
+  String get tooltip_buttonSequence_pressLabel => 'press';
+
+  @override
+  String get tooltip_buttonSequence_releaseLabel => 'release';
+
+  @override
+  String get tooltip_buttonSequence_noteButtons =>
+      'Available buttons: left, right, middle, back, forward.';
+
+  @override
+  String get dialogUnsavedChangesTitle => 'Unsaved Changes';
+
+  @override
+  String get dialogUnsavedChangesBody =>
+      'You have unsaved changes. Apply them or discard before leaving.';
+
+  @override
+  String get actionApply => 'Apply';
+
+  @override
+  String get dialogAddActionTitle => 'Add action';
+
+  @override
+  String get actionIntervalHint => '+, -, or number';
+
+  @override
+  String get actionLimitHint => '0 = unlimited';
+
+  @override
+  String get actionPlasmaComponentLabel => 'Component';
+
+  @override
+  String get actionPlasmaComponentTooltip =>
+      'Plasma shortcut component. Find in ~/.config/kglobalshortcutsrc, text inside brackets. Replace dots and dashes with underscores. Example: org_kde_dolphin_desktop';
+
+  @override
+  String get actionPlasmaComponentHint => 'e.g. org_kde_dolphin_desktop';
+
+  @override
+  String get actionPlasmaShortcutLabel => 'Shortcut';
+
+  @override
+  String get actionPlasmaShortcutTooltip =>
+      'Shortcut name within the component. In kglobalshortcutsrc, it is the text before \"=\" on each line.';
+
+  @override
+  String get actionPlasmaShortcutHint => 'e.g. Show Desktop';
+
+  @override
+  String get plasmaShortcutPickerSearch => 'Search…';
+
+  @override
+  String get plasmaShortcutPickerSelectComponent => 'Select a component';
+
+  @override
+  String get plasmaShortcutPickerNoResults => 'No shortcuts found';
+
+  @override
+  String get plasmaShortcutPickerApplications => 'Applications';
+
+  @override
+  String get plasmaShortcutPickerSystemServices => 'System Services';
+
+  @override
+  String get plasmaShortcutPickerSelectShortcut => 'Select shortcut';
+
+  @override
+  String get plasmaShortcutPickerCombinedLabel => 'Component & Shortcut';
+
+  @override
+  String get plasmaShortcutPickerCombinedTooltip =>
+      'Choose a Plasma component and one of its registered shortcuts from the picker. Use Manual entry if your shortcut is not listed.';
+
+  @override
+  String get plasmaShortcutPickerUsePicker => 'Use picker';
+
+  @override
+  String get plasmaShortcutPickerManualEntry => 'Manual entry';
+
+  @override
+  String get actionSleepDurationLabel => 'Duration (ms)';
+
+  @override
+  String get actionSleepDurationTooltip =>
+      'How long to pause before the next action runs. Useful for timing issues with input or window focus.';
+
+  @override
+  String get actionSleepDurationHint => '500';
+
+  @override
+  String get groupMenuRename => 'Rename';
+
+  @override
+  String get groupMenuBreakdown => 'Breakdown';
+
+  @override
+  String get groupMenuDeleteWithGestures => 'Delete with gestures';
+
+  @override
+  String strokeRowTitle(int n) {
+    return 'Stroke $n';
+  }
+
+  @override
+  String strokeRowPoints(int n) {
+    return '$n sample points';
+  }
+
+  @override
+  String get strokeRowInvalidData => 'Invalid stroke data';
+
+  @override
+  String get strokePreviewTitle => 'Stroke preview';
+
+  @override
+  String get inputDevicesLabel => 'Input devices';
+
+  @override
+  String get inputAddDevice => 'Add device';
+
+  @override
+  String get inputKeySequenceLabel => 'Key Sequence';
+
+  @override
+  String get inputKeySequenceRecordTip => 'Record a sequence of keystrokes.';
+
+  @override
+  String get inputKeySequenceRecordTitle => 'Record keystrokes';
+
+  @override
+  String get inputKeySequenceRecordingTitle => 'Recording keystrokes...';
+
+  @override
+  String get inputKeySequenceRecordPrompt => 'Press any key to record.';
+
+  @override
+  String get inputKeySequenceStopAdd => 'Stop & Add';
+
+  @override
+  String get inputButtonSequenceLabel => 'Button Sequence';
+
+  @override
+  String get inputButtonSequenceRecordTip => 'Record mouse button clicks.';
+
+  @override
+  String get inputButtonSequenceRecordTitle => 'Record mouse buttons';
+
+  @override
+  String get inputButtonSequenceRecordPrompt => 'Click any mouse button here';
+
+  @override
+  String get inputButtonSequenceAddToSeq => 'Add to sequence';
+
+  @override
+  String get inputTextToTypeLabel => 'Text to type';
+
+  @override
+  String get inputDeviceFieldLabel => 'Device';
+
+  @override
+  String get inputDeviceFieldTooltip =>
+      'Whether to simulate keyboard or mouse input.';
+
+  @override
+  String get inputActionTypeLabel => 'Action type';
+
+  @override
+  String get inputActionTypeTooltip =>
+      'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.';
+
+  @override
+  String get mouseDeltaMultiplierLabel => 'Multiplier';
+
+  @override
+  String get mouseDeltaMultiplierTooltip =>
+      'Scale factor applied to the gesture movement delta. 1 moves the pointer by the same distance as the gesture, 2 doubles it, 0.5 halves it.';
+
+  @override
+  String get motionSpeedLabel => 'Motion Speed';
+
+  @override
+  String get motionSpeedTooltip =>
+      'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.';
+
+  @override
+  String get motionLockPointerLabel => 'Lock pointer';
+
+  @override
+  String get motionLockPointerTooltip =>
+      'Prevent the pointer from moving on screen while this gesture is active.';
+
+  @override
+  String get swipeMinAngleLabel => 'Min angle °';
+
+  @override
+  String get swipeMinAngleTooltip =>
+      'Start of the angle range. 0° = right, 90° = up, 180° = left, 270° = down. Drag the handle on the wheel or type a value.';
+
+  @override
+  String get swipeMaxAngleLabel => 'Max angle °';
+
+  @override
+  String get swipeMaxAngleTooltip =>
+      'End of the angle range. If min < max the range is between them. If min > max, the range wraps around (e.g. 330-30 covers rightward motion).';
+
+  @override
+  String get swipeAngleBidirectionalLabel => 'Bidirectional';
+
+  @override
+  String get swipeAngleBidirectionalTooltip =>
+      'Also match motion in the opposite angle range. That motion will have a negative delta value.\n\nWhen angle ranges overlap, the normal one takes priority over the opposite one.';
+
+  @override
+  String get swipeDirectionBidirectionalTooltip =>
+      'Also match motion in the opposite direction. Motion in the opposite direction will have a negative delta value.';
+
+  @override
+  String get mouseButtonsSectionTitle => 'Mouse buttons';
+
+  @override
+  String get mouseButtonsSectionTooltip =>
+      'Mouse buttons that must be held while performing this gesture.';
+
+  @override
+  String get mouseButtonsExactOrderLabel => 'Exact order';
+
+  @override
+  String get mouseButtonsExactOrderTooltip =>
+      'Require buttons to be pressed in exactly the order shown. When disabled, all selected buttons must be held but in any order.';
+
+  @override
+  String get conditionMenuAddConditionTitle => 'Condition';
+
+  @override
+  String get conditionMenuAddConditionSubtitle => 'A single condition';
+
+  @override
+  String get conditionMenuAddGroupTitle => 'Group';
+
+  @override
+  String get conditionMenuAddGroupSubtitle => 'Collection of conditions.';
+
+  @override
+  String get renameGroupHint => 'Group';
+
+  @override
+  String get varGroupActiveWindow => 'Active Window';
+
+  @override
+  String get varGroupWindowUnderPointer => 'Window Under Pointer';
+
+  @override
+  String get varGroupWindowUnderFingers => 'Window Under Fingers';
+
+  @override
+  String get varGroupPointer => 'Pointer';
+
+  @override
+  String get varGroupFingerPosition => 'Finger Position';
+
+  @override
+  String get varGroupFingerInitialPosition => 'Finger Initial Position';
+
+  @override
+  String get varGroupFingerPressure => 'Finger Pressure';
+
+  @override
+  String get varGroupThumb => 'Thumb';
+
+  @override
+  String get varGroupInput => 'Input';
+
+  @override
+  String get varGroupState => 'State';
+
+  @override
+  String get varGroupDeviceIdentity => 'Device Identity';
+
+  @override
+  String get varGroupDeviceType => 'Device Type';
+
+  @override
+  String get varLabel_windowTitle => 'Active window - title';
+
+  @override
+  String get varLabel_windowClass => 'Active window - app class';
+
+  @override
+  String get varLabel_windowName => 'Active window - name';
+
+  @override
+  String get varLabel_windowId => 'Active window - ID';
+
+  @override
+  String get varLabel_windowPid => 'Active window - process ID';
+
+  @override
+  String get varLabel_windowFullscreen => 'Active window is fullscreen';
+
+  @override
+  String get varLabel_windowMaximized => 'Active window is maximized';
+
+  @override
+  String get varLabel_windowUnderPointerTitle => 'Pointer window - title';
+
+  @override
+  String get varLabel_windowUnderPointerClass => 'Pointer window - app class';
+
+  @override
+  String get varLabel_windowUnderPointerName => 'Pointer window - name';
+
+  @override
+  String get varLabel_windowUnderPointerId => 'Pointer window - ID';
+
+  @override
+  String get varLabel_windowUnderPointerPid => 'Pointer window - process ID';
+
+  @override
+  String get varLabel_windowUnderPointerFullscreen =>
+      'Pointer window is fullscreen';
+
+  @override
+  String get varLabel_windowUnderPointerMaximized =>
+      'Pointer window is maximized';
+
+  @override
+  String get varLabel_windowUnderFingersTitle => 'Fingers window - title';
+
+  @override
+  String get varLabel_windowUnderFingersClass => 'Fingers window - app class';
+
+  @override
+  String get varLabel_windowUnderFingersName => 'Fingers window - name';
+
+  @override
+  String get varLabel_windowUnderFingersId => 'Fingers window - ID';
+
+  @override
+  String get varLabel_windowUnderFingersPid => 'Fingers window - process ID';
+
+  @override
+  String get varLabel_windowUnderFingersFullscreen =>
+      'Fingers window is fullscreen';
+
+  @override
+  String get varLabel_windowUnderFingersMaximized =>
+      'Fingers window is maximized';
+
+  @override
+  String get varLabel_pointerPositionScreen => 'Pointer position (screen %)';
+
+  @override
+  String get varLabel_pointerPositionScreenX => 'Pointer position X (screen %)';
+
+  @override
+  String get varLabel_pointerPositionScreenY => 'Pointer position Y (screen %)';
+
+  @override
+  String get varLabel_pointerPositionWindow => 'Pointer position (window %)';
+
+  @override
+  String get varLabel_pointerPositionWindowX => 'Pointer position X (window %)';
+
+  @override
+  String get varLabel_pointerPositionWindowY => 'Pointer position Y (window %)';
+
+  @override
+  String get varLabel_finger1Position => 'Finger 1 position %';
+
+  @override
+  String get varLabel_finger1PositionX => 'Finger 1 position X %';
+
+  @override
+  String get varLabel_finger1PositionY => 'Finger 1 position Y %';
+
+  @override
+  String get varLabel_finger2Position => 'Finger 2 position %';
+
+  @override
+  String get varLabel_finger2PositionX => 'Finger 2 position X %';
+
+  @override
+  String get varLabel_finger2PositionY => 'Finger 2 position Y %';
+
+  @override
+  String get varLabel_finger3Position => 'Finger 3 position %';
+
+  @override
+  String get varLabel_finger3PositionX => 'Finger 3 position X %';
+
+  @override
+  String get varLabel_finger3PositionY => 'Finger 3 position Y %';
+
+  @override
+  String get varLabel_finger4Position => 'Finger 4 position %';
+
+  @override
+  String get varLabel_finger4PositionX => 'Finger 4 position X %';
+
+  @override
+  String get varLabel_finger4PositionY => 'Finger 4 position Y %';
+
+  @override
+  String get varLabel_finger5Position => 'Finger 5 position %';
+
+  @override
+  String get varLabel_finger5PositionX => 'Finger 5 position X %';
+
+  @override
+  String get varLabel_finger5PositionY => 'Finger 5 position Y %';
+
+  @override
+  String get varLabel_finger1InitialPosition => 'Finger 1 initial position %';
+
+  @override
+  String get varLabel_finger1InitialPositionX =>
+      'Finger 1 initial position X %';
+
+  @override
+  String get varLabel_finger1InitialPositionY =>
+      'Finger 1 initial position Y %';
+
+  @override
+  String get varLabel_finger2InitialPosition => 'Finger 2 initial position %';
+
+  @override
+  String get varLabel_finger2InitialPositionX =>
+      'Finger 2 initial position X %';
+
+  @override
+  String get varLabel_finger2InitialPositionY =>
+      'Finger 2 initial position Y %';
+
+  @override
+  String get varLabel_finger3InitialPosition => 'Finger 3 initial position %';
+
+  @override
+  String get varLabel_finger3InitialPositionX =>
+      'Finger 3 initial position X %';
+
+  @override
+  String get varLabel_finger3InitialPositionY =>
+      'Finger 3 initial position Y %';
+
+  @override
+  String get varLabel_finger4InitialPosition => 'Finger 4 initial position %';
+
+  @override
+  String get varLabel_finger4InitialPositionX =>
+      'Finger 4 initial position X %';
+
+  @override
+  String get varLabel_finger4InitialPositionY =>
+      'Finger 4 initial position Y %';
+
+  @override
+  String get varLabel_finger5InitialPosition => 'Finger 5 initial position %';
+
+  @override
+  String get varLabel_finger5InitialPositionX =>
+      'Finger 5 initial position X %';
+
+  @override
+  String get varLabel_finger5InitialPositionY =>
+      'Finger 5 initial position Y %';
+
+  @override
+  String get varLabel_finger1Pressure => 'Finger 1 pressure';
+
+  @override
+  String get varLabel_finger2Pressure => 'Finger 2 pressure';
+
+  @override
+  String get varLabel_finger3Pressure => 'Finger 3 pressure';
+
+  @override
+  String get varLabel_finger4Pressure => 'Finger 4 pressure';
+
+  @override
+  String get varLabel_finger5Pressure => 'Finger 5 pressure';
+
+  @override
+  String get varLabel_thumbPresent => 'Thumb present';
+
+  @override
+  String get varLabel_thumbPosition => 'Thumb position %';
+
+  @override
+  String get varLabel_thumbPositionX => 'Thumb position X %';
+
+  @override
+  String get varLabel_thumbPositionY => 'Thumb position Y %';
+
+  @override
+  String get varLabel_thumbInitialPosition => 'Thumb initial position %';
+
+  @override
+  String get varLabel_thumbInitialPositionX => 'Thumb initial position X %';
+
+  @override
+  String get varLabel_thumbInitialPositionY => 'Thumb initial position Y %';
+
+  @override
+  String get varLabel_fingers => 'Number of fingers';
+
+  @override
+  String get varLabel_keyboardModifiers => 'Held modifier keys';
+
+  @override
+  String get varLabel_cursorShape => 'Cursor shape';
+
+  @override
+  String get varLabel_screenName => 'Screen name';
+
+  @override
+  String get varLabel_plasmaOverviewActive => 'Plasma overview active';
+
+  @override
+  String get varLabel_lastTriggerId => 'Last trigger ID';
+
+  @override
+  String get varLabel_timeSinceLastTrigger => 'Time since last trigger';
+
+  @override
+  String get varLabel_deviceName => 'Device name';
+
+  @override
+  String get varLabel_deviceTypes => 'Device types';
+
+  @override
+  String get varLabel_deviceIsKeyboard => 'Is keyboard';
+
+  @override
+  String get varLabel_deviceIsMouse => 'Is mouse';
+
+  @override
+  String get varLabel_deviceIsTouchpad => 'Is touchpad';
+
+  @override
+  String get varLabel_deviceIsTouchscreen => 'Is touchscreen';
 }

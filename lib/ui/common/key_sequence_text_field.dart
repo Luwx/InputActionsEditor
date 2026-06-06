@@ -24,7 +24,9 @@ import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 /// resolved automatically.
 ///
 /// [onChanged] is called with the normalised `List<String>` token list every
-/// time the text changes (chords are expanded to press-all + release-reversed).
+/// time the text changes.  A chord typed in chord format is kept as a single
+/// combo token (`leftctrl+c`); explicit `+key` / `-key` tokens are preserved
+/// as-is — so the saved tokens mirror what the user actually typed.
 class KeySequenceTextField extends HookWidget {
   const KeySequenceTextField({
     super.key,
@@ -32,6 +34,7 @@ class KeySequenceTextField extends HookWidget {
     this.initialValue,
     this.onChanged,
     this.label,
+    this.labelWidget,
     this.hintText,
     this.autofocus = false,
     this.maxLines = 1,
@@ -48,6 +51,10 @@ class KeySequenceTextField extends HookWidget {
   final ValueChanged<List<String>>? onChanged;
 
   final String? label;
+
+  /// Widget label — takes precedence over [label] when both are set.
+  final Widget? labelWidget;
+
   final String? hintText;
   final bool autofocus;
   final int maxLines;
@@ -114,9 +121,7 @@ class KeySequenceTextField extends HookWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label ?? 'Key Sequence',
-              ),
+              labelWidget ?? Text(label ?? 'Key Sequence'),
               const SizedBox(height: 4),
               ExtendedTextField(
                 controller: effectiveController,

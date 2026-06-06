@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_scancodes.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Modifier key descriptor - a canonical logical name and its left/right variants.
 class _Modifier {
@@ -62,10 +63,8 @@ class ShortcutSection extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           LabelWithTooltip(
-            label: 'Modifier',
-            tooltip:
-                'Keyboard modifier keys that must be held. '
-                'Click to cycle: (none) → Left → Right → (none). ',
+            label: context.l10n.sectionModifierLabel,
+            tooltip: context.l10n.sectionModifierTooltip,
             textStyle: context.theme.typography.sm.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -128,11 +127,9 @@ class ShortcutSection extends ConsumerWidget {
                     initial: mainKey,
                     onChange: setMainKey,
                   ),
-                  label: const LabelWithTooltip(
-                    label: 'Key',
-                    tooltip:
-                        'The main key of the shortcut. '
-                        'Combined with any selected modifier keys above.',
+                  label: LabelWithTooltip(
+                    label: context.l10n.sectionKeyLabel,
+                    tooltip: context.l10n.sectionKeyTooltip,
                   ),
                 ),
               ),

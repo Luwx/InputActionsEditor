@@ -114,12 +114,9 @@ class DirectionPicker extends HookWidget {
               onChanged(toSingleDirection(direction));
             }
           },
-          label: const LabelWithTooltip(
-            label: 'Bidirectional',
-            tooltip:
-                'Also match motion in the opposite direction. '
-                'Motion in the opposite direction will have '
-                'a negative delta value.',
+          label: LabelWithTooltip(
+            label: context.l10n.swipeAngleBidirectionalLabel,
+            tooltip: context.l10n.swipeDirectionBidirectionalTooltip,
           ),
         ),
       ],

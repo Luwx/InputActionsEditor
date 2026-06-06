@@ -24,21 +24,22 @@ class _RenameDialog extends HookWidget {
       onConfirm(controller.text);
     }
 
+    final l10n = context.l10n;
     return AppDialog(
       title: Text(title),
       body: FTextField(
         control: .managed(controller: controller),
         autofocus: true,
-        hint: 'Group',
+        hint: l10n.renameGroupHint,
       ),
       actions: [
         FButton(
           onPress: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.actionCancel),
         ),
         FButton(
           onPress: handleConfirm,
-          child: const Text('OK'),
+          child: Text(l10n.actionOk),
         ),
       ],
     );

@@ -1,14 +1,15 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/conflict/conflict_detector.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:meta/meta.dart';
 
 /// All detected conflicts plus fast per-gesture lookups.
-class ConflictReport {
+class ConflictReport extends Equatable {
   ConflictReport(this.all) : _byGesture = _index(all), hasAny = all.isNotEmpty;
 
   const ConflictReport._empty()
@@ -21,6 +22,9 @@ class ConflictReport {
   final List<GestureConflict> all;
   final bool hasAny;
   final Map<GestureRef, List<GestureConflict>> _byGesture;
+
+  @override
+  List<Object?> get props => [all];
 
   List<GestureConflict> forGesture(DeviceType device, int index) =>
       _byGesture[(device: device, index: index)] ?? const [];

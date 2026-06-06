@@ -436,7 +436,7 @@ final EditTree<Config> configTree = editTree<Config>(
         prop(GlobalSettingsMeta.emergencyCombination),
       ],
     ),
-    vehicleLists<GestureLocation, Gesture, DeviceType>(
+    taggedLists<GestureLocation, Gesture, DeviceType>(
       lens: 'gestureLens',
       discriminator: 'device',
       generateLocation: true,

@@ -2,9 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart' show SwipeMode;
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
-import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
@@ -56,11 +54,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
         };
       }),
     );
-    final motionField = ref.gestureField(
-      context,
-      touchpadMotionLens,
-      fallbackValue: () => const MotionCommon(),
-    );
+    final motionField = ref.gestureField(context, touchpadMotionLens);
     final motion = MotionField(
       motion: motionField.value,
       onChanged: motionField.onChanged,
@@ -75,8 +69,6 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               final modeField = ref.gestureField(
                 context,
                 touchpadSwipeModeLens,
-                fallbackValue: () =>
-                    const SwipeMode.direction(direction: SwipeDirection.any),
               );
               return SwipeModeSelector(
                 mode: modeField.value,
@@ -95,7 +87,6 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               final directionField = ref.gestureField(
                 context,
                 touchpadPinchDirectionLens,
-                fallbackValue: () => PinchDirection.any,
               );
               return PinchSection(
                 direction: directionField.value,
@@ -114,7 +105,6 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               final directionField = ref.gestureField(
                 context,
                 touchpadRotateDirectionLens,
-                fallbackValue: () => RotateDirection.any,
               );
               return RotateSection(
                 direction: directionField.value,
@@ -154,7 +144,6 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               final strokesField = ref.gestureField(
                 context,
                 touchpadStrokeStrokesLens,
-                fallbackValue: () => const <String>[],
               );
               return StrokesField(
                 strokes: strokesField.value,

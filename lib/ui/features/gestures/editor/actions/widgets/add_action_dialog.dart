@@ -2,16 +2,15 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-/// Shows the "Add action" type picker and returns a default action of the
-/// chosen kind, or null if the user cancelled.
 Future<Action?> showAddActionDialog(BuildContext context) {
   return showFDialog<Action>(
     context: context,
     useRootNavigator: true,
     builder: (context, style, animation) => AppDialog(
       animation: animation,
-      title: const Text('Add action'),
+      title: Text(context.l10n.dialogAddActionTitle),
       body: Padding(
         padding: const EdgeInsets.only(top: 8),
         child: Column(
@@ -29,7 +28,7 @@ Future<Action?> showAddActionDialog(BuildContext context) {
         FButton(
           variant: .outline,
           onPress: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.actionCancel),
         ),
       ],
     ),
@@ -43,20 +42,20 @@ enum _ActionKind {
   sleep,
   raw;
 
-  String get label => switch (this) {
-    _ActionKind.command => 'Command',
-    _ActionKind.input => 'Input',
-    _ActionKind.plasmaShortcut => 'Plasma shortcut',
-    _ActionKind.sleep => 'Sleep',
-    _ActionKind.raw => 'Raw YAML',
+  String label(AppLocalizations l10n) => switch (this) {
+    _ActionKind.command => l10n.actionMetaCommandLabel,
+    _ActionKind.input => l10n.actionMetaInputLabel,
+    _ActionKind.plasmaShortcut => l10n.actionMetaPlasmaLabel,
+    _ActionKind.sleep => l10n.actionMetaSleepLabel,
+    _ActionKind.raw => l10n.actionMetaRawLabel,
   };
 
-  String get description => switch (this) {
-    _ActionKind.command => 'Run a shell command',
-    _ActionKind.input => 'Simulate keyboard / mouse events',
-    _ActionKind.plasmaShortcut => 'Trigger a KDE Plasma global shortcut',
-    _ActionKind.sleep => 'Pause for a number of milliseconds',
-    _ActionKind.raw => 'Hand-written YAML for unsupported action types',
+  String description(AppLocalizations l10n) => switch (this) {
+    _ActionKind.command => l10n.actionMetaCommandSubtitle,
+    _ActionKind.input => l10n.actionMetaInputSubtitle,
+    _ActionKind.plasmaShortcut => l10n.actionMetaPlasmaSubtitle,
+    _ActionKind.sleep => l10n.actionMetaSleepSubtitle,
+    _ActionKind.raw => l10n.actionMetaRawSubtitle,
   };
 
   IconData get icon => switch (this) {
@@ -89,14 +88,15 @@ class _KindOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.theme.colors;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: FTile(
         onPress: onTap,
-        title: Text(kind.label),
-        subtitle: Text(kind.description),
+        title: Text(kind.label(l10n)),
+        subtitle: Text(kind.description(l10n)),
         prefix: Container(
           width: 32,
           height: 32,

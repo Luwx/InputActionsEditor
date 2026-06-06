@@ -78,6 +78,49 @@ Future<void> saveConfig(Config config, String originalText) async {
   await file.writeAsString(encodeConfig(config, originalText));
 }
 
+Future<String?> pickSaveFilePath() async {
+  final home = Platform.environment['HOME'] ?? '.';
+  for (final tool in ['kdialog', 'zenity']) {
+    try {
+      ProcessResult result;
+      if (tool == 'kdialog') {
+        result = await Process.run('kdialog', [
+          '--getsavefilename',
+          '$home/config.yaml',
+          '*.yaml *.yml',
+          '--title',
+          'Save As',
+        ]);
+      } else {
+        result = await Process.run('zenity', [
+          '--file-selection',
+          '--save',
+          '--confirm-overwrite',
+          '--title=Save As',
+          '--file-filter=YAML files | *.yaml *.yml',
+        ]);
+      }
+      if (result.exitCode == 0) {
+        return (result.stdout as String).trim();
+      }
+      break;
+    } on Exception {
+      continue;
+    }
+  }
+  return null;
+}
+
+Future<void> saveConfigToPath(
+  Config config,
+  String originalText,
+  String path,
+) async {
+  final file = File(path);
+  if (!file.parent.existsSync()) await file.parent.create(recursive: true);
+  await file.writeAsString(encodeConfig(config, originalText));
+}
+
 /// Serializes [config] into YAML text, merging changes into [originalText] so
 /// unmodelled keys, comments, and formatting are preserved. Pure (no I/O).
 String encodeConfig(Config config, String originalText) {

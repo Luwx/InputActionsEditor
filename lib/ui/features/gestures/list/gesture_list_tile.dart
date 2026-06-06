@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -14,7 +15,10 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
@@ -23,19 +27,22 @@ class GestureListTile extends ConsumerWidget {
   const GestureListTile({
     required this.device,
     required this.index,
-    required this.gesture,
     required this.newlyAddedMarkerId,
     required this.isSelected,
     required this.isMultiSelectMode,
     required this.isMultiSelected,
     required this.groupDisabled,
     required this.onTap,
+    this.gestureOverride,
     super.key,
   });
 
   final DeviceType device;
   final int index;
-  final Gesture gesture;
+
+  ///Used for a transient "ghost" copy that keeps showing a row's
+  /// content after it has been removed/moved
+  final Gesture? gestureOverride;
   final int? newlyAddedMarkerId;
   final bool isSelected;
   final bool isMultiSelectMode;
@@ -50,13 +57,22 @@ class GestureListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
+    final location = GestureLocation(device: device, index: index);
+    final gesture =
+        gestureOverride ??
+        ref.watch(
+          configControllerProvider.select((s) => gestureAt(s.value, location)),
+        );
+    if (gesture == null) return const SizedBox.shrink();
     final common = gesture.common;
-    final isDirty = ref.watch(
-      gestureDirtyProvider(GestureLocation(device: device, index: index)),
-    );
+    final isDirty =
+        gestureOverride == null && ref.watch(gestureDirtyProvider(location));
     final isDisabled = common.enabled == false || groupDisabled;
     final summaryText = _summary(gesture);
-    final firstAction = _firstActionSummary(common);
+    final firstAction = _firstActionSummary(common, context.l10n);
+    final firstActionIcon = common.actions.isNotEmpty
+        ? actionMeta(common.actions.first.action, context.l10n).icon
+        : null;
     final nameText = (common.name?.isNotEmpty ?? false)
         ? common.name!
         : gestureTypeLabel(gesture, context.l10n);
@@ -159,12 +175,26 @@ class GestureListTile extends ConsumerWidget {
                       ],
                       if (firstAction.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Text(
-                          firstAction,
-                          style: typography.xs.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            if (firstActionIcon != null) ...[
+                              Icon(
+                                firstActionIcon,
+                                size: 11,
+                                color: colors.mutedForeground,
+                              ),
+                              const SizedBox(width: 3),
+                            ],
+                            Expanded(
+                              child: Text(
+                                firstAction,
+                                style: typography.xs.copyWith(
+                                  color: colors.mutedForeground,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -256,14 +286,16 @@ void _addTouchSummary(Object g, List<String> parts) {
   }
 }
 
-String _firstActionSummary(TriggerCommon common) {
+String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
   if (common.actions.isEmpty) return '';
   final action = common.actions.first.action;
   return switch (action) {
     CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
-    InputAction(:final entries) when entries.isEmpty => 'input (empty)',
-    InputAction(:final entries) =>
-      'input: ${entries.map((e) => e.device.name).join(', ')}',
+    InputAction(:final entries) when entries.isEmpty => '(empty)',
+    InputAction(:final entries) => entries.map((e) {
+        final seq = inputEntrySummary(e, l10n);
+        return '${e.device.name} $seq';
+      }).join(' · '),
     PlasmaShortcutAction(:final shortcut) =>
       shortcut.isEmpty ? 'plasma shortcut' : shortcut,
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',

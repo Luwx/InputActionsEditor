@@ -8,6 +8,7 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TriggerAdvancedFields extends ConsumerWidget {
@@ -79,7 +80,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: idField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldIdLabel,
-                  tooltip: l10n.triggerFieldIdTooltip,
+                  tooltipContent: const TriggerIdTooltip(),
                 ),
               ),
               control: FTextFieldControl.managed(
@@ -94,7 +95,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: thresholdField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldThresholdLabel,
-                  tooltip: l10n.triggerFieldThresholdTooltip,
+                  tooltipContent: const TriggerThresholdTooltip(),
                   textStyle: const TextStyle(
                     height: 1.4,
                     fontFamily: 'monospaced',
@@ -113,7 +114,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: resumeTimeoutField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldResumeTimeoutLabel,
-                  tooltip: l10n.triggerFieldResumeTimeoutTooltip,
+                  tooltipContent: const TriggerResumeTimeoutTooltip(),
                 ),
               ),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -138,7 +139,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: acceleratedField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldAcceleratedLabel,
-                  tooltip: l10n.triggerFieldAcceleratedTooltip,
+                  tooltipContent: const TriggerAcceleratedTooltip(),
                 ),
               ),
             ),
@@ -150,7 +151,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: blockEventsField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldBlockEventsLabel,
-                  tooltip: l10n.triggerFieldBlockEventsTooltip,
+                  tooltipContent: const TriggerBlockEventsTooltip(),
                 ),
               ),
             ),
@@ -162,7 +163,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: clearModifiersField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldClearModifiersLabel,
-                  tooltip: l10n.triggerFieldClearModifiersTooltip,
+                  tooltipContent: const TriggerClearModifiersTooltip(),
                 ),
               ),
             ),
@@ -174,7 +175,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                 onRevert: setLastTriggerField.onRevert,
                 child: LabelWithTooltip(
                   label: l10n.triggerFieldSetLastTriggerLabel,
-                  tooltip: l10n.triggerFieldSetLastTriggerTooltip,
+                  tooltipContent: const TriggerSetLastTriggerTooltip(),
                 ),
               ),
             ),
@@ -185,7 +186,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
           condition: conditionsField.value,
           onConditionChanged: conditionsField.onChanged,
           title: l10n.triggerConditionsTitle,
-          titleTooltip: l10n.triggerConditionsTooltip,
+          titleTooltipContent: const TriggerConditionsTooltip(),
           bodyBackgroundColor: conditionsBodyBackgroundColor,
           dirtyState: conditionsField.dirty,
           onRevert: conditionsField.onRevert,
@@ -195,7 +196,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
           title: l10n.triggerEndConditionsTitle,
           dirtyState: endConditionsField.dirty,
           onRevert: endConditionsField.onRevert,
-          titleTooltip: l10n.triggerEndConditionsTooltip,
+          titleTooltipContent: const TriggerEndConditionsTooltip(),
           condition: endConditionsField.value,
           bodyBackgroundColor: conditionsBodyBackgroundColor,
           onConditionChanged: endConditionsField.onChanged,

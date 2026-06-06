@@ -99,19 +99,13 @@ extension FieldAccess on WidgetRef {
   SchemaEditableField<T> schemaField<TRoot, TLocation, T>(
     GeneratedEditField<TRoot, TLocation, T, Lens<T>> field, {
     required TLocation location,
-    TRoot? fallbackRoot,
     DirtyMarkState? dirty,
     Object? scope,
     bool Function(Config config)? canRead,
   }) {
-    final fallback = field.fallback;
-    final root = fallbackRoot;
     final editable = this.field<T>(
       field.lens(location),
       dirty: dirty,
-      fallbackValue: (fallback == null || root == null)
-          ? null
-          : () => fallback(root),
       scope: scope,
       canRead: canRead,
     );

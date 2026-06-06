@@ -52,28 +52,26 @@ class _UnsavedChangesDialog extends StatelessWidget {
       animation: animation,
       direction: .horizontal,
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
-      title: const Text('Unsaved Changes'),
-      body: const Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: Text(
-          'You have unsaved changes. Apply them or discard before leaving.',
-        ),
+      title: Text(context.l10n.dialogUnsavedChangesTitle),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Text(context.l10n.dialogUnsavedChangesBody),
       ),
       actions: [
         FButton(
           onPress: () => Navigator.of(context).pop(UnsavedChangesAction.apply),
-          child: const Text('Apply'),
+          child: Text(context.l10n.actionApply),
         ),
         FButton(
           variant: .outline,
           onPress: () =>
               Navigator.of(context).pop(UnsavedChangesAction.discard),
-          child: const Text('Discard'),
+          child: Text(context.l10n.actionDiscardChanges),
         ),
         FButton(
           variant: .ghost,
           onPress: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.actionCancel),
         ),
       ],
     );

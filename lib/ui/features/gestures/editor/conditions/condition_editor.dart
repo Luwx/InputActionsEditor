@@ -32,26 +32,8 @@ class ConditionEditor extends StatelessWidget {
   }) : condition = null,
        onConditionChanged = null,
        title = 'Trigger Conditions',
-       titleTooltip =
-           'Conditions that must ALL be true for this gesture to activate.\n\n'
-           'Examples:\n'
-           r'  $window_class == firefox'
-           '\n'
-           '      → only fires inside Firefox\n'
-           r'  $window_class == konsole'
-           '\n'
-           '      → only fires inside the terminal\n'
-           r'  $window_id == $window_under_id'
-           '\n'
-           '      → cursor is over the focused window\n'
-           r'  $pointer_position_screen_percentage_x >= 0.95'
-           '\n'
-           '      → cursor is at the right screen edge\n'
-           r'  $fingers == 3'
-           '\n'
-           '      → exactly 3 fingers on touchpad\n\n'
-           'Multiple rows are ANDed together.\n'
-           'Use an "any" group inside for OR logic.',
+       titleTooltip = null,
+       titleTooltipContent = null,
        groups = null;
 
   /// Generic constructor for any condition (e.g. end_conditions).
@@ -60,6 +42,7 @@ class ConditionEditor extends StatelessWidget {
     required this.onConditionChanged,
     this.title = 'Trigger Conditions',
     this.titleTooltip,
+    this.titleTooltipContent,
     this.groups,
     this.isDirty = false,
     this.dirtyState,
@@ -79,6 +62,9 @@ class ConditionEditor extends StatelessWidget {
   final void Function(Condition?)? onConditionChanged;
   final String title;
   final String? titleTooltip;
+
+  /// Rich widget tooltip. Takes precedence over [titleTooltip] when both set.
+  final Widget? titleTooltipContent;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -166,6 +152,7 @@ class ConditionEditor extends StatelessWidget {
           backgroundColor: backgroundColor,
           title: title,
           titleTooltip: titleTooltip,
+          titleTooltipContent: titleTooltipContent,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
@@ -209,14 +196,15 @@ class ConditionEditor extends StatelessWidget {
           colors: colors,
           typography: typography,
           title: title,
-          titleWidget: titleTooltip != null
+          titleWidget: titleTooltip != null || titleTooltipContent != null
               ? UnsavedLabel(
                   state: dirtyState,
                   isDirty: dirtyState == null ? isDirty : null,
                   onRevert: onRevert,
                   child: LabelWithTooltip(
                     label: title,
-                    tooltip: titleTooltip!,
+                    tooltip: titleTooltip,
+                    tooltipContent: titleTooltipContent,
                     textStyle: typography.sm.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -232,6 +220,7 @@ class ConditionEditor extends StatelessWidget {
                   ),
                 ),
           tooltip: titleTooltip,
+          tooltipContent: titleTooltipContent,
           onAddCondition: showRootButtons
               ? () => _addRootCondition(context)
               : null,

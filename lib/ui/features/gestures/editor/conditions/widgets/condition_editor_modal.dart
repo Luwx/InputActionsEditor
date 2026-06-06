@@ -22,6 +22,7 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
   required VoidCallback? onRevert,
   required Condition? initialCondition,
   required void Function(Condition?) onConditionChanged,
+  Widget? titleTooltipContent,
 }) {
   return PageRouteBuilder<void>(
     opaque: false,
@@ -38,6 +39,7 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
           backgroundColor: backgroundColor,
           title: title,
           titleTooltip: titleTooltip,
+          titleTooltipContent: titleTooltipContent,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
@@ -87,6 +89,7 @@ class _ConditionsExpandModal extends StatelessWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    this.titleTooltipContent,
   });
 
   final Animation<double> animation;
@@ -94,6 +97,7 @@ class _ConditionsExpandModal extends StatelessWidget {
   final Color backgroundColor;
   final String title;
   final String? titleTooltip;
+  final Widget? titleTooltipContent;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -181,6 +185,7 @@ class _ConditionsExpandModal extends StatelessWidget {
                                   backgroundColor: backgroundColor,
                                   title: title,
                                   titleTooltip: titleTooltip,
+                                  titleTooltipContent: titleTooltipContent,
                                   groups: groups,
                                   isDirty: isDirty,
                                   dirtyState: dirtyState,
@@ -217,12 +222,14 @@ class _ConditionsWrapper extends StatefulWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    this.titleTooltipContent,
   });
 
   final Object heroTag;
   final Color backgroundColor;
   final String title;
   final String? titleTooltip;
+  final Widget? titleTooltipContent;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -253,6 +260,7 @@ class _ConditionsWrapperState extends State<_ConditionsWrapper> {
       },
       title: widget.title,
       titleTooltip: widget.titleTooltip,
+      titleTooltipContent: widget.titleTooltipContent,
       groups: widget.groups,
       isDirty: widget.isDirty,
       dirtyState: widget.dirtyState,

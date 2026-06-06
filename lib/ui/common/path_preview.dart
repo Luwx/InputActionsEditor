@@ -284,7 +284,7 @@ class PathPreviewPainter extends CustomPainter {
           ..strokeWidth = lineWidth + 4
           ..strokeCap = StrokeCap.round
           ..style = PaintingStyle.stroke
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
       );
     }
 
