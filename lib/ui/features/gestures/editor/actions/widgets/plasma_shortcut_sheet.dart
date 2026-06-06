@@ -255,7 +255,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
       setState(() => _selectedComponent = first.uniqueName);
     });
 
-    return DecoratedBox(
+    final body = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.background,
         border: Border(left: BorderSide(color: colors.border)),
@@ -339,6 +339,21 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
             ),
           ],
         ),
+      ),
+    );
+
+    // While the sheet slides out, the clearable search field's "Clear" button
+    // keeps a transient inverted (left > right) semantics rect that trips the
+    // framework's invisible-semantics assertion. The closing sheet's semantics
+    // are irrelevant, so drop them for the duration of the reverse animation.
+    final animation = ModalRoute.of(context)?.animation;
+    if (animation == null) return body;
+    return AnimatedBuilder(
+      animation: animation,
+      child: body,
+      builder: (context, child) => ExcludeSemantics(
+        excluding: animation.status == AnimationStatus.reverse,
+        child: child,
       ),
     );
   }
