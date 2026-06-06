@@ -7,10 +7,12 @@ import 'package:dbus/dbus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app.dart';
+import 'package:input_actions_editor/app_state/app/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
 import 'package:input_actions_editor/services/window_service.dart';
+import 'package:kde_color_scheme/kde_color_scheme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -32,11 +34,18 @@ void main() async {
   final windowService = WindowService();
   await windowService.initialize();
 
+  final initialKde =
+      (settings.colorTheme == FColorTheme.kde && KdeglobalsParser.isAvailable())
+      ? KdeColorSchemeWatcher().current
+      : null;
+
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         windowServiceProvider.overrideWithValue(windowService),
+        if (initialKde != null)
+          kdeColorSchemeInitialProvider.overrideWithValue(initialKde),
       ],
       child: const App(),
     ),

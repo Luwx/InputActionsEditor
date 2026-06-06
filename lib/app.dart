@@ -166,7 +166,9 @@ class _ThemedShell extends ConsumerWidget {
     final FThemeData themeData;
     if (settings.colorTheme == FColorTheme.kde && _kdeAvailable) {
       final kde =
-          ref.watch(kdeColorSchemeProvider).value ?? KdeColorScheme.fallback;
+          ref.watch(kdeColorSchemeProvider).value ??
+          ref.watch(kdeColorSchemeInitialProvider) ??
+          KdeColorScheme.fallback;
       themeData = _withAppChromeStyle(
         buildKdeThemeData(kde),
         transparentSidebar: settings.transparentSidebar,

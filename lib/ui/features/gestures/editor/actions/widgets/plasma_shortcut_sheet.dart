@@ -261,7 +261,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
         border: Border(left: BorderSide(color: colors.border)),
       ),
       child: SizedBox(
-        width: 540,
+        width: 560,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

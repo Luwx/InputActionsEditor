@@ -7,6 +7,8 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
+enum _ThemeSelection { dark, light, system, kde }
+
 class AppearanceSettingsScreen extends ConsumerWidget {
   const AppearanceSettingsScreen({super.key});
 
@@ -18,13 +20,23 @@ class AppearanceSettingsScreen extends ConsumerWidget {
 
     final kdeAvailable = KdeglobalsParser.isAvailable();
 
-    final themeModes = {
-      l10n.appearanceThemeDark: ThemeMode.dark,
-      l10n.appearanceThemeLight: ThemeMode.light,
-      l10n.appearanceThemeSystem: ThemeMode.system,
+    final effectiveThemeSelection =
+        (kdeAvailable && settings.colorTheme == FColorTheme.kde)
+        ? _ThemeSelection.kde
+        : switch (settings.themeMode) {
+            ThemeMode.dark => _ThemeSelection.dark,
+            ThemeMode.light => _ThemeSelection.light,
+            ThemeMode.system => _ThemeSelection.system,
+          };
+
+    final themeSelections = {
+      l10n.appearanceThemeDark: _ThemeSelection.dark,
+      l10n.appearanceThemeLight: _ThemeSelection.light,
+      l10n.appearanceThemeSystem: _ThemeSelection.system,
+      if (kdeAvailable) l10n.appearanceColorThemeKde: _ThemeSelection.kde,
     };
 
-    final baseColorThemes = {
+    final colorThemes = {
       l10n.appearanceColorThemeNeutral: FColorTheme.neutral,
       l10n.appearanceColorThemeZinc: FColorTheme.zinc,
       l10n.appearanceColorThemeSlate: FColorTheme.slate,
@@ -37,13 +49,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
       l10n.appearanceColorThemeYellow: FColorTheme.yellow,
     };
 
-    final colorThemes = {
-      if (kdeAvailable) l10n.appearanceColorThemeKde: FColorTheme.kde,
-      ...baseColorThemes,
-    };
-
-    final effectiveColorTheme =
-        (!kdeAvailable && settings.colorTheme == FColorTheme.kde)
+    final effectiveColorTheme = (settings.colorTheme == FColorTheme.kde)
         ? FColorTheme.zinc
         : settings.colorTheme;
 
@@ -88,26 +94,42 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                         prefix: const Icon(FLucideIcons.sunMoon),
                         title: Text(l10n.appearanceThemeLabel),
                         suffix: SizedBox(
-                          width: 120,
-                          child: FSelect<ThemeMode>(
-                            key: ValueKey(settings.themeMode),
-                            items: themeModes,
-                            control: FSelectManagedControl<ThemeMode>(
-                              initial: settings.themeMode,
+                          width: 150,
+                          child: FSelect<_ThemeSelection>(
+                            key: ValueKey(effectiveThemeSelection),
+                            items: themeSelections,
+                            control: FSelectManagedControl<_ThemeSelection>(
+                              initial: effectiveThemeSelection,
                               onChange: (value) {
-                                if (value != null) notifier.setThemeMode(value);
+                                if (value == null) return;
+                                if (value == _ThemeSelection.kde) {
+                                  notifier.setColorTheme(FColorTheme.kde);
+                                } else {
+                                  if (settings.colorTheme == FColorTheme.kde) {
+                                    notifier.setColorTheme(FColorTheme.zinc);
+                                  }
+                                  notifier.setThemeMode(switch (value) {
+                                    _ThemeSelection.dark => ThemeMode.dark,
+                                    _ThemeSelection.light => ThemeMode.light,
+                                    _ThemeSelection.system ||
+                                    _ThemeSelection.kde => ThemeMode.system,
+                                  });
+                                }
                               },
                             ),
                           ),
                         ),
                       ),
                       FTile(
+                        enabled: effectiveThemeSelection != _ThemeSelection.kde,
                         prefix: const Icon(FLucideIcons.swatchBook),
                         title: Text(l10n.appearanceColorThemeLabel),
                         suffix: SizedBox(
-                          width: 120,
+                          width: 150,
                           child: FSelect<FColorTheme>(
                             key: ValueKey(effectiveColorTheme),
+                            enabled:
+                                effectiveThemeSelection != _ThemeSelection.kde,
                             items: colorThemes,
                             control: FSelectManagedControl<FColorTheme>(
                               initial: effectiveColorTheme,
