@@ -207,6 +207,7 @@ class ActionListEditor extends HookConsumerWidget {
             itemBuilder: (context, index) {
               return _ActionRow(
                 key: ValueKey('action-row-$index'),
+                gestureLocation: gestureLocation,
                 index: index,
                 expanded: expanded.value.contains(index),
                 onToggle: () => toggle(index),
@@ -271,6 +272,7 @@ class _ActionsHeader extends ConsumerWidget {
 
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
+    required this.gestureLocation,
     required this.index,
     required this.expanded,
     required this.onToggle,
@@ -282,6 +284,10 @@ class _ActionRow extends StatelessWidget {
     super.key,
   });
 
+  /// Passed explicitly rather than read from context: while a row is being
+  /// dragged, [ReorderableListView] reparents it under the app [Overlay],
+  /// detaching it from the [EditLocationScope] ancestor.
+  final GestureLocation gestureLocation;
   final int index;
   final bool expanded;
   final VoidCallback onToggle;
@@ -301,7 +307,7 @@ class _ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final actionLocation = ActionLocation(
-      gesture: context.gestureLocation,
+      gesture: gestureLocation,
       actionIndex: index,
     );
 

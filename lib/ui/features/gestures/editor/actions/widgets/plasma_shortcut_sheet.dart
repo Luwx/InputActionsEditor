@@ -265,7 +265,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               children: [
                 const SizedBox(width: 12),
@@ -277,7 +277,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: FTextField(
@@ -427,8 +427,12 @@ class _ShortcutList extends ConsumerWidget {
       return Column(
         children: [
           if (filter.isLoading)
-            LinearProgressIndicator(
-              value: filter.total > 0 ? filter.loaded / filter.total : null,
+            FDeterminateProgress(
+              style: const .delta(
+                trackDecoration: .boxDelta(borderRadius: BorderRadius.zero),
+                fillDecoration: .boxDelta(borderRadius: BorderRadius.zero),
+              ),
+              value: filter.total > 0 ? filter.loaded / filter.total : 0,
             ),
           Expanded(
             child: shortcuts.isEmpty && !filter.isLoading
