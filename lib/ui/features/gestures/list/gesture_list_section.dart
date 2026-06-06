@@ -18,6 +18,7 @@ import 'package:input_actions_editor/model/gesture_conflict.dart'
     hide gestureCommon, gestureDisplayName, gestureTypeLabel;
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
@@ -456,7 +457,7 @@ class GestureListSection extends HookConsumerWidget {
 // Conflict icon overlay shown to the left of the drag handle
 // ---------------------------------------------------------------------------
 
-class _ConflictTileIcon extends StatelessWidget {
+class _ConflictTileIcon extends ConsumerWidget {
   const _ConflictTileIcon({
     required this.conflicts,
     required this.focus,
@@ -466,12 +467,31 @@ class _ConflictTileIcon extends StatelessWidget {
   final GestureRef focus;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typography = context.theme.typography;
-    final names = conflicts.map((c) => c.otherLabel(focus)).join(', ');
-    final tooltipText = conflicts.length == 1
-        ? 'Conflicts with: $names'
-        : 'Conflicts with: $names';
+
+    // Keep the indicator quiet when the user has only touched the *other* side
+    // of the conflict: an unmodified gesture shouldn't light up just because a
+    // freshly edited neighbour now collides with it. 
+    final focusDirty = ref.watch(
+      gestureDirtyProvider(
+        GestureLocation(device: focus.device, index: focus.index),
+      ),
+    );
+    final visible = focusDirty
+        ? conflicts
+        : conflicts.where((c) {
+            final other = c.other(focus);
+            return !ref.watch(
+              gestureDirtyProvider(
+                GestureLocation(device: other.device, index: other.index),
+              ),
+            );
+          }).toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    final names = visible.map((c) => c.otherLabel(focus)).join(', ');
+    final tooltipText = 'Conflicts with: $names';
 
     return AppTooltip(
       tipBuilder: (context, _) => Text(tooltipText, style: typography.xs),
