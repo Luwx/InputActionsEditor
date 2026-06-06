@@ -1,220 +1,135 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/model/action.dart';
-import 'package:input_actions_editor/model/effective_config_values.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/state/dirty/dirty_semantics.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
-    as input_entries_editor;
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
+    as input_entries_editor;
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/plasma_shortcut_sheet.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ActionFields extends ConsumerWidget {
   const ActionFields({
-    required this.actionLocation,
-    required this.action,
-    required this.onActionChanged,
+    required this.kind,
     super.key,
   });
 
-  final ActionLocation actionLocation;
-  final Action action;
-  final void Function(Action) onActionChanged;
+  final ActionKind kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final savedAction = ref.watch(savedActionProvider(actionLocation));
-
-    VoidCallback? revertField(ActionDirtyField field) => savedAction == null
-        ? null
-        : () => onActionChanged(
-            restoreSavedActionField(
-              current: action,
-              saved: savedAction.action,
-              field: field,
-            ),
-          );
-
-    return switch (action) {
-      CommandAction(:final command) => Column(
+    final l10n = context.l10n;
+    return switch (kind) {
+      ActionKind.command => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FTextField(
-            control: FTextFieldControl.managed(
-              initial: TextEditingValue(text: command),
-              onChange: (value) => onActionChanged(
-                (action as CommandAction).copyWith(command: value.text),
-              ),
-            ),
-            label: UnsavedLabel(
-              state: ref.watch(
-                actionFieldDirtyStateProvider(
-                  ActionDirtyLocation(
-                    action: actionLocation,
-                    field: ActionDirtyField.command,
+          Builder(
+            builder: (context) {
+              final schemaField = ref.actionSchemaField(
+                context,
+                actionCommandField,
+              );
+              return FTextField(
+                control: FTextFieldControl.managed(
+                  initial: schemaField.textEditingValue,
+                  onChange: schemaField.onTextChanged,
+                ),
+                label: UnsavedLabel(
+                  state: schemaField.dirty,
+                  onRevert: schemaField.onRevert,
+                  child: LabelWithTooltip(
+                    label: l10n.actionCommandLabel,
+                    tooltip: l10n.actionCommandTooltip,
                   ),
                 ),
-              ),
-              onRevert: revertField(ActionDirtyField.command),
-              child: const LabelWithTooltip(
-                label: 'Command',
-                tooltip:
-                    r'Shell command to run. Variables like $window_class, '
-                    r'$window_pid are passed as environment variables.',
-              ),
-            ),
-            hint: 'e.g. xdg-open ~',
-            style: .delta(
-              contentTextStyle: FVariantsDelta.delta([
-                FVariantOperation.all(
-                  const TextStyleDelta.delta(fontFamily: 'monospace'),
+                hint: l10n.actionCommandHint,
+                style: .delta(
+                  contentTextStyle: FVariantsDelta.delta([
+                    FVariantOperation.all(
+                      const TextStyleDelta.delta(fontFamily: 'monospace'),
+                    ),
+                  ]),
                 ),
-              ]),
-            ),
+              );
+            },
           ),
           const SizedBox(height: 8),
-          FCheckbox(
-            value: (action as CommandAction).effectiveWait,
-            onChange: (value) => onActionChanged(
-              (action as CommandAction).copyWith(wait: value ? true : null),
-            ),
-            label: UnsavedLabel(
-              state: ref.watch(
-                actionFieldDirtyStateProvider(
-                  ActionDirtyLocation(
-                    action: actionLocation,
-                    field: ActionDirtyField.wait,
+          Builder(
+            builder: (context) {
+              final field = ref.actionField(
+                context,
+                actionWaitLens,
+                fallbackValue: () => null,
+              );
+              return FCheckbox(
+                value: field.value ?? false,
+                onChange: (value) => field.onChanged(value ? true : null),
+                label: UnsavedLabel(
+                  state: field.dirty,
+                  onRevert: field.onRevert,
+                  child: LabelWithTooltip(
+                    label: l10n.actionWaitForCompletionLabel,
+                    tooltip: l10n.actionWaitForCompletionTooltip,
                   ),
                 ),
-              ),
-              onRevert: revertField(ActionDirtyField.wait),
-              child: const LabelWithTooltip(
-                label: 'Wait for completion',
-                tooltip:
-                    'Wait up to 30 seconds for the command to exit before '
-                    'executing the next action in the sequence.',
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
-      InputAction(:final entries) => input_entries_editor.InputEntriesEditor(
-        actionLocation: actionLocation,
-        entries: entries,
-        onChanged: (updated) => onActionChanged(InputAction(entries: updated)),
-      ),
-      PlasmaShortcutAction(:final component, :final shortcut) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FTextField(
+      ActionKind.input => const input_entries_editor.InputEntriesEditor(),
+      ActionKind.plasmaShortcut => const PlasmaShortcutSheetPicker(),
+      ActionKind.sleep => Builder(
+        builder: (context) {
+          final field = ref.actionField(
+            context,
+            actionDurationLens,
+            fallbackValue: () => 0,
+          );
+          return FTextField(
             control: FTextFieldControl.managed(
-              initial: TextEditingValue(text: component),
-              onChange: (value) => onActionChanged(
-                (action as PlasmaShortcutAction).copyWith(
-                  component: value.text,
-                ),
-              ),
+              initial: TextEditingValue(text: field.value.toString()),
+              onChange: (value) {
+                final parsed = int.tryParse(value.text);
+                if (parsed != null) field.onChanged(parsed);
+              },
             ),
             label: UnsavedLabel(
-              state: ref.watch(
-                actionFieldDirtyStateProvider(
-                  ActionDirtyLocation(
-                    action: actionLocation,
-                    field: ActionDirtyField.component,
-                  ),
-                ),
-              ),
-              onRevert: revertField(ActionDirtyField.component),
-              child: const LabelWithTooltip(
-                label: 'Component',
-                tooltip:
-                    'Plasma shortcut component. Find in '
-                    '~/.config/kglobalshortcutsrc - text inside '
-                    'brackets. Replace dots and dashes with underscores. '
-                    'Example: org_kde_dolphin_desktop',
+              state: field.dirty,
+              onRevert: field.onRevert,
+              child: LabelWithTooltip(
+                label: l10n.actionSleepDurationLabel,
+                tooltip: l10n.actionSleepDurationTooltip,
               ),
             ),
-            hint: 'e.g. org_kde_dolphin_desktop',
-          ),
-          const SizedBox(height: 6),
-          FTextField(
+            hint: l10n.actionSleepDurationHint,
+          );
+        },
+      ),
+      ActionKind.raw => Builder(
+        builder: (context) {
+          final schemaField = ref.actionSchemaField(
+            context,
+            actionRawField,
+          );
+          return FTextField(
             control: FTextFieldControl.managed(
-              initial: TextEditingValue(text: shortcut),
-              onChange: (value) => onActionChanged(
-                (action as PlasmaShortcutAction).copyWith(shortcut: value.text),
-              ),
+              initial: schemaField.textEditingValue,
+              onChange: schemaField.onTextChanged,
             ),
             label: UnsavedLabel(
-              state: ref.watch(
-                actionFieldDirtyStateProvider(
-                  ActionDirtyLocation(
-                    action: actionLocation,
-                    field: ActionDirtyField.shortcut,
-                  ),
-                ),
-              ),
-              onRevert: revertField(ActionDirtyField.shortcut),
-              child: const LabelWithTooltip(
-                label: 'Shortcut',
-                tooltip:
-                    'Shortcut name within the component. '
-                    'In kglobalshortcutsrc, it is the text '
-                    'before "=" on each line.',
-              ),
+              state: schemaField.dirty,
+              onRevert: schemaField.onRevert,
+              child: Text(l10n.actionMetaRawLabel),
             ),
-            hint: 'e.g. Show Desktop',
-          ),
-        ],
+            maxLines: null,
+          );
+        },
       ),
-      SleepAction(:final milliseconds) => FTextField(
-        control: FTextFieldControl.managed(
-          initial: TextEditingValue(text: milliseconds.toString()),
-          onChange: (value) => onActionChanged(
-            SleepAction(
-              milliseconds: int.tryParse(value.text) ?? milliseconds,
-            ),
-          ),
-        ),
-        label: UnsavedLabel(
-          state: ref.watch(
-            actionFieldDirtyStateProvider(
-              ActionDirtyLocation(
-                action: actionLocation,
-                field: ActionDirtyField.duration,
-              ),
-            ),
-          ),
-          onRevert: revertField(ActionDirtyField.duration),
-          child: const LabelWithTooltip(
-            label: 'Duration (ms)',
-            tooltip:
-                'How long to pause before the next action executes. '
-                'Useful to work around timing issues with input or '
-                'window focus.',
-          ),
-        ),
-        hint: '500',
-      ),
-      RawAction(:final raw) => FTextField(
-        control: FTextFieldControl.managed(
-          initial: TextEditingValue(text: raw),
-          onChange: (value) => onActionChanged(RawAction(raw: value.text)),
-        ),
-        label: UnsavedLabel(
-          state: ref.watch(
-            actionFieldDirtyStateProvider(
-              ActionDirtyLocation(
-                action: actionLocation,
-                field: ActionDirtyField.raw,
-              ),
-            ),
-          ),
-          onRevert: revertField(ActionDirtyField.raw),
-          child: const Text('Raw YAML'),
-        ),
-        maxLines: null,
-      ),
+      ActionKind.missing => const SizedBox.shrink(),
     };
   }
 }

@@ -7,7 +7,10 @@ class AngleWheelPainter extends CustomPainter {
     required this.minAngle,
     required this.maxAngle,
     required this.bidirectional,
-    required this.dragging,
+    required this.minHandleR,
+    required this.maxHandleR,
+    required this.wedgeFillAlpha,
+    required this.label,
     required this.primary,
     required this.surface,
     required this.border,
@@ -18,7 +21,10 @@ class AngleWheelPainter extends CustomPainter {
   final double minAngle;
   final double maxAngle;
   final bool bidirectional;
-  final int? dragging;
+  final double minHandleR;
+  final double maxHandleR;
+  final double wedgeFillAlpha;
+  final String label;
   final Color primary;
   final Color surface;
   final Color border;
@@ -63,8 +69,10 @@ class AngleWheelPainter extends CustomPainter {
       );
     }
 
-    drawArcSlice(minRad, sweepRad, 0.28);
-    if (bidirectional) drawArcSlice(minRad + math.pi, sweepRad, 0.15);
+    drawArcSlice(minRad, sweepRad, wedgeFillAlpha);
+    if (bidirectional) {
+      drawArcSlice(minRad + math.pi, sweepRad, wedgeFillAlpha * 0.54);
+    }
 
     final tickPaint = Paint()
       ..color = border
@@ -117,6 +125,24 @@ class AngleWheelPainter extends CustomPainter {
         arcLinePaint,
       );
 
+    final midArcR = arcR * 0.3;
+    final midArcRect = Rect.fromCircle(center: center, radius: midArcR);
+    final arcPaint = Paint()
+      ..color = primary.withValues(alpha: 0.5)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(midArcRect, minRad, sweepRad, false, arcPaint);
+    if (bidirectional) {
+      canvas.drawArc(
+        midArcRect,
+        minRad + math.pi,
+        sweepRad,
+        false,
+        arcPaint..color = primary.withValues(alpha: 0.3),
+      );
+    }
+
     final minPt = Offset(
       cx + math.cos(minRad) * arcR,
       cy + math.sin(minRad) * arcR,
@@ -127,24 +153,28 @@ class AngleWheelPainter extends CustomPainter {
     );
 
     canvas
-      ..drawCircle(
-        minPt,
-        dragging == 0 ? _handleR + 2 : _handleR,
-        Paint()..color = primary,
-      )
+      ..drawCircle(minPt, minHandleR, Paint()..color = primary)
+      ..drawCircle(maxPt, maxHandleR, Paint()..color = background)
       ..drawCircle(
         maxPt,
-        dragging == 1 ? _handleR + 2 : _handleR,
-        Paint()..color = background,
-      )
-      ..drawCircle(
-        maxPt,
-        dragging == 1 ? _handleR + 2 : _handleR,
+        maxHandleR,
         Paint()
           ..color = primary
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5,
       );
+
+    if (label.isNotEmpty) {
+      final midRad = minRad + sweepRad / 2;
+      final labelR = arcR * 0.6;
+      _drawText(
+        canvas,
+        label,
+        Offset(cx + math.cos(midRad) * labelR, cy + math.sin(midRad) * labelR),
+        primary,
+        10,
+      );
+    }
   }
 
   void _drawText(
@@ -169,6 +199,9 @@ class AngleWheelPainter extends CustomPainter {
       old.minAngle != minAngle ||
       old.maxAngle != maxAngle ||
       old.bidirectional != bidirectional ||
-      old.dragging != dragging ||
+      old.minHandleR != minHandleR ||
+      old.maxHandleR != maxHandleR ||
+      old.wedgeFillAlpha != wedgeFillAlpha ||
+      old.label != label ||
       old.primary != primary;
 }

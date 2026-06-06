@@ -4,7 +4,7 @@ part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_sec
 // Group header row
 // ---------------------------------------------------------------------------
 
-class _GroupHeaderRow extends StatefulWidget {
+class _GroupHeaderRow extends HookWidget {
   const _GroupHeaderRow({
     required this.index,
     required this.group,
@@ -37,65 +37,54 @@ class _GroupHeaderRow extends StatefulWidget {
   final VoidCallback onDelete;
 
   @override
-  State<_GroupHeaderRow> createState() => _GroupHeaderRowState();
-}
-
-class _GroupHeaderRowState extends State<_GroupHeaderRow> {
-  final ContextMenuController _menuController = ContextMenuController();
-
-  @override
-  void dispose() {
-    _menuController.remove();
-    super.dispose();
-  }
-
-  void _onSecondaryTapUp(TapUpDetails details) {
-    _menuController.show(
-      context: context,
-      contextMenuBuilder: (_) => _GroupContextMenu(
-        position: details.globalPosition,
-        group: widget.group,
-        onDismiss: _menuController.remove,
-        onRename: () {
-          _menuController.remove();
-          widget.onRename();
-        },
-        onToggleEnabled: () {
-          _menuController.remove();
-          widget.onToggleEnabled();
-        },
-        onBreakdown: () {
-          _menuController.remove();
-          widget.onBreakdown();
-        },
-        onDelete: () {
-          _menuController.remove();
-          widget.onDelete();
-        },
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final menuController = useMemoized(ContextMenuController.new);
+    useEffect(() => menuController.remove, const []);
+
+    void onSecondaryTapUp(TapUpDetails details) {
+      menuController.show(
+        context: context,
+        contextMenuBuilder: (_) => _GroupContextMenu(
+          position: details.globalPosition,
+          group: group,
+          onDismiss: menuController.remove,
+          onRename: () {
+            menuController.remove();
+            onRename();
+          },
+          onToggleEnabled: () {
+            menuController.remove();
+            onToggleEnabled();
+          },
+          onBreakdown: () {
+            menuController.remove();
+            onBreakdown();
+          },
+          onDelete: () {
+            menuController.remove();
+            onDelete();
+          },
+        ),
+      );
+    }
+
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final isDisabled = !widget.group.enabled;
+    final isDisabled = !group.enabled;
 
     return GestureDetector(
-      onSecondaryTapUp: _onSecondaryTapUp,
+      onSecondaryTapUp: onSecondaryTapUp,
       behavior: HitTestBehavior.translucent,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.showTopBorder)
-            Container(height: 1, color: widget.borderColor),
+          if (showTopBorder) Container(height: 1, color: borderColor),
           Opacity(
             opacity: isDisabled ? 0.5 : 1.0,
             child: Material(
               color: colors.secondary.withAlpha(60),
               child: InkWell(
-                onTap: widget.onToggleCollapse,
+                onTap: onToggleCollapse,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -104,7 +93,7 @@ class _GroupHeaderRowState extends State<_GroupHeaderRow> {
                   child: Row(
                     children: [
                       AnimatedRotation(
-                        turns: widget.isCollapsed ? -0.25 : 0,
+                        turns: isCollapsed ? -0.25 : 0,
                         duration: Durations.short4,
                         child: Icon(
                           FLucideIcons.chevronDown,
@@ -123,7 +112,7 @@ class _GroupHeaderRowState extends State<_GroupHeaderRow> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          widget.group.name,
+                          group.name,
                           style: typography.sm.copyWith(
                             fontWeight: FontWeight.w600,
                             color: isDisabled
@@ -137,14 +126,14 @@ class _GroupHeaderRowState extends State<_GroupHeaderRow> {
                         ),
                       ),
                       Text(
-                        '${widget.gestureCount}',
+                        '$gestureCount',
                         style: typography.xs.copyWith(
                           color: colors.mutedForeground,
                         ),
                       ),
-                      if (widget.reorderHandle != null) ...[
+                      if (reorderHandle != null) ...[
                         const SizedBox(width: 8),
-                        widget.reorderHandle!,
+                        reorderHandle!,
                       ],
                     ],
                   ),
@@ -229,25 +218,29 @@ class _GroupContextMenu extends StatelessWidget {
                 children: [
                   FItem(
                     prefix: const Icon(FLucideIcons.pencil),
-                    title: const Text('Rename'),
+                    title: Text(context.l10n.groupMenuRename),
                     onPress: onRename,
                   ),
                   FItem(
                     prefix: Icon(
                       group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye,
                     ),
-                    title: Text(group.enabled ? 'Disable' : 'Enable'),
+                    title: Text(
+                      group.enabled
+                          ? context.l10n.gestureMenuDisable
+                          : context.l10n.gestureMenuEnable,
+                    ),
                     onPress: onToggleEnabled,
                   ),
                   FItem(
                     prefix: const Icon(FLucideIcons.folderOpen),
-                    title: const Text('Breakdown'),
+                    title: Text(context.l10n.groupMenuBreakdown),
                     onPress: onBreakdown,
                   ),
                   FItem(
                     variant: FItemVariant.destructive,
                     prefix: const Icon(FLucideIcons.trash2),
-                    title: const Text('Delete with gestures'),
+                    title: Text(context.l10n.groupMenuDeleteWithGestures),
                     onPress: onDelete,
                   ),
                 ],

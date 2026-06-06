@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart'
     show Dialog, Divider, InputBorder, InputDecoration, TextField;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/condition_labels.dart';
 
 Future<VariableInfo?> showVariablePicker(
   BuildContext context, {
@@ -22,43 +26,39 @@ Future<VariableInfo?> showVariablePicker(
   );
 }
 
-class _VariablePickerDialog extends StatefulWidget {
+class _VariablePickerDialog extends HookWidget {
   const _VariablePickerDialog({required this.groups, this.currentVariable});
   final List<VariableGroup> groups;
   final String? currentVariable;
 
   @override
-  State<_VariablePickerDialog> createState() => _VariablePickerDialogState();
-}
-
-class _VariablePickerDialogState extends State<_VariablePickerDialog> {
-  String _query = '';
-
-  List<({VariableGroup group, List<VariableInfo> variables})> get _filtered {
-    final q = _query.trim().toLowerCase();
-    return [
-      for (final g in widget.groups)
-        () {
-          final vars = q.isEmpty
-              ? g.variables
-              : g.variables
-                    .where(
-                      (v) =>
-                          v.pickerName.toLowerCase().contains(q) ||
-                          v.name.toLowerCase().contains(q) ||
-                          v.description.toLowerCase().contains(q),
-                    )
-                    .toList();
-          return (group: g, variables: vars);
-        }(),
-    ].where((e) => e.variables.isNotEmpty).toList();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final query = useState('');
+
+    List<({VariableGroup group, List<VariableInfo> variables})> filtered() {
+      final q = query.value.trim().toLowerCase();
+      return [
+        for (final g in groups)
+          () {
+            final vars = q.isEmpty
+                ? g.variables
+                : g.variables
+                      .where(
+                        (v) =>
+                            v.localizedLabel(l10n).toLowerCase().contains(q) ||
+                            v.name.toLowerCase().contains(q) ||
+                            v.description.toLowerCase().contains(q),
+                      )
+                      .toList();
+            return (group: g, variables: vars);
+          }(),
+      ].where((e) => e.variables.isNotEmpty).toList();
+    }
+
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final filtered = _filtered;
+    final filteredList = filtered();
 
     return Dialog(
       backgroundColor: colors.background,
@@ -72,7 +72,7 @@ class _VariablePickerDialogState extends State<_VariablePickerDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _SearchBar(
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) => query.value = v,
               colors: colors,
               typography: typography,
             ),
@@ -80,13 +80,13 @@ class _VariablePickerDialogState extends State<_VariablePickerDialog> {
             Flexible(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                itemCount: filtered.fold<int>(
+                itemCount: filteredList.fold<int>(
                   0,
                   (sum, e) => sum + 1 + e.variables.length,
                 ),
                 itemBuilder: (ctx, index) {
                   var offset = 0;
-                  for (final entry in filtered) {
+                  for (final entry in filteredList) {
                     if (index == offset) {
                       return _GroupHeader(
                         group: entry.group,
@@ -100,7 +100,7 @@ class _VariablePickerDialogState extends State<_VariablePickerDialog> {
                       return _VariableItem(
                         info: v,
                         groupIcon: entry.group.icon,
-                        isSelected: v.name == widget.currentVariable,
+                        isSelected: v.name == currentVariable,
                         onTap: () => Navigator.of(ctx).pop(v),
                         colors: colors,
                         typography: typography,
@@ -187,7 +187,7 @@ class _GroupHeader extends StatelessWidget {
           Icon(group.icon, size: 13, color: colors.mutedForeground),
           const SizedBox(width: 6),
           Text(
-            group.name.toUpperCase(),
+            group.localizedName(context.l10n).toUpperCase(),
             style: typography.xs.copyWith(
               color: colors.mutedForeground,
               fontWeight: FontWeight.w600,
@@ -221,7 +221,8 @@ class _VariableItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return FTooltip(
       tipBuilder: (context, controller) => Text(
-        '${info.label}\nType: ${info.type.typeName}',
+        '${info.localizedLabel(context.l10n)}\n'
+        'Type: ${info.type.typeName(context.l10n)}',
       ),
       child: FItem(
         prefix: _TypeBadge(type: info.type, typography: typography),
@@ -230,7 +231,7 @@ class _VariableItem extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                info.pickerName,
+                info.localizedLabel(context.l10n),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -264,7 +265,7 @@ class _TypeBadge extends StatelessWidget {
       ),
       width: 42,
       child: Text(
-        type.badge,
+        type.badge(context.l10n),
         textAlign: TextAlign.center,
         style: typography.xs.copyWith(
           color: type.fgColor,

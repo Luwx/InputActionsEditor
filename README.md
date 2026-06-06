@@ -1,41 +1,41 @@
-# Input Actions Editor
+<h1 align="center">Input Actions Editor</h1>
 
-**WIP** beta
+A GUI config editor for [Input Actions](https://github.com/taj-ny/InputActions).
 
-![screenshot](https://github.com/Luwx/InputActionsEditor/blob/main/screenshot.png)
+![screenshot](screenshot.png)
 
-A GUI config editor app for [Input Actions](https://github.com/taj-ny/InputActions).
 
-## What it can do (so far)
+## Features
 
-- Edit the trigger types
-- Edit the action types
-- Group gestures and reorder them so things are easier to find
-- Multiple actions on a single gesture
-- Nested conditions for triggers and actions
-- Stroke path visualization
-- Conflict detection
+- Schema-aware editing. Each trigger and action shows only the fields that apply to it.
+- Stroke recording and path visualization, recorded from the daemon over D-Bus.
+- Plasma shortcut picker.
+- Action types: run a command, send input, trigger a Plasma shortcut, sleep, or a raw passthrough.
+- Multiple actions per gesture, run in order.
+- Grouping and reordering for long gesture lists.
+- Nested conditions on both triggers and actions.
+- Conflict detection while editing.
 
 ## Building
 
 You'll need the Flutter SDK installed and set up for Linux desktop builds.
 
-First grab the dependencies:
-
 ```sh
 flutter pub get
-```
-
-To just run it during development:
-
-```sh
+dart run build_runner build --delete-conflicting-outputs
 flutter run -d linux
 ```
 
-To build a release binary:
+Release build (output lands in `build/linux/x64/release/bundle/`):
 
 ```sh
 flutter build linux --release
 ```
 
-The built app ends up in `build/linux/x64/release/bundle/`.
+### KDE helpers
+
+The `kde_icon_lookup` and `kde_key_lookup` helpers need Qt 6 and KDE Frameworks 6 to compile. They are optional: without these libraries the build skips them and the app still runs, just without native KDE icon and key resolution. On Fedora:
+
+```sh
+sudo dnf install qt6-qtbase-devel kf6-kiconthemes-devel kf6-kservice-devel
+```

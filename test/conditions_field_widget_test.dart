@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 
@@ -9,6 +10,8 @@ Widget _host({
   ValueChanged<Condition?>? onChanged,
 }) {
   return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: FTheme(
       data: FThemes.zinc.dark.desktop,
       child: Scaffold(

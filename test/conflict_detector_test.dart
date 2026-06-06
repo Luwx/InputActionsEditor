@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/conflict/conflict_detector.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -7,7 +8,6 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/conflict_detector.dart';
 
 TriggerCommon common({
   List<MouseButtonValue> buttons = const [],

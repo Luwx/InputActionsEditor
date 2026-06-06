@@ -1,8 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'speed_settings.freezed.dart';
+part 'speed_settings.g.dart';
 
 @freezed
+@withMeta
 abstract class SpeedSettings with _$SpeedSettings {
   const factory SpeedSettings({
     int? events,

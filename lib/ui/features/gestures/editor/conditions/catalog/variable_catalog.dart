@@ -4,26 +4,6 @@ import 'package:forui/forui.dart';
 enum VarType { string, number, bool_, flags, point, enum_, time }
 
 extension VarTypeExt on VarType {
-  String get badge => switch (this) {
-    VarType.string => 'STR',
-    VarType.number => 'NUM',
-    VarType.bool_ => 'BOOL',
-    VarType.flags => 'FLAGS',
-    VarType.point => 'POINT',
-    VarType.enum_ => 'ENUM',
-    VarType.time => 'TIME',
-  };
-
-  String get typeName => switch (this) {
-    VarType.string => 'string',
-    VarType.number => 'number',
-    VarType.bool_ => 'boolean',
-    VarType.flags => 'flags',
-    VarType.point => 'point',
-    VarType.enum_ => 'enum',
-    VarType.time => 'time (ms)',
-  };
-
   IconData get icon => switch (this) {
     VarType.string => FLucideIcons.type,
     VarType.number => FLucideIcons.hash,
@@ -73,19 +53,6 @@ extension VarTypeExt on VarType {
   };
 }
 
-const _operatorLabels = {
-  '==': 'is',
-  '!=': 'is not',
-  '>': 'greater than',
-  '>=': 'greater or equal',
-  '<': 'less than',
-  '<=': 'less or equal',
-  'between': 'between',
-  'contains': 'contains',
-  'matches': 'matches',
-  'one_of': 'is one of',
-};
-
 const Map<String, IconData> operatorIcons = {
   '==': FLucideIcons.equal,
   '!=': FLucideIcons.equalNot,
@@ -98,8 +65,6 @@ const Map<String, IconData> operatorIcons = {
   'matches': FLucideIcons.regex,
   'one_of': FLucideIcons.list,
 };
-
-String operatorLabel(String op) => _operatorLabels[op] ?? op;
 
 class VariableInfo {
   const VariableInfo({

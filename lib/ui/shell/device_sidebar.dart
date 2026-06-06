@@ -1,69 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/state/app_router.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class DeviceSidebar extends ConsumerStatefulWidget {
+class DeviceSidebar extends HookConsumerWidget {
   const DeviceSidebar({super.key});
 
   @override
-  ConsumerState<DeviceSidebar> createState() => _DeviceSidebarState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = useScrollController();
+    final l10n = context.l10n;
+    // Stable context for dialogs opened from the popover menu: the menu
+    // builder's own context is torn down when the popover closes.
+    final rootContext = context;
 
-class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// Navigates to [device] filter, auto-selecting the first gesture so there
-  /// is no intermediate frame with an empty selection.
-  void _goToDevice(DeviceType? device) {
-    final currentView = ref.read(currentViewProvider);
-    final currentFilter = ref.read(deviceFilterProvider);
-    final changingFilter =
-        currentView != AppView.gestures || currentFilter != device;
-
-    if (changingFilter) {
-      final config = ref.read(configControllerProvider).value;
-      if (config != null) {
-        final first = firstGestureForFilter(config, device);
-        if (first != null) {
-          context.goToGesturesSelectFirst(
-            filter: device,
-            device: first.device,
-            index: first.index,
-          );
-          return;
-        }
-      }
-    }
-
-    context.goToGestures(device: device);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final deviceFilter = ref.watch(deviceFilterProvider);
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
-    ref.watch(configControllerProvider);
-    final canDiscard =
-        ref.read(configControllerProvider.notifier).isDirty &&
-        ref.read(configControllerProvider.notifier).savedConfig != null;
+    final configController = ref.read(configControllerProvider.notifier);
+    // Only rebuilds when discardability flips, not on every edit.
+    final canDiscard = ref.watch(canDiscardChangesProvider);
+
+    void goToDevice(DeviceType? device) {
+      final currentView = ref.read(currentViewProvider);
+      final currentFilter = ref.read(deviceFilterProvider);
+      final changingFilter =
+          currentView != AppView.gestures || currentFilter != device;
+
+      if (changingFilter) {
+        final config = ref.read(configControllerProvider).value;
+        if (config != null) {
+          final first = firstGestureForFilter(config, device);
+          if (first != null) {
+            context.goToGesturesSelectFirst(
+              filter: device,
+              device: first.device,
+              index: first.index,
+            );
+            return;
+          }
+        }
+      }
+
+      context.goToGestures(device: device);
+    }
 
     return FSidebar.raw(
       style: const .delta(
@@ -73,7 +63,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              controller: _scrollController,
+              controller: scrollController,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
@@ -88,14 +78,14 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              'Input Actions',
+                              l10n.appName,
                               style: context.theme.typography.lg.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Editor',
+                              l10n.appSubtitle,
                               style: context.theme.typography.xs.copyWith(
                                 color: context.theme.colors.mutedForeground,
                                 fontWeight: FontWeight.w400,
@@ -114,34 +104,48 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                               children: [
                                 .item(
                                   prefix: const Icon(FLucideIcons.folderOpen),
-                                  title: const Text('Load'),
-                                  onPress: () => ref
-                                      .read(configControllerProvider.notifier)
-                                      .loadFromPicker(),
+                                  title: Text(l10n.actionLoad),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    if (!rootContext.mounted) return;
+                                    await _loadConfigDocument(rootContext, ref);
+                                  },
                                 ),
                                 .item(
                                   prefix: const Icon(FLucideIcons.save),
-                                  title: const Text('Save'),
+                                  title: Text(l10n.actionSave),
                                   onPress: () async {
                                     await controller.hide();
-                                    await ref
-                                        .read(configControllerProvider.notifier)
-                                        .save();
+                                    await configController.save();
+                                    if (!rootContext.mounted) return;
+                                    showFToast(
+                                      context: rootContext,
+                                      title: Text(l10n.configSaveSuccess),
+                                      suffixBuilder: (context, entry) =>
+                                          FButton.icon(
+                                            onPress: entry.dismiss,
+                                            child: const Icon(FLucideIcons.x),
+                                          ),
+                                      duration: const Duration(seconds: 3),
+                                    );
+                                  },
+                                ),
+                                .item(
+                                  prefix: const Icon(FLucideIcons.filePlus),
+                                  title: Text(l10n.actionSaveAs),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    await configController.saveAs();
                                   },
                                 ),
                                 .item(
                                   prefix: const Icon(FLucideIcons.undo2),
-                                  title: const Text('Discard changes'),
+                                  title: Text(l10n.actionDiscardChanges),
                                   enabled: canDiscard,
                                   onPress: canDiscard
                                       ? () async {
                                           await controller.hide();
-                                          ref
-                                              .read(
-                                                configControllerProvider
-                                                    .notifier,
-                                              )
-                                              .discardChanges();
+                                          configController.discardChanges();
                                         }
                                       : null,
                                 ),
@@ -163,43 +167,43 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                   const SizedBox(height: 8),
                   const SizedBox(height: 4),
                   FSidebarGroup(
-                    label: const Text('Device Gestures'),
+                    label: Text(l10n.sidebarDeviceGesturesGroup),
                     children: [
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.list),
-                        label: const Text('All'),
+                        label: Text(l10n.sidebarAllDevices),
                         selected: isGestures && deviceFilter == null,
-                        onPress: () => _goToDevice(null),
+                        onPress: () => goToDevice(null),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.mouse),
-                        label: const Text('Mouse'),
+                        label: Text(l10n.deviceTypeMouse),
                         selected: isGestures && deviceFilter == .mouse,
-                        onPress: () => _goToDevice(DeviceType.mouse),
+                        onPress: () => goToDevice(DeviceType.mouse),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.mousePointer2),
-                        label: const Text('Pointer'),
+                        label: Text(l10n.deviceTypePointer),
                         selected: isGestures && deviceFilter == .pointer,
-                        onPress: () => _goToDevice(DeviceType.pointer),
+                        onPress: () => goToDevice(DeviceType.pointer),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.keyboard),
-                        label: const Text('Keyboard'),
+                        label: Text(l10n.deviceTypeKeyboard),
                         selected: isGestures && deviceFilter == .keyboard,
-                        onPress: () => _goToDevice(DeviceType.keyboard),
+                        onPress: () => goToDevice(DeviceType.keyboard),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.touchpad),
-                        label: const Text('Touchpad'),
+                        label: Text(l10n.deviceTypeTouchpad),
                         selected: isGestures && deviceFilter == .touchpad,
-                        onPress: () => _goToDevice(DeviceType.touchpad),
+                        onPress: () => goToDevice(DeviceType.touchpad),
                       ),
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.monitor),
-                        label: const Text('Touchscreen'),
+                        label: Text(l10n.deviceTypeTouchscreen),
                         selected: isGestures && deviceFilter == .touchscreen,
-                        onPress: () => _goToDevice(DeviceType.touchscreen),
+                        onPress: () => goToDevice(DeviceType.touchscreen),
                       ),
                     ],
                   ),
@@ -208,7 +212,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
                     children: [
                       FSidebarItem(
                         icon: const Icon(FLucideIcons.history),
-                        label: const Text('History'),
+                        label: Text(l10n.navHistory),
                         selected: currentView == AppView.history,
                         onPress: context.goToHistory,
                       ),
@@ -222,7 +226,7 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
             children: [
               FSidebarItem(
                 icon: const Icon(FLucideIcons.cog),
-                label: const Text('Settings'),
+                label: Text(l10n.navSettings),
                 selected: currentView == AppView.settings,
                 onPress: context.openSettings,
               ),
@@ -232,4 +236,28 @@ class _DeviceSidebarState extends ConsumerState<DeviceSidebar> {
       ),
     );
   }
+}
+
+/// Loads a new config document, replacing the current one.
+///
+/// If the draft has unsaved changes the user is warned first and may apply,
+/// discard, or cancel. On confirmation the navigation stack is reset (closing
+/// every open editor before the new document arrives, so none is left bound to
+/// a now-stale positional location) and the undo history is dropped inside
+/// [ConfigController.loadFromFile].
+Future<void> _loadConfigDocument(BuildContext context, WidgetRef ref) async {
+  final configController = ref.read(configControllerProvider.notifier);
+
+  if (configController.isDirty) {
+    final action = await showUnsavedChangesDialog(context);
+    if (action == null) return; // cancelled
+    if (action == UnsavedChangesAction.apply) {
+      await configController.save();
+    }
+    // discard: the load below overwrites the unsaved draft.
+  }
+
+  await configController.loadFromPicker(
+    onBeforeLoad: () => ref.read(navProvider.notifier).reset(),
+  );
 }

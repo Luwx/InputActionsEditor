@@ -4,16 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/app_routes.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
-import 'package:input_actions_editor/routing/mini_router/mini_router.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/device_settings_section_provider.dart';
-import 'package:input_actions_editor/state/local_settings_provider.dart';
-import 'package:input_actions_editor/state/navigation/app_destination.dart';
-import 'package:input_actions_editor/state/navigation/app_router_delegate.dart';
-import 'package:input_actions_editor/state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/state/recognition_history_provider.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
+import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
+import 'package:input_actions_editor/ui/mini_router/mini_router.dart';
 import 'package:input_actions_editor/ui/shell/main_shell.dart';
 import 'package:input_actions_editor/ui/shell/settings_shell.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,6 +77,8 @@ void main() {
         child: FTheme(
           data: FThemes.zinc.light.desktop,
           child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerDelegate: container.read(appRouterDelegateProvider),
             backButtonDispatcher: RootBackButtonDispatcher(),
           ),

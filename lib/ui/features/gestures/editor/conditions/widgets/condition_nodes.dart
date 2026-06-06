@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/constants.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/mode_selector.dart';
@@ -10,7 +12,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/type_icon_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/value_input.dart';
-import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Three columns shared by every condition table (variable / operator / value).
 const List<TreeTableColumn> kConditionColumns = [
@@ -219,7 +221,8 @@ TreeTableLeaf _leafNode(
                   ),
                   prefix: info != null ? TypeIconBadge(type: info.type) : null,
                   title: Text(
-                    info?.label ?? '\$${condition.variable}',
+                    info?.localizedLabel(context.l10n) ??
+                        '\$${condition.variable}',
                     style: typography.sm.copyWith(
                       color: colors.foreground,
                     ),

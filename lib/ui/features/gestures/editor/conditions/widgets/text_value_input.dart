@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart' show Colors, OutlineInputBorder;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 
-class TextValueInput extends StatefulWidget {
+class TextValueInput extends HookWidget {
   const TextValueInput({
     required this.value,
     required this.onChanged,
@@ -19,70 +20,53 @@ class TextValueInput extends StatefulWidget {
   final bool autofocus;
 
   @override
-  State<TextValueInput> createState() => _TextValueInputState();
-}
-
-class _TextValueInputState extends State<TextValueInput> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
-  bool _hovered = false;
-  bool _focused = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value);
-    _focusNode = FocusNode()..addListener(_onFocusChange);
-  }
-
-  void _onFocusChange() => setState(() => _focused = _focusNode.hasFocus);
-
-  @override
-  void didUpdateWidget(TextValueInput oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && widget.value != _controller.text) {
-      _controller.text = widget.value;
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  // TODO(me): propper style it without idle hack
-  static final _idleStyle = FTextFieldStyleDelta.delta(
-    border: .delta([
-      .base(
-        OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.transparent),
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    ]),
-    color: .delta([.all(Colors.transparent)]),
-  );
-
-  @override
   Widget build(BuildContext context) {
-    final active = _focused || _hovered;
+    final controller = useTextEditingController(text: value);
+    final focusNode = useFocusNode();
+    final isHovered = useState(false);
+    final isFocused = useState(false);
+
+    // Sync controller when external value changes (didUpdateWidget).
+    final prevValue = usePrevious(value);
+    if (prevValue != null && prevValue != value && value != controller.text) {
+      controller.text = value;
+    }
+
+    useEffect(() {
+      void onFocusChange() => isFocused.value = focusNode.hasFocus;
+      focusNode.addListener(onFocusChange);
+      return () => focusNode.removeListener(onFocusChange);
+    }, const []);
+
+    // TODO(me): propper style it without idle hack
+    final idleStyle = FTextFieldStyleDelta.delta(
+      border: .delta([
+        .base(
+          OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ]),
+      color: .delta([.all(Colors.transparent)]),
+    );
+
+    final active = isFocused.value || isHovered.value;
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => isHovered.value = true,
+      onExit: (_) => isHovered.value = false,
       child: FTextField(
-        focusNode: _focusNode,
-        style: active ? const FTextFieldStyleDelta.delta() : _idleStyle,
+        focusNode: focusNode,
+        style: active ? const FTextFieldStyleDelta.delta() : idleStyle,
         control: FTextFieldControl.lifted(
-          value: _controller.value,
-          onChange: (value) {
-            _controller.value = value;
-            widget.onChanged(value.text);
+          value: controller.value,
+          onChange: (v) {
+            controller.value = v;
+            onChanged(v.text);
           },
         ),
-        autofocus: widget.autofocus,
-        hint: widget.hint,
+        autofocus: autofocus,
+        hint: hint,
       ),
     );
   }

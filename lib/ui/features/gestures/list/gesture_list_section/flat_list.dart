@@ -1,6 +1,5 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-
 List<_FlatItem> _buildFlatList(
   Config config,
   DeviceType? deviceFilter,
@@ -11,11 +10,11 @@ List<_FlatItem> _buildFlatList(
     final groups = config.groupsForDevice(deviceFilter);
     final groupIdSet = groups.map((group) => group.id).toSet();
 
-    final grouped = <String, List<(int, Object)>>{};
-    final ungrouped = <(int, Object)>[];
+    final grouped = <String, List<(int, Gesture)>>{};
+    final ungrouped = <(int, Gesture)>[];
 
     for (final (index, gesture) in gestures.indexed) {
-      final groupId = gestureCommon(gesture as Object).groupId;
+      final groupId = gesture.common.groupId;
       if (groupId != null && groupIdSet.contains(groupId)) {
         grouped.putIfAbsent(groupId, () => []).add((index, gesture));
       } else {
@@ -42,7 +41,8 @@ List<_FlatItem> _buildFlatList(
           _GestureRowItem(
             device: deviceFilter,
             configIndex: index,
-            gesture: gesture,
+            groupId: gesture.common.groupId,
+            editId: gesture.common.editId,
             localGroupIndex: localIndex,
             isLastInGroup: localIndex == groupGestures.length - 1,
             isVisible: !isCollapsed,
@@ -56,7 +56,8 @@ List<_FlatItem> _buildFlatList(
         _GestureRowItem(
           device: deviceFilter,
           configIndex: index,
-          gesture: gesture,
+          groupId: gesture.common.groupId,
+          editId: gesture.common.editId,
         ),
       );
     }
@@ -68,31 +69,36 @@ List<_FlatItem> _buildFlatList(
       _GestureRowItem(
         device: DeviceType.mouse,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.keyboardGestures.indexed)
       _GestureRowItem(
         device: DeviceType.keyboard,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.pointerGestures.indexed)
       _GestureRowItem(
         device: DeviceType.pointer,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.touchpadGestures.indexed)
       _GestureRowItem(
         device: DeviceType.touchpad,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
     for (final (index, gesture) in config.touchscreenGestures.indexed)
       _GestureRowItem(
         device: DeviceType.touchscreen,
         configIndex: index,
-        gesture: gesture,
+        groupId: gesture.common.groupId,
+        editId: gesture.common.editId,
       ),
   ];
 }

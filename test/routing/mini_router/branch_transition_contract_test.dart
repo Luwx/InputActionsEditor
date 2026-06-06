@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/routing/mini_router/mini_router.dart';
 import 'package:input_actions_editor/ui/common/fade_forwards_transition.dart';
+import 'package:input_actions_editor/ui/mini_router/mini_router.dart';
 
 const _duration = Duration(milliseconds: 350);
 const _sampleAt = Duration(milliseconds: 120);

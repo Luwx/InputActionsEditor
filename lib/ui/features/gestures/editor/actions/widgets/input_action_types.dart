@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 
 enum KeyTokenType { combo, press, release, text }
@@ -105,7 +106,12 @@ class TokenVisual {
   final Color foreground;
 }
 
-TokenVisual tokenVisual(String token, InputDevice device, FColors colors) {
+TokenVisual tokenVisual(
+  String token,
+  InputDevice device,
+  FColors colors,
+  AppLocalizations l10n,
+) {
   if (device == InputDevice.keyboard) {
     final (:type, :val) = parseKeyToken(token);
     return switch (type) {
@@ -122,7 +128,7 @@ TokenVisual tokenVisual(String token, InputDevice device, FColors colors) {
         foreground: Colors.orange.shade700,
       ),
       KeyTokenType.text => TokenVisual(
-        label: 'Text: $val',
+        label: l10n.tokenLabelText(val),
         background: colors.secondary,
         border: colors.border,
         foreground: colors.secondaryForeground,
@@ -151,25 +157,27 @@ TokenVisual tokenVisual(String token, InputDevice device, FColors colors) {
       foreground: Colors.orange.shade700,
     ),
     MouseTokenType.moveBy => TokenVisual(
-      label: 'Move by $v1, $v2',
+      label: l10n.tokenLabelMoveBy(v1, v2),
       background: colors.secondary,
       border: colors.border,
       foreground: colors.secondaryForeground,
     ),
     MouseTokenType.moveByDelta => TokenVisual(
-      label: v1.isEmpty ? 'Move by delta' : 'Move by delta $v1',
+      label: v1.isEmpty
+          ? l10n.tokenLabelMoveByDelta
+          : l10n.tokenLabelMoveByDeltaParam(v1),
       background: colors.secondary,
       border: colors.border,
       foreground: colors.secondaryForeground,
     ),
     MouseTokenType.moveTo => TokenVisual(
-      label: 'Move to $v1, $v2',
+      label: l10n.tokenLabelMoveTo(v1, v2),
       background: colors.secondary,
       border: colors.border,
       foreground: colors.secondaryForeground,
     ),
     MouseTokenType.wheel => TokenVisual(
-      label: 'Wheel $v1, $v2',
+      label: l10n.tokenLabelWheel(v1, v2),
       background: colors.secondary,
       border: colors.border,
       foreground: colors.secondaryForeground,
@@ -203,20 +211,6 @@ InputEntryMode inferInputEntryMode(InputEntry entry) {
   }
   return InputEntryMode.mouseTimeline;
 }
-
-Map<String, InputEntryMode> modeOptions(InputDevice device) => switch (device) {
-  InputDevice.keyboard => const {
-    'Key sequence': InputEntryMode.keyboardTimeline,
-    'Text input': InputEntryMode.keyboardText,
-  },
-  InputDevice.mouse => const {
-    'Button sequence': InputEntryMode.mouseTimeline,
-    'Move by': InputEntryMode.mouseMoveBy,
-    'Move by delta': InputEntryMode.mouseMoveByDelta,
-    'Move to': InputEntryMode.mouseMoveTo,
-    'Scroll wheel': InputEntryMode.mouseWheel,
-  },
-};
 
 List<String> defaultTokensForMode(InputEntryMode mode) => switch (mode) {
   InputEntryMode.keyboardTimeline => const [],

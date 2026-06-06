@@ -3,36 +3,46 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
     required this.device,
     required this.index,
-    required this.gesture,
     required this.newlyAddedMarkerId,
     required this.isSelected,
     required this.isMultiSelectMode,
     required this.isMultiSelected,
     required this.groupDisabled,
     required this.onTap,
+    this.gestureOverride,
     super.key,
   });
 
   final DeviceType device;
   final int index;
-  final Object gesture;
+
+  ///Used for a transient "ghost" copy that keeps showing a row's
+  /// content after it has been removed/moved
+  final Gesture? gestureOverride;
   final int? newlyAddedMarkerId;
   final bool isSelected;
   final bool isMultiSelectMode;
@@ -47,16 +57,25 @@ class GestureListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final common = gestureCommon(gesture);
-    final isDirty = ref.watch(
-      gestureDirtyProvider(GestureLocation(device: device, index: index)),
-    );
+    final location = GestureLocation(device: device, index: index);
+    final gesture =
+        gestureOverride ??
+        ref.watch(
+          configControllerProvider.select((s) => gestureAt(s.value, location)),
+        );
+    if (gesture == null) return const SizedBox.shrink();
+    final common = gesture.common;
+    final isDirty =
+        gestureOverride == null && ref.watch(gestureDirtyProvider(location));
     final isDisabled = common.enabled == false || groupDisabled;
     final summaryText = _summary(gesture);
-    final firstAction = _firstActionSummary(common);
+    final firstAction = _firstActionSummary(common, context.l10n);
+    final firstActionIcon = common.actions.isNotEmpty
+        ? actionMeta(common.actions.first.action, context.l10n).icon
+        : null;
     final nameText = (common.name?.isNotEmpty ?? false)
         ? common.name!
-        : gestureTypeLabel(gesture);
+        : gestureTypeLabel(gesture, context.l10n);
     final effectiveSelected = isMultiSelectMode ? isMultiSelected : isSelected;
     final showAccent = effectiveSelected;
 
@@ -156,12 +175,26 @@ class GestureListTile extends ConsumerWidget {
                       ],
                       if (firstAction.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Text(
-                          firstAction,
-                          style: typography.xs.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            if (firstActionIcon != null) ...[
+                              Icon(
+                                firstActionIcon,
+                                size: 11,
+                                color: colors.mutedForeground,
+                              ),
+                              const SizedBox(width: 3),
+                            ],
+                            Expanded(
+                              child: Text(
+                                firstAction,
+                                style: typography.xs.copyWith(
+                                  color: colors.mutedForeground,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -179,7 +212,7 @@ class GestureListTile extends ConsumerWidget {
 /// Amber/orange accent used to flag gestures that conflict with others.
 /// forui's zinc theme has no dedicated warning colour, so this is a fixed
 /// value that reads well on both light and dark backgrounds.
-String _summary(Object g) {
+String _summary(Gesture g) {
   final parts = <String>[];
   switch (g) {
     // Mouse
@@ -214,7 +247,7 @@ String _summary(Object g) {
   if (g is MouseGesture && g.common.mouseButtons.isNotEmpty) {
     parts.add(g.common.mouseButtons.map((b) => b.toYaml()).join('+'));
   }
-  final common = gestureCommon(g);
+  final common = g.common;
   if (common.id != null) parts.add('#${common.id}');
   return parts.join(' · ');
 }
@@ -253,14 +286,19 @@ void _addTouchSummary(Object g, List<String> parts) {
   }
 }
 
-String _firstActionSummary(TriggerCommon common) {
+String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
   if (common.actions.isEmpty) return '';
   final action = common.actions.first.action;
   return switch (action) {
     CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
-    InputAction(:final entries) when entries.isEmpty => 'input (empty)',
+    InputAction(:final entries) when entries.isEmpty => '(empty)',
     InputAction(:final entries) =>
-      'input: ${entries.map((e) => e.device.name).join(', ')}',
+      entries
+          .map((e) {
+            final seq = inputEntrySummary(e, l10n);
+            return '${e.device.name} $seq';
+          })
+          .join(' · '),
     PlasmaShortcutAction(:final shortcut) =>
       shortcut.isEmpty ? 'plasma shortcut' : shortcut,
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
@@ -551,7 +589,7 @@ class _SwipeIconPainter extends CustomPainter {
 
     for (var i = 0; i < 8; i++) {
       if (!active.contains(i)) continue;
-      final alpha = isAny ? 0.18 : 0.28;
+      final alpha = isAny ? 0.16 : 0.18;
       final startAngle = (i - 0.5) * math.pi / 4;
       final path = Path()
         ..moveTo(cx, cy)

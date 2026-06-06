@@ -1,0 +1,5 @@
+targets:
+  $default:
+    builders:
+      lens_geneartor|edit_schema:
+        enabled: true

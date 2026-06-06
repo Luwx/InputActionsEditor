@@ -1,40 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MouseButtonsField extends ConsumerWidget {
-  const MouseButtonsField({
-    required this.device,
-    required this.gestureIndex,
-    required this.gesture,
-    required this.onUpdate,
-    super.key,
-  });
-
-  final DeviceType device;
-  final int gestureIndex;
-  final MouseGesture gesture;
-  final void Function(MouseGesture Function(MouseGesture)) onUpdate;
-
-  void _toggle(MouseButtonValue btn) {
-    final current = gesture.common.mouseButtons;
-    final next = current.contains(btn)
-        ? current.where((b) => b != btn).toList()
-        : [...current, btn];
-    onUpdate((g) => g.withCommon(g.common.copyWith(mouseButtons: next)));
-  }
-
-  void _toggleExactOrder(bool value) {
-    onUpdate(
-      (g) => g.withCommon(g.common.copyWith(mouseButtonsExactOrder: value)),
-    );
-  }
+  const MouseButtonsField({super.key});
 
   static String _label(MouseButtonValue b) => switch (b) {
     MouseButtonValue.left => 'Left',
@@ -49,37 +26,33 @@ class MouseButtonsField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final common = gesture.common;
-    final buttons = common.mouseButtons;
-    final gestureLocation = GestureLocation(
-      device: device,
-      index: gestureIndex,
+    final buttonsField = ref.gestureField(
+      context,
+      gestureMouseButtonsLens,
+      fallbackValue: () => const <MouseButtonValue>[],
     );
-    final dirtyState = ref.watch(
-      gestureSectionDirtyStateProvider(
-        GestureSectionLocation(
-          gesture: gestureLocation,
-          field: GestureSectionDirtyField.mouseButtons,
-        ),
-      ),
+    final exactOrderField = ref.gestureField(
+      context,
+      gestureMouseButtonsExactOrderLens,
+      fallbackValue: () => false,
     );
-    final savedCommon = ref.watch(savedGestureCommonProvider(gestureLocation));
+    final buttons = buttonsField.value;
+    final dirtyState = _combineDirty([
+      buttonsField.dirty,
+      exactOrderField.dirty,
+    ]);
 
+    final l10n = context.l10n;
     return _Section(
-      title: 'Mouse buttons',
+      title: l10n.mouseButtonsSectionTitle,
       dirtyState: dirtyState,
-      onRevert: savedCommon == null
-          ? null
-          : () => onUpdate(
-              (g) => g.withCommon(
-                g.common.copyWith(
-                  mouseButtons: savedCommon.mouseButtons,
-                  mouseButtonsExactOrder: savedCommon.mouseButtonsExactOrder,
-                ),
-              ),
-            ),
-      titleTooltip:
-          'Mouse buttons that must be held while performing this gesture.',
+      onRevert: dirtyState.canRevert
+          ? () {
+              buttonsField.onRevert?.call();
+              exactOrderField.onRevert?.call();
+            }
+          : null,
+      titleTooltip: l10n.mouseButtonsSectionTooltip,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -91,21 +64,23 @@ class MouseButtonsField extends ConsumerWidget {
                 _ButtonChip(
                   label: _label(btn),
                   order: buttons.indexOf(btn),
-                  onTap: () => _toggle(btn),
+                  onTap: () {
+                    final next = buttons.contains(btn)
+                        ? buttons.where((b) => b != btn).toList()
+                        : [...buttons, btn];
+                    buttonsField.onChanged(next);
+                  },
                 ),
             ],
           ),
           Padding(
             padding: const EdgeInsets.only(top: 16),
             child: FCheckbox(
-              value: common.mouseButtonsExactOrder,
-              onChange: _toggleExactOrder,
-              label: const LabelWithTooltip(
-                label: 'Exact order',
-                tooltip:
-                    'Require buttons to be pressed in exactly the order shown. '
-                    'When disabled, all selected buttons must be held '
-                    'but in any order.',
+              value: exactOrderField.value,
+              onChange: exactOrderField.onChanged,
+              label: LabelWithTooltip(
+                label: context.l10n.mouseButtonsExactOrderLabel,
+                tooltip: context.l10n.mouseButtonsExactOrderTooltip,
               ),
             ),
           ).appearToggle(visible: buttons.length > 1),
@@ -113,6 +88,16 @@ class MouseButtonsField extends ConsumerWidget {
       ),
     );
   }
+}
+
+DirtyMarkState _combineDirty(Iterable<DirtyMarkState> states) {
+  if (states.any((state) => state == DirtyMarkState.changedFromSaved)) {
+    return DirtyMarkState.changedFromSaved;
+  }
+  if (states.any((state) => state == DirtyMarkState.newUnsaved)) {
+    return DirtyMarkState.newUnsaved;
+  }
+  return DirtyMarkState.clean;
 }
 
 class _ButtonChip extends StatelessWidget {
@@ -228,7 +213,7 @@ class _Section extends StatelessWidget {
               onRevert: onRevert,
               child: LabelWithTooltip(
                 label: title,
-                tooltip: titleTooltip!,
+                tooltip: titleTooltip,
                 textStyle: titleStyle,
               ),
             )

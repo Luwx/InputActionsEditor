@@ -29,6 +29,7 @@ final class ReorderableGroupableItem<I, G>
     this.isFirstInGroup = false,
     this.isLastInGroup = false,
     this.isVisible = true,
+    this.interactive = true,
   });
 
   final Key key;
@@ -37,6 +38,10 @@ final class ReorderableGroupableItem<I, G>
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final bool isVisible;
+
+  /// When false, the row renders with no drag handle, drop target, or overlay.
+  /// used for a transient collapsing "ghost" that must not be interacted with.
+  final bool interactive;
 }
 
 typedef ReorderableGroupableItemBuilder<I, G> =
@@ -219,6 +224,11 @@ class _ReorderableGroupableListState<I, G>
     if (move != null) widget.onGroupReordered(move.from, move.to);
   }
 
+  Key _entryKey(ReorderableGroupableListEntry<I, G> entry) => switch (entry) {
+    ReorderableGroupableGroup<I, G>(:final key) => key,
+    ReorderableGroupableItem<I, G>(:final key) => key,
+  };
+
   @override
   Widget build(BuildContext context) {
     final childCount =
@@ -226,29 +236,42 @@ class _ReorderableGroupableListState<I, G>
         (widget.reorderEnabled && widget.showTrailingDropZone ? 1 : 0);
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        if (index >= widget.entries.length) {
-          return _TrailingDropZone<I, G>(
-            borderColor: widget.borderColor,
-            onItemsAccept: _moveItemsToEnd,
-            onGroupAccept: _moveGroupToEnd,
-          );
-        }
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          if (index >= widget.entries.length) {
+            return _TrailingDropZone<I, G>(
+              borderColor: widget.borderColor,
+              onItemsAccept: _moveItemsToEnd,
+              onGroupAccept: _moveGroupToEnd,
+            );
+          }
 
-        final entry = widget.entries[index];
-        return switch (entry) {
-          final ReorderableGroupableGroup<I, G> group => _buildGroup(
-            context,
-            group,
-            index,
-          ),
-          final ReorderableGroupableItem<I, G> item => _buildItem(
-            context,
-            item,
-            index,
-          ),
-        };
-      }, childCount: childCount),
+          final entry = widget.entries[index];
+          final child = switch (entry) {
+            final ReorderableGroupableGroup<I, G> group => _buildGroup(
+              context,
+              group,
+              index,
+            ),
+            final ReorderableGroupableItem<I, G> item => _buildItem(
+              context,
+              item,
+              index,
+            ),
+          };
+          // Surface the entry's identity key to the sliver's direct child so
+          // rows reconcile by identity across index shifts (e.g. a delete),
+          // rather than positionally.
+          return KeyedSubtree(key: _entryKey(entry), child: child);
+        },
+        childCount: childCount,
+        findChildIndexCallback: (key) {
+          final index = widget.entries.indexWhere(
+            (entry) => _entryKey(entry) == key,
+          );
+          return index >= 0 ? index : null;
+        },
+      ),
     );
   }
 
@@ -301,7 +324,7 @@ class _ReorderableGroupableListState<I, G>
     final dragCount = widget.selectedItemIds.contains(item.id)
         ? widget.selectedItemIds.length
         : 1;
-    final handle = widget.reorderEnabled
+    final handle = widget.reorderEnabled && item.interactive
         ? _ItemDragHandle<I>(
             itemIds: widget.selectedItemIds.contains(item.id)
                 ? widget.selectedItemIds.toList(growable: false)
@@ -322,20 +345,22 @@ class _ReorderableGroupableListState<I, G>
       isGrouped: item.groupId != null,
       isFirstInGroup: item.isFirstInGroup,
       isLastInGroup: item.isLastInGroup,
-      overlay: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ?widget.itemOverlayBuilder?.call(context, item),
-          ?handle,
-        ],
-      ),
+      overlay: item.interactive
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ?widget.itemOverlayBuilder?.call(context, item),
+                ?handle,
+              ],
+            )
+          : const SizedBox.shrink(),
       child: child,
     );
     final visibleRow = _AnimatedGroupRowVisibility(
       visible: item.isVisible,
       child: row,
     );
-    if (!widget.reorderEnabled) return visibleRow;
+    if (!widget.reorderEnabled || !item.interactive) return visibleRow;
 
     return DragTarget<_ItemDragData<I>>(
       onWillAcceptWithDetails: (details) =>

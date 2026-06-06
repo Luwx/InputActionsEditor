@@ -11,7 +11,7 @@ env:
 
 jobs:
   release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: write
@@ -31,7 +31,9 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
             clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev
+            libgtk-3-dev liblzma-dev libstdc++-14-dev \
+            qt6-base-dev extra-cmake-modules \
+            libkf6iconthemes-dev libkf6service-dev
 
       - name: Install packaging tools
         run: |
@@ -43,6 +45,9 @@ jobs:
 
       - name: Flutter pub get
         run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build
         run: flutter build linux --release

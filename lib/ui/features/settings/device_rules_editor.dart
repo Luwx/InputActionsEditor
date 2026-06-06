@@ -2,25 +2,35 @@ import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/state/config_controller.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/device_variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/device_rule_properties_form.dart';
-import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class DeviceRulesEditor extends ConsumerWidget {
   const DeviceRulesEditor({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(configControllerProvider).value;
+    final l10n = context.l10n;
+    final config = ref.watch(
+      configControllerProvider.select((state) => state.value),
+    );
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final notifier = ref.read(configControllerProvider.notifier);
+    final controller = ref.read(configControllerProvider.notifier);
 
     if (config == null) {
       return const Center(child: CircularProgressIndicator.adaptive());
@@ -37,30 +47,40 @@ class DeviceRulesEditor extends ConsumerWidget {
       child: CustomScrollView(
         slivers: [
           SliverFrostedAppBar(
-            title: 'Device Rules',
+            title: l10n.deviceRulesTitle,
             titleWidget: UnsavedLabel(
               state: rulesDirtyState,
               onRevert: savedConfig == null || savedConfig.deviceRules.isEmpty
                   ? null
-                  : () => notifier.replaceDeviceRules(savedConfig.deviceRules),
+                  : () => controller.add(
+                      ReplaceDeviceRules(savedConfig.deviceRules),
+                    ),
               child: Text(
-                'Device Rules',
+                l10n.deviceRulesTitle,
                 style: typography.lg.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
-            subtitle:
-                '${rules.length} '
-                'rule${rules.length == 1 ? '' : 's'}'
-                ' · evaluated bottom to top',
-            trailing: FButton(
-              variant: .outline,
-              size: .sm,
-              onPress: () => notifier.addDeviceRule(const DeviceRule()),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 6,
-                children: [Icon(FLucideIcons.plus), Text('Add Rule')],
-              ),
+            subtitle: l10n.deviceRulesSubtitle(rules.length),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                FButton(
+                  variant: .outline,
+                  size: .sm,
+                  onPress: () =>
+                      controller.add(AddDeviceRule(const DeviceRule())),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 6,
+                    children: [
+                      const Icon(FLucideIcons.plus),
+                      Text(l10n.actionAddRule),
+                    ],
+                  ),
+                ),
+                const ScopedSaveActions(scope: SaveScope.settings),
+              ],
             ),
           ),
           if (rules.isEmpty)
@@ -72,14 +92,13 @@ class DeviceRulesEditor extends ConsumerWidget {
                   spacing: 8,
                   children: [
                     Text(
-                      'No device rules.',
+                      l10n.deviceRulesEmpty,
                       style: typography.sm.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      'Rules apply device properties to matching devices. '
-                      '\nEvaluated from bottom to top.',
+                      l10n.deviceRulesEmptyDescription,
                       textAlign: TextAlign.center,
                       style: typography.sm.copyWith(
                         color: colors.mutedForeground,
@@ -89,11 +108,15 @@ class DeviceRulesEditor extends ConsumerWidget {
                     FButton(
                       variant: .outline,
                       size: .sm,
-                      onPress: () => notifier.addDeviceRule(const DeviceRule()),
-                      child: const Row(
+                      onPress: () =>
+                          controller.add(AddDeviceRule(const DeviceRule())),
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         spacing: 6,
-                        children: [Icon(FLucideIcons.plus), Text('Add Rule')],
+                        children: [
+                          const Icon(FLucideIcons.plus),
+                          Text(l10n.actionAddRule),
+                        ],
                       ),
                     ),
                   ],
@@ -110,8 +133,9 @@ class DeviceRulesEditor extends ConsumerWidget {
                   key: ValueKey(i),
                   index: i,
                   rule: rules[i],
-                  onChanged: (r) => notifier.updateDeviceRule(i, (_) => r),
-                  onDelete: () => notifier.removeDeviceRule(i),
+                  onChanged: (r) =>
+                      controller.add(UpdateDeviceRule(i, (_) => r)),
+                  onDelete: () => controller.add(RemoveDeviceRule(i)),
                   colors: colors,
                   typography: typography,
                 ),
@@ -123,7 +147,7 @@ class DeviceRulesEditor extends ConsumerWidget {
   }
 }
 
-class _DeviceRuleCard extends StatelessWidget {
+class _DeviceRuleCard extends ConsumerWidget {
   const _DeviceRuleCard({
     required this.index,
     required this.rule,
@@ -142,8 +166,13 @@ class _DeviceRuleCard extends StatelessWidget {
   final FTypography typography;
 
   @override
-  Widget build(BuildContext context) {
-    final condLabel = _conditionLabel(rule.conditions);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final condLabel = _conditionLabel(rule.conditions, l10n);
+    final conditionsField = ref.field(
+      deviceRuleConditionsLens(DeviceRuleLocation(deviceRuleIndex: index)),
+      fallbackValue: () => rule.conditions,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -153,13 +182,12 @@ class _DeviceRuleCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
             child: Row(
               children: [
                 Text(
-                  'Rule ${index + 1}',
+                  l10n.deviceRuleHeader(index + 1),
                   style: typography.sm.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.mutedForeground,
@@ -183,22 +211,20 @@ class _DeviceRuleCard extends StatelessWidget {
             ),
           ),
           Container(height: 1, color: colors.border),
-          // Conditions
           Padding(
             padding: const EdgeInsets.all(14),
             child: ConditionEditor.generic(
-              condition: rule.conditions,
-              onConditionChanged: (c) =>
-                  onChanged(rule.copyWith(conditions: c)),
-              title: 'Device Conditions',
+              condition: conditionsField.value,
+              onConditionChanged: conditionsField.onChanged,
+              title: l10n.deviceConditionsTitle,
               groups: kDeviceVariableGroups,
             ),
           ),
           Container(height: 1, color: colors.border),
-          // Properties
           Padding(
             padding: const EdgeInsets.all(14),
             child: DeviceRulePropertiesForm(
+              ruleIndex: index,
               properties: rule.properties,
               onChanged: (p) => onChanged(rule.copyWith(properties: p)),
               colors: colors,
@@ -210,8 +236,8 @@ class _DeviceRuleCard extends StatelessWidget {
     );
   }
 
-  String _conditionLabel(Condition? c) {
-    if (c == null) return 'No conditions (applies to all devices)';
+  String _conditionLabel(Condition? c, AppLocalizations l10n) {
+    if (c == null) return l10n.deviceRuleNoConditions;
     if (c is VariableCondition) {
       return '${c.negate ? '!' : ''}\$${c.variable} ${c.operator} ${c.value}';
     }
@@ -219,6 +245,6 @@ class _DeviceRuleCard extends StatelessWidget {
       return '${c.mode.name} (${c.children.length} conditions)';
     }
     if (c is RawCondition) return c.raw;
-    return 'Conditions set';
+    return l10n.deviceRuleConditionsSet;
   }
 }

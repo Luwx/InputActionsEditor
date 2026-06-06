@@ -19,7 +19,7 @@ class _GestureListHeader extends StatelessWidget {
   final String? countLabel;
   final DeviceType? deviceFilter;
   final bool isMultiSelectMode;
-  final void Function(DeviceType, Object) onGestureAdded;
+  final void Function(DeviceType, Gesture) onGestureAdded;
   final VoidCallback? onAddGroup;
   final VoidCallback onExitMultiSelect;
 

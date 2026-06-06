@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 
 enum ResizeDividerLinePlacement {
@@ -12,9 +13,11 @@ enum ResizeDividerLayout {
   overlay,
 }
 
-class ResizeDivider extends StatefulWidget {
+class ResizeDivider extends HookWidget {
   const ResizeDivider({
+    required this.onDragStart,
     required this.onDragUpdate,
+    required this.onDragEnd,
     this.width = 12,
     this.lineWidth = 1,
     this.activeLineWidth = 3,
@@ -22,21 +25,15 @@ class ResizeDivider extends StatefulWidget {
     super.key,
   });
 
+  final ValueChanged<double> onDragStart;
   final ValueChanged<double> onDragUpdate;
+  final VoidCallback onDragEnd;
   final double width;
   final double lineWidth;
   final double activeLineWidth;
   final ResizeDividerLinePlacement linePlacement;
 
-  @override
-  State<ResizeDivider> createState() => _ResizeDividerState();
-}
-
-class _ResizeDividerState extends State<ResizeDivider> {
-  bool _isHovering = false;
-  bool _isDragging = false;
-
-  Alignment get _lineAlignment => switch (widget.linePlacement) {
+  Alignment get _lineAlignment => switch (linePlacement) {
     ResizeDividerLinePlacement.left => Alignment.centerLeft,
     ResizeDividerLinePlacement.center => Alignment.center,
     ResizeDividerLinePlacement.right => Alignment.centerRight,
@@ -44,23 +41,34 @@ class _ResizeDividerState extends State<ResizeDivider> {
 
   @override
   Widget build(BuildContext context) {
+    final isHovering = useState(false);
+    final isDragging = useState(false);
+
     final colors = context.theme.colors;
-    final highlight = _isDragging || _isHovering;
+    final highlight = isDragging.value || isHovering.value;
 
     return MouseRegion(
       cursor: SystemMouseCursors.resizeLeftRight,
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
+      onEnter: (_) => isHovering.value = true,
+      onExit: (_) => isHovering.value = false,
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onHorizontalDragStart: (_) => setState(() => _isDragging = true),
-        onHorizontalDragUpdate: (details) {
-          widget.onDragUpdate(details.delta.dx);
+        onHorizontalDragStart: (details) {
+          isDragging.value = true;
+          onDragStart(details.globalPosition.dx);
         },
-        onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
-        onHorizontalDragCancel: () => setState(() => _isDragging = false),
+        onHorizontalDragUpdate: (details) =>
+            onDragUpdate(details.globalPosition.dx),
+        onHorizontalDragEnd: (_) {
+          isDragging.value = false;
+          onDragEnd();
+        },
+        onHorizontalDragCancel: () {
+          isDragging.value = false;
+          onDragEnd();
+        },
         child: SizedBox(
-          width: widget.width,
+          width: width,
           child: AnimatedAlign(
             duration: Durations.long1,
             curve: Curves.easeOutCubic,
@@ -68,7 +76,7 @@ class _ResizeDividerState extends State<ResizeDivider> {
             child: AnimatedContainer(
               duration: Durations.long1,
               curve: Curves.easeOutCubic,
-              width: highlight ? widget.activeLineWidth : widget.lineWidth,
+              width: highlight ? activeLineWidth : lineWidth,
               color: highlight ? colors.muted : colors.border,
             ),
           ),

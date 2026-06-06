@@ -1,45 +1,39 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class PressSection extends StatelessWidget {
-  const PressSection({
-    required this.gesture,
-    required this.onUpdate,
-    super.key,
-  });
-
-  final PressGesture gesture;
-  final void Function(MouseGesture Function(MouseGesture)) onUpdate;
+class PressSection extends ConsumerWidget {
+  const PressSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final instantField = ref.gestureField(
+      context,
+      pressInstantLens,
+      fallbackValue: () => null,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Press',
+          l10n.sectionPress,
           style: context.theme.typography.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
         FCheckbox(
-          label: const LabelWithTooltip(
-            label: 'Instant',
-            tooltip:
-                'Start the trigger immediately when the button is pressed. '
-                'By default there is a short delay to allow swipe gestures '
-                'and normal clicks to work. Enabling this prevents normal '
-                'clicks on that button.',
+          label: LabelWithTooltip(
+            label: l10n.pressInstantLabel,
+            tooltip: l10n.pressInstantTooltip,
           ),
-          value: gesture.instant ?? false,
-          onChange: (v) {
-            onUpdate(
-              (g) => (g as PressGesture).copyWith(instant: v ? true : null),
-            );
-          },
+          value: instantField.value ?? false,
+          onChange: (v) => instantField.onChanged(v ? true : null),
         ),
         const SizedBox(height: 8),
       ],

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -17,20 +18,9 @@ class AppScrollBehavior extends MaterialScrollBehavior {
       child: child,
     );
   }
-
-  // @override
-  // SmoothScrollPolicy get smoothScrollPolicy => SmoothScrollPolicy.alwaysSmooth; // not platformAdaptive while debugging
-
-  // @override
-  // ScrollPhysics getScrollPhysics(BuildContext context) {
-  //   return const SmoothScrollPhysics(
-  //     curve: SmoothScrollCurves.edgeWindows,
-  //     duration: SmoothScrollCurves.edgeWindowsDuration,
-  //   ).applyTo(super.getScrollPhysics(context));
-  // }
 }
 
-class _AnimatedScrollbar extends StatefulWidget {
+class _AnimatedScrollbar extends HookWidget {
   const _AnimatedScrollbar({
     required this.controller,
     required this.direction,
@@ -41,188 +31,171 @@ class _AnimatedScrollbar extends StatefulWidget {
   final AxisDirection direction;
   final Widget child;
 
-  @override
-  State<_AnimatedScrollbar> createState() => _AnimatedScrollbarState();
-}
-
-class _AnimatedScrollbarState extends State<_AnimatedScrollbar>
-    with SingleTickerProviderStateMixin {
-  static const _hiddenVisuals = _ScrollbarVisuals(
+  static const _hidden = _ScrollbarVisuals(
     thickness: 0,
     thumbColor: Colors.transparent,
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _idleVisuals = _ScrollbarVisuals(
+  static const _idle = _ScrollbarVisuals(
     thickness: 4,
     thumbColor: Color(0x33FFFFFF),
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _hoveredVisuals = _ScrollbarVisuals(
+  static const _hovered = _ScrollbarVisuals(
     thickness: 8,
     thumbColor: Color(0x88FFFFFF),
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _draggedVisuals = _ScrollbarVisuals(
+  static const _dragged = _ScrollbarVisuals(
     thickness: 8,
     thumbColor: Color(0xCCFFFFFF),
     trackColor: Color(0x16FFFFFF),
     trackBorderColor: Colors.transparent,
   );
-  static const Duration _hoverDuration = Duration(milliseconds: 120);
+  static const _hoverDuration = Duration(milliseconds: 120);
   static const Duration _showDuration = Durations.long1;
-  static const Duration _hideDuration = Duration(seconds: 2);
-  static const _hoverHitExtent = 16.0;
+  static const _hideDuration = Duration(seconds: 2);
+  static const _hitExtent = 16.0;
 
-  late final AnimationController _controller;
-
-  late Animation<double> _thicknessAnimation;
-  late Animation<Color?> _thumbColorAnimation;
-  late Animation<Color?> _trackColorAnimation;
-  late Animation<Color?> _trackBorderColorAnimation;
-
-  bool _isInsideScrollable = false;
-  bool _isHovered = false;
-  bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: _showDuration);
-    _setAnimations(_hiddenVisuals, _hiddenVisuals);
-    _controller.value = 1;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _setHovered(bool value) {
-    if (_isHovered == value) return;
-    setState(() {
-      _isHovered = value;
-      _animateToCurrentState();
-    });
-  }
-
-  void _setInsideScrollable(bool value) {
-    if (_isInsideScrollable == value) return;
-    setState(() {
-      _isInsideScrollable = value;
-      if (!value) _isHovered = false;
-      _animateToCurrentState();
-    });
-  }
-
-  void _setPressed(bool value) {
-    if (_isPressed == value) return;
-    setState(() {
-      _isPressed = value;
-      _animateToCurrentState();
-    });
-  }
-
-  void _animateToCurrentState() {
-    final begin = _currentVisuals();
-    final end = _targetVisuals();
-    _controller.duration = _animationDuration(begin, end);
-    _setAnimations(begin, end);
-    unawaited(_controller.forward(from: 0));
-  }
-
-  Duration _animationDuration(
+  static Duration _animationDuration(
     _ScrollbarVisuals begin,
     _ScrollbarVisuals end,
   ) {
-    if (end.sameAs(_hiddenVisuals)) return _hideDuration;
-    if (begin.sameAs(_idleVisuals) && end.sameAs(_hoveredVisuals)) {
-      return _hoverDuration;
-    }
+    if (end.sameAs(_hidden)) return _hideDuration;
+    if (begin.sameAs(_idle) && end.sameAs(_hovered)) return _hoverDuration;
     return _showDuration;
-  }
-
-  _ScrollbarVisuals _currentVisuals() {
-    return _ScrollbarVisuals(
-      thickness: _thicknessAnimation.value,
-      thumbColor: _thumbColorAnimation.value ?? _hiddenVisuals.thumbColor,
-      trackColor: _trackColorAnimation.value ?? _hiddenVisuals.trackColor,
-      trackBorderColor:
-          _trackBorderColorAnimation.value ?? _hiddenVisuals.trackBorderColor,
-    );
-  }
-
-  _ScrollbarVisuals _targetVisuals() {
-    if (!_isInsideScrollable && !_isPressed) return _hiddenVisuals;
-    if (_isPressed) return _draggedVisuals;
-    if (_isHovered) return _hoveredVisuals;
-    return _idleVisuals;
-  }
-
-  void _setAnimations(_ScrollbarVisuals begin, _ScrollbarVisuals end) {
-    final curve = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    );
-    _thicknessAnimation = Tween<double>(
-      begin: begin.thickness,
-      end: end.thickness,
-    ).animate(curve);
-    _thumbColorAnimation = ColorTween(
-      begin: begin.thumbColor,
-      end: end.thumbColor,
-    ).animate(curve);
-    _trackColorAnimation = ColorTween(
-      begin: begin.trackColor,
-      end: end.trackColor,
-    ).animate(curve);
-    _trackBorderColorAnimation = ColorTween(
-      begin: begin.trackBorderColor,
-      end: end.trackBorderColor,
-    ).animate(curve);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isVertical = switch (widget.direction) {
+    final animController = useAnimationController(duration: _showDuration);
+
+    final isInsideScrollable = useState(false);
+    final isHovered = useState(false);
+    final isPressed = useState(false);
+
+    // Animation refs: updated synchronously before each forward() call so
+    // AnimatedBuilder always reads the correct interpolated values.
+    final thicknessAnim = useRef<Animation<double>>(
+      const AlwaysStoppedAnimation(0),
+    );
+    final thumbColorAnim = useRef<Animation<Color?>>(
+      const AlwaysStoppedAnimation(Colors.transparent),
+    );
+    final trackColorAnim = useRef<Animation<Color?>>(
+      const AlwaysStoppedAnimation(Colors.transparent),
+    );
+    final trackBorderColorAnim = useRef<Animation<Color?>>(
+      const AlwaysStoppedAnimation(Colors.transparent),
+    );
+
+    _ScrollbarVisuals currentVisuals() => _ScrollbarVisuals(
+      thickness: thicknessAnim.value.value,
+      thumbColor: thumbColorAnim.value.value ?? _hidden.thumbColor,
+      trackColor: trackColorAnim.value.value ?? _hidden.trackColor,
+      trackBorderColor:
+          trackBorderColorAnim.value.value ?? _hidden.trackBorderColor,
+    );
+
+    _ScrollbarVisuals targetVisuals() {
+      if (!isInsideScrollable.value && !isPressed.value) return _hidden;
+      if (isPressed.value) return _dragged;
+      if (isHovered.value) return _hovered;
+      return _idle;
+    }
+
+    void setAnimations(_ScrollbarVisuals begin, _ScrollbarVisuals end) {
+      final curve = CurvedAnimation(
+        parent: animController,
+        curve: Curves.easeOutCubic,
+      );
+      thicknessAnim.value = Tween<double>(
+        begin: begin.thickness,
+        end: end.thickness,
+      ).animate(curve);
+      thumbColorAnim.value = ColorTween(
+        begin: begin.thumbColor,
+        end: end.thumbColor,
+      ).animate(curve);
+      trackColorAnim.value = ColorTween(
+        begin: begin.trackColor,
+        end: end.trackColor,
+      ).animate(curve);
+      trackBorderColorAnim.value = ColorTween(
+        begin: begin.trackBorderColor,
+        end: end.trackBorderColor,
+      ).animate(curve);
+    }
+
+    void animateToCurrentState() {
+      final begin = currentVisuals();
+      final end = targetVisuals();
+      animController.duration = _animationDuration(begin, end);
+      setAnimations(begin, end);
+      unawaited(animController.forward(from: 0));
+    }
+
+    // Initialise to hidden on first mount.
+    useEffect(() {
+      setAnimations(_hidden, _hidden);
+      animController.value = 1;
+      return null;
+    }, const []);
+
+    final isVertical = switch (direction) {
       AxisDirection.up || AxisDirection.down => true,
       AxisDirection.left || AxisDirection.right => false,
     };
 
     return MouseRegion(
-      onEnter: (_) => _setInsideScrollable(true),
-      onExit: (_) => _setInsideScrollable(false),
+      onEnter: (_) {
+        if (isInsideScrollable.value) return;
+        isInsideScrollable.value = true;
+        animateToCurrentState();
+      },
+      onExit: (_) {
+        if (!isInsideScrollable.value) return;
+        isInsideScrollable.value = false;
+        isHovered.value = false;
+        animateToCurrentState();
+      },
       child: Stack(
         fit: StackFit.passthrough,
         children: [
           AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return RawScrollbar(
-                controller: widget.controller,
-                thumbVisibility: true,
-                thickness: _thicknessAnimation.value,
-                radius: Radius.zero,
-                trackVisibility: true,
-                thumbColor: _thumbColorAnimation.value,
-                trackColor: _trackColorAnimation.value,
-                trackBorderColor: _trackBorderColorAnimation.value,
-                child: child!,
-              );
-            },
-            child: widget.child,
+            animation: animController,
+            builder: (context, child) => RawScrollbar(
+              controller: controller,
+              thumbVisibility: true,
+              thickness: thicknessAnim.value.value,
+              radius: Radius.zero,
+              trackVisibility: true,
+              thumbColor: thumbColorAnim.value.value,
+              trackColor: trackColorAnim.value.value,
+              trackBorderColor: trackBorderColorAnim.value.value,
+              child: child!,
+            ),
+            child: child,
           ),
           Positioned.fill(
             child: IgnorePointer(
               ignoring: false,
               child: _ScrollbarInteractionRegion(
                 isVertical: isVertical,
-                hitExtent: _hoverHitExtent,
-                onHoverChanged: _setHovered,
-                onPressedChanged: _setPressed,
+                hitExtent: _hitExtent,
+                onHoverChanged: (value) {
+                  if (isHovered.value == value) return;
+                  isHovered.value = value;
+                  animateToCurrentState();
+                },
+                onPressedChanged: (value) {
+                  if (isPressed.value == value) return;
+                  isPressed.value = value;
+                  animateToCurrentState();
+                },
               ),
             ),
           ),
@@ -290,10 +263,9 @@ class _ScrollbarVisuals {
   final Color trackColor;
   final Color trackBorderColor;
 
-  bool sameAs(_ScrollbarVisuals other) {
-    return thickness == other.thickness &&
-        thumbColor == other.thumbColor &&
-        trackColor == other.trackColor &&
-        trackBorderColor == other.trackBorderColor;
-  }
+  bool sameAs(_ScrollbarVisuals other) =>
+      thickness == other.thickness &&
+      thumbColor == other.thumbColor &&
+      trackColor == other.trackColor &&
+      trackBorderColor == other.trackBorderColor;
 }

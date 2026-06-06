@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart'
     show
         PointerDeviceKind,
@@ -12,17 +14,32 @@ import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:flutter/services.dart'
     show HardwareKeyboard, KeyDownEvent, KeyEvent, KeyUpEvent;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/data/keyboard_physical_key_map.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
+import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
+import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
-import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
-class InputEntryEditor extends StatefulWidget {
+const Map<int, String> _mouseButtonNames = {
+  kPrimaryMouseButton: 'left',
+  kSecondaryMouseButton: 'right',
+  kMiddleMouseButton: 'middle',
+  kBackMouseButton: 'back',
+  kForwardMouseButton: 'forward',
+};
+
+class InputEntryEditor extends HookWidget {
   const InputEntryEditor({
     required this.index,
     required this.entry,
@@ -39,461 +56,269 @@ class InputEntryEditor extends StatefulWidget {
   final VoidCallback onDelete;
 
   @override
-  State<InputEntryEditor> createState() => _InputEntryEditorState();
-}
-
-class _InputEntryEditorState extends State<InputEntryEditor> {
-  static const Map<int, String> _mouseButtonNames = {
-    kPrimaryMouseButton: 'left',
-    kSecondaryMouseButton: 'right',
-    kMiddleMouseButton: 'middle',
-    kBackMouseButton: 'back',
-    kForwardMouseButton: 'forward',
-  };
-
-  final Object _timelinePopoverGroup = Object();
-
-  // ── Keyboard recording ────────────────────────────────────────────────────
-  bool _isKeyboardRecording = false;
-  final List<String> _liveKeyTokens = [];
-  late final TextEditingController _keySeqController;
-
-  // ── Mouse recording area ───────────────────────────────────────────────────
-  final List<String> _liveMouseTokens = [];
-  int _buttonsDown = 0;
-  late final TextEditingController _mouseSeqController;
-
-  InputEntry get _entry => widget.entry;
-  InputEntryMode get _mode => inferInputEntryMode(_entry);
-
-  @override
-  void initState() {
-    super.initState();
-    _keySeqController = TextEditingController(
-      text: _entry.tokens.join(', '),
+  Widget build(BuildContext context) {
+    final timelinePopoverGroup = useMemoized(Object.new);
+    final isKeyboardRecording = useState(false);
+    final liveKeyTokens = useState<List<String>>([]);
+    final keySeqController = useTextEditingController(
+      text: entry.tokens.join(', '),
     );
-    _mouseSeqController = TextEditingController(
-      text: _entry.tokens.join(', '),
+    final liveMouseTokens = useState<List<String>>([]);
+    final buttonsDown = useRef(0);
+    final mouseSeqController = useTextEditingController(
+      text: entry.tokens.join(', '),
     );
-  }
 
-  void _replaceTokens(List<String> tokens) {
-    widget.onChanged(_entry.copyWith(tokens: tokens));
-  }
+    final mode = inferInputEntryMode(entry);
 
-  void _replaceSingleToken(String token) {
-    _replaceTokens([token]);
-  }
+    final tokenKey = entry.tokens.join(', ');
+    useEffect(() {
+      if (KeySequenceParser.toTokens(
+            KeySequenceParser.parse(keySeqController.text),
+          ).join(', ') !=
+          tokenKey) {
+        keySeqController.text = tokenKey;
+      }
+      if (KeySequenceParser.toTokens(
+            KeySequenceParser.parse(mouseSeqController.text),
+          ).join(', ') !=
+          tokenKey) {
+        mouseSeqController.text = tokenKey;
+      }
+      return null;
+    }, [tokenKey]);
 
-  void _changeMode(InputEntryMode? mode) {
-    if (mode == null || mode == _mode) return;
-    _replaceTokens(defaultTokensForMode(mode));
-  }
+    // Keyboard recording handler,
+    // stored in a ref so cleanup always unregisters.
+    final keyHandlerRef = useRef<bool Function(KeyEvent)?>(null);
 
-  @override
-  void dispose() {
-    if (_isKeyboardRecording) {
-      HardwareKeyboard.instance.removeHandler(_onKeyEvent);
+    useEffect(() {
+      return () {
+        final handler = keyHandlerRef.value;
+        if (handler != null) {
+          HardwareKeyboard.instance.removeHandler(handler);
+        }
+      };
+    }, const []);
+
+    void replaceTokens(List<String> tokens) {
+      onChanged(entry.copyWith(tokens: tokens));
     }
-    _keySeqController.dispose();
-    _mouseSeqController.dispose();
-    super.dispose();
-  }
 
-  // ── Keyboard recording ────────────────────────────────────────────────────
+    void replaceSingleToken(String token) => replaceTokens([token]);
 
-  bool _onKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent && event is! KeyUpEvent) return true;
-    final scancode = physicalKeyToScancode[event.physicalKey];
-    if (scancode != null) {
-      final token = '${event is KeyDownEvent ? '+' : '-'}$scancode';
-      if (mounted) setState(() => _liveKeyTokens.add(token));
+    void changeMode(InputEntryMode? m) {
+      if (m == null || m == mode) return;
+      replaceTokens(defaultTokensForMode(m));
     }
-    return true;
-  }
 
-  void _startRecording() {
-    setState(() {
-      _isKeyboardRecording = true;
-      _liveKeyTokens.clear();
-    });
-    HardwareKeyboard.instance.addHandler(_onKeyEvent);
-  }
-
-  void _stopRecording({required bool append}) {
-    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
-    if (!mounted) return;
-    if (append && _liveKeyTokens.isNotEmpty) {
-      final existing = _keySeqController.text.trim();
-      final appended = _liveKeyTokens.join(', ');
-      _keySeqController.text = existing.isEmpty
-          ? appended
-          : '$existing, $appended';
+    bool onKeyEvent(KeyEvent event) {
+      if (event is! KeyDownEvent && event is! KeyUpEvent) return true;
+      final scancode = physicalKeyToScancode[event.physicalKey];
+      if (scancode != null) {
+        final token = '${event is KeyDownEvent ? '+' : '-'}$scancode';
+        liveKeyTokens.value = [...liveKeyTokens.value, token];
+      }
+      return true;
     }
-    setState(() {
-      _isKeyboardRecording = false;
-      _liveKeyTokens.clear();
-    });
-  }
 
-  // ── Mouse recording area ──────────────────────────────────────────────────
+    void startRecording() {
+      isKeyboardRecording.value = true;
+      liveKeyTokens.value = [];
+      keyHandlerRef.value = onKeyEvent;
+      HardwareKeyboard.instance.addHandler(onKeyEvent);
+    }
 
-  void _onRecordAreaPointerDown(PointerDownEvent event) {
-    if (event.kind != PointerDeviceKind.mouse) return;
-    final pressed = event.buttons & ~_buttonsDown;
-    _buttonsDown = event.buttons;
-    var changed = false;
-    for (final entry in _mouseButtonNames.entries) {
-      if (pressed & entry.key != 0) {
-        _liveMouseTokens.add('+${entry.value}');
-        changed = true;
+    void stopRecording({required bool append}) {
+      final handler = keyHandlerRef.value;
+      if (handler != null) {
+        HardwareKeyboard.instance.removeHandler(handler);
+        keyHandlerRef.value = null;
+      }
+      if (append && liveKeyTokens.value.isNotEmpty) {
+        final existing = keySeqController.text.trim();
+        final appended = liveKeyTokens.value.join(', ');
+        keySeqController.text = existing.isEmpty
+            ? appended
+            : '$existing, $appended';
+      }
+      isKeyboardRecording.value = false;
+      liveKeyTokens.value = [];
+    }
+
+    void onRecordAreaPointerDown(PointerDownEvent event) {
+      if (event.kind != PointerDeviceKind.mouse) return;
+      final pressed = event.buttons & ~buttonsDown.value;
+      buttonsDown.value = event.buttons;
+      var changed = false;
+      for (final e in _mouseButtonNames.entries) {
+        if (pressed & e.key != 0) {
+          liveMouseTokens.value = [...liveMouseTokens.value, '+${e.value}'];
+          changed = true;
+        }
+      }
+      if (changed) {}
+    }
+
+    void onRecordAreaPointerUp(PointerUpEvent event) {
+      final released = buttonsDown.value & ~event.buttons;
+      buttonsDown.value = event.buttons;
+      for (final e in _mouseButtonNames.entries) {
+        if (released & e.key != 0) {
+          liveMouseTokens.value = [...liveMouseTokens.value, '-${e.value}'];
+        }
       }
     }
-    if (changed && mounted) setState(() {});
-  }
 
-  void _onRecordAreaPointerUp(PointerUpEvent event) {
-    final released = _buttonsDown & ~event.buttons;
-    _buttonsDown = event.buttons;
-    var changed = false;
-    for (final entry in _mouseButtonNames.entries) {
-      if (released & entry.key != 0) {
-        _liveMouseTokens.add('-${entry.value}');
-        changed = true;
-      }
-    }
-    if (changed && mounted) setState(() {});
-  }
-
-  // ── Build helpers ─────────────────────────────────────────────────────────
-
-  Widget _buildKeyboardTimelineEditor(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: KeySequenceTextField(
-            controller: _keySeqController,
-            onChanged: _replaceTokens,
-          ),
-        ),
-        const SizedBox(width: 8),
-        AppTooltip(
-          tipBuilder: (context, _) => Text(
-            'Record a sequence of keystrokes.',
-            style: context.theme.typography.xs.copyWith(
-              color: context.theme.colors.mutedForeground,
-            ),
-          ),
-          child: FPopover(
-            groupId: _isKeyboardRecording ? null : _timelinePopoverGroup,
-            hideRegion: _isKeyboardRecording ? .none : .excludeChild,
-            constraints: const FPortalConstraints(maxWidth: 300),
-            builder: (context, controller, child) => FButton.icon(
-              size: .sm,
-              onPress: controller.toggle,
-              child: child,
-            ),
-            popoverBuilder: (context, controller) => Padding(
-              padding: const EdgeInsets.all(12),
-              child: _isKeyboardRecording
-                  ? _buildKeyboardRecordingView(context, controller)
-                  : _buildKeyboardRecordStart(context),
-            ),
-            child: const Icon(Icons.radio_button_checked, size: 16),
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
-  Widget _buildKeyboardRecordStart(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Record keystrokes',
-          style: context.theme.typography.sm.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        FButton(
-          variant: .outline,
-          onPress: _startRecording,
-          prefix: const Icon(Icons.radio_button_checked),
-          child: const Text('Record'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildKeyboardRecordingView(
-    BuildContext context,
-    FPopoverController controller,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(
-              Icons.radio_button_checked,
-              color: Colors.redAccent,
-              size: 14,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Recording keystrokes...',
-              style: context.theme.typography.sm.copyWith(
-                fontWeight: FontWeight.w600,
+    Widget buildKeyboardTimelineEditor() {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: KeySequenceTextField(
+              controller: keySeqController,
+              onChanged: replaceTokens,
+              labelWidget: LabelWithTooltip(
+                label: context.l10n.inputKeySequenceLabel,
+                tooltipContent: const KeySequenceTooltip(),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        if (_liveKeyTokens.isEmpty)
-          Text(
-            'Press any key to record.',
-            style: context.theme.typography.sm.copyWith(
-              color: context.theme.colors.mutedForeground,
+          ),
+          const SizedBox(width: 8),
+          AppTooltip(
+            tipBuilder: (context, _) => Text(
+              context.l10n.inputKeySequenceRecordTip,
+              style: context.theme.typography.xs.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
             ),
-          )
-        else
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              for (final token in _liveKeyTokens)
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: context.theme.colors.border),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(token, style: context.theme.typography.xs),
+            child: FPopover(
+              groupId: isKeyboardRecording.value ? null : timelinePopoverGroup,
+              hideRegion: isKeyboardRecording.value ? .none : .excludeChild,
+              constraints: const FPortalConstraints(maxWidth: 300),
+              builder: (context, controller, child) => FButton.icon(
+                size: .sm,
+                onPress: controller.toggle,
+                child: child,
+              ),
+              popoverBuilder: (context, controller) => Focus(
+                autofocus: isKeyboardRecording.value,
+                onKeyEvent: isKeyboardRecording.value
+                    ? (_, _) => KeyEventResult.handled
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: isKeyboardRecording.value
+                      ? _buildKeyboardRecordingView(
+                          context,
+                          controller,
+                          liveKeyTokens.value,
+                          stopRecording: stopRecording,
+                        )
+                      : _buildKeyboardRecordStart(
+                          context,
+                          startRecording: startRecording,
+                        ),
+                ),
+              ),
+              child: const Icon(Icons.radio_button_checked, size: 16),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      );
+    }
+
+    Widget buildMouseTimelineEditor() {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: KeySequenceTextField(
+              controller: mouseSeqController,
+              onChanged: replaceTokens,
+              labelWidget: LabelWithTooltip(
+                label: context.l10n.inputButtonSequenceLabel,
+                tooltipContent: const ButtonSequenceTooltip(),
+              ),
+              hintText:
+                  'e.g.  +left, -left   or   +right, +left, -left, -right',
+            ),
+          ),
+          const SizedBox(width: 8),
+          AppTooltip(
+            tipBuilder: (context, _) => Text(
+              context.l10n.inputButtonSequenceRecordTip,
+              style: context.theme.typography.xs.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+            child: FPopover(
+              groupId: timelinePopoverGroup,
+              constraints: const FPortalConstraints(maxWidth: 300),
+              builder: (context, controller, child) => FButton.icon(
+                size: .sm,
+                onPress: controller.toggle,
+                child: child,
+              ),
+              popoverBuilder: (context, controller) => _RecordingScope(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: _buildMouseRecordPopover(
+                    context,
+                    controller,
+                    liveMouseTokens: liveMouseTokens.value,
+                    mouseSeqController: mouseSeqController,
+                    onPointerDown: onRecordAreaPointerDown,
+                    onPointerUp: onRecordAreaPointerUp,
+                    onClearTokens: () => liveMouseTokens.value = [],
                   ),
                 ),
-            ],
+              ),
+              child: const Icon(Icons.radio_button_checked, size: 16),
+            ),
           ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            FButton(
-              size: .sm,
-              onPress: () async {
-                _stopRecording(append: true);
-                await controller.hide();
-              },
-              child: const Text('Stop & Add'),
-            ),
-            const SizedBox(width: 8),
-            FButton(
-              variant: .ghost,
-              size: .sm,
-              onPress: () async {
-                _stopRecording(append: false);
-                await controller.hide();
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+          const SizedBox(width: 8),
+        ],
+      );
+    }
 
-  Widget _buildMouseTimelineEditor(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: KeySequenceTextField(
-            controller: _mouseSeqController,
-            onChanged: _replaceTokens,
-            label: 'Button Sequence',
-            hintText: 'e.g.  +left, -left   or   +right, +left, -left, -right',
-          ),
-        ),
-        const SizedBox(width: 8),
-        AppTooltip(
-          tipBuilder: (context, _) => Text(
-            'Record mouse button clicks.',
-            style: context.theme.typography.xs.copyWith(
-              color: context.theme.colors.mutedForeground,
-            ),
-          ),
-          child: FPopover(
-            groupId: _timelinePopoverGroup,
-            constraints: const FPortalConstraints(maxWidth: 300),
-            builder: (context, controller, child) => FButton.icon(
-              size: .sm,
-              onPress: controller.toggle,
-              child: child,
-            ),
-            popoverBuilder: (context, controller) => Padding(
-              padding: const EdgeInsets.all(12),
-              child: _buildMouseRecordPopover(context, controller),
-            ),
-            child: const Icon(Icons.radio_button_checked, size: 16),
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
-    );
-  }
-
-  Widget _buildMouseRecordPopover(
-    BuildContext context,
-    FPopoverController controller,
-  ) {
-    final colors = context.theme.colors;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Record mouse buttons',
-          style: context.theme.typography.sm.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: _onRecordAreaPointerDown,
-          onPointerUp: _onRecordAreaPointerUp,
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 72),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colors.secondary.withValues(alpha: 0.6),
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _liveMouseTokens.isEmpty
-                ? Center(
-                    child: Text(
-                      'Click any mouse button here',
-                      style: context.theme.typography.sm.copyWith(
-                        color: colors.mutedForeground,
-                      ),
-                    ),
-                  )
-                : Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      for (final token in _liveMouseTokens)
-                        Builder(
-                          builder: (context) {
-                            final vis = tokenVisual(
-                              token,
-                              InputDevice.mouse,
-                              colors,
-                            );
-                            return DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: vis.background,
-                                border: Border.all(color: vis.border),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                child: Text(
-                                  vis.label,
-                                  style: context.theme.typography.xs.copyWith(
-                                    color: vis.foreground,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            FButton(
-              size: .sm,
-              onPress: _liveMouseTokens.isEmpty
-                  ? null
-                  : () async {
-                      final existing = _mouseSeqController.text.trim();
-                      final appended = _liveMouseTokens.join(', ');
-                      _mouseSeqController.text = existing.isEmpty
-                          ? appended
-                          : '$existing, $appended';
-                      setState(_liveMouseTokens.clear);
-                      await controller.hide();
-                    },
-              child: const Text('Add to sequence'),
-            ),
-            const SizedBox(width: 8),
-            FButton(
-              variant: .ghost,
-              size: .sm,
-              onPress: () async {
-                setState(_liveMouseTokens.clear);
-                await controller.hide();
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final options = modeOptions(_entry.device);
-    final inlineEditor = switch (_mode) {
-      InputEntryMode.keyboardTimeline => _buildKeyboardTimelineEditor(context),
-      InputEntryMode.mouseTimeline => _buildMouseTimelineEditor(context),
+    final inlineEditor = switch (mode) {
+      InputEntryMode.keyboardTimeline => buildKeyboardTimelineEditor(),
+      InputEntryMode.mouseTimeline => buildMouseTimelineEditor(),
       InputEntryMode.keyboardText => FTextField(
-        key: ValueKey(_entry.tokens.join('|')),
         control: FTextFieldControl.managed(
-          initial: TextEditingValue(text: keyboardTextValue(_entry.tokens)),
-          onChange: (value) => _replaceSingleToken('text: ${value.text}'),
+          initial: TextEditingValue(text: keyboardTextValue(entry.tokens)),
+          onChange: (value) => replaceSingleToken('text: ${value.text}'),
         ),
-        label: const Text('Text to type'),
+        label: Text(context.l10n.inputTextToTypeLabel),
         maxLines: null,
         hint: 'Hello world',
       ),
       InputEntryMode.mouseMoveBy => MouseVectorEditor(
-        token: singleTokenOrDefault(_entry.tokens, _mode),
-        mode: _mode,
-        onChanged: _replaceSingleToken,
+        token: singleTokenOrDefault(entry.tokens, mode),
+        mode: mode,
+        onChanged: replaceSingleToken,
       ),
       InputEntryMode.mouseMoveByDelta => MouseDeltaEditor(
-        token: singleTokenOrDefault(_entry.tokens, _mode),
-        onChanged: _replaceSingleToken,
+        token: singleTokenOrDefault(entry.tokens, mode),
+        onChanged: replaceSingleToken,
       ),
       InputEntryMode.mouseMoveTo => MouseVectorEditor(
-        token: singleTokenOrDefault(_entry.tokens, _mode),
-        mode: _mode,
-        onChanged: _replaceSingleToken,
+        token: singleTokenOrDefault(entry.tokens, mode),
+        mode: mode,
+        onChanged: replaceSingleToken,
       ),
       InputEntryMode.mouseWheel => MouseVectorEditor(
-        token: singleTokenOrDefault(_entry.tokens, _mode),
-        mode: _mode,
-        onChanged: _replaceSingleToken,
+        token: singleTokenOrDefault(entry.tokens, mode),
+        mode: mode,
+        onChanged: replaceSingleToken,
       ),
+    };
+
+    final optionsList = inputModeOptions(entry.device, context.l10n);
+    final options = {
+      for (final o in optionsList) o.label: o.mode,
     };
 
     return Padding(
@@ -504,35 +329,31 @@ class _InputEntryEditorState extends State<InputEntryEditor> {
           LayoutBuilder(
             builder: (context, constraints) {
               final deviceField = FSelect<InputDevice>(
-                label: const LabelWithTooltip(
-                  label: 'Device',
-                  tooltip: 'Whether to simulate keyboard or mouse input.',
+                label: LabelWithTooltip(
+                  label: context.l10n.inputDeviceFieldLabel,
+                  tooltip: context.l10n.inputDeviceFieldTooltip,
                 ),
-                key: ValueKey(_entry.device),
-                items: widget.deviceOptions,
+                key: ValueKey(entry.device),
+                items: deviceOptions,
                 control: FSelectManagedControl<InputDevice>(
-                  initial: _entry.device,
+                  initial: entry.device,
                   onChange: (value) {
                     if (value != null) {
-                      widget.onChanged(
-                        _entry.copyWith(device: value, tokens: []),
-                      );
+                      onChanged(entry.copyWith(device: value, tokens: []));
                     }
                   },
                 ),
               );
               final actionTypeField = FSelect<InputEntryMode>(
-                label: const LabelWithTooltip(
-                  label: 'Action type',
-                  tooltip:
-                      'The kind of simulated input: key combination, '
-                      'typed text, mouse movement, scroll wheel, etc.',
+                label: LabelWithTooltip(
+                  label: context.l10n.inputActionTypeLabel,
+                  tooltip: context.l10n.inputActionTypeTooltip,
                 ),
-                key: ValueKey(_mode),
+                key: ValueKey(mode),
                 items: options,
                 control: FSelectManagedControl<InputEntryMode>(
-                  initial: _mode,
-                  onChange: _changeMode,
+                  initial: mode,
+                  onChange: changeMode,
                 ),
               );
 
@@ -554,7 +375,7 @@ class _InputEntryEditorState extends State<InputEntryEditor> {
                           child: FButton(
                             variant: .ghost,
                             size: .sm,
-                            onPress: widget.onDelete,
+                            onPress: onDelete,
                             child: const Icon(FLucideIcons.trash),
                           ),
                         ),
@@ -578,7 +399,7 @@ class _InputEntryEditorState extends State<InputEntryEditor> {
                     child: FButton(
                       variant: .ghost,
                       size: .sm,
-                      onPress: widget.onDelete,
+                      onPress: onDelete,
                       child: const Icon(FLucideIcons.trash),
                     ),
                   ),
@@ -590,4 +411,256 @@ class _InputEntryEditorState extends State<InputEntryEditor> {
       ),
     );
   }
+}
+
+/// Marks an in-app recorder as active for as long as it is mounted, so the
+/// app's global input handlers (mouse back / forward navigation, undo / redo
+/// shortcuts) stand down and let the captured events be recorded instead.
+///
+/// Also absorbs key events so stray keypresses during recording don't trigger
+/// focused-widget behavior.
+class _RecordingScope extends HookConsumerWidget {
+  const _RecordingScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    useEffect(() {
+      // Deferred: hooks run effects during build, and Riverpod forbids
+      // modifying a provider mid-build.
+      final notifier = ref.read(inputRecordingProvider.notifier);
+      scheduleMicrotask(notifier.begin);
+      return () => scheduleMicrotask(notifier.end);
+    }, const []);
+
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, _) => KeyEventResult.handled,
+      child: child,
+    );
+  }
+}
+
+Widget _buildKeyboardRecordStart(
+  BuildContext context, {
+  required VoidCallback startRecording,
+}) {
+  final l10n = context.l10n;
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        l10n.inputKeySequenceRecordTitle,
+        style: context.theme.typography.sm.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      FButton(
+        variant: .outline,
+        onPress: startRecording,
+        prefix: const Icon(Icons.radio_button_checked),
+        child: Text(l10n.actionRecord),
+      ),
+    ],
+  );
+}
+
+Widget _buildKeyboardRecordingView(
+  BuildContext context,
+  FPopoverController controller,
+  List<String> liveKeyTokens, {
+  required void Function({required bool append}) stopRecording,
+}) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          const Icon(
+            Icons.radio_button_checked,
+            color: Colors.redAccent,
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            context.l10n.inputKeySequenceRecordingTitle,
+            style: context.theme.typography.sm.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 10),
+      if (liveKeyTokens.isEmpty)
+        Text(
+          context.l10n.inputKeySequenceRecordPrompt,
+          style: context.theme.typography.sm.copyWith(
+            color: context.theme.colors.mutedForeground,
+          ),
+        )
+      else
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: [
+            for (final token in liveKeyTokens)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: context.theme.colors.border),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Text(token, style: context.theme.typography.xs),
+                ),
+              ),
+          ],
+        ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          FButton(
+            size: .sm,
+            onPress: () async {
+              stopRecording(append: true);
+              await controller.hide();
+            },
+            child: Text(context.l10n.inputKeySequenceStopAdd),
+          ),
+          const SizedBox(width: 8),
+          FButton(
+            variant: .ghost,
+            size: .sm,
+            onPress: () async {
+              stopRecording(append: false);
+              await controller.hide();
+            },
+            child: Text(context.l10n.actionCancel),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+Widget _buildMouseRecordPopover(
+  BuildContext context,
+  FPopoverController controller, {
+  required List<String> liveMouseTokens,
+  required TextEditingController mouseSeqController,
+  required void Function(PointerDownEvent) onPointerDown,
+  required void Function(PointerUpEvent) onPointerUp,
+  required VoidCallback onClearTokens,
+}) {
+  final colors = context.theme.colors;
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        context.l10n.inputButtonSequenceRecordTitle,
+        style: context.theme.typography.sm.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: onPointerDown,
+        onPointerUp: onPointerUp,
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colors.secondary.withValues(alpha: 0.6),
+            border: Border.all(color: colors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: liveMouseTokens.isEmpty
+              ? Center(
+                  child: Text(
+                    context.l10n.inputButtonSequenceRecordPrompt,
+                    style: context.theme.typography.sm.copyWith(
+                      color: colors.mutedForeground,
+                    ),
+                  ),
+                )
+              : Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    for (final token in liveMouseTokens)
+                      Builder(
+                        builder: (context) {
+                          final vis = tokenVisual(
+                            token,
+                            InputDevice.mouse,
+                            colors,
+                            context.l10n,
+                          );
+                          return DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: vis.background,
+                              border: Border.all(color: vis.border),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                vis.label,
+                                style: context.theme.typography.xs.copyWith(
+                                  color: vis.foreground,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        children: [
+          FButton(
+            size: .sm,
+            onPress: liveMouseTokens.isEmpty
+                ? null
+                : () async {
+                    final existing = mouseSeqController.text.trim();
+                    final appended = liveMouseTokens.join(', ');
+                    mouseSeqController.text = existing.isEmpty
+                        ? appended
+                        : '$existing, $appended';
+                    onClearTokens();
+                    await controller.hide();
+                  },
+            child: Text(context.l10n.inputButtonSequenceAddToSeq),
+          ),
+          const SizedBox(width: 8),
+          FButton(
+            variant: .ghost,
+            size: .sm,
+            onPress: () async {
+              onClearTokens();
+              await controller.hide();
+            },
+            child: Text(context.l10n.actionCancel),
+          ),
+        ],
+      ),
+    ],
+  );
 }

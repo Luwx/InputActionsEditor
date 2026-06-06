@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:input_actions_editor/state/config_dirty_providers.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 const ValueKey<String> _viewportKey = ValueKey('action-list-viewport');
 const ValueKey<String> _targetRowFooterKey = ValueKey('action-footer-4');
@@ -92,7 +97,14 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: ProviderScope(
+        overrides: [
+          configControllerProvider.overrideWith(
+            () => _SeededController(_common),
+          ),
+        ],
         child: FTheme(
           data: FThemes.zinc.dark.desktop,
           child: FScaffold(
@@ -117,14 +129,12 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
                             : null,
                         child: ScrollAnchorScope(
                           controller: _anchor,
-                          child: ActionListEditor(
-                            gestureLocation: const GestureLocation(
+                          child: const EditLocationScope(
+                            gesture: GestureLocation(
                               device: DeviceType.mouse,
                               index: 0,
                             ),
-                            common: _common,
-                            onCommonChanged: (common) =>
-                                setState(() => _common = common),
+                            child: ActionListEditor(),
                           ),
                         ),
                       ),
@@ -141,6 +151,19 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
       ),
     );
   }
+}
+
+class _SeededController extends ConfigController {
+  _SeededController(TriggerCommon common)
+    : _config = Config(mouseGestures: [PressGesture(common: common)]);
+
+  final Config _config;
+
+  @override
+  Config? get savedConfig => _config;
+
+  @override
+  Future<Config> build() async => assignEditIds(_config);
 }
 
 void main() {

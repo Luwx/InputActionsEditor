@@ -1,56 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class CircleSection extends StatelessWidget {
-  const CircleSection({
-    required this.direction,
-    required this.onDirectionChanged,
-    super.key,
-  });
-
-  final CircleDirection direction;
-  final void Function(CircleDirection) onDirectionChanged;
-
-  static const Map<String, CircleDirection> _directions = {
-    'Any': CircleDirection.any,
-    'Clockwise': CircleDirection.clockwise,
-    'Counterclockwise': CircleDirection.counterclockwise,
-  };
+class CircleSection extends ConsumerWidget {
+  const CircleSection({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final lensFor = switch (context.gestureLocation.device) {
+      DeviceType.touchpad => touchpadCircleDirectionLens,
+      DeviceType.touchscreen => touchscreenCircleDirectionLens,
+      _ => circleDirectionLens,
+    };
+    final directionField = ref.gestureField(
+      context,
+      lensFor,
+      fallbackValue: () => CircleDirection.any,
+    );
+    final value = directionField.value;
+    final directions = {
+      l10n.directionAny: CircleDirection.any,
+      l10n.directionClockwise: CircleDirection.clockwise,
+      l10n.directionCounterclockwise: CircleDirection.counterclockwise,
+    };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: SizedBox(
         width: 220,
         child: FSelect<CircleDirection>(
-          key: ValueKey(direction),
-          items: _directions,
-          // TODO(me): add icons
-          // prefixBuilder: (context, style, variants) {
-          //   return direction == CircleDirection.any
-          //       ? const Icon(Icons.autorenew, size: 16)
-          //       : Icon(
-          //           direction == CircleDirection.clockwise
-          //               ? FLucideIcons.rotateCw
-          //               : FLucideIcons.rotateCcw,
-          //           size: 16,
-          //         );
-          // },
+          key: ValueKey(value),
+          items: directions,
           control: FSelectManagedControl<CircleDirection>(
-            initial: direction,
+            initial: value,
             onChange: (v) {
-              if (v != null) onDirectionChanged(v);
+              if (v != null) directionField.onChanged(v);
             },
           ),
-          label: const LabelWithTooltip(
-            label: 'Circle Direction',
-            tooltip:
-                'Direction fingers must move in a circle. '
-                '"Any" matches both clockwise and counterclockwise.',
+          label: LabelWithTooltip(
+            label: l10n.sectionCircleDirectionLabel,
+            tooltip: l10n.sectionCircleDirectionTooltip,
           ),
         ),
       ),

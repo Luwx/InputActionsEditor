@@ -36,6 +36,12 @@ migrate_working_dir/
 /docs/
 /scripts/
 
+# Generated Dart files in lib
+/lib/**/*.g.dart
+/lib/**/*.freezed.dart
+/lib/**/*.gen.dart
+/lib/**/*.gr.dart
+
 # Symbolication related
 app.*.symbols
 

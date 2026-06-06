@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
@@ -9,6 +10,7 @@ class SectionHeader extends StatelessWidget {
     this.title = 'Trigger Conditions',
     this.titleWidget,
     this.tooltip,
+    this.tooltipContent,
     this.onAddCondition,
     this.onAddGroup,
     this.onExpand,
@@ -22,6 +24,7 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final Widget? titleWidget;
   final String? tooltip;
+  final Widget? tooltipContent;
   final VoidCallback? onAddCondition;
   final VoidCallback? onAddGroup;
 
@@ -42,10 +45,11 @@ class SectionHeader extends StatelessWidget {
       children: [
         if (titleWidget != null)
           titleWidget!
-        else if (tooltip != null)
+        else if (tooltip != null || tooltipContent != null)
           LabelWithTooltip(
             label: title,
-            tooltip: tooltip!,
+            tooltip: tooltip,
+            tooltipContent: tooltipContent,
             textStyle: titleStyle,
           )
         else
@@ -95,8 +99,8 @@ class NewConditionMenu extends StatelessWidget {
             if (onAddCondition != null)
               .item(
                 prefix: const Icon(FLucideIcons.gitFork),
-                title: const Text('Condition'),
-                subtitle: const Text('A single condition'),
+                title: Text(context.l10n.conditionMenuAddConditionTitle),
+                subtitle: Text(context.l10n.conditionMenuAddConditionSubtitle),
                 onPress: () async {
                   await controller.hide();
                   onAddCondition?.call();
@@ -105,10 +109,8 @@ class NewConditionMenu extends StatelessWidget {
             if (onAddGroup != null)
               .item(
                 prefix: const Icon(FLucideIcons.folderTree),
-                title: const Text('Group'),
-                subtitle: const Text(
-                  'Collection of conditions.',
-                ),
+                title: Text(context.l10n.conditionMenuAddGroupTitle),
+                subtitle: Text(context.l10n.conditionMenuAddGroupSubtitle),
                 onPress: () async {
                   await controller.hide();
                   onAddGroup?.call();
@@ -122,7 +124,7 @@ class NewConditionMenu extends StatelessWidget {
         size: .sm,
         prefix: const Icon(FLucideIcons.plus, size: 13),
         onPress: controller.toggle,
-        child: const Text('Add'),
+        child: Text(context.l10n.actionAdd),
       ),
     );
   }

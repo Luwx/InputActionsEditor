@@ -1,11 +1,13 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:meta_generator/meta_generator.dart';
 
 part 'action.freezed.dart';
+part 'action.g.dart';
 
 @freezed
+@withMeta
 abstract class TriggerAction with _$TriggerAction {
   const factory TriggerAction({
     required Action action,
@@ -23,6 +25,7 @@ abstract class TriggerAction with _$TriggerAction {
 }
 
 @freezed
+@withMeta
 sealed class Action with _$Action {
   const factory Action.command({required String command, bool? wait}) =
       CommandAction;
@@ -44,6 +47,7 @@ sealed class Action with _$Action {
 enum InputDevice { keyboard, mouse }
 
 @freezed
+@withMeta
 abstract class InputEntry with _$InputEntry {
   const factory InputEntry({
     required InputDevice device,
