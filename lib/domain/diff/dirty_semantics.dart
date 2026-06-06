@@ -84,12 +84,9 @@ Object? comparableTriggerConfigValue(TriggerCommon? common) =>
 
 Object? comparableGestureTypeValue(Gesture? gesture) => switch (gesture) {
   MouseGesture() => comparableMouseGestureValue(gesture),
-  KeyboardGesture() =>
-    comparableKeyboardGestureValue(gesture),
+  KeyboardGesture() => comparableKeyboardGestureValue(gesture),
   PointerGesture() => comparablePointerGestureValue(gesture),
-  TouchpadGesture() =>
-    comparableTouchpadGestureValue(gesture),
-  TouchscreenGesture() =>
-    comparableTouchscreenGestureValue(gesture),
+  TouchpadGesture() => comparableTouchpadGestureValue(gesture),
+  TouchscreenGesture() => comparableTouchscreenGestureValue(gesture),
   _ => null,
 };

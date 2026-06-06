@@ -472,7 +472,7 @@ class _ConflictTileIcon extends ConsumerWidget {
 
     // Keep the indicator quiet when the user has only touched the *other* side
     // of the conflict: an unmodified gesture shouldn't light up just because a
-    // freshly edited neighbour now collides with it. 
+    // freshly edited neighbour now collides with it.
     final focusDirty = ref.watch(
       gestureDirtyProvider(
         GestureLocation(device: focus.device, index: focus.index),
