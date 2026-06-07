@@ -1740,7 +1740,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputKeySequenceStopAdd => 'Stop & Add';
 
   @override
-  String get inputKeySequenceRecordingConvertShortcut => 'Shortcut format';
+  String get inputKeySequenceRecordingConvertShortcut => 'Chord format';
 
   @override
   String get inputKeySequenceRecordingClear => 'Clear';

@@ -611,7 +611,7 @@
   "inputKeySequenceRecordingTitle": "Recording keystrokes...",
   "inputKeySequenceRecordPrompt": "Press any key to record.",
   "inputKeySequenceStopAdd": "Stop & Add",
-  "inputKeySequenceRecordingConvertShortcut": "Shortcut format",
+  "inputKeySequenceRecordingConvertShortcut": "Chord format",
   "inputKeySequenceRecordingClear": "Clear",
   "inputButtonSequenceLabel": "Button Sequence",
   "inputButtonSequenceRecordTip": "Record mouse button clicks.",

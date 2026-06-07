@@ -3163,7 +3163,7 @@ abstract class AppLocalizations {
   /// No description provided for @inputKeySequenceRecordingConvertShortcut.
   ///
   /// In en, this message translates to:
-  /// **'Shortcut format'**
+  /// **'Chord format'**
   String get inputKeySequenceRecordingConvertShortcut;
 
   /// No description provided for @inputKeySequenceRecordingClear.
