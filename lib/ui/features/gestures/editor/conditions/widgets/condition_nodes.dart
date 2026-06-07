@@ -202,6 +202,9 @@ TreeTableLeaf _leafNode(
           Expanded(
             child: Builder(
               builder: (context) {
+                final variableLabel =
+                    info?.localizedLabel(context.l10n) ??
+                    '\$${condition.variable}';
                 return FItem(
                   style: .delta(
                     backgroundColor: .delta([.base(Colors.transparent)]),
@@ -220,13 +223,21 @@ TreeTableLeaf _leafNode(
                     ),
                   ),
                   prefix: info != null ? TypeIconBadge(type: info.type) : null,
-                  title: Text(
-                    info?.localizedLabel(context.l10n) ??
-                        '\$${condition.variable}',
-                    style: typography.sm.copyWith(
-                      color: colors.foreground,
+                  title: AppTooltip(
+                    tipBuilder: (context, controller) => Text(
+                      '$variableLabel\n'
+                      '${context.l10n.conditionVariableSelectorOpenHint}',
+                      style: context.theme.typography.xs.copyWith(
+                        color: context.theme.colors.mutedForeground,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      variableLabel,
+                      style: typography.sm.copyWith(
+                        color: colors.foreground,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   onPress: () async {
                     final picked = await showVariablePicker(

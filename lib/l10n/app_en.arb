@@ -648,6 +648,7 @@
   "conditionMenuAddConditionSubtitle": "A single condition",
   "conditionMenuAddGroupTitle": "Group",
   "conditionMenuAddGroupSubtitle": "Collection of conditions.",
+  "conditionVariableSelectorOpenHint": "Click to open selector.",
   "renameGroupHint": "Group",
   "varGroupActiveWindow": "Active Window",
   "varGroupWindowUnderPointer": "Window Under Pointer",

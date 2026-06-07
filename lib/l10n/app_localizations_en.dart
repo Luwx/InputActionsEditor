@@ -1862,6 +1862,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conditionMenuAddGroupSubtitle => 'Collection of conditions.';
 
   @override
+  String get conditionVariableSelectorOpenHint => 'Click to open selector.';
+
+  @override
   String get renameGroupHint => 'Group';
 
   @override

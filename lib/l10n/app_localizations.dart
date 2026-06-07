@@ -3382,6 +3382,12 @@ abstract class AppLocalizations {
   /// **'Collection of conditions.'**
   String get conditionMenuAddGroupSubtitle;
 
+  /// No description provided for @conditionVariableSelectorOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to open selector.'**
+  String get conditionVariableSelectorOpenHint;
+
   /// No description provided for @renameGroupHint.
   ///
   /// In en, this message translates to:
