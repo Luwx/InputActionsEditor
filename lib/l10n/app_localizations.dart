@@ -2938,6 +2938,12 @@ abstract class AppLocalizations {
   /// **'Apply'**
   String get actionApply;
 
+  /// No description provided for @addAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Action'**
+  String get addAction;
+
   /// No description provided for @dialogAddActionTitle.
   ///
   /// In en, this message translates to:

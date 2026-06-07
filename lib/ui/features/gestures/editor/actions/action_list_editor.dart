@@ -27,6 +27,7 @@ class ActionListEditor extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gestureLocation = context.gestureLocation;
+    final scope = AddActionScope.maybeOf(context);
     final initialPinnedTriggerOptions = _initialPinnedActionTriggerOptions(
       ref.read(actionListEditorProvider(gestureLocation)).actions,
     );
@@ -86,8 +87,27 @@ class ActionListEditor extends HookConsumerWidget {
         next.remove(index);
         if (anchorIndex.value == index) clearAnchor();
       }
-      expanded.value = next;
-      if (isExpanding) beginAnchor(index);
+      if (!isExpanding) {
+        expanded.value = next;
+        return;
+      }
+      // Two-phase expand: attach anchorKey first (row still collapsed), measure
+      // belowExtent post-frame, then start AnimatedSize. This ensures
+      // SliverSmartAnchor can correct even a large first-frame delta caused by
+      // shader-compilation jank.
+      anchorIndex.value = index;
+      final anchor = anchorRef.value;
+      if (anchor == null) {
+        expanded.value = next;
+        return;
+      }
+      anchor
+        ..belowExtent = null
+        ..isAnchoring = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        measureBelowExtent();
+        expanded.value = next;
+      });
     }
 
     void remove(int index) {
@@ -195,6 +215,8 @@ class ActionListEditor extends HookConsumerWidget {
       if (action != null) add(action);
     }
 
+    scope?.callbackRef.value = pickAndAdd;
+
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final count = ref.watch(
@@ -207,7 +229,11 @@ class ActionListEditor extends HookConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 4),
-        _ActionsHeader(location: gestureLocation),
+        _ActionsHeader(
+          key: scope?.headerKey,
+          location: gestureLocation,
+          onAdd: pickAndAdd,
+        ),
         const SizedBox(height: 8),
         if (count == 0)
           Padding(
@@ -246,13 +272,6 @@ class ActionListEditor extends HookConsumerWidget {
               );
             },
           ),
-        const SizedBox(height: 4),
-        FButton(
-          variant: .outline,
-          onPress: pickAndAdd,
-          prefix: const Icon(FLucideIcons.plus, size: 14),
-          child: Text(context.l10n.actionAdd),
-        ),
         SizedBox(key: bottomKey, height: 0),
       ],
     );
@@ -260,9 +279,10 @@ class ActionListEditor extends HookConsumerWidget {
 }
 
 class _ActionsHeader extends ConsumerWidget {
-  const _ActionsHeader({required this.location});
+  const _ActionsHeader({required this.location, this.onAdd, super.key});
 
   final GestureLocation location;
+  final Future<void> Function()? onAdd;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -292,6 +312,13 @@ class _ActionsHeader extends ConsumerWidget {
           ),
         ),
         const Spacer(),
+        if (onAdd != null)
+          FButton(
+            variant: .outline,
+            onPress: onAdd,
+            prefix: const Icon(FLucideIcons.plus, size: 14),
+            child: Text(context.l10n.actionAdd),
+          ),
       ],
     );
   }
@@ -639,6 +666,27 @@ class _ExpandedEditor extends HookConsumerWidget {
       ),
     );
   }
+}
+
+/// Allows [ActionListEditor] to register its "add action" callback with the
+/// gesture editor's pinned header, enabling an appbar shortcut button.
+class AddActionScope extends InheritedWidget {
+  const AddActionScope({
+    required super.child,
+    required this.headerKey,
+    required this.callbackRef,
+    super.key,
+  });
+
+  final GlobalKey headerKey;
+  final ObjectRef<Future<void> Function()?> callbackRef;
+
+  static AddActionScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AddActionScope>();
+
+  @override
+  bool updateShouldNotify(AddActionScope old) =>
+      headerKey != old.headerKey || callbackRef != old.callbackRef;
 }
 
 Map<int, Set<ActionTriggerOptionField>> _initialPinnedActionTriggerOptions(

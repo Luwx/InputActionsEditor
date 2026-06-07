@@ -16,7 +16,6 @@ import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 enum _DialogStep { device, type }
 
-
 Future<void> showAddGestureDialogForDevice(
   BuildContext context,
   DeviceType device,
@@ -97,14 +96,8 @@ class AddGestureButton extends StatelessWidget {
     return FButton(
       size: .sm,
       onPress: () => _show(context),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(FLucideIcons.plus),
-          const SizedBox(width: 4),
-          Text(context.l10n.addGestureTitle),
-        ],
-      ),
+      prefix: const Icon(FLucideIcons.plus),
+      child: Text(context.l10n.addGestureTitle),
     );
   }
 
@@ -130,7 +123,6 @@ class AddGestureButton extends StatelessWidget {
     );
   }
 }
-
 
 class _AddGestureDialogContent extends StatefulWidget {
   const _AddGestureDialogContent({

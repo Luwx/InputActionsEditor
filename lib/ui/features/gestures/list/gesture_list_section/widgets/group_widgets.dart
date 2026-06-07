@@ -132,14 +132,14 @@ class _GroupHeaderRow extends HookWidget {
                           ),
                         ),
                         AnimatedOpacity(
-                          opacity: isHovered.value ? 0.7 : 0.5,
+                          opacity: isHovered.value ? 0.8 : 0.5,
                           duration: Durations.short2,
                           child: Padding(
                             padding: const EdgeInsets.only(right: 4),
                             child: FButton.icon(
                               size: .xs,
                               variant: isHovered.value
-                                  ? FButtonVariant.outline
+                                  ? FButtonVariant.primary
                                   : FButtonVariant.ghost,
                               onPress: onAddGesture,
                               child: const Icon(FLucideIcons.plus, size: 12),

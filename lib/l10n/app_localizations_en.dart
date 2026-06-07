@@ -1621,6 +1621,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionApply => 'Apply';
 
   @override
+  String get addAction => 'Add Action';
+
+  @override
   String get dialogAddActionTitle => 'Add action';
 
   @override

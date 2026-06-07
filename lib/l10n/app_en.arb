@@ -560,6 +560,7 @@
   "dialogUnsavedChangesTitle": "Unsaved Changes",
   "dialogUnsavedChangesBody": "You have unsaved changes. Apply them or discard before leaving.",
   "actionApply": "Apply",
+  "addAction": "Add Action",
   "dialogAddActionTitle": "Add action",
   "actionIntervalHint": "+, -, or number",
   "actionLimitHint": "0 = unlimited",
