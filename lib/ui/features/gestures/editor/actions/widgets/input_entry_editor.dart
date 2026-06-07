@@ -78,13 +78,13 @@ class InputEntryEditor extends HookWidget {
             KeySequenceParser.parse(keySeqController.text),
           ).join(', ') !=
           tokenKey) {
-        keySeqController.text = tokenKey;
+        unawaited(Future.microtask(() => keySeqController.text = tokenKey));
       }
       if (KeySequenceParser.toTokens(
             KeySequenceParser.parse(mouseSeqController.text),
           ).join(', ') !=
           tokenKey) {
-        mouseSeqController.text = tokenKey;
+        unawaited(Future.microtask(() => mouseSeqController.text = tokenKey));
       }
       return null;
     }, [tokenKey]);
@@ -391,7 +391,7 @@ class InputEntryEditor extends HookWidget {
                 ),
               );
 
-              final compact = constraints.maxWidth < 620;
+              final compact = constraints.maxWidth < 580;
 
               if (compact) {
                 return Column(

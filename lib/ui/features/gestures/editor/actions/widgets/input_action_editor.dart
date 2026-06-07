@@ -50,60 +50,77 @@ class InputEntriesEditor extends ConsumerWidget {
       fallbackValue: () => const <InputEntry>[],
     );
     final currentEntries = entriesField.value;
+    // final colors = context.theme.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UnsavedLabel(
-          state: entriesField.dirty,
-          onRevert: entriesField.onRevert,
-          child: Text(
-            context.l10n.inputDevicesLabel,
-            style: context.theme.typography.sm.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        for (final (index, entry) in currentEntries.indexed)
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              InputEntryEditor(
-                index: index,
-                entry: entry,
-                deviceOptions: deviceOptions,
-                onChanged: (updated) => _updateEntry(
-                  currentEntries,
-                  entriesField.onChanged,
-                  index,
-                  updated,
-                ),
-                onDelete: () => _removeEntry(
-                  currentEntries,
-                  entriesField.onChanged,
-                  index,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            UnsavedLabel(
+              state: entriesField.dirty,
+              onRevert: entriesField.onRevert,
+              child: Text(
+                context.l10n.inputDevicesLabel,
+                style: context.theme.typography.sm.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              if (index != currentEntries.length - 1)
-                const FDivider(
-                  style: .delta(
-                    padding: .value(EdgeInsets.only(bottom: 16, top: 4)),
-                  ),
-                ),
-            ],
+            ),
+            const Spacer(),
+            FButton(
+              variant: .outline,
+              size: .sm,
+              onPress: () => _addEntry(currentEntries, entriesField.onChanged),
+              prefix: const Icon(FLucideIcons.plus, size: 14),
+              child: Text(context.l10n.inputAddDevice),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            // border: Border.all(color: colors.border),
+            borderRadius: BorderRadius.circular(10),
           ),
-        const SizedBox(height: 4),
-        FButton(
-          variant: .outline,
-          size: .sm,
-          onPress: () => _addEntry(currentEntries, entriesField.onChanged),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(FLucideIcons.plus),
-              const SizedBox(width: 4),
-              Text(context.l10n.inputAddDevice),
-            ],
+          child: Padding(
+            // padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (index, entry) in currentEntries.indexed)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InputEntryEditor(
+                        index: index,
+                        entry: entry,
+                        deviceOptions: deviceOptions,
+                        onChanged: (updated) => _updateEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                          updated,
+                        ),
+                        onDelete: () => _removeEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                        ),
+                      ),
+                      if (index != currentEntries.length - 1)
+                        const FDivider(
+                          style: .delta(
+                            padding: .value(
+                              EdgeInsets.only(bottom: 16, top: 4),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ),
       ],
