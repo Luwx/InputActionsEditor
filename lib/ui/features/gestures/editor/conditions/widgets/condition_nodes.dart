@@ -55,16 +55,12 @@ TreeTableNode buildConditionNode(
   required VoidCallback onDelete,
   required List<VariableGroup>? groups,
 }) {
-  final colors = context.theme.colors;
-  final typography = context.theme.typography;
-
   switch (condition) {
     case final VariableCondition c:
       return _leafNode(
+        context,
         c,
         key: ValueKey(path),
-        colors: colors,
-        typography: typography,
         groups: groups,
         onChanged: (updated) => onChanged(updated),
         onDelete: onDelete,
@@ -83,8 +79,6 @@ TreeTableNode buildConditionNode(
       return _rawNode(
         raw,
         key: ValueKey(path),
-        colors: colors,
-        typography: typography,
       );
   }
 }
@@ -171,14 +165,15 @@ TreeTableGroup _groupNode(
 }
 
 TreeTableLeaf _leafNode(
+  BuildContext context,
   VariableCondition condition, {
   required Key key,
-  required FColors colors,
-  required FTypography typography,
   required List<VariableGroup>? groups,
   required ValueChanged<VariableCondition> onChanged,
   required VoidCallback onDelete,
 }) {
+  final colors = context.theme.colors;
+  final typography = context.theme.typography;
   final info = findVariable(condition.variable);
   final operators = info?.type.operators ?? ['==', '!='];
   final currentOperator = operators.contains(condition.operator)
@@ -194,7 +189,6 @@ TreeTableLeaf _leafNode(
             width: kConditionLeadingWidth,
             child: _NegateButton(
               negate: condition.negate,
-              colors: colors,
               onToggle: () =>
                   onChanged(condition.copyWith(negate: !condition.negate)),
             ),
@@ -275,8 +269,6 @@ TreeTableLeaf _leafNode(
           condition: condition,
           info: info,
           onChanged: (value) => onChanged(condition.copyWith(value: value)),
-          colors: colors,
-          typography: typography,
         ),
       ),
     ],
@@ -292,21 +284,25 @@ TreeTableLeaf _leafNode(
 TreeTableLeaf _rawNode(
   RawCondition raw, {
   required Key key,
-  required FColors colors,
-  required FTypography typography,
 }) {
   return TreeTableLeaf(
     key: key,
     cells: [
       Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          raw.raw,
-          style: typography.xs.copyWith(
-            color: colors.mutedForeground,
-            fontFamily: 'monospace',
-          ),
-          overflow: TextOverflow.ellipsis,
+        child: Builder(
+          builder: (context) {
+            final colors = context.theme.colors;
+            final typography = context.theme.typography;
+            return Text(
+              raw.raw,
+              style: typography.xs.copyWith(
+                color: colors.mutedForeground,
+                fontFamily: 'monospace',
+              ),
+              overflow: TextOverflow.ellipsis,
+            );
+          },
         ),
       ),
       const SizedBox.shrink(),
@@ -367,16 +363,16 @@ class _GroupHeaderContent extends StatelessWidget {
 class _NegateButton extends StatelessWidget {
   const _NegateButton({
     required this.negate,
-    required this.colors,
     required this.onToggle,
   });
 
   final bool negate;
-  final FColors colors;
   final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+
     return AppTooltip(
       tipBuilder: (context, controller) => Text(
         negate ? 'Negate condition' : 'Un-negate condition',

@@ -193,8 +193,6 @@ class ConditionEditor extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SectionHeader(
-          colors: colors,
-          typography: typography,
           title: title,
           titleWidget: titleTooltip != null || titleTooltipContent != null
               ? UnsavedLabel(
@@ -267,11 +265,7 @@ class ConditionEditor extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: switch (condition) {
-        final RawCondition current => RawFallback(
-          raw: current.raw,
-          colors: colors,
-          typography: typography,
-        ),
+        final RawCondition current => RawFallback(raw: current.raw),
         null => Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(

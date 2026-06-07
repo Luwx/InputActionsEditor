@@ -8,7 +8,6 @@ class TextValueInput extends HookWidget {
     required this.value,
     required this.onChanged,
     required this.hint,
-    required this.colors,
     this.autofocus = false,
     super.key,
   });
@@ -16,7 +15,6 @@ class TextValueInput extends HookWidget {
   final String value;
   final void Function(String) onChanged;
   final String hint;
-  final FColors colors;
   final bool autofocus;
 
   @override

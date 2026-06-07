@@ -43,6 +43,7 @@ class MouseVectorEditor extends StatelessWidget {
           max: 32767,
           decimalPlaces: 0,
           hint: '0',
+          width: 90,
         ),
         const SizedBox(width: 8),
         FSpinBox(
@@ -59,6 +60,7 @@ class MouseVectorEditor extends StatelessWidget {
           max: 32767,
           decimalPlaces: 0,
           hint: '0',
+          width: 90,
         ),
       ],
     );

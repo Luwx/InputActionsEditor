@@ -209,6 +209,7 @@ class ActionTriggerFields extends ConsumerWidget {
           const SizedBox(height: 16),
           ConditionEditor.generic(
             title: context.l10n.actionConditionsTitle,
+            heroTag: actionLocation,
             dirtyState: conditionsField.dirty,
             onRevert: conditionsField.onRevert,
             titleTooltipContent: const ActionConditionsTooltip(),

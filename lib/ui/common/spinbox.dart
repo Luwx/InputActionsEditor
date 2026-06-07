@@ -10,9 +10,10 @@ class FSpinBox extends HookWidget {
   const FSpinBox({
     required this.value,
     required this.onChanged,
-    required this.label,
     required this.min,
     required this.max,
+    this.label,
+    this.unit,
     this.width = 110,
     this.step = 1,
     this.decimalPlaces = 1,
@@ -23,7 +24,8 @@ class FSpinBox extends HookWidget {
   final double value;
   final double width;
   final ValueChanged<double> onChanged;
-  final Widget label;
+  final Widget? label;
+  final String? unit;
   final double min;
   final double max;
   final double step;
@@ -231,19 +233,37 @@ class FSpinBox extends HookWidget {
               }
               setValue(parsed);
             },
-            suffixBuilder: (context, style, variants) => _SpinStepper(
-              style: style,
-              variants: variants,
-              canIncrement: canIncrement,
-              canDecrement: canDecrement,
-              onIncrement: () => stepBy(step),
-              onDecrement: () => stepBy(-step),
-              onLongIncrementStart: () => startRepeating(step),
-              onLongDecrementStart: () => startRepeating(-step),
-              onLongPressEnd: stopRepeating,
-              onScroll: (direction) => stepBy(direction * step),
-              onTapIntoStepper: focusNode.requestFocus,
-            ),
+            suffixBuilder: (context, style, variants) {
+              final stepper = _SpinStepper(
+                style: style,
+                variants: variants,
+                canIncrement: canIncrement,
+                canDecrement: canDecrement,
+                onIncrement: () => stepBy(step),
+                onDecrement: () => stepBy(-step),
+                onLongIncrementStart: () => startRepeating(step),
+                onLongDecrementStart: () => startRepeating(-step),
+                onLongPressEnd: stopRepeating,
+                onScroll: (direction) => stepBy(direction * step),
+                onTapIntoStepper: focusNode.requestFocus,
+              );
+              if (unit == null) return stepper;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 3),
+                    child: Text(
+                      unit!,
+                      style: context.theme.typography.sm.copyWith(
+                        color: context.theme.colors.mutedForeground,
+                      ),
+                    ),
+                  ),
+                  stepper,
+                ],
+              );
+            },
           ),
         ),
       ),

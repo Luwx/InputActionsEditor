@@ -5,8 +5,6 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
-    required this.colors,
-    required this.typography,
     this.title = 'Trigger Conditions',
     this.titleWidget,
     this.tooltip,
@@ -19,8 +17,6 @@ class SectionHeader extends StatelessWidget {
     super.key,
   });
 
-  final FColors colors;
-  final FTypography typography;
   final String title;
   final Widget? titleWidget;
   final String? tooltip;
@@ -39,6 +35,7 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = context.theme.typography;
     final titleStyle = typography.sm.copyWith(fontWeight: FontWeight.w600);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,

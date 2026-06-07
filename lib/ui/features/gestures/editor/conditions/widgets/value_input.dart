@@ -6,6 +6,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/bool_toggle.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/flags_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/one_of_input.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
 class ValueInput extends StatelessWidget {
@@ -13,16 +14,12 @@ class ValueInput extends StatelessWidget {
     required this.condition,
     required this.info,
     required this.onChanged,
-    required this.colors,
-    required this.typography,
     super.key,
   });
 
   final VariableCondition condition;
   final VariableInfo? info;
   final void Function(String) onChanged;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
@@ -30,15 +27,16 @@ class ValueInput extends StatelessWidget {
     final operator = condition.operator;
 
     if (operator == 'between') {
+      if (type == VarType.point) {
+        return PointBetweenInput(
+          value: condition.value,
+          onChanged: onChanged,
+        );
+      }
       return BetweenInput(
         value: condition.value,
         onChanged: onChanged,
-        hint: type == VarType.point
-            ? 'x;y'
-            : type == VarType.time
-            ? 'ms'
-            : 'n',
-        colors: colors,
+        hint: type == VarType.time ? 'ms' : 'n',
       );
     }
 
@@ -47,8 +45,6 @@ class ValueInput extends StatelessWidget {
         value: condition.value,
         onChanged: onChanged,
         enumValues: type == VarType.enum_ ? info?.enumValues : null,
-        colors: colors,
-        typography: typography,
       );
     }
 
@@ -56,8 +52,6 @@ class ValueInput extends StatelessWidget {
       return BoolToggle(
         value: condition.value == 'true',
         onChanged: (value) => onChanged(value ? 'true' : 'false'),
-        colors: colors,
-        typography: typography,
       );
     }
 
@@ -67,8 +61,6 @@ class ValueInput extends StatelessWidget {
           flagValues: info!.flagValues!,
           value: condition.value,
           onChanged: onChanged,
-          colors: colors,
-          typography: typography,
         );
       }
     }
@@ -95,15 +87,17 @@ class ValueInput extends StatelessWidget {
       );
     }
 
+    if (type == VarType.point) {
+      return PointInput(
+        value: condition.value,
+        onChanged: onChanged,
+      );
+    }
+
     return TextValueInput(
       value: condition.value,
       onChanged: onChanged,
-      hint: type == VarType.point
-          ? 'x;y'
-          : type == VarType.time
-          ? 'ms'
-          : 'value',
-      colors: colors,
+      hint: type == VarType.time ? 'ms' : 'value',
     );
   }
 }

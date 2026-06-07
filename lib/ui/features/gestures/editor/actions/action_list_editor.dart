@@ -58,7 +58,7 @@ class ActionListEditor extends HookConsumerWidget {
       final gap =
           bottomBox.localToGlobal(Offset.zero).dy -
           anchorBox.localToGlobal(Offset.zero).dy;
-      anchorRef.value?.belowExtent = gap < 0 ? 0 : gap;
+      anchorRef.value?.belowExtent = gap < 0 ? 0.0 : gap;
     }
 
     void clearAnchor() {

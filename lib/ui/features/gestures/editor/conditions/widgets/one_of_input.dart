@@ -10,8 +10,6 @@ class OneOfInput extends HookWidget {
   const OneOfInput({
     required this.value,
     required this.onChanged,
-    required this.colors,
-    required this.typography,
     this.autofocus = false,
     this.enumValues,
     super.key,
@@ -20,12 +18,12 @@ class OneOfInput extends HookWidget {
   final String value;
   final void Function(String) onChanged;
   final List<String>? enumValues;
-  final FColors colors;
-  final FTypography typography;
   final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
     final addController = useTextEditingController();
 
     void add(String v) {
@@ -91,8 +89,6 @@ class OneOfInput extends HookWidget {
                           final next = List<String>.from(items)..remove(item);
                           onChanged(serializeListValue(next));
                         },
-                        colors: colors,
-                        typography: typography,
                       ),
                   ],
                 ),

@@ -4,17 +4,16 @@ import 'package:forui/forui.dart';
 class RawFallback extends StatelessWidget {
   const RawFallback({
     required this.raw,
-    required this.colors,
-    required this.typography,
     super.key,
   });
 
   final String raw;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(

@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -57,13 +59,14 @@ class _GestureEditorView extends HookConsumerWidget {
     final addActionHeaderKey = useMemoized(GlobalKey.new);
     final addActionCallbackRef = useRef<Future<void> Function()?>(null);
     final addActionVisible = useState(false);
-    final checkVisibilityRef = useRef<VoidCallback?>(null);
+    final tickerProvider = useSingleTickerProvider();
     final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
 
     useEffect(() {
-      void checkVisibility() {
+      final ticker = tickerProvider.createTicker((_) {
         final ctx = addActionHeaderKey.currentContext;
-        final renderBox = ctx?.findRenderObject() as RenderBox?;
+        if (ctx == null) return;
+        final renderBox = ctx.findRenderObject() as RenderBox?;
         if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
           return;
         }
@@ -71,15 +74,10 @@ class _GestureEditorView extends HookConsumerWidget {
             renderBox.localToGlobal(Offset.zero).dy + renderBox.size.height;
         final hidden = bottom < GrowingFrostedHeaderDelegate.minHeight;
         if (addActionVisible.value != hidden) addActionVisible.value = hidden;
-      }
-
-      checkVisibilityRef.value = checkVisibility;
-      scrollController.addListener(checkVisibility);
-      return () {
-        checkVisibilityRef.value = null;
-        scrollController.removeListener(checkVisibility);
-      };
-    }, [scrollController]);
+      });
+      unawaited(ticker.start());
+      return ticker.dispose;
+    }, const []);
 
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
@@ -117,115 +115,107 @@ class _GestureEditorView extends HookConsumerWidget {
 
     final gestureEditor = ref.read(gestureEditorProvider(location).notifier);
 
-    final editor = NotificationListener<ScrollMetricsNotification>(
-      onNotification: (_) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => checkVisibilityRef.value?.call(),
-        );
-        return false;
-      },
-      child: ScrollbarMediaPadding(
-        topInset: GrowingFrostedHeaderDelegate.maxHeight,
-        child: CustomScrollView(
-          controller: scrollController,
-          slivers: [
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: GrowingFrostedHeaderDelegate(
-                titleBuilder: (style) => RenameableTitle(
-                  name: header.name,
-                  titleStyle: style,
-                  onRename: gestureEditor.rename,
-                ),
-                subtitle: header.subtitle,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FButton(
-                      key: const ValueKey('add-action'),
-                      variant: .ghost,
-                      size: .sm,
-                      onPress: () => addActionCallbackRef.value?.call(),
-                      prefix: const Icon(FLucideIcons.plus),
-                      child: Text(context.l10n.addAction),
-                    ).appearToggle(
-                      visible: addActionVisible.value,
-                      axis: Axis.horizontal,
-                      slideFactor: 0.8,
-                      duration: Durations.short4,
-                    ),
-                    _GestureHeaderMenu(
-                      isEnabled: header.isEnabled,
-                      onToggleEnabled: () =>
-                          gestureEditor.setEnabled(!header.isEnabled),
-                      onResetDefaults: () {
-                        final gesture = ref
-                            .read(gestureEditorProvider(location))
-                            .gesture;
-                        if (gesture != null) {
-                          gestureEditor.resetDefaults(gesture);
-                        }
-                      },
-                      onDuplicate: () {
-                        gestureEditor.duplicate();
-                        context.selectGesture(
-                          location.device,
-                          location.index + 1,
-                        );
-                      },
-                      onCopyYaml: () async {
-                        final gesture = ref
-                            .read(gestureEditorProvider(location))
-                            .gesture;
-                        if (gesture == null) return;
-                        await Clipboard.setData(
-                          ClipboardData(
-                            text: gestureYamlSnippet(
-                              device: location.device,
-                              gesture: gesture,
-                            ),
-                          ),
-                        );
-                        if (!context.mounted) return;
-                        showFToast(
-                          context: context,
-                          title: Text(context.l10n.gestureCopyYamlSuccess),
-                          suffixBuilder: (context, entry) => FButton.icon(
-                            onPress: entry.dismiss,
-                            child: const Icon(FLucideIcons.x),
-                          ),
-                          duration: const Duration(seconds: 3),
-                        );
-                      },
-                      onDelete: () {
-                        context.clearGestureSelection();
-                        gestureEditor.delete();
-                      },
-                    ),
-                  ],
-                ),
-                horizontalPadding: 16,
+    final editor = ScrollbarMediaPadding(
+      topInset: GrowingFrostedHeaderDelegate.maxHeight,
+      child: CustomScrollView(
+        controller: scrollController,
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: GrowingFrostedHeaderDelegate(
+              titleBuilder: (style) => RenameableTitle(
+                name: header.name,
+                titleStyle: style,
+                onRename: gestureEditor.rename,
               ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              sliver: SliverSmartAnchor(
-                controller: anchorController,
-                scrollPosition: () => scrollController.hasClients
-                    ? scrollController.position
-                    : null,
-                child: ScrollAnchorScope(
-                  controller: anchorController,
-                  child: AddActionScope(
-                    headerKey: addActionHeaderKey,
-                    callbackRef: addActionCallbackRef,
-                    child: _GestureEditorBody(location: location),
+              subtitle: header.subtitle,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FButton(
+                    key: const ValueKey('add-action'),
+                    variant: .ghost,
+                    size: .sm,
+                    onPress: () => addActionCallbackRef.value?.call(),
+                    prefix: const Icon(FLucideIcons.plus),
+                    child: Text(context.l10n.addAction),
+                  ).appearToggle(
+                    visible: addActionVisible.value,
+                    axis: Axis.horizontal,
+                    slideFactor: 0.8,
+                    duration: Durations.short4,
                   ),
+                  _GestureHeaderMenu(
+                    isEnabled: header.isEnabled,
+                    onToggleEnabled: () =>
+                        gestureEditor.setEnabled(!header.isEnabled),
+                    onResetDefaults: () {
+                      final gesture = ref
+                          .read(gestureEditorProvider(location))
+                          .gesture;
+                      if (gesture != null) {
+                        gestureEditor.resetDefaults(gesture);
+                      }
+                    },
+                    onDuplicate: () {
+                      gestureEditor.duplicate();
+                      context.selectGesture(
+                        location.device,
+                        location.index + 1,
+                      );
+                    },
+                    onCopyYaml: () async {
+                      final gesture = ref
+                          .read(gestureEditorProvider(location))
+                          .gesture;
+                      if (gesture == null) return;
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text: gestureYamlSnippet(
+                            device: location.device,
+                            gesture: gesture,
+                          ),
+                        ),
+                      );
+                      if (!context.mounted) return;
+                      showFToast(
+                        context: context,
+                        title: Text(context.l10n.gestureCopyYamlSuccess),
+                        suffixBuilder: (context, entry) => FButton.icon(
+                          onPress: entry.dismiss,
+                          child: const Icon(FLucideIcons.x),
+                        ),
+                        duration: const Duration(seconds: 3),
+                      );
+                    },
+                    onDelete: () {
+                      context.clearGestureSelection();
+                      gestureEditor.delete();
+                    },
+                  ),
+                ],
+              ),
+              horizontalPadding: 16,
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            sliver: SliverSmartAnchor(
+              controller: anchorController,
+              scrollPosition: () => scrollController.hasClients
+                  ? scrollController.position
+                  : null,
+              child: ScrollAnchorScope(
+                controller: anchorController,
+                child: AddActionScope(
+                  headerKey: addActionHeaderKey,
+                  callbackRef: addActionCallbackRef,
+                  child: _GestureEditorBody(location: location),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
 

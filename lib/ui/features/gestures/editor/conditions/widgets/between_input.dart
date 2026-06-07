@@ -8,7 +8,6 @@ class BetweenInput extends HookWidget {
     required this.value,
     required this.onChanged,
     required this.hint,
-    required this.colors,
     this.autofocus = false,
     super.key,
   });
@@ -16,11 +15,11 @@ class BetweenInput extends HookWidget {
   final String value;
   final void Function(String) onChanged;
   final String hint;
-  final FColors colors;
   final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
     final (initFrom, initTo) = splitBetweenValue(value);
     final fromController = useTextEditingController(text: initFrom);
     final toController = useTextEditingController(text: initTo);
@@ -36,7 +35,7 @@ class BetweenInput extends HookWidget {
       }
     }
 
-    void emit() => onChanged('${fromController.text}|${toController.text}');
+    void emit() => onChanged('${fromController.text};${toController.text}');
 
     return Row(
       children: [

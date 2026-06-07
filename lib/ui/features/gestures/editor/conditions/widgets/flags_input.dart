@@ -7,16 +7,12 @@ class FlagsInput extends StatelessWidget {
     required this.flagValues,
     required this.value,
     required this.onChanged,
-    required this.colors,
-    required this.typography,
     super.key,
   });
 
   final List<String> flagValues;
   final String value;
   final void Function(String) onChanged;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {

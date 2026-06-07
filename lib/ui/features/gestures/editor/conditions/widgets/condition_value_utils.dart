@@ -1,6 +1,26 @@
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 
+(double, double)? parsePoint(String value) {
+  // Config format uses ',' as x,y separator; accept ';' as legacy fallback.
+  var sep = value.indexOf(',');
+  if (sep == -1) sep = value.indexOf(';');
+  if (sep == -1) return null;
+  final x = double.tryParse(value.substring(0, sep).trim());
+  final y = double.tryParse(value.substring(sep + 1).trim());
+  if (x == null || y == null) return null;
+  return (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
+}
+
+String serializePoint(double x, double y) =>
+    '${x.toStringAsFixed(2)},${y.toStringAsFixed(2)}';
+
+String formatPointLabel(String value) {
+  final p = parsePoint(value);
+  if (p == null) return value.isEmpty ? '--' : value;
+  return '(${p.$1.toStringAsFixed(2)}, ${p.$2.toStringAsFixed(2)})';
+}
+
 String formatConditionValueLabel(
   VariableCondition condition,
   VariableInfo? info,
@@ -12,6 +32,9 @@ String formatConditionValueLabel(
 
   if (condition.operator == 'between') {
     final (from, to) = splitBetweenValue(value);
+    if (info?.type == VarType.point) {
+      return '${formatPointLabel(from)} — ${formatPointLabel(to)}';
+    }
     if (to.isNotEmpty) {
       return '$from - $to';
     }
@@ -21,6 +44,8 @@ String formatConditionValueLabel(
     final items = parseListValue(value);
     return items.isEmpty ? '--' : items.join(', ');
   }
+
+  if (info?.type == VarType.point) return formatPointLabel(value);
 
   return value;
 }
@@ -78,9 +103,9 @@ String serializeListValue(List<String> items) {
 }
 
 (String, String) splitBetweenValue(String value) {
-  final separator = value.indexOf('|');
-  if (separator == -1) {
-    return (value, '');
-  }
+  // Legacy UI serialized with '|'; config format uses ';'.
+  var separator = value.indexOf('|');
+  if (separator == -1) separator = value.indexOf(';');
+  if (separator == -1) return (value, '');
   return (value.substring(0, separator), value.substring(separator + 1));
 }
