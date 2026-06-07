@@ -1593,6 +1593,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Available buttons: left, right, middle, back, forward.';
 
   @override
+  String get tooltip_recordingConvertShortcut_body =>
+      'Rewrites the recording as named chord notation, e.g. ctrl+shift+t or a, s, d.';
+
+  @override
+  String get tooltip_recordingConvertShortcut_enabledLabel => 'Enabled';
+
+  @override
+  String get tooltip_recordingConvertShortcut_enabledDesc =>
+      'all keys in each group are pressed before any are released';
+
+  @override
+  String get tooltip_recordingConvertShortcut_disabledLabel => 'Disabled';
+
+  @override
+  String get tooltip_recordingConvertShortcut_disabledDesc =>
+      'presses and releases interleave, use the token format instead';
+
+  @override
   String get dialogUnsavedChangesTitle => 'Unsaved Changes';
 
   @override
@@ -1720,6 +1738,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inputKeySequenceStopAdd => 'Stop & Add';
+
+  @override
+  String get inputKeySequenceRecordingConvertShortcut => 'Shortcut format';
+
+  @override
+  String get inputKeySequenceRecordingClear => 'Clear';
 
   @override
   String get inputButtonSequenceLabel => 'Button Sequence';

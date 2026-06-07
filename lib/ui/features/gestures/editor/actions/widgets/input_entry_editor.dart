@@ -129,15 +129,21 @@ class InputEntryEditor extends HookWidget {
       HardwareKeyboard.instance.addHandler(onKeyEvent);
     }
 
-    void stopRecording({required bool append}) {
+    void stopRecording({
+      required bool append,
+      bool convertToShortcut = false,
+    }) {
       final handler = keyHandlerRef.value;
       if (handler != null) {
         HardwareKeyboard.instance.removeHandler(handler);
         keyHandlerRef.value = null;
       }
       if (append && liveKeyTokens.value.isNotEmpty) {
+        final tokens = liveKeyTokens.value;
+        final appended = convertToShortcut
+            ? KeySequenceParser.tokensToShortcutString(tokens)
+            : tokens.join(', ');
         final existing = keySeqController.text.trim();
-        final appended = liveKeyTokens.value.join(', ');
         keySeqController.text = existing.isEmpty
             ? appended
             : '$existing, $appended';
@@ -209,11 +215,11 @@ class InputEntryEditor extends HookWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: isKeyboardRecording.value
-                      ? _buildKeyboardRecordingView(
-                          context,
-                          controller,
-                          liveKeyTokens.value,
+                      ? _KeyboardRecordingView(
+                          controller: controller,
+                          liveKeyTokens: liveKeyTokens.value,
                           stopRecording: stopRecording,
+                          onClear: () => liveKeyTokens.value = [],
                         )
                       : _buildKeyboardRecordStart(
                           context,
@@ -468,86 +474,129 @@ Widget _buildKeyboardRecordStart(
   );
 }
 
-Widget _buildKeyboardRecordingView(
-  BuildContext context,
-  FPopoverController controller,
-  List<String> liveKeyTokens, {
-  required void Function({required bool append}) stopRecording,
-}) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          const Icon(
-            Icons.radio_button_checked,
-            color: Colors.redAccent,
-            size: 14,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            context.l10n.inputKeySequenceRecordingTitle,
-            style: context.theme.typography.sm.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 10),
-      if (liveKeyTokens.isEmpty)
-        Text(
-          context.l10n.inputKeySequenceRecordPrompt,
-          style: context.theme.typography.sm.copyWith(
-            color: context.theme.colors.mutedForeground,
-          ),
-        )
-      else
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
+class _KeyboardRecordingView extends HookWidget {
+  const _KeyboardRecordingView({
+    required this.controller,
+    required this.liveKeyTokens,
+    required this.stopRecording,
+    required this.onClear,
+  });
+
+  final FPopoverController controller;
+  final List<String> liveKeyTokens;
+  final void Function({required bool append, bool convertToShortcut})
+  stopRecording;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final convertChecked = useState(true);
+    final canConvert = KeySequenceParser.canExpressAsShortcut(liveKeyTokens);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            for (final token in liveKeyTokens)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(color: context.theme.colors.border),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Text(token, style: context.theme.typography.xs),
-                ),
+            const Icon(
+              Icons.radio_button_checked,
+              color: Colors.redAccent,
+              size: 14,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              context.l10n.inputKeySequenceRecordingTitle,
+              style: context.theme.typography.sm.copyWith(
+                fontWeight: FontWeight.w600,
               ),
+            ),
           ],
         ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          FButton(
-            size: .sm,
-            onPress: () async {
-              stopRecording(append: true);
-              await controller.hide();
-            },
-            child: Text(context.l10n.inputKeySequenceStopAdd),
+        const SizedBox(height: 10),
+        if (liveKeyTokens.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              context.l10n.inputKeySequenceRecordPrompt,
+              style: context.theme.typography.sm.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final token in liveKeyTokens)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: context.theme.colors.border),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(token, style: context.theme.typography.xs),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-          FButton(
-            variant: .ghost,
-            size: .sm,
-            onPress: () async {
-              stopRecording(append: false);
-              await controller.hide();
-            },
-            child: Text(context.l10n.actionCancel),
+        const SizedBox(height: 8),
+        FCheckbox(
+          value: canConvert && convertChecked.value,
+          enabled: canConvert,
+          onChange: (v) => convertChecked.value = v,
+          // label: Text(
+          //   context.l10n.inputKeySequenceRecordingConvertShortcut,
+          // ),
+          label: LabelWithTooltip(
+            label: context.l10n.inputKeySequenceRecordingConvertShortcut,
+            tooltipContent: const ConvertToShortcutTooltip(),
           ),
-        ],
-      ),
-    ],
-  );
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            FButton(
+              size: .sm,
+              onPress: () async {
+                stopRecording(
+                  append: true,
+                  convertToShortcut: canConvert && convertChecked.value,
+                );
+                await controller.hide();
+              },
+              child: Text(context.l10n.inputKeySequenceStopAdd),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              variant: .ghost,
+              size: .sm,
+              onPress: onClear,
+              child: Text(context.l10n.inputKeySequenceRecordingClear),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              variant: .ghost,
+              size: .sm,
+              onPress: () async {
+                stopRecording(append: false);
+                await controller.hide();
+              },
+              child: Text(context.l10n.actionCancel),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
 Widget _buildMouseRecordPopover(

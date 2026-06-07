@@ -345,4 +345,50 @@ class KeySequenceParser {
     }
     return tokens;
   }
+
+  /// Returns true when [tokens] (a list of `+key`/`-key` strings) can be
+  /// expressed as one or more chords in `key1+key2+…, key3+…` notation.
+  ///
+  /// A token sequence is chord-expressible when it consists of one or more
+  /// contiguous groups where each group has all presses before any release and
+  /// every pressed key is released exactly once before the next group begins.
+  static bool canExpressAsShortcut(List<String> tokens) {
+    if (tokens.isEmpty) return false;
+    final held = <String>{};
+    var seenReleaseInGroup = false;
+    for (final t in tokens) {
+      if (t.startsWith('+')) {
+        if (seenReleaseInGroup) return false; // press after release in group
+        if (!held.add(t.substring(1))) return false; // duplicate press
+      } else if (t.startsWith('-')) {
+        if (!held.remove(t.substring(1))) return false; // release without press
+        seenReleaseInGroup = true;
+        if (held.isEmpty) seenReleaseInGroup = false; // group complete
+      } else {
+        return false;
+      }
+    }
+    return held.isEmpty;
+  }
+
+  /// Converts a token list that satisfies [canExpressAsShortcut] into a
+  /// comma-separated chord string, e.g. `ctrl+shift+t` or `a, s, d`.
+  static String tokensToShortcutString(List<String> tokens) {
+    final chords = <String>[];
+    final currentGroup = <String>[];
+    final held = <String>{};
+    for (final t in tokens) {
+      if (t.startsWith('+')) {
+        currentGroup.add(t.substring(1));
+        held.add(t.substring(1));
+      } else if (t.startsWith('-')) {
+        held.remove(t.substring(1));
+        if (held.isEmpty) {
+          chords.add(currentGroup.join('+'));
+          currentGroup.clear();
+        }
+      }
+    }
+    return chords.join(', ');
+  }
 }

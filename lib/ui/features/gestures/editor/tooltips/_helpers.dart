@@ -84,7 +84,6 @@ class _OutcomeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
       children: [
@@ -92,18 +91,20 @@ class _OutcomeRow extends StatelessWidget {
           padding: const EdgeInsets.only(top: 1),
           child: Icon(icon, size: 11, color: iconColor),
         ),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '$label  ',
-                style: t.xs.copyWith(fontWeight: FontWeight.w600),
-              ),
-              TextSpan(
-                text: description,
-                style: t.xs.copyWith(color: colors.mutedForeground),
-              ),
-            ],
+        Flexible(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label  ',
+                  style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: description,
+                  style: t.xs.copyWith(color: colors.mutedForeground),
+                ),
+              ],
+            ),
           ),
         ),
       ],

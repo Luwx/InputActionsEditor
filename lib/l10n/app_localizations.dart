@@ -2890,6 +2890,36 @@ abstract class AppLocalizations {
   /// **'Available buttons: left, right, middle, back, forward.'**
   String get tooltip_buttonSequence_noteButtons;
 
+  /// No description provided for @tooltip_recordingConvertShortcut_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrites the recording as named chord notation, e.g. ctrl+shift+t or a, s, d.'**
+  String get tooltip_recordingConvertShortcut_body;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_enabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get tooltip_recordingConvertShortcut_enabledLabel;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_enabledDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'all keys in each group are pressed before any are released'**
+  String get tooltip_recordingConvertShortcut_enabledDesc;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_disabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get tooltip_recordingConvertShortcut_disabledLabel;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_disabledDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'presses and releases interleave, use the token format instead'**
+  String get tooltip_recordingConvertShortcut_disabledDesc;
+
   /// No description provided for @dialogUnsavedChangesTitle.
   ///
   /// In en, this message translates to:
@@ -3129,6 +3159,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop & Add'**
   String get inputKeySequenceStopAdd;
+
+  /// No description provided for @inputKeySequenceRecordingConvertShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut format'**
+  String get inputKeySequenceRecordingConvertShortcut;
+
+  /// No description provided for @inputKeySequenceRecordingClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get inputKeySequenceRecordingClear;
 
   /// No description provided for @inputButtonSequenceLabel.
   ///
