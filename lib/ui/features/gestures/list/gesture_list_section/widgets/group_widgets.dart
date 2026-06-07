@@ -19,6 +19,7 @@ class _GroupHeaderRow extends HookWidget {
     required this.onToggleEnabled,
     required this.onBreakdown,
     required this.onDelete,
+    required this.onAddGesture,
     super.key,
   });
 
@@ -35,6 +36,7 @@ class _GroupHeaderRow extends HookWidget {
   final VoidCallback onToggleEnabled;
   final VoidCallback onBreakdown;
   final VoidCallback onDelete;
+  final VoidCallback onAddGesture;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +73,7 @@ class _GroupHeaderRow extends HookWidget {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isDisabled = !group.enabled;
+    final isHovered = useState(false);
 
     return GestureDetector(
       onSecondaryTapUp: onSecondaryTapUp,
@@ -81,61 +84,81 @@ class _GroupHeaderRow extends HookWidget {
           if (showTopBorder) Container(height: 1, color: borderColor),
           Opacity(
             opacity: isDisabled ? 0.5 : 1.0,
-            child: Material(
-              color: colors.secondary.withAlpha(60),
-              child: InkWell(
-                onTap: onToggleCollapse,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      AnimatedRotation(
-                        turns: isCollapsed ? -0.25 : 0,
-                        duration: Durations.short4,
-                        child: Icon(
-                          FLucideIcons.chevronDown,
-                          size: 14,
-                          color: colors.mutedForeground,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        FLucideIcons.folder,
-                        size: 15,
-                        color: isDisabled
-                            ? colors.mutedForeground
-                            : colors.foreground,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          group.name,
-                          style: typography.sm.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDisabled
-                                ? colors.mutedForeground
-                                : colors.foreground,
-                            decoration: isDisabled
-                                ? TextDecoration.lineThrough
-                                : null,
+            child: MouseRegion(
+              onEnter: (_) => isHovered.value = true,
+              onExit: (_) => isHovered.value = false,
+              child: Material(
+                color: colors.secondary.withAlpha(60),
+                child: InkWell(
+                  onTap: onToggleCollapse,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        AnimatedRotation(
+                          turns: isCollapsed ? -0.25 : 0,
+                          duration: Durations.short4,
+                          child: Icon(
+                            FLucideIcons.chevronDown,
+                            size: 14,
+                            color: colors.mutedForeground,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        '$gestureCount',
-                        style: typography.xs.copyWith(
-                          color: colors.mutedForeground,
-                        ),
-                      ),
-                      if (reorderHandle != null) ...[
                         const SizedBox(width: 8),
-                        reorderHandle!,
+                        Icon(
+                          FLucideIcons.folder,
+                          size: 15,
+                          color: isDisabled
+                              ? colors.mutedForeground
+                              : colors.foreground,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            group.name,
+                            style: typography.sm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: isDisabled
+                                  ? colors.mutedForeground
+                                  : colors.foreground,
+                              decoration: isDisabled
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        AnimatedOpacity(
+                          opacity: isHovered.value ? 0.7 : 0.5,
+                          duration: Durations.short2,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: FButton.icon(
+                              size: .xs,
+                              variant: isHovered.value
+                                  ? FButtonVariant.outline
+                                  : FButtonVariant.ghost,
+                              onPress: onAddGesture,
+                              child: const Icon(FLucideIcons.plus, size: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '$gestureCount',
+                          style: typography.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                        if (reorderHandle != null) ...[
+                          const SizedBox(width: 8),
+                          reorderHandle!,
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),

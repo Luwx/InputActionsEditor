@@ -10,6 +10,7 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/state/stroke_recording_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_row.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:pixel_snap/material.dart' show Icons;
 
 /// Reusable stroke list field
 /// used by mouse, touchpad, and touchscreen editors.
@@ -123,7 +124,7 @@ class StrokesField extends HookConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isRecording)
-                  const Icon(FLucideIcons.circle, color: Colors.red)
+                  const Icon(Icons.radio_button_checked, color: Colors.red)
                       .animate(onPlay: (c) => c.repeat(reverse: true))
                       .scaleXY(
                         end: 1.2,
@@ -131,7 +132,7 @@ class StrokesField extends HookConsumerWidget {
                         curve: Curves.easeInOut,
                       )
                 else
-                  const Icon(FLucideIcons.circle),
+                  const Icon(Icons.radio_button_checked),
                 const SizedBox(width: 4),
                 Text(
                   isRecording

@@ -61,7 +61,11 @@ class GestureListSection extends HookConsumerWidget {
     final choreo = _useGestureListChoreography(ref, context, scrollController);
     final transitions = _useGestureTransitions(ref, context);
 
-    void handleGestureAdded(DeviceType device, Gesture gesture) {
+    void handleGestureAdded(
+      DeviceType device,
+      Gesture gesture, {
+      String? groupId,
+    }) {
       final config = ref.read(configControllerProvider).value;
       if (config == null) return;
       final existingGestures = config.gesturesForDevice(device);
@@ -73,7 +77,7 @@ class GestureListSection extends HookConsumerWidget {
           .length;
       final defaultName = '$typeLabel #${sameTypeCount + 1}';
       final named = gesture.withCommon(
-        gesture.common.copyWith(name: defaultName),
+        gesture.common.copyWith(name: defaultName, groupId: groupId),
       );
       ref.read(gestureCommandsProvider).addGesture(device, named);
       ref.read(addedGestureProvider.notifier).markAdded(newIndex);
@@ -334,6 +338,15 @@ class GestureListSection extends HookConsumerWidget {
                                     flatItem.group.id,
                                     flatItem.device,
                                   ),
+                              onAddGesture: () => showAddGestureDialogForDevice(
+                                context,
+                                flatItem.device,
+                                (device, gesture) => handleGestureAdded(
+                                  device,
+                                  gesture,
+                                  groupId: flatItem.group.id,
+                                ),
+                              ),
                             );
                           },
                           itemOverlayBuilder: (context, itemEntry) {
