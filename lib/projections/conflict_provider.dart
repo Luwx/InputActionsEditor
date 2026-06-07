@@ -68,7 +68,6 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
         : ConflictReport(detectConflicts(config));
   }
 
-
   void _onConfigChanged() {
     if (_timer != null) return; // a trailing run is already pending
     final elapsed = _sinceLastRun.isRunning ? _sinceLastRun.elapsed : interval;

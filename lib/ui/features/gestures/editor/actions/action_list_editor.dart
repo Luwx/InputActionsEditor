@@ -26,7 +26,14 @@ class ActionListEditor extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final gestureLocation = context.gestureLocation;
+    final initialPinnedTriggerOptions = _initialPinnedActionTriggerOptions(
+      ref.read(actionListEditorProvider(gestureLocation)).actions,
+    );
     final expanded = useState(<int>{});
+    final pinnedTriggerOptions = useState(
+      initialPinnedTriggerOptions,
+    );
     final anchorKey = useMemoized(GlobalKey.new);
     final bottomKey = useMemoized(GlobalKey.new);
     final anchorIndex = useState<int?>(null);
@@ -34,7 +41,7 @@ class ActionListEditor extends HookConsumerWidget {
       ..value = ScrollAnchorScope.maybeOf(context);
 
     List<TriggerAction> actionsFromDraft() =>
-        ref.read(actionListEditorProvider(context.gestureLocation)).actions;
+        ref.read(actionListEditorProvider(gestureLocation)).actions;
 
     void measureBelowExtent() {
       final anchorBox = anchorKey.currentContext?.findRenderObject();
@@ -92,9 +99,14 @@ class ActionListEditor extends HookConsumerWidget {
         next.add(e > index ? e - 1 : e);
       }
       expanded.value = next;
+      pinnedTriggerOptions.value = {
+        for (final entry in pinnedTriggerOptions.value.entries)
+          if (entry.key != index)
+            (entry.key > index ? entry.key - 1 : entry.key): entry.value,
+      };
       clearAnchor();
       ref
-          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .read(actionListEditorProvider(gestureLocation).notifier)
           .remove(index);
     }
 
@@ -106,17 +118,24 @@ class ActionListEditor extends HookConsumerWidget {
         next.add(e > index ? e + 1 : e);
       }
       expanded.value = next;
+      final nextPinnedTriggerOptions = {
+        for (final entry in pinnedTriggerOptions.value.entries)
+          (entry.key > index ? entry.key + 1 : entry.key): entry.value,
+      };
+      final sourceFields = pinnedTriggerOptions.value[index];
+      if (sourceFields != null) {
+        nextPinnedTriggerOptions[index + 1] = sourceFields;
+      }
+      pinnedTriggerOptions.value = nextPinnedTriggerOptions;
       clearAnchor();
       ref
-          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .read(actionListEditorProvider(gestureLocation).notifier)
           .duplicate(index);
     }
 
     void add(Action action) {
       final newIndex = actionsFromDraft().length;
-      ref
-          .read(actionListEditorProvider(context.gestureLocation).notifier)
-          .add(action);
+      ref.read(actionListEditorProvider(gestureLocation).notifier).add(action);
       expanded.value = {...expanded.value, newIndex};
       clearAnchor();
       // AnimatedSize renders new rows at full size immediately (no prior state
@@ -161,9 +180,13 @@ class ActionListEditor extends HookConsumerWidget {
         next.add(remapIndex(e, oldIndex, newIndex));
       }
       expanded.value = next;
+      pinnedTriggerOptions.value = {
+        for (final entry in pinnedTriggerOptions.value.entries)
+          remapIndex(entry.key, oldIndex, newIndex): entry.value,
+      };
       clearAnchor();
       ref
-          .read(actionListEditorProvider(context.gestureLocation).notifier)
+          .read(actionListEditorProvider(gestureLocation).notifier)
           .reorder(oldIndex, newIndex);
     }
 
@@ -174,7 +197,6 @@ class ActionListEditor extends HookConsumerWidget {
 
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final gestureLocation = context.gestureLocation;
     final count = ref.watch(
       actionListEditorProvider(
         gestureLocation,
@@ -214,6 +236,8 @@ class ActionListEditor extends HookConsumerWidget {
                 onOptionsExpanded: () => beginAnchor(index),
                 onAnchorSettled: endAnchor,
                 anchorKey: index == anchorIndex.value ? anchorKey : null,
+                pinnedTriggerOptions:
+                    pinnedTriggerOptions.value[index] ?? const {},
                 onDuplicate: () => duplicate(index),
                 onDelete: () => remove(index),
               );
@@ -280,6 +304,7 @@ class _ActionRow extends StatelessWidget {
     required this.onAnchorSettled,
     required this.onDuplicate,
     required this.onDelete,
+    required this.pinnedTriggerOptions,
     this.anchorKey,
     super.key,
   });
@@ -296,6 +321,7 @@ class _ActionRow extends StatelessWidget {
   /// Invoked when this row's expand animation settles, so the enclosing
   /// [SliverSmartAnchor] can stop correcting the scroll offset.
   final VoidCallback onAnchorSettled;
+  final Set<ActionTriggerOptionField> pinnedTriggerOptions;
 
   /// Zero-height marker placed just below the growing region when this row is
   /// the active anchor; consumed by the [SliverSmartAnchor] above it.
@@ -343,6 +369,7 @@ class _ActionRow extends StatelessWidget {
                     child: _ExpandedEditor(
                       onOptionsExpanded: onOptionsExpanded,
                       footerKey: ValueKey('action-footer-$index'),
+                      pinnedTriggerOptions: pinnedTriggerOptions,
                     ),
                   )
                 : const SizedBox(width: double.infinity),
@@ -546,10 +573,12 @@ class _MetaChips extends StatelessWidget {
 class _ExpandedEditor extends HookConsumerWidget {
   const _ExpandedEditor({
     required this.footerKey,
+    required this.pinnedTriggerOptions,
     this.onOptionsExpanded,
   });
 
   final Key footerKey;
+  final Set<ActionTriggerOptionField> pinnedTriggerOptions;
   final VoidCallback? onOptionsExpanded;
 
   @override
@@ -558,11 +587,10 @@ class _ExpandedEditor extends HookConsumerWidget {
     final kind = ref.watch(
       actionEditorProvider(actionLocation).select((vm) => vm.kind),
     );
-    final optionsExpanded = useState(
-      ref
-          .read(actionEditorProvider(actionLocation))
-          .hasNonDefaultTriggerOptions,
-    );
+    final optionsExpanded = useState(false);
+    final accordionFields = ActionTriggerOptionField.values
+        .where((field) => !pinnedTriggerOptions.contains(field))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -572,6 +600,10 @@ class _ExpandedEditor extends HookConsumerWidget {
           const SizedBox(height: 8),
           ActionFields(kind: kind),
           const SizedBox(height: 16),
+          if (pinnedTriggerOptions.isNotEmpty) ...[
+            ActionTriggerFields(fields: pinnedTriggerOptions),
+            const SizedBox(height: 16),
+          ],
           FAccordion(
             key: ValueKey(actionLocation.actionIndex),
             control: FAccordionControl.lifted(
@@ -591,7 +623,7 @@ class _ExpandedEditor extends HookConsumerWidget {
             children: [
               FAccordionItem(
                 title: Text(context.l10n.triggerOtherOptions),
-                child: const ActionTriggerFields(),
+                child: ActionTriggerFields(fields: accordionFields),
               ),
             ],
           ),
@@ -601,3 +633,12 @@ class _ExpandedEditor extends HookConsumerWidget {
     );
   }
 }
+
+Map<int, Set<ActionTriggerOptionField>> _initialPinnedActionTriggerOptions(
+  List<TriggerAction> actions,
+) => {
+  for (final (index, action) in actions.indexed)
+    if (ActionTriggerFields.nonDefaultFields(action) case final fields
+        when fields.isNotEmpty)
+      index: fields,
+};

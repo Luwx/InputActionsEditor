@@ -20,9 +20,9 @@ class GestureEditorLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final hasAdvanced = ref.watch(
+    final advancedFields = ref.watch(
       gestureEditorProvider(location).select(
-        (s) => TriggerAdvancedFields.hasNonDefaultFields(
+        (s) => TriggerAdvancedFields.nonDefaultFields(
           s.common ?? const TriggerCommon(),
         ),
       ),
@@ -41,7 +41,7 @@ class GestureEditorLayout extends ConsumerWidget {
         children: [
           TriggerEditor(
             sections: sections,
-            hasAdvanced: hasAdvanced,
+            initialAdvancedFields: advancedFields,
             dirtyState: triggerDirtyState,
             onRevert: savedGesture == null
                 ? null
