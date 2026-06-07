@@ -7,6 +7,10 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
 
+/// Horizontal inset applied to grouped rows (and aligned drop indicators) so
+/// they sit under the group's bracket.
+const _groupIndent = 16.0;
+
 sealed class ReorderableGroupableListEntry<I, G> {
   const ReorderableGroupableListEntry();
 }
@@ -121,6 +125,8 @@ class _ReorderableGroupableListState<I, G>
   Timer? _autoScrollTimer;
   double _autoScrollVelocity = 0;
   int? _activePointer;
+  int? _routedPointer;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -131,6 +137,7 @@ class _ReorderableGroupableListState<I, G>
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    _removePointerRoute();
     _stopAutoScroll();
     super.dispose();
   }
@@ -149,8 +156,41 @@ class _ReorderableGroupableListState<I, G>
     return false;
   }
 
+  // Routes the dragging pointer through the global binding so autoscroll keeps
+  // tracking and stops even if the dragged row is recycled out of
+  // the sliver mid-scroll, which detaches the Draggable and silences its
+  // onDragUpdate.
+  void _registerPointer(int pointer) {
+    _activePointer = pointer;
+    _removePointerRoute();
+    _routedPointer = pointer;
+    GestureBinding.instance.pointerRouter.addRoute(
+      pointer,
+      _handlePointerRoute,
+    );
+  }
+
+  void _handlePointerRoute(PointerEvent event) {
+    if (event is PointerMoveEvent) {
+      _updateAutoScroll(event.position);
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _endDrag();
+    }
+  }
+
+  void _removePointerRoute() {
+    final pointer = _routedPointer;
+    if (pointer == null) return;
+    _routedPointer = null;
+    GestureBinding.instance.pointerRouter.removeRoute(
+      pointer,
+      _handlePointerRoute,
+    );
+  }
+
   void _startItemDrag(ReorderableGroupableItem<I, G> item) {
     final selected = widget.selectedItemIds;
+    _isDragging = true;
     setState(() {
       _activeItemDragIds = selected.contains(item.id)
           ? Set<I>.of(selected)
@@ -160,7 +200,9 @@ class _ReorderableGroupableListState<I, G>
 
   void _endDrag() {
     _stopAutoScroll();
+    _removePointerRoute();
     _activePointer = null;
+    _isDragging = false;
     if (!mounted) return;
     setState(() {
       _activeItemDragIds = const {};
@@ -168,7 +210,7 @@ class _ReorderableGroupableListState<I, G>
   }
 
   void _updateAutoScroll(Offset globalPosition) {
-    if (!widget.scrollController.hasClients) return;
+    if (!_isDragging || !widget.scrollController.hasClients) return;
 
     final scrollable = Scrollable.maybeOf(context);
     final box = scrollable?.context.findRenderObject() as RenderBox?;
@@ -221,8 +263,43 @@ class _ReorderableGroupableListState<I, G>
     if (result != null) widget.onItemsReordered(result);
   }
 
+  // The controller returns null for moves that change nothing; the drop targets
+  // consult these so a no-op slot shows no indicator and accepts no drop.
+  bool _wouldMoveBeforeItem(List<I> itemIds, I targetItemId) =>
+      _controller.moveItemsBeforeItem(
+        widget.entries,
+        itemIds.toSet(),
+        targetItemId,
+      ) !=
+      null;
+
+  bool _wouldMoveIntoGroup(List<I> itemIds, G groupId) =>
+      _controller.moveItemsIntoGroup(
+        widget.entries,
+        itemIds.toSet(),
+        groupId,
+      ) !=
+      null;
+
+  bool _wouldMoveAfterGroup(List<I> itemIds, G groupId) =>
+      _controller.moveItemsAfterGroup(
+        widget.entries,
+        itemIds.toSet(),
+        groupId,
+      ) !=
+      null;
+
   void _moveItemsIntoGroup(List<I> itemIds, G groupId) {
     final result = _controller.moveItemsIntoGroup(
+      widget.entries,
+      itemIds.toSet(),
+      groupId,
+    );
+    if (result != null) widget.onItemsReordered(result);
+  }
+
+  void _moveItemsAfterGroup(List<I> itemIds, G groupId) {
+    final result = _controller.moveItemsAfterGroup(
       widget.entries,
       itemIds.toSet(),
       groupId,
@@ -311,10 +388,9 @@ class _ReorderableGroupableListState<I, G>
             label:
                 widget.groupDragLabelBuilder?.call(group) ??
                 group.id.toString(),
-            onDragStarted: () {},
-            onDragUpdate: _updateAutoScroll,
+            onDragStarted: () => _isDragging = true,
             onDragEnded: _endDrag,
-            onPointerDown: (pointer) => _activePointer = pointer,
+            onPointerDown: _registerPointer,
           )
         : null;
     final row = widget.groupBuilder(context, group, handle);
@@ -359,9 +435,8 @@ class _ReorderableGroupableListState<I, G>
                 widget.itemDragLabelBuilder?.call(item, dragCount) ??
                 item.id.toString(),
             onDragStarted: () => _startItemDrag(item),
-            onDragUpdate: _updateAutoScroll,
             onDragEnded: _endDrag,
-            onPointerDown: (pointer) => _activePointer = pointer,
+            onPointerDown: _registerPointer,
           )
         : null;
     final child = widget.itemBuilder(context, item, handle, isDragging);
@@ -389,15 +464,41 @@ class _ReorderableGroupableListState<I, G>
     );
     if (!widget.reorderEnabled || !item.interactive) return visibleRow;
 
-    return DragTarget<_ItemDragData<I>>(
+    final dropTarget = DragTarget<_ItemDragData<I>>(
       onWillAcceptWithDetails: (details) =>
-          item.isVisible && !details.data.itemIds.contains(item.id),
+          item.isVisible &&
+          !details.data.itemIds.contains(item.id) &&
+          _wouldMoveBeforeItem(details.data.itemIds, item.id),
       onAcceptWithDetails: (details) =>
           _moveItemsBeforeItem(details.data.itemIds, item.id),
       builder: (context, candidateData, _) => _ItemDropState(
         isActive: candidateData.isNotEmpty,
+        indent: item.groupId != null ? _groupIndent : 0,
         child: visibleRow,
       ),
+    );
+
+    final groupId = item.groupId;
+    if (!item.isLastInGroup || groupId == null) return dropTarget;
+    final nextEntry = index + 1 < widget.entries.length
+        ? widget.entries[index + 1]
+        : null;
+    final showOutside = nextEntry is ReorderableGroupableGroup<I, G>;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        dropTarget,
+        _GroupEndDropZone<I, G>(
+          isVisible: item.isVisible,
+          isDragActive: _activeItemDragIds.isNotEmpty,
+          showOutside: showOutside,
+          willInsideAccept: (itemIds) => _wouldMoveIntoGroup(itemIds, groupId),
+          willOutsideAccept: (itemIds) =>
+              _wouldMoveAfterGroup(itemIds, groupId),
+          onInsideAccept: (itemIds) => _moveItemsIntoGroup(itemIds, groupId),
+          onOutsideAccept: (itemIds) => _moveItemsAfterGroup(itemIds, groupId),
+        ),
+      ],
     );
   }
 }
@@ -419,7 +520,6 @@ class _ItemDragHandle<I> extends StatelessWidget {
     required this.itemIds,
     required this.label,
     required this.onDragStarted,
-    required this.onDragUpdate,
     required this.onDragEnded,
     required this.onPointerDown,
   });
@@ -427,7 +527,6 @@ class _ItemDragHandle<I> extends StatelessWidget {
   final List<I> itemIds;
   final String label;
   final VoidCallback onDragStarted;
-  final ValueChanged<Offset> onDragUpdate;
   final VoidCallback onDragEnded;
   final ValueChanged<int> onPointerDown;
 
@@ -438,7 +537,6 @@ class _ItemDragHandle<I> extends StatelessWidget {
       child: Draggable<_ItemDragData<I>>(
         data: _ItemDragData(itemIds),
         onDragStarted: onDragStarted,
-        onDragUpdate: (details) => onDragUpdate(details.globalPosition),
         onDragEnd: (_) => onDragEnded(),
         onDraggableCanceled: (_, _) => onDragEnded(),
         onDragCompleted: onDragEnded,
@@ -455,7 +553,6 @@ class _GroupDragHandle<G> extends StatelessWidget {
     required this.groupId,
     required this.label,
     required this.onDragStarted,
-    required this.onDragUpdate,
     required this.onDragEnded,
     required this.onPointerDown,
   });
@@ -463,7 +560,6 @@ class _GroupDragHandle<G> extends StatelessWidget {
   final G groupId;
   final String label;
   final VoidCallback onDragStarted;
-  final ValueChanged<Offset> onDragUpdate;
   final VoidCallback onDragEnded;
   final ValueChanged<int> onPointerDown;
 
@@ -474,7 +570,6 @@ class _GroupDragHandle<G> extends StatelessWidget {
       child: Draggable<_GroupDragData<G>>(
         data: _GroupDragData(groupId),
         onDragStarted: onDragStarted,
-        onDragUpdate: (details) => onDragUpdate(details.globalPosition),
         onDragEnd: (_) => onDragEnded(),
         onDraggableCanceled: (_, _) => onDragEnded(),
         onDragCompleted: onDragEnded,
@@ -564,7 +659,7 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final indent = isGrouped ? 16.0 : 0.0;
+    final indent = isGrouped ? _groupIndent : 0.0;
     return Stack(
       children: [
         Column(
@@ -645,9 +740,17 @@ class _AnimatedGroupRowVisibility extends StatelessWidget {
 }
 
 class _ItemDropState extends StatelessWidget {
-  const _ItemDropState({required this.isActive, required this.child});
+  const _ItemDropState({
+    required this.isActive,
+    required this.indent,
+    required this.child,
+  });
 
   final bool isActive;
+
+  /// Left inset of the drop line so it aligns with the group the dropped item
+  /// will join
+  final double indent;
   final Widget child;
 
   @override
@@ -655,10 +758,13 @@ class _ItemDropState extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedContainer(
-          duration: Durations.short2,
-          height: isActive ? 3 : 0,
-          color: context.theme.colors.primary,
+        Padding(
+          padding: EdgeInsets.only(left: indent),
+          child: AnimatedContainer(
+            duration: Durations.short2,
+            height: isActive ? 3 : 0,
+            color: context.theme.colors.primary,
+          ),
         ),
         child,
       ],
@@ -692,6 +798,97 @@ class _GroupDropState extends StatelessWidget {
         color: isItemDropActive ? colors.primary.withValues(alpha: 0.08) : null,
       ),
       child: child,
+    );
+  }
+}
+
+/// Two stacked drop beneath a group's last row: the upper half keeps a
+/// dropped item in the group (indented indicator), the lower half drops it just
+/// after the group, ungrouped (full-width indicator). The gap is a thin sliver
+/// when idle and grows while an item is being dragged so each half is easy to
+/// aim at.
+class _GroupEndDropZone<I, G> extends StatelessWidget {
+  const _GroupEndDropZone({
+    required this.isVisible,
+    required this.isDragActive,
+    required this.showOutside,
+    required this.willInsideAccept,
+    required this.willOutsideAccept,
+    required this.onInsideAccept,
+    required this.onOutsideAccept,
+  });
+
+  final bool isVisible;
+  final bool isDragActive;
+
+  /// Whether to offer the "after group, ungrouped" half. Only useful when the
+  /// next entry is another group; otherwise that slot is already reachable via
+  /// the following row's before-target.
+  final bool showOutside;
+  final bool Function(List<I> itemIds) willInsideAccept;
+  final bool Function(List<I> itemIds) willOutsideAccept;
+  final void Function(List<I> itemIds) onInsideAccept;
+  final void Function(List<I> itemIds) onOutsideAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    // A collapsed group hides its rows; there is no boundary to target.
+    if (!isVisible) return const SizedBox.shrink();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _BoundaryDropHalf<I>(
+          active: isDragActive,
+          indent: _groupIndent,
+          willAccept: willInsideAccept,
+          onAccept: onInsideAccept,
+        ),
+        if (showOutside)
+          _BoundaryDropHalf<I>(
+            active: isDragActive,
+            indent: 0,
+            willAccept: willOutsideAccept,
+            onAccept: onOutsideAccept,
+          ),
+      ],
+    );
+  }
+}
+
+class _BoundaryDropHalf<I> extends StatelessWidget {
+  const _BoundaryDropHalf({
+    required this.active,
+    required this.indent,
+    required this.willAccept,
+    required this.onAccept,
+  });
+
+  final bool active;
+  final double indent;
+  final bool Function(List<I> itemIds) willAccept;
+  final void Function(List<I> itemIds) onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<_ItemDragData<I>>(
+      onWillAcceptWithDetails: (details) => willAccept(details.data.itemIds),
+      onAcceptWithDetails: (details) => onAccept(details.data.itemIds),
+      builder: (context, candidates, _) {
+        final isHover = candidates.isNotEmpty;
+        // Zero height when idle so groups keep their original spacing; the gap
+        // only grows (animated) once an item drag is in progress.
+        return AnimatedContainer(
+          duration: Durations.short2,
+          height: active ? 16 : 0,
+          padding: EdgeInsets.only(left: indent),
+          alignment: Alignment.center,
+          child: AnimatedContainer(
+            duration: Durations.short2,
+            height: isHover ? 3 : 0,
+            color: context.theme.colors.primary,
+          ),
+        );
+      },
     );
   }
 }

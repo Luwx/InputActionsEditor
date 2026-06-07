@@ -194,7 +194,9 @@ class GestureListSection extends HookConsumerWidget {
                                       '${flatItem.configIndex}',
                           ),
                           id: key,
-                          groupId: flatItem.groupId,
+                          groupId: deviceFilter == null
+                              ? null
+                              : flatItem.groupId,
                           isFirstInGroup: flatItem.isFirstInGroup,
                           isLastInGroup: flatItem.isLastInGroup,
                           isVisible: flatItem.isVisible && !isHidden,
