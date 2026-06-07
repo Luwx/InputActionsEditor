@@ -48,7 +48,7 @@ class DeviceRulesEditor extends ConsumerWidget {
         slivers: [
           SliverFrostedAppBar(
             title: l10n.deviceRulesTitle,
-            titleWidget: UnsavedLabel(
+            titleBuilder: (style) => UnsavedLabel(
               state: rulesDirtyState,
               onRevert: savedConfig == null || savedConfig.deviceRules.isEmpty
                   ? null
@@ -57,7 +57,7 @@ class DeviceRulesEditor extends ConsumerWidget {
                     ),
               child: Text(
                 l10n.deviceRulesTitle,
-                style: typography.lg.copyWith(fontWeight: FontWeight.w600),
+                style: style,
               ),
             ),
             subtitle: l10n.deviceRulesSubtitle(rules.length),

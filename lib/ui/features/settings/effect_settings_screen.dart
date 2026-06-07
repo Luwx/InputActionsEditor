@@ -82,14 +82,14 @@ class EffectSettingsScreen extends ConsumerWidget {
         slivers: [
           SliverFrostedAppBar(
             title: context.l10n.effectSettingsTitle,
-            titleWidget: UnsavedLabel(
+            titleBuilder: (style) => UnsavedLabel(
               state: screenState,
               onRevert: savedSettings == null
                   ? null
                   : () => revertGlobalSettings(savedSettings),
               child: Text(
                 context.l10n.effectSettingsTitle,
-                style: typography.lg.copyWith(fontWeight: FontWeight.w600),
+                style: style,
               ),
             ),
             trailing: const ScopedSaveActions(scope: SaveScope.settings),

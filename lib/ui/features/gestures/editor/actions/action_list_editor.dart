@@ -9,6 +9,7 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
@@ -40,6 +41,7 @@ class ActionListEditor extends HookConsumerWidget {
     final anchorIndex = useState<int?>(null);
     final anchorRef = useRef<ScrollAnchorController?>(null)
       ..value = ScrollAnchorScope.maybeOf(context);
+    final setDragPointer = useDragEscapeCancel();
 
     List<TriggerAction> actionsFromDraft() =>
         ref.read(actionListEditorProvider(gestureLocation)).actions;
@@ -269,6 +271,7 @@ class ActionListEditor extends HookConsumerWidget {
                     .setEnabled(index, enabled),
                 onDuplicate: () => duplicate(index),
                 onDelete: () => remove(index),
+                onDragPointerChanged: setDragPointer,
               );
             },
           ),
@@ -296,6 +299,7 @@ class _ActionsHeader extends ConsumerWidget {
     );
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         UnsavedLabel(
           state: dirtyState,
@@ -336,6 +340,7 @@ class _ActionRow extends StatelessWidget {
     required this.onDelete,
     required this.onEnabledChanged,
     required this.pinnedTriggerOptions,
+    required this.onDragPointerChanged,
     this.anchorKey,
     super.key,
   });
@@ -360,6 +365,7 @@ class _ActionRow extends StatelessWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final ValueChanged<bool> onEnabledChanged;
+  final ValueChanged<int?> onDragPointerChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -390,6 +396,7 @@ class _ActionRow extends StatelessWidget {
             onDuplicate: onDuplicate,
             onDelete: onDelete,
             onEnabledChanged: onEnabledChanged,
+            onDragPointerChanged: onDragPointerChanged,
           ),
           AnimatedSize(
             duration: Durations.medium1,
@@ -425,6 +432,7 @@ class _Header extends HookConsumerWidget {
     required this.onDuplicate,
     required this.onDelete,
     required this.onEnabledChanged,
+    required this.onDragPointerChanged,
   });
 
   final int index;
@@ -434,6 +442,7 @@ class _Header extends HookConsumerWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final ValueChanged<bool> onEnabledChanged;
+  final ValueChanged<int?> onDragPointerChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -456,30 +465,35 @@ class _Header extends HookConsumerWidget {
         onExit: (_) => isTitleHovered.value = false,
         child: Row(
           children: [
-            ReorderableDragStartListener(
-              index: index,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.grab,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 8,
+            Listener(
+              onPointerDown: (e) => onDragPointerChanged(e.pointer),
+              onPointerUp: (_) => onDragPointerChanged(null),
+              onPointerCancel: (_) => onDragPointerChanged(null),
+              child: ReorderableDragStartListener(
+                index: index,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Icon(
+                          FLucideIcons.gripVertical,
+                          size: 14,
+                          color: colors.mutedForeground.withValues(alpha: 0.45),
+                        ),
                       ),
-                      child: Icon(
-                        FLucideIcons.gripVertical,
-                        size: 14,
-                        color: colors.mutedForeground.withValues(alpha: 0.45),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${index + 1}',
+                        style: context.theme.typography.xs,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${index + 1}',
-                      style: context.theme.typography.xs,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

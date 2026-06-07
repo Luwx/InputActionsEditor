@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
@@ -118,11 +120,33 @@ class _ReorderableGroupableListState<I, G>
   Set<I> _activeItemDragIds = const {};
   Timer? _autoScrollTimer;
   double _autoScrollVelocity = 0;
+  int? _activePointer;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _stopAutoScroll();
     super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      final pointer = _activePointer;
+      if (pointer != null) {
+        GestureBinding.instance.handlePointerEvent(
+          PointerCancelEvent(pointer: pointer),
+        );
+        return true;
+      }
+    }
+    return false;
   }
 
   void _startItemDrag(ReorderableGroupableItem<I, G> item) {
@@ -136,6 +160,7 @@ class _ReorderableGroupableListState<I, G>
 
   void _endDrag() {
     _stopAutoScroll();
+    _activePointer = null;
     if (!mounted) return;
     setState(() {
       _activeItemDragIds = const {};
@@ -289,6 +314,7 @@ class _ReorderableGroupableListState<I, G>
             onDragStarted: () {},
             onDragUpdate: _updateAutoScroll,
             onDragEnded: _endDrag,
+            onPointerDown: (pointer) => _activePointer = pointer,
           )
         : null;
     final row = widget.groupBuilder(context, group, handle);
@@ -335,6 +361,7 @@ class _ReorderableGroupableListState<I, G>
             onDragStarted: () => _startItemDrag(item),
             onDragUpdate: _updateAutoScroll,
             onDragEnded: _endDrag,
+            onPointerDown: (pointer) => _activePointer = pointer,
           )
         : null;
     final child = widget.itemBuilder(context, item, handle, isDragging);
@@ -394,6 +421,7 @@ class _ItemDragHandle<I> extends StatelessWidget {
     required this.onDragStarted,
     required this.onDragUpdate,
     required this.onDragEnded,
+    required this.onPointerDown,
   });
 
   final List<I> itemIds;
@@ -401,19 +429,23 @@ class _ItemDragHandle<I> extends StatelessWidget {
   final VoidCallback onDragStarted;
   final ValueChanged<Offset> onDragUpdate;
   final VoidCallback onDragEnded;
+  final ValueChanged<int> onPointerDown;
 
   @override
   Widget build(BuildContext context) {
-    return Draggable<_ItemDragData<I>>(
-      data: _ItemDragData(itemIds),
-      onDragStarted: onDragStarted,
-      onDragUpdate: (details) => onDragUpdate(details.globalPosition),
-      onDragEnd: (_) => onDragEnded(),
-      onDraggableCanceled: (_, _) => onDragEnded(),
-      onDragCompleted: onDragEnded,
-      feedback: _DragHandleFeedback(label: label),
-      childWhenDragging: const _DragHandleIcon(isDragging: true),
-      child: const _DragHandleIcon(),
+    return Listener(
+      onPointerDown: (e) => onPointerDown(e.pointer),
+      child: Draggable<_ItemDragData<I>>(
+        data: _ItemDragData(itemIds),
+        onDragStarted: onDragStarted,
+        onDragUpdate: (details) => onDragUpdate(details.globalPosition),
+        onDragEnd: (_) => onDragEnded(),
+        onDraggableCanceled: (_, _) => onDragEnded(),
+        onDragCompleted: onDragEnded,
+        feedback: _DragHandleFeedback(label: label),
+        childWhenDragging: const _DragHandleIcon(isDragging: true),
+        child: const _DragHandleIcon(),
+      ),
     );
   }
 }
@@ -425,6 +457,7 @@ class _GroupDragHandle<G> extends StatelessWidget {
     required this.onDragStarted,
     required this.onDragUpdate,
     required this.onDragEnded,
+    required this.onPointerDown,
   });
 
   final G groupId;
@@ -432,19 +465,23 @@ class _GroupDragHandle<G> extends StatelessWidget {
   final VoidCallback onDragStarted;
   final ValueChanged<Offset> onDragUpdate;
   final VoidCallback onDragEnded;
+  final ValueChanged<int> onPointerDown;
 
   @override
   Widget build(BuildContext context) {
-    return Draggable<_GroupDragData<G>>(
-      data: _GroupDragData(groupId),
-      onDragStarted: onDragStarted,
-      onDragUpdate: (details) => onDragUpdate(details.globalPosition),
-      onDragEnd: (_) => onDragEnded(),
-      onDraggableCanceled: (_, _) => onDragEnded(),
-      onDragCompleted: onDragEnded,
-      feedback: _DragHandleFeedback(label: label),
-      childWhenDragging: const _DragHandleIcon(isDragging: true),
-      child: const _DragHandleIcon(),
+    return Listener(
+      onPointerDown: (e) => onPointerDown(e.pointer),
+      child: Draggable<_GroupDragData<G>>(
+        data: _GroupDragData(groupId),
+        onDragStarted: onDragStarted,
+        onDragUpdate: (details) => onDragUpdate(details.globalPosition),
+        onDragEnd: (_) => onDragEnded(),
+        onDraggableCanceled: (_, _) => onDragEnded(),
+        onDragCompleted: onDragEnded,
+        feedback: _DragHandleFeedback(label: label),
+        childWhenDragging: const _DragHandleIcon(isDragging: true),
+        child: const _DragHandleIcon(),
+      ),
     );
   }
 }

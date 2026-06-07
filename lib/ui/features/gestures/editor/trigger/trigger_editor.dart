@@ -44,6 +44,7 @@ class TriggerEditor extends HookConsumerWidget {
       color: context.theme.colors.card.withValues(alpha: 0.55),
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UnsavedLabel(
             state: dirtyState,
