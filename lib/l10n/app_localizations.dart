@@ -3172,6 +3172,24 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get inputKeySequenceRecordingClear;
 
+  /// No description provided for @inputKeySequenceBrowseTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse available keys'**
+  String get inputKeySequenceBrowseTip;
+
+  /// No description provided for @inputKeyBrowseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search keys…'**
+  String get inputKeyBrowseHint;
+
+  /// No description provided for @inputKeyBrowseEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching keys'**
+  String get inputKeyBrowseEmpty;
+
   /// No description provided for @inputButtonSequenceLabel.
   ///
   /// In en, this message translates to:

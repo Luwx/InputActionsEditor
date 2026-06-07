@@ -213,6 +213,9 @@ final class KsToken extends KsSegment {
 }
 
 class KeySequenceParser {
+  /// Alias map: user-friendly name → canonical scancode.
+  static Map<String, String> get keyAliases => _keyAliases;
+
   /// Parses [text] into a list of [KsSegment]s covering every character.
   ///
   /// Grammar (per comma-separated item):

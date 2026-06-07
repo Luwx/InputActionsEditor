@@ -18,6 +18,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
+import 'package:input_actions_editor/domain/misc/keyboard_key_search_index.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
@@ -228,6 +229,33 @@ class InputEntryEditor extends HookWidget {
                 ),
               ),
               child: const Icon(Icons.radio_button_checked, size: 16),
+            ),
+          ),
+          const SizedBox(width: 4),
+          AppTooltip(
+            tipBuilder: (context, _) => Text(
+              context.l10n.inputKeySequenceBrowseTip,
+              style: context.theme.typography.xs.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+            child: FPopover(
+              groupId: timelinePopoverGroup,
+              constraints: const FPortalConstraints(maxWidth: 260),
+              builder: (context, controller, child) => FButton.icon(
+                size: .sm,
+                onPress: controller.toggle,
+                child: child,
+              ),
+              popoverBuilder: (context, controller) => _KeyBrowserPopover(
+                onSelect: (scancode) {
+                  final existing = keySeqController.text.trim();
+                  keySeqController.text = existing.isEmpty
+                      ? scancode
+                      : '$existing, $scancode';
+                },
+              ),
+              child: const Icon(FLucideIcons.search, size: 15),
             ),
           ),
           const SizedBox(width: 8),
@@ -595,6 +623,116 @@ class _KeyboardRecordingView extends HookWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _KeyBrowserPopover extends HookWidget {
+  const _KeyBrowserPopover({required this.onSelect});
+
+  final void Function(String scancode) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final query = useState('');
+    final searchController = useTextEditingController();
+    final results = useMemoized(
+      () => query.value.trim().isEmpty
+          ? keySearchIndex
+          : keySearchIndex.where((e) => e.matches(query.value)).toList(),
+      [query.value],
+    );
+
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
+        children: [
+          FTextField(
+            control: FTextFieldControl.managed(
+              controller: searchController,
+              onChange: (v) => query.value = v.text,
+            ),
+            hint: context.l10n.inputKeyBrowseHint,
+            autofocus: true,
+          ),
+          SizedBox(
+            height: 220,
+            child: results.isEmpty
+                ? Center(
+                    child: Text(
+                      context.l10n.inputKeyBrowseEmpty,
+                      style: t.xs.copyWith(color: colors.mutedForeground),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemExtent: 32,
+                    itemBuilder: (context, i) => _KeyResultTile(
+                      entry: results[i],
+                      onSelect: onSelect,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KeyResultTile extends HookWidget {
+  const _KeyResultTile({required this.entry, required this.onSelect});
+
+  final KeyEntry entry;
+  final void Function(String scancode) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final hovered = useState(false);
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+
+    return MouseRegion(
+      onEnter: (_) => hovered.value = true,
+      onExit: (_) => hovered.value = false,
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onSelect(entry.scancode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: hovered.value
+                ? colors.secondary.withValues(alpha: 0.8)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              Text(
+                entry.label,
+                style: t.sm.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  entry.scancode,
+                  style: t.xs.copyWith(
+                    color: colors.mutedForeground,
+                    fontFamily: 'monospace',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

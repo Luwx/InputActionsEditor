@@ -1746,6 +1746,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputKeySequenceRecordingClear => 'Clear';
 
   @override
+  String get inputKeySequenceBrowseTip => 'Browse available keys';
+
+  @override
+  String get inputKeyBrowseHint => 'Search keys…';
+
+  @override
+  String get inputKeyBrowseEmpty => 'No matching keys';
+
+  @override
   String get inputButtonSequenceLabel => 'Button Sequence';
 
   @override
