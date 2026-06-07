@@ -238,6 +238,9 @@ class ActionListEditor extends HookConsumerWidget {
                 anchorKey: index == anchorIndex.value ? anchorKey : null,
                 pinnedTriggerOptions:
                     pinnedTriggerOptions.value[index] ?? const {},
+                onEnabledChanged: (enabled) => ref
+                    .read(actionListEditorProvider(gestureLocation).notifier)
+                    .setEnabled(index, enabled),
                 onDuplicate: () => duplicate(index),
                 onDelete: () => remove(index),
               );
@@ -304,6 +307,7 @@ class _ActionRow extends StatelessWidget {
     required this.onAnchorSettled,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onEnabledChanged,
     required this.pinnedTriggerOptions,
     this.anchorKey,
     super.key,
@@ -328,6 +332,7 @@ class _ActionRow extends StatelessWidget {
   final GlobalKey? anchorKey;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+  final ValueChanged<bool> onEnabledChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -357,6 +362,7 @@ class _ActionRow extends StatelessWidget {
             onToggle: onToggle,
             onDuplicate: onDuplicate,
             onDelete: onDelete,
+            onEnabledChanged: onEnabledChanged,
           ),
           AnimatedSize(
             duration: Durations.medium1,
@@ -391,6 +397,7 @@ class _Header extends HookConsumerWidget {
     required this.onToggle,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onEnabledChanged,
   });
 
   final int index;
@@ -399,6 +406,7 @@ class _Header extends HookConsumerWidget {
   final VoidCallback onToggle;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+  final ValueChanged<bool> onEnabledChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -518,10 +526,9 @@ class _Header extends HookConsumerWidget {
               onPress: onDelete,
               child: const Icon(FLucideIcons.trash),
             ),
-            // TODO(me): disable checkbox
-            const FCheckbox(
-              value: true,
-              enabled: false,
+            FCheckbox(
+              value: action.enabled != false,
+              onChange: onEnabledChanged,
             ),
           ],
         ),

@@ -96,6 +96,10 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
     prop(TriggerActionMeta.interval, adapter: nullableText()),
     prop(TriggerActionMeta.threshold, adapter: nullableText()),
     prop(TriggerActionMeta.limit, adapter: nullableInt()),
+    prop(
+      TriggerActionMeta.enabled,
+      compare: projected<TriggerAction, bool?>((v) => v?.effectiveEnabled),
+    ),
     prop(TriggerActionMeta.conflicting),
     prop(TriggerActionMeta.conditions),
     prop(TriggerActionMeta.id, adapter: nullableText()),

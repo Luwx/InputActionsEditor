@@ -11,6 +11,7 @@ part 'action.g.dart';
 abstract class TriggerAction with _$TriggerAction {
   const factory TriggerAction({
     required Action action,
+    bool? enabled,
 
     /// Null means the `on:` key was absent in YAML (daemon defaults to
     /// `begin`).

@@ -124,7 +124,9 @@ Future<void> saveConfigToPath(
 /// Serializes [config] into YAML text, merging changes into [originalText] so
 /// unmodelled keys, comments, and formatting are preserved. Pure (no I/O).
 String encodeConfig(Config config, String originalText) {
-  final source = originalText.trim().isEmpty ? '{}' : originalText;
+  final source = originalText.trim().isEmpty
+      ? 'mouse:\n  gestures: []\n'
+      : materializeDisabledYamlCommentsRecursively(originalText);
   final editor = YamlEditor(source);
   final doc = loadYaml(source);
 
@@ -174,7 +176,10 @@ String encodeConfig(Config config, String originalText) {
   _saveDeviceRules(editor, doc, config);
   _saveGlobalSettings(editor, doc, config);
 
-  return editor.toString();
+  return restoreOriginalDisabledItemComments(
+    commentDisabledYamlItems(editor.toString()),
+    originalText,
+  );
 }
 
 void _saveDeviceSection(
@@ -429,6 +434,7 @@ void _writeMotion(Map<String, dynamic> m, MotionCommon mot) {
 
 Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   final m = <String, dynamic>{};
+  if (ta.enabled != null) m['enabled'] = ta.enabled;
   if (ta.on != null) m['on'] = ta.on!.toYaml();
   if (ta.conditions != null) m['conditions'] = conditionToYaml(ta.conditions!);
   if (!ta.conflicting) m['conflicting'] = false;
@@ -456,6 +462,243 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
   RawAction(:final raw) => {'__raw': raw},
 };
+
+/// Comments out disabled gesture/action list items so the runtime ignores
+/// them. The normal YAML map still carries `enabled: false`, which lets
+/// [decodeConfig] recover the disabled state after stripping one comment layer.
+String commentDisabledYamlItems(String yamlText) {
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  final contexts = <_YamlListContext>[];
+
+  var i = 0;
+  while (i < lines.length) {
+    final line = lines[i];
+    final indent = _indentOf(line);
+    _popContexts(contexts, indent);
+    final key = _blockKey(line);
+    if (key != null) contexts.add(_YamlListContext(key, indent));
+
+    final parent = contexts.isEmpty ? null : contexts.last;
+    if (parent != null &&
+        (parent.key == 'gestures' || parent.key == 'actions') &&
+        _isListItemAt(line, parent.indent + 2)) {
+      final itemIndent = parent.indent + 2;
+      final block = <String>[];
+      var j = i;
+      while (j < lines.length) {
+        final candidate = lines[j];
+        if (candidate.trim().isEmpty) {
+          block.add(candidate);
+          j++;
+          continue;
+        }
+        final candidateIndent = _indentOf(candidate);
+        if (j > i && candidateIndent <= parent.indent) break;
+        if (j > i && _isListItemAt(candidate, itemIndent)) break;
+        block.add(candidate);
+        j++;
+      }
+      if (block.any(
+        (l) =>
+            (_listItemKeyAt(l, 'enabled', itemIndent) ||
+                (_keyAt(l, 'enabled') && _indentOf(l) == parent.indent + 4)) &&
+            l.trimRight().endsWith('false'),
+      )) {
+        final normalizedBlock = parent.key == 'gestures'
+            ? commentDisabledYamlItems(block.join('\n')).split('\n')
+            : block;
+        out.addAll(normalizedBlock.map(_commentYamlLine));
+        i = j;
+      } else {
+        out.add(line);
+        i++;
+      }
+      continue;
+    }
+
+    out.add(line);
+    i++;
+  }
+
+  return out.join('\n');
+}
+
+String restoreOriginalDisabledItemComments(
+  String yamlText,
+  String originalText,
+) {
+  final originalComments = _disabledItemInnerComments(originalText);
+  if (originalComments.isEmpty) return yamlText;
+
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  final contexts = <_YamlListContext>[];
+  var disabledIndex = 0;
+
+  var i = 0;
+  while (i < lines.length) {
+    final line = lines[i];
+    final uncommented = _uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    final indent = _indentOf(parseLine);
+    _popContexts(contexts, indent);
+    final key = _blockKey(parseLine);
+    if (key != null) contexts.add(_YamlListContext(key, indent));
+
+    final parent = contexts.isEmpty ? null : contexts.last;
+    if (parent != null &&
+        (parent.key == 'gestures' || parent.key == 'actions') &&
+        uncommented != null &&
+        _isListItemAt(parseLine, parent.indent + 2)) {
+      final itemIndent = parent.indent + 2;
+      final block = <String>[];
+      var j = i;
+      while (j < lines.length) {
+        final candidate = lines[j];
+        final candidateUncommented = _uncommentYamlLine(candidate);
+        if (candidateUncommented == null && candidate.trim().isNotEmpty) {
+          break;
+        }
+        final candidateParseLine = candidateUncommented ?? candidate;
+        final candidateIndent = _indentOf(candidateParseLine);
+        if (j > i && candidateIndent <= parent.indent) break;
+        if (j > i && _isListItemAt(candidateParseLine, itemIndent)) break;
+        block.add(candidate);
+        j++;
+      }
+      out.addAll(block);
+      if (disabledIndex < originalComments.length) {
+        for (final comment in originalComments[disabledIndex]) {
+          if (!block.contains(comment)) out.add(comment);
+        }
+      }
+      disabledIndex++;
+      i = j;
+      continue;
+    }
+
+    out.add(line);
+    i++;
+  }
+
+  return out.join('\n');
+}
+
+List<List<String>> _disabledItemInnerComments(String yamlText) {
+  final lines = yamlText.split('\n');
+  final results = <List<String>>[];
+  final contexts = <_YamlListContext>[];
+
+  var i = 0;
+  while (i < lines.length) {
+    final line = lines[i];
+    final uncommented = _uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    final indent = _indentOf(parseLine);
+    _popContexts(contexts, indent);
+    final key = _blockKey(parseLine);
+    if (key != null) contexts.add(_YamlListContext(key, indent));
+
+    final parent = contexts.isEmpty ? null : contexts.last;
+    if (parent != null &&
+        (parent.key == 'gestures' || parent.key == 'actions') &&
+        uncommented != null &&
+        _isListItemAt(parseLine, parent.indent + 2)) {
+      final itemIndent = parent.indent + 2;
+      final comments = <String>[];
+      int? skippedNestedItemIndent;
+      var j = i;
+      while (j < lines.length) {
+        final candidate = lines[j];
+        final candidateUncommented = _uncommentYamlLine(candidate);
+        if (candidateUncommented == null) break;
+        final candidateIndent = _indentOf(candidateUncommented);
+        if (j > i && candidateIndent <= parent.indent) break;
+        if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
+        if (skippedNestedItemIndent != null) {
+          if (candidateIndent > skippedNestedItemIndent) {
+            j++;
+            continue;
+          }
+          skippedNestedItemIndent = null;
+        }
+        final uncommentedTrimmed = candidateUncommented.trimLeft();
+        if (uncommentedTrimmed.startsWith('# -')) {
+          skippedNestedItemIndent = candidateIndent;
+          j++;
+          continue;
+        }
+        if (uncommentedTrimmed.startsWith('#')) {
+          comments.add(candidate);
+        }
+        j++;
+      }
+      results.add(comments);
+      i = j;
+      continue;
+    }
+
+    i++;
+  }
+
+  return results;
+}
+
+String? _uncommentYamlLine(String line) {
+  final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
+  if (match == null) return null;
+  return '${match.group(1)}${match.group(2)}';
+}
+
+final class _YamlListContext {
+  const _YamlListContext(this.key, this.indent);
+
+  final String key;
+  final int indent;
+}
+
+void _popContexts(List<_YamlListContext> contexts, int indent) {
+  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
+    contexts.removeLast();
+  }
+}
+
+int _indentOf(String line) {
+  var i = 0;
+  while (i < line.length && line.codeUnitAt(i) == 0x20) {
+    i++;
+  }
+  return i;
+}
+
+String? _blockKey(String line) {
+  final trimmed = line.trimRight();
+  final match = RegExp(
+    r'^(\s*)([A-Za-z_][A-Za-z0-9_]*):\s*$',
+  ).firstMatch(trimmed);
+  return match?.group(2);
+}
+
+bool _isListItemAt(String line, int indent) =>
+    _indentOf(line) == indent && line.substring(indent).startsWith('- ');
+
+bool _keyAt(String line, String key) {
+  final trimmed = line.trimLeft();
+  return trimmed == '$key:' || trimmed.startsWith('$key: ');
+}
+
+bool _listItemKeyAt(String line, String key, int indent) {
+  if (!_isListItemAt(line, indent)) return false;
+  final body = line.substring(indent + 2).trimLeft();
+  return body == '$key:' || body.startsWith('$key: ');
+}
+
+String _commentYamlLine(String line) {
+  if (line.trim().isEmpty) return line;
+  final indent = _indentOf(line);
+  return '${line.substring(0, indent)}# ${line.substring(indent)}';
+}
 
 dynamic _tokenFromString(String token) =>
     token.startsWith('text:') ? {'text': token.substring(5)} : token;

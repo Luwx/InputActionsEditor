@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -184,6 +186,118 @@ void main() {
       expect(map['mouse_buttons'], ['left']);
       expect(map.containsKey('mouse_buttons_exact_order'), isFalse);
     });
+  });
+
+  group('encodeConfig disabled comments', () {
+    test('disabled gestures are emitted as commented-out YAML', () {
+      const config = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              name: 'Disabled Press',
+              enabled: false,
+              actions: [
+                TriggerAction(action: CommandAction(command: 'echo hi')),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      final yaml = encodeConfig(config, '');
+      expect(yaml, contains('# - type: press'));
+      expect(yaml, contains('# name: Disabled Press'));
+      expect(yaml, contains('# enabled: false'));
+      expect(yaml, contains('# - command: echo hi'));
+    });
+
+    test('disabled actions are emitted as commented-out YAML', () {
+      const config = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(
+                  enabled: false,
+                  action: CommandAction(command: 'echo hi'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      final yaml = encodeConfig(config, '');
+      expect(yaml, contains('- type: press'));
+      expect(yaml, contains('# - enabled: false'));
+      expect(yaml, contains('# command: echo hi'));
+      expect(yaml, isNot(contains('# - type: press')));
+    });
+
+    test(
+      'disabled action stays disabled when enclosing gesture is re-enabled',
+      () {
+        const disabledConfig = Config(
+          mouseGestures: [
+            PressGesture(
+              common: TriggerCommon(
+                enabled: false,
+                actions: [
+                  TriggerAction(
+                    enabled: false,
+                    action: CommandAction(command: 'echo hi'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final disabledYaml = encodeConfig(disabledConfig, '');
+        expect(disabledYaml, contains('# - type: press'));
+        expect(disabledYaml, contains('# # - enabled: false'));
+        final decoded = decodeConfig(disabledYaml);
+        expect(decoded.mouseGestures.single.common.enabled, isFalse);
+        expect(
+          decoded.mouseGestures.single.common.actions.single.enabled,
+          isFalse,
+        );
+
+        final gesture = decoded.mouseGestures.single;
+        final reenabled = decoded.copyWith(
+          mouseGestures: [
+            gesture.withCommon(gesture.common.copyWith(enabled: null)),
+          ],
+        );
+        final yaml = encodeConfig(reenabled, disabledYaml);
+        expect(yaml, contains('- type: press'));
+        expect(yaml, isNot(contains('# - type: press')));
+        expect(yaml, contains('# - enabled: false'));
+        expect(yaml, contains('# command: echo hi'));
+      },
+    );
+
+    test(
+      'disabling preserves already-commented properties as double comments',
+      () {
+        final decoded = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+''');
+
+        final yaml = encodeConfig(decoded, '''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+''');
+        expect(yaml, contains('#   # threshold: 42'));
+      },
+    );
   });
 
   group('keyboard / pointer encoders skip mouse buttons', () {

@@ -115,6 +115,18 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   void reorder(int oldIndex, int newIndex) =>
       _dispatch(ReorderAction(location, oldIndex, newIndex));
 
+  void setEnabled(int index, bool enabled) {
+    _dispatch(
+      SetLens<bool?>(
+        actionEnabledLens(
+          ActionLocation(gesture: location, actionIndex: index),
+        ),
+        enabled ? null : false,
+        label: enabled ? 'enable action' : 'disable action',
+      ),
+    );
+  }
+
   /// Restores the whole action list to its last-saved value as one undo step.
   void revert() {
     final savedActions = state.savedActions;

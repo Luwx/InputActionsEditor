@@ -190,7 +190,7 @@ packages:
     description:
       path: edit_schema_generator
       ref: HEAD
-      resolved-ref: "767b7ff5d15db9490815da84c9c95a671105fae7"
+      resolved-ref: "6be07081833e12b8b8d737eeeb54e007d72a550e"
       url: "https://github.com/Luwx/dart_generators"
     source: git
     version: "0.0.1"
@@ -518,7 +518,7 @@ packages:
     description:
       path: meta_generator
       ref: HEAD
-      resolved-ref: "767b7ff5d15db9490815da84c9c95a671105fae7"
+      resolved-ref: "6be07081833e12b8b8d737eeeb54e007d72a550e"
       url: "https://github.com/Luwx/dart_generators"
     source: git
     version: "0.1.0"

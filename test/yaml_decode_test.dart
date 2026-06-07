@@ -229,6 +229,43 @@ mouse:
 ''');
       expect(c.mouseGestures.single.common.threshold, '42');
     });
+
+    test('commented-out gesture parses as disabled', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+    #   actions:
+    #     - command: echo hi
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.name, 'Disabled Press');
+      expect(common.enabled, isFalse);
+      expect(common.threshold, isNull);
+      expect(
+        common.actions.single.action,
+        const CommandAction(command: 'echo hi'),
+      );
+    });
+
+    test('commented-out gesture preserves a nested disabled action', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   enabled: false
+    #   actions:
+    #     # - enabled: false
+    #       # command: echo hi
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.enabled, isFalse);
+      final action = common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(action.action, const CommandAction(command: 'echo hi'));
+    });
   });
 
   group('decodeConfig - conditions', () {
@@ -394,6 +431,23 @@ mouse:
   });
 
   group('decodeConfig - actions', () {
+    test('commented-out action parses as disabled', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        # - command: echo hi
+        #   wait: true
+''');
+      final action = c.mouseGestures.single.common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(
+        action.action,
+        const CommandAction(command: 'echo hi', wait: true),
+      );
+    });
+
     test('command action with wait', () {
       final c = decodeConfig('''
 mouse:
