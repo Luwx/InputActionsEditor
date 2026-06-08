@@ -216,6 +216,76 @@ class ConfigController extends AsyncNotifier<Config> {
     state = AsyncData(normalized);
   }
 
+  /// Replace current config with an empty one.
+  void newConfig() {
+    const empty = Config();
+    _originalText = '';
+    _savedConfig = empty;
+    _editStacks.clear();
+    state = const AsyncData(empty);
+  }
+
+  /// Replace current config with one parsed from [text].
+  void loadFromText(String text) {
+    final config = assignEditIds(_repository.decodeFromText(text));
+    _originalText = text;
+    _savedConfig = config;
+    _editStacks.clear();
+    state = AsyncData(config);
+  }
+
+  /// Merge a config parsed from [text] into the current draft (non-undoable).
+  void mergeFromText(String text) {
+    final current = state.value;
+    if (current == null) return;
+    final incoming = _repository.decodeFromText(text);
+    final existingGroupIds = current.gestureGroups.map((g) => g.id).toSet();
+    final newGroups = incoming.gestureGroups
+        .where((g) => !existingGroupIds.contains(g.id))
+        .toList();
+    final merged = current.copyWith(
+      mouseGestures: [...current.mouseGestures, ...incoming.mouseGestures],
+      keyboardGestures: [
+        ...current.keyboardGestures,
+        ...incoming.keyboardGestures,
+      ],
+      pointerGestures: [
+        ...current.pointerGestures,
+        ...incoming.pointerGestures,
+      ],
+      touchpadGestures: [
+        ...current.touchpadGestures,
+        ...incoming.touchpadGestures,
+      ],
+      touchscreenGestures: [
+        ...current.touchscreenGestures,
+        ...incoming.touchscreenGestures,
+      ],
+      gestureGroups: [...current.gestureGroups, ...newGroups],
+      deviceRules: [...current.deviceRules, ...incoming.deviceRules],
+      mouseSpeed: current.mouseSpeed ?? incoming.mouseSpeed,
+      touchpadSpeed: current.touchpadSpeed ?? incoming.touchpadSpeed,
+      touchscreenSpeed: current.touchscreenSpeed ?? incoming.touchscreenSpeed,
+    );
+    _applyConfig(merged);
+  }
+
+  /// Serialize the current draft to YAML text.
+  String configToYamlText() {
+    final config = state.value ?? const Config();
+    return _repository.encodeToText(config, _originalText);
+  }
+
+  /// Returns false if [text] cannot be parsed as a config document.
+  bool isValidConfigText(String text) {
+    try {
+      _repository.decodeFromText(text);
+      return true;
+    } on Exception {
+      return false;
+    }
+  }
+
   Future<bool> saveAs() async {
     final config = state.value;
     if (config == null) return false;

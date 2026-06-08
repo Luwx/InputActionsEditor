@@ -106,6 +106,12 @@ abstract class AppLocalizations {
   /// **'Editor'**
   String get appSubtitle;
 
+  /// No description provided for @actionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get actionNew;
+
   /// No description provided for @actionLoad.
   ///
   /// In en, this message translates to:
@@ -129,6 +135,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard changes'**
   String get actionDiscardChanges;
+
+  /// No description provided for @actionLoadFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from clipboard'**
+  String get actionLoadFromClipboard;
+
+  /// No description provided for @actionCopyToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to clipboard'**
+  String get actionCopyToClipboard;
 
   /// No description provided for @actionOk.
   ///
@@ -843,6 +861,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Config saved.'**
   String get configSaveSuccess;
+
+  /// No description provided for @configCopyToClipboardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Config copied to clipboard.'**
+  String get configCopyToClipboardSuccess;
+
+  /// No description provided for @configLoadClipboardError.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard does not contain valid config YAML.'**
+  String get configLoadClipboardError;
+
+  /// No description provided for @dialogClipboardLoadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from Clipboard'**
+  String get dialogClipboardLoadTitle;
+
+  /// No description provided for @dialogClipboardLoadBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to load the clipboard config?'**
+  String get dialogClipboardLoadBody;
+
+  /// No description provided for @dialogClipboardLoadActionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New config'**
+  String get dialogClipboardLoadActionNew;
+
+  /// No description provided for @dialogClipboardLoadActionMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get dialogClipboardLoadActionMerge;
 
   /// No description provided for @gestureCopyYamlSuccess.
   ///

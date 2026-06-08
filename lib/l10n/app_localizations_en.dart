@@ -15,6 +15,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSubtitle => 'Editor';
 
   @override
+  String get actionNew => 'New';
+
+  @override
   String get actionLoad => 'Load';
 
   @override
@@ -25,6 +28,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionDiscardChanges => 'Discard changes';
+
+  @override
+  String get actionLoadFromClipboard => 'Load from clipboard';
+
+  @override
+  String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
   String get actionOk => 'OK';
@@ -392,6 +401,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configSaveSuccess => 'Config saved.';
+
+  @override
+  String get configCopyToClipboardSuccess => 'Config copied to clipboard.';
+
+  @override
+  String get configLoadClipboardError =>
+      'Clipboard does not contain valid config YAML.';
+
+  @override
+  String get dialogClipboardLoadTitle => 'Load from Clipboard';
+
+  @override
+  String get dialogClipboardLoadBody =>
+      'How would you like to load the clipboard config?';
+
+  @override
+  String get dialogClipboardLoadActionNew => 'New config';
+
+  @override
+  String get dialogClipboardLoadActionMerge => 'Merge';
 
   @override
   String get gestureCopyYamlSuccess => 'Gesture YAML copied.';

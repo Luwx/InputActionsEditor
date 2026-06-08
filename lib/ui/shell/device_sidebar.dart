@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -9,6 +10,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/clipboard_load_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -103,6 +105,15 @@ class DeviceSidebar extends HookConsumerWidget {
                             .group(
                               children: [
                                 .item(
+                                  prefix: const Icon(FLucideIcons.filePlus2),
+                                  title: Text(l10n.actionNew),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    if (!rootContext.mounted) return;
+                                    await _newConfigDocument(rootContext, ref);
+                                  },
+                                ),
+                                .item(
                                   prefix: const Icon(FLucideIcons.folderOpen),
                                   title: Text(l10n.actionLoad),
                                   onPress: () async {
@@ -111,6 +122,19 @@ class DeviceSidebar extends HookConsumerWidget {
                                     await _loadConfigDocument(rootContext, ref);
                                   },
                                 ),
+                                .item(
+                                  prefix: const Icon(FLucideIcons.clipboard),
+                                  title: Text(l10n.actionLoadFromClipboard),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    if (!rootContext.mounted) return;
+                                    await _loadFromClipboard(rootContext, ref);
+                                  },
+                                ),
+                              ],
+                            ),
+                            .group(
+                              children: [
                                 .item(
                                   prefix: const Icon(FLucideIcons.save),
                                   title: Text(l10n.actionSave),
@@ -136,6 +160,20 @@ class DeviceSidebar extends HookConsumerWidget {
                                   onPress: () async {
                                     await controller.hide();
                                     await configController.saveAs();
+                                  },
+                                ),
+                                .item(
+                                  prefix: const Icon(
+                                    FLucideIcons.clipboardCopy,
+                                  ),
+                                  title: Text(l10n.actionCopyToClipboard),
+                                  onPress: () async {
+                                    await controller.hide();
+                                    if (!rootContext.mounted) return;
+                                    await _copyToClipboard(
+                                      rootContext,
+                                      configController,
+                                    );
                                   },
                                 ),
                                 .item(
@@ -238,6 +276,24 @@ class DeviceSidebar extends HookConsumerWidget {
   }
 }
 
+/// Creates a blank new config, discarding the current one.
+///
+/// Warns first if there are unsaved changes.
+Future<void> _newConfigDocument(BuildContext context, WidgetRef ref) async {
+  final configController = ref.read(configControllerProvider.notifier);
+
+  if (configController.isDirty) {
+    final action = await showUnsavedChangesDialog(context);
+    if (action == null) return;
+    if (action == UnsavedChangesAction.apply) {
+      await configController.save();
+    }
+  }
+
+  ref.read(navProvider.notifier).reset();
+  configController.newConfig();
+}
+
 /// Loads a new config document, replacing the current one.
 ///
 /// If the draft has unsaved changes the user is warned first and may apply,
@@ -259,5 +315,71 @@ Future<void> _loadConfigDocument(BuildContext context, WidgetRef ref) async {
 
   await configController.loadFromPicker(
     onBeforeLoad: () => ref.read(navProvider.notifier).reset(),
+  );
+}
+
+Future<void> _loadFromClipboard(BuildContext context, WidgetRef ref) async {
+  final l10n = context.l10n;
+  final configController = ref.read(configControllerProvider.notifier);
+
+  final data = await Clipboard.getData(Clipboard.kTextPlain);
+  final text = data?.text ?? '';
+
+  if (!context.mounted) return;
+
+  if (text.trim().isEmpty) {
+    showFToast(
+      context: context,
+      title: Text(l10n.configLoadClipboardError),
+      duration: const Duration(seconds: 3),
+    );
+    return;
+  }
+
+  if (!configController.isValidConfigText(text)) {
+    showFToast(
+      context: context,
+      title: Text(l10n.configLoadClipboardError),
+      duration: const Duration(seconds: 3),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+  final loadAction = await showClipboardLoadDialog(context);
+  if (loadAction == null) return;
+
+  switch (loadAction) {
+    case ClipboardLoadAction.newConfig:
+      if (!context.mounted) return;
+      if (configController.isDirty) {
+        final unsavedAction = await showUnsavedChangesDialog(context);
+        if (unsavedAction == null) return;
+        if (unsavedAction == UnsavedChangesAction.apply) {
+          await configController.save();
+        }
+      }
+      ref.read(navProvider.notifier).reset();
+      configController.loadFromText(text);
+    case ClipboardLoadAction.merge:
+      configController.mergeFromText(text);
+  }
+}
+
+Future<void> _copyToClipboard(
+  BuildContext context,
+  ConfigController configController,
+) async {
+  final yaml = configController.configToYamlText();
+  await Clipboard.setData(ClipboardData(text: yaml));
+  if (!context.mounted) return;
+  showFToast(
+    context: context,
+    title: Text(context.l10n.configCopyToClipboardSuccess),
+    suffixBuilder: (context, entry) => FButton.icon(
+      onPress: entry.dismiss,
+      child: const Icon(FLucideIcons.x),
+    ),
+    duration: const Duration(seconds: 3),
   );
 }
