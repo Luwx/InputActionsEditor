@@ -276,13 +276,13 @@ class ConfigController extends AsyncNotifier<Config> {
     return _repository.encodeToText(config, _originalText);
   }
 
-  /// Returns false if [text] cannot be parsed as a config document.
-  bool isValidConfigText(String text) {
+  /// Returns null if [text] is valid, or an error message if parsing fails.
+  String? validateConfigText(String text) {
     try {
       _repository.decodeFromText(text);
-      return true;
-    } on Exception {
-      return false;
+      return null;
+    } on Object catch (e) {
+      return e.toString();
     }
   }
 

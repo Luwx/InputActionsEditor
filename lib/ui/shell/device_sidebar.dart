@@ -1,6 +1,7 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -336,18 +337,57 @@ Future<void> _loadFromClipboard(BuildContext context, WidgetRef ref) async {
     return;
   }
 
-  if (!configController.isValidConfigText(text)) {
+  final error = configController.validateConfigText(text);
+  if (error != null) {
     showFToast(
       context: context,
       title: Text(l10n.configLoadClipboardError),
-      duration: const Duration(seconds: 3),
+      suffixBuilder: (toastContext, entry) => FButton(
+        variant: .ghost,
+        size: .sm,
+        onPress: () {
+          entry.dismiss();
+          unawaited(
+            showFDialog<void>(
+              context: context,
+              builder: (ctx, style, animation) => FDialog(
+                style: style,
+                animation: animation,
+                constraints: const BoxConstraints(minWidth: 280, maxWidth: 480),
+                title: Text(l10n.configLoadClipboardError),
+                body: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: SelectableText(error),
+                ),
+                actions: [
+                  FButton(
+                    onPress: () => Navigator.of(ctx).pop(),
+                    child: Text(l10n.actionClose),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: Text(l10n.configLoadClipboardDetailsButton),
+      ),
     );
     return;
   }
 
   if (!context.mounted) return;
-  final loadAction = await showClipboardLoadDialog(context);
-  if (loadAction == null) return;
+
+  final currentConfig = ref.read(configControllerProvider).value;
+  final isEmpty = currentConfig == null || currentConfig.totalGestureCount == 0;
+
+  ClipboardLoadAction loadAction;
+  if (isEmpty) {
+    loadAction = ClipboardLoadAction.newConfig;
+  } else {
+    final dialogAction = await showClipboardLoadDialog(context);
+    if (dialogAction == null) return;
+    loadAction = dialogAction;
+  }
 
   switch (loadAction) {
     case ClipboardLoadAction.newConfig:

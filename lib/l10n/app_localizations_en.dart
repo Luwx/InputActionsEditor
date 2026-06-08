@@ -406,8 +406,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configCopyToClipboardSuccess => 'Config copied to clipboard.';
 
   @override
-  String get configLoadClipboardError =>
-      'Clipboard does not contain valid config YAML.';
+  String get configLoadClipboardError => 'Could not parse clipboard YAML.';
+
+  @override
+  String get configLoadClipboardDetailsButton => 'Details';
 
   @override
   String get dialogClipboardLoadTitle => 'Load from Clipboard';

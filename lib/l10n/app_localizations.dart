@@ -871,8 +871,14 @@ abstract class AppLocalizations {
   /// No description provided for @configLoadClipboardError.
   ///
   /// In en, this message translates to:
-  /// **'Clipboard does not contain valid config YAML.'**
+  /// **'Could not parse clipboard YAML.'**
   String get configLoadClipboardError;
+
+  /// No description provided for @configLoadClipboardDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get configLoadClipboardDetailsButton;
 
   /// No description provided for @dialogClipboardLoadTitle.
   ///
