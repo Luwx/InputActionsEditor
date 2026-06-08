@@ -1,22 +1,15 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/gestures.dart'
-    show
-        PointerDeviceKind,
-        PointerDownEvent,
-        PointerUpEvent,
-        kBackMouseButton,
-        kForwardMouseButton,
-        kMiddleMouseButton,
-        kPrimaryMouseButton,
-        kSecondaryMouseButton;
-import 'package:flutter/material.dart' show Colors, Icons;
-import 'package:flutter/services.dart'
-    show HardwareKeyboard, KeyDownEvent, KeyEvent, KeyUpEvent;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:flutter_hooks/flutter_hooks.dart';
+
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_key_search_index.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
@@ -24,10 +17,13 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
+
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
@@ -40,14 +36,133 @@ const Map<int, String> _mouseButtonNames = {
   kForwardMouseButton: 'forward',
 };
 
-class InputEntryEditor extends HookWidget {
-  const InputEntryEditor({
+class EditorInputAction extends HookConsumerWidget {
+  const EditorInputAction({super.key});
+
+  static const Map<String, InputDevice> deviceOptions = {
+    'Keyboard': InputDevice.keyboard,
+    'Mouse': InputDevice.mouse,
+  };
+
+  void _addEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+  ) {
+    onChanged([...current, const InputEntry(device: InputDevice.keyboard)]);
+  }
+
+  void _removeEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+    int index,
+  ) {
+    onChanged(List<InputEntry>.of(current)..removeAt(index));
+  }
+
+  void _updateEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+    int index,
+    InputEntry updated,
+  ) {
+    final list = List<InputEntry>.of(current);
+    list[index] = updated;
+    onChanged(list);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesField = ref.actionField(
+      context,
+      actionInputEntriesLens,
+      fallbackValue: () => const <InputEntry>[],
+    );
+    final currentEntries = entriesField.value;
+    // final colors = context.theme.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            UnsavedLabel(
+              state: entriesField.dirty,
+              onRevert: entriesField.onRevert,
+              child: Text(
+                context.l10n.inputDevicesLabel,
+                style: context.theme.typography.sm.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            FButton(
+              variant: .outline,
+              size: .sm,
+              onPress: () => _addEntry(currentEntries, entriesField.onChanged),
+              prefix: const Icon(FLucideIcons.plus, size: 14),
+              child: Text(context.l10n.inputAddDevice),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            // border: Border.all(color: colors.border),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            // padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (index, entry) in currentEntries.indexed)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _InputEntryEditor(
+                        index: index,
+                        entry: entry,
+                        deviceOptions: deviceOptions,
+                        onChanged: (updated) => _updateEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                          updated,
+                        ),
+                        onDelete: () => _removeEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                        ),
+                      ),
+                      if (index != currentEntries.length - 1)
+                        const FDivider(
+                          style: .delta(
+                            padding: .value(
+                              EdgeInsets.only(bottom: 16, top: 4),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InputEntryEditor extends HookWidget {
+  const _InputEntryEditor({
     required this.index,
     required this.entry,
     required this.deviceOptions,
     required this.onChanged,
     required this.onDelete,
-    super.key,
   });
 
   final int index;

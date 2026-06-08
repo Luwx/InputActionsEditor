@@ -8,8 +8,8 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class ReplaceTextActionEditor extends ConsumerWidget {
-  const ReplaceTextActionEditor({super.key});
+class EditorReplaceText extends ConsumerWidget {
+  const EditorReplaceText({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
