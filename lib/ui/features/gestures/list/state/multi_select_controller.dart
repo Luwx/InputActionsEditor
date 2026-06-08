@@ -5,9 +5,6 @@ class MultiSelectController extends Notifier<Set<GestureLocation>?> {
   @override
   Set<GestureLocation>? build() => null;
 
-  bool get isActive => state != null;
-  Set<GestureLocation>? get selection => state;
-
   void enter(GestureLocation initial) {
     state = {initial};
   }
@@ -20,7 +17,8 @@ class MultiSelectController extends Notifier<Set<GestureLocation>?> {
     state = next;
   }
 
-  set selection(Set<GestureLocation>? items) => state = items;
+  @override
+  set state(Set<GestureLocation>? items) => state = items;
 
   void exit() => state = null;
 }

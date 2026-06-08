@@ -1,38 +1,11 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart' show Colors, OutlineInputBorder;
+import 'package:flutter/services.dart'
+    show FilteringTextInputFormatter, TextInputAction;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-
-// Approximate widths of the detect button variants and the gap between them
-// and the text field. Used to decide which layout mode to enter.
-const _kGap = 6.0;
-const _kFullButtonWidth = 88.0;
-const _kIconButtonWidth = 34.0;
-
-// Horizontal padding inside FTextField (estimated from forui's desktop style).
-const _kFieldPadding = 24.0;
-
-enum _DetectLayout { rowFull, rowIcon, column }
-
-_DetectLayout _computeLayout(double available, double textWidth) {
-  final minField = (textWidth + _kFieldPadding).clamp(60.0, double.infinity);
-  if (available >= minField + _kGap + _kFullButtonWidth) {
-    return _DetectLayout.rowFull;
-  }
-  if (available >= minField + _kGap + _kIconButtonWidth) {
-    return _DetectLayout.rowIcon;
-  }
-  return _DetectLayout.column;
-}
-
-double _measureText(String text, TextStyle style) {
-  if (text.isEmpty) return 0;
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  return painter.width;
-}
 
 class TextValueInput extends HookWidget {
   const TextValueInput({
@@ -49,9 +22,8 @@ class TextValueInput extends HookWidget {
   final String hint;
   final bool autofocus;
 
-  /// When non-null, an adaptive detect-window button is shown alongside the
-  /// field. The callback is invoked on tap and is expected to call [onChanged]
-  /// if a window was picked (it may be a no-op if the user cancelled).
+  /// When non-null, the input renders as a chip that opens a popover with the
+  /// text field and a detect-window button.
   final Future<void> Function()? onDetect;
 
   @override
@@ -60,7 +32,6 @@ class TextValueInput extends HookWidget {
     final focusNode = useFocusNode();
     final isHovered = useState(false);
     final isFocused = useState(false);
-    final detecting = useState(false);
 
     // Sync controller when external value changes (didUpdateWidget).
     final prevValue = usePrevious(value);
@@ -108,74 +79,178 @@ class TextValueInput extends HookWidget {
 
     if (onDetect == null) return textField;
 
+    return _TextValueChip(
+      value: value,
+      hint: hint,
+      onChanged: onChanged,
+      onDetect: onDetect!,
+    );
+  }
+}
+
+class _TextValueChip extends HookWidget {
+  const _TextValueChip({
+    required this.value,
+    required this.hint,
+    required this.onChanged,
+    required this.onDetect,
+  });
+
+  final String value;
+  final String hint;
+  final void Function(String) onChanged;
+  final Future<void> Function() onDetect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+    final isHovered = useState(false);
+    final isOpen = useState(false);
+    final detecting = useState(false);
+
+    final isEmpty = value.isEmpty;
+    final displayText = isEmpty ? hint : value;
+    final textColor = isEmpty ? colors.mutedForeground : colors.foreground;
+    final isActive = isHovered.value || isOpen.value;
+
     Future<void> handleDetect() async {
       detecting.value = true;
       try {
-        await onDetect!();
+        await onDetect();
       } finally {
         detecting.value = false;
       }
     }
 
-    final textStyle = context.theme.typography.sm;
-    final buttonIcon = detecting.value
-        ? const FCircularProgress()
-        : const Icon(FLucideIcons.crosshair, size: 14);
-    final buttonOnPress = detecting.value ? null : handleDetect;
-
-    Widget buildButton({required bool full}) {
-      if (full) {
-        return FButton(
-          size: .sm,
-          variant: .outline,
-          onPress: buttonOnPress,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              buttonIcon,
-              const SizedBox(width: 5),
-              const Text('Detect'),
-            ],
+    return FPopover(
+      control: FPopoverControl.lifted(
+        shown: isOpen.value,
+        onChange: (v) => isOpen.value = v,
+      ),
+      autofocus: false,
+      constraints: const FPortalConstraints(maxWidth: 280),
+      builder: (context, controller, child) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => isHovered.value = true,
+        onExit: (_) => isHovered.value = false,
+        child: GestureDetector(
+          onTap: () => unawaited(controller.toggle()),
+          behavior: HitTestBehavior.opaque,
+          child: child,
+        ),
+      ),
+      popoverBuilder: (context, controller) => _TextValuePopover(
+        value: value,
+        hint: hint,
+        onChanged: onChanged,
+        onDetect: handleDetect,
+        detecting: detecting.value,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOutCubic,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? colors.card : null,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? colors.border : Colors.transparent,
+            strokeAlign: BorderSide.strokeAlignOutside,
           ),
-        );
-      }
-      return FButton.icon(
-        size: .sm,
-        onPress: buttonOnPress,
-        child: buttonIcon,
-      );
+        ),
+        child: Text(
+          displayText,
+          style: typography.sm.copyWith(color: textColor),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+class _TextValuePopover extends HookWidget {
+  const _TextValuePopover({
+    required this.value,
+    required this.hint,
+    required this.onChanged,
+    required this.onDetect,
+    required this.detecting,
+  });
+
+  final String value;
+  final String hint;
+  final void Function(String) onChanged;
+  final Future<void> Function() onDetect;
+  final bool detecting;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = useTextEditingController.fromValue(
+      TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      ),
+    );
+
+    final prevValue = usePrevious(value);
+    if (prevValue != null && prevValue != value && value != controller.text) {
+      final target = value;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (controller.text != target) {
+          controller.value = TextEditingValue(
+            text: target,
+            selection: TextSelection.collapsed(offset: target.length),
+          );
+        }
+      });
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final textWidth = _measureText(value, textStyle);
-        final layout = _computeLayout(constraints.maxWidth, textWidth);
-        return switch (layout) {
-          _DetectLayout.rowFull => Row(
-            children: [
-              Expanded(child: textField),
-              const SizedBox(width: _kGap),
-              buildButton(full: true),
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FTextField(
+            autofocus: true,
+            maxLines: null,
+            textInputAction: TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.deny(RegExp(r'\n')),
             ],
+            control: FTextFieldControl.managed(
+              controller: controller,
+              onChange: (v) {
+                if (v.text != value) onChanged(v.text);
+              },
+            ),
+            hint: hint,
           ),
-          _DetectLayout.rowIcon => Row(
-            children: [
-              Expanded(child: textField),
-              const SizedBox(width: _kGap),
-              buildButton(full: false),
-            ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FButton(
+              size: .sm,
+              variant: .outline,
+              onPress: detecting ? null : onDetect,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (detecting)
+                    const FCircularProgress()
+                  else
+                    const Icon(FLucideIcons.crosshair, size: 14),
+                  const SizedBox(width: 5),
+                  const Text('Detect'),
+                ],
+              ),
+            ),
           ),
-          _DetectLayout.column => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              textField,
-              const SizedBox(height: _kGap),
-              buildButton(full: true),
-            ],
-          ),
-        };
-      },
+        ],
+      ),
     );
   }
 }

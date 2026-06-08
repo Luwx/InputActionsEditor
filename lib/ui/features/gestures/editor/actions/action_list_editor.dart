@@ -277,55 +277,60 @@ class _RowHeader extends HookConsumerWidget {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: onToggle,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: colors.secondary,
-                        borderRadius: BorderRadius.circular(8),
+                child: Opacity(
+                  opacity: action.enabled == false ? 0.5 : 1,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: colors.secondary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          meta.icon,
+                          size: 17,
+                          color: colors.secondaryForeground,
+                        ),
                       ),
-                      child: Icon(
-                        meta.icon,
-                        size: 17,
-                        color: colors.secondaryForeground,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    UnsavedLabel(
-                      isDirty: isDirty,
-                      child: Text(
-                        actionRowTitle(action.action, l10n),
-                        style: typography.sm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          decoration: isTitleHovered.value
-                              ? TextDecoration.underline
-                              : TextDecoration.none,
-                          decorationColor: colors.foreground.withValues(
-                            alpha: 0.5,
+                      const SizedBox(width: 12),
+                      UnsavedLabel(
+                        isDirty: isDirty,
+                        child: Text(
+                          actionRowTitle(action.action, l10n),
+                          style: typography.sm.copyWith(
+                            fontWeight: FontWeight.w700,
+                            decoration: action.enabled == false
+                                ? TextDecoration.lineThrough
+                                : isTitleHovered.value
+                                ? TextDecoration.underline
+                                : TextDecoration.none,
+                            decorationColor: colors.foreground.withValues(
+                              alpha: action.enabled == false ? 1 : 0.5,
+                            ),
+                            decorationThickness: 2,
                           ),
-                          decorationThickness: 2,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        actionValueSummary(action.action, l10n),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.sm.copyWith(
-                          color: colors.mutedForeground,
-                        ),
-                      ),
-                    ),
-                    if (chips.isNotEmpty) ...[
                       const SizedBox(width: 14),
-                      _MetaChips(chips: chips),
+                      Expanded(
+                        child: Text(
+                          actionValueSummary(action.action, l10n),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.sm.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                      ),
+                      if (chips.isNotEmpty) ...[
+                        const SizedBox(width: 14),
+                        _MetaChips(chips: chips),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

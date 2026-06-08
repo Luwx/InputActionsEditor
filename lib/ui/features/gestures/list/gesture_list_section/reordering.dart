@@ -33,7 +33,7 @@ final class _GestureListController {
 
     final multiSelect = ref.read(multiSelectControllerProvider);
     if (multiSelect != null) {
-      ref.read(multiSelectControllerProvider.notifier).selection = {
+      ref.read(multiSelectControllerProvider.notifier).state = {
         for (final key in multiSelect)
           key.device == device
               ? GestureLocation(
