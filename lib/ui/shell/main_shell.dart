@@ -7,6 +7,8 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/app_state/app/window_title_provider.dart';
+import 'package:input_actions_editor/services/kwin_window_service.dart'
+    show kwinSupportedProvider;
 import 'package:input_actions_editor/services/window_service.dart'
     show windowServiceProvider;
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -50,6 +52,8 @@ class MainShell extends HookConsumerWidget {
         };
 
       ref
+        // warm the KWin support check so it's cached before the sidebar renders
+        ..read(kwinSupportedProvider)
         // listens to dbus events and updates the history list
         ..read(recognitionHistoryProvider.notifier)
         // update window title with '*'
