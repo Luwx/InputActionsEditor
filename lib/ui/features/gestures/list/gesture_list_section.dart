@@ -34,6 +34,7 @@ import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_com
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
+import 'package:scroll_animator/scroll_animator.dart';
 
 part 'gesture_list_section/choreography.dart';
 part 'gesture_list_section/dialogs/rename_dialog.dart';
@@ -57,7 +58,12 @@ class GestureListSection extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scrollController = useScrollController();
+    final scrollController = useMemoized(
+      () => AnimatedScrollController(
+        animationFactory: const ChromiumEaseInOut(),
+      ),
+    );
+    useEffect(() => scrollController.dispose, const []);
     final choreo = _useGestureListChoreography(ref, context, scrollController);
     final transitions = _useGestureTransitions(ref, context);
 

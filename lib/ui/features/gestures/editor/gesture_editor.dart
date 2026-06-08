@@ -27,6 +27,7 @@ import 'package:input_actions_editor/ui/features/gestures/list/state/multi_selec
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
+import 'package:scroll_animator/scroll_animator.dart';
 
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
@@ -54,7 +55,12 @@ class _GestureEditorView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scrollController = useScrollController();
+    final scrollController = useMemoized(
+      () => AnimatedScrollController(
+        animationFactory: const ChromiumEaseInOut(),
+      ),
+    );
+    useEffect(() => scrollController.dispose, const []);
     final anchorController = useMemoized(ScrollAnchorController.new);
     final addActionHeaderKey = useMemoized(GlobalKey.new);
     final addActionCallbackRef = useRef<Future<void> Function()?>(null);

@@ -160,7 +160,6 @@ class _StrokeInstructions extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    // Each step is a list of segments; bold:true segments are rendered with w600.
     final steps = switch (deviceType) {
       DeviceType.mouse => [
         [_Segment(l10n.strokesMouseStep1)],
