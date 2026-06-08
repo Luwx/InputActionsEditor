@@ -460,10 +460,24 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
     'plasma_shortcut': '$component,$shortcut',
   },
   ActivateWindowAction(:final windowId) => {'activate_window': windowId},
+  ReplaceTextAction(:final rules) => {
+    'replace_text': rules.map(textSubstitutionRuleToMap).toList(),
+  },
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
   FunctionAction(:final expression) => {'function': expression},
   RawAction(:final raw) => {'__raw': raw},
 };
+
+Map<String, dynamic> textSubstitutionRuleToMap(TextSubstitutionRule rule) => {
+  'regex': rule.regex,
+  'replace': textReplacementValueToYaml(rule.replace),
+};
+
+dynamic textReplacementValueToYaml(TextReplacementValue value) =>
+    switch (value) {
+      LiteralTextReplacementValue(:final text) => text,
+      CommandTextReplacementValue(:final command) => {'command': command},
+    };
 
 /// Comments out disabled gesture/action list items so the runtime ignores
 /// them. The normal YAML map still carries `enabled: false`, which lets

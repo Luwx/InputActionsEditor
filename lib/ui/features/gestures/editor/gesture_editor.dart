@@ -508,7 +508,7 @@ class _GestureHeaderMenu extends StatelessWidget {
               },
             ),
             .item(
-              prefix: const Icon(Icons.content_copy),
+              prefix: const Icon(FLucideIcons.code),
               title: Text(context.l10n.gestureMenuCopyYaml),
               onPress: () async {
                 await controller.hide();

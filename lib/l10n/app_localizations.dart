@@ -1348,6 +1348,18 @@ abstract class AppLocalizations {
   /// **'Focus a window by ID'**
   String get actionMetaActivateWindowSubtitle;
 
+  /// No description provided for @actionMetaReplaceTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace text'**
+  String get actionMetaReplaceTextLabel;
+
+  /// No description provided for @actionMetaReplaceTextSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace text near the cursor using regex rules'**
+  String get actionMetaReplaceTextSubtitle;
+
   /// No description provided for @actionMetaSleepLabel.
   ///
   /// In en, this message translates to:
@@ -1474,6 +1486,84 @@ abstract class AppLocalizations {
   /// **'Choose a window ID variable'**
   String get actionActivateWindowVariablePickerTooltip;
 
+  /// No description provided for @actionReplaceTextRulesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement rules'**
+  String get actionReplaceTextRulesLabel;
+
+  /// No description provided for @actionReplaceTextRulesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules are checked in order. The first regex matching the surrounding text at the cursor is used.'**
+  String get actionReplaceTextRulesHelp;
+
+  /// No description provided for @actionReplaceTextAddRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rule'**
+  String get actionReplaceTextAddRule;
+
+  /// No description provided for @actionReplaceTextRuleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule {index}'**
+  String actionReplaceTextRuleLabel(int index);
+
+  /// No description provided for @actionReplaceTextRegexLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Regex'**
+  String get actionReplaceTextRegexLabel;
+
+  /// No description provided for @actionReplaceTextRegexHint.
+  ///
+  /// In en, this message translates to:
+  /// **':calc(.*)'**
+  String get actionReplaceTextRegexHint;
+
+  /// No description provided for @actionReplaceTextReplacementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement'**
+  String get actionReplaceTextReplacementLabel;
+
+  /// No description provided for @actionReplaceTextTextMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get actionReplaceTextTextMode;
+
+  /// No description provided for @actionReplaceTextCommandMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get actionReplaceTextCommandMode;
+
+  /// No description provided for @actionReplaceTextTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'example@example.com'**
+  String get actionReplaceTextTextHint;
+
+  /// No description provided for @actionReplaceTextCommandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'printf \"\$(qalc -t \"\$match_1\")\"'**
+  String get actionReplaceTextCommandHint;
+
+  /// No description provided for @actionReplaceTextRuleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rule: {regex}} other{{count} rules: {regex}}}'**
+  String actionReplaceTextRuleSummary(int count, String regex);
+
+  /// No description provided for @actionReplaceTextFallbackSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'replace text'**
+  String get actionReplaceTextFallbackSummary;
+
   /// No description provided for @valueStringRuntimeVariableHelp.
   ///
   /// In en, this message translates to:
@@ -1527,6 +1617,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' is one literal string.'**
   String get tooltip_actionActivateWindow_noInterpolationSuffix;
+
+  /// No description provided for @tooltip_actionReplaceText_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches the surrounding text reported by the focused application and replaces the matched text at the cursor.'**
+  String get tooltip_actionReplaceText_body;
+
+  /// No description provided for @tooltip_actionReplaceText_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get tooltip_actionReplaceText_sectionLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_literalExCode.
+  ///
+  /// In en, this message translates to:
+  /// **':email  ->  example@example.com'**
+  String get tooltip_actionReplaceText_literalExCode;
+
+  /// No description provided for @tooltip_actionReplaceText_literalExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'simple literal replacement'**
+  String get tooltip_actionReplaceText_literalExLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_commandExCode.
+  ///
+  /// In en, this message translates to:
+  /// **':calc 2+2  ->  command uses \$match_1'**
+  String get tooltip_actionReplaceText_commandExCode;
+
+  /// No description provided for @tooltip_actionReplaceText_commandExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'compute replacement from the first capture'**
+  String get tooltip_actionReplaceText_commandExLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_matchNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture groups are exposed to command values as \$match_0, \$match_1, and so on.'**
+  String get tooltip_actionReplaceText_matchNote;
+
+  /// No description provided for @tooltip_actionReplaceText_cursorNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A rule is eligible only when the regex match ends at the current cursor position.'**
+  String get tooltip_actionReplaceText_cursorNote;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the command through /bin/sh -c and uses stdout as the replacement text.'**
+  String get tooltip_actionReplaceTextCommand_body;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example command'**
+  String get tooltip_actionReplaceTextCommand_exampleLabel;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleCode.
+  ///
+  /// In en, this message translates to:
+  /// **'printf \"\$(qalc -t \"\$match_1\")\"'**
+  String get tooltip_actionReplaceTextCommand_exampleCode;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'For a calculator rule, \$match_1 can be 2+2. qalc evaluates it and printf prints the result without adding its own newline.'**
+  String get tooltip_actionReplaceTextCommand_exampleDesc;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_variablesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get tooltip_actionReplaceTextCommand_variablesLabel;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_match0.
+  ///
+  /// In en, this message translates to:
+  /// **'\$match_0 is the whole regex match.'**
+  String get tooltip_actionReplaceTextCommand_match0;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_matchN.
+  ///
+  /// In en, this message translates to:
+  /// **'\$match_1 through \$match_4 are capture groups. Missing captures are empty.'**
+  String get tooltip_actionReplaceTextCommand_matchN;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_envNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Referenced Input Actions variables are injected into the process environment, so shell syntax like \"\$match_1\" expands normally.'**
+  String get tooltip_actionReplaceTextCommand_envNote;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_stdoutNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Use tools like printf or command flags such as -n when you do not want a trailing newline.'**
+  String get tooltip_actionReplaceTextCommand_stdoutNote;
 
   /// No description provided for @addGestureTitle.
   ///
@@ -3589,7 +3781,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_function_apisNote.
   ///
   /// In en, this message translates to:
-  /// **'Call built-in APIs with require() — inputactions/core, inputactions/fs — and console.'**
+  /// **'Call built-in APIs with require() \"(inputactions/core, inputactions/fs)\" and console.'**
   String get tooltip_function_apisNote;
 
   /// No description provided for @tooltip_function_callablePrefix.

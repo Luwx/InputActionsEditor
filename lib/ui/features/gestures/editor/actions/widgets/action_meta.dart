@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Action;
+import 'package:forui/forui.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/plasma_icons.dart';
@@ -20,12 +21,12 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
       CommandAction() => ActionMetaInfo(
         label: l10n.actionMetaCommandLabel,
         subtitle: l10n.actionMetaCommandSubtitle,
-        icon: Icons.terminal,
+        icon: FLucideIcons.terminal,
       ),
       InputAction() => ActionMetaInfo(
         label: l10n.actionMetaInputLabel,
         subtitle: l10n.actionMetaInputSubtitle,
-        icon: Icons.keyboard_alt_outlined,
+        icon: FLucideIcons.keyboard,
       ),
       PlasmaShortcutAction() => ActionMetaInfo(
         label: l10n.actionMetaPlasmaLabel,
@@ -35,21 +36,26 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
       ActivateWindowAction() => ActionMetaInfo(
         label: l10n.actionMetaActivateWindowLabel,
         subtitle: l10n.actionMetaActivateWindowSubtitle,
-        icon: Icons.ads_click,
+        icon: FLucideIcons.appWindow,
+      ),
+      ReplaceTextAction() => ActionMetaInfo(
+        label: l10n.actionMetaReplaceTextLabel,
+        subtitle: l10n.actionMetaReplaceTextSubtitle,
+        icon: FLucideIcons.regex,
       ),
       SleepAction() => ActionMetaInfo(
         label: l10n.actionMetaSleepLabel,
         subtitle: l10n.actionMetaSleepSubtitle,
-        icon: Icons.schedule_outlined,
+        icon: FLucideIcons.clock,
       ),
       FunctionAction() => ActionMetaInfo(
         label: l10n.actionMetaFunctionLabel,
         subtitle: l10n.actionMetaFunctionSubtitle,
-        icon: Icons.functions,
+        icon: FLucideIcons.braces,
       ),
       RawAction() => ActionMetaInfo(
         label: l10n.actionMetaRawLabel,
         subtitle: l10n.actionMetaRawSubtitle,
-        icon: Icons.code_outlined,
+        icon: FLucideIcons.code,
       ),
     };

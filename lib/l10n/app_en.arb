@@ -267,6 +267,8 @@
   "actionMetaPlasmaSubtitle": "Trigger a KDE global shortcut",
   "actionMetaActivateWindowLabel": "Activate window",
   "actionMetaActivateWindowSubtitle": "Focus a window by ID",
+  "actionMetaReplaceTextLabel": "Replace text",
+  "actionMetaReplaceTextSubtitle": "Replace text near the cursor using regex rules",
   "actionMetaSleepLabel": "Sleep",
   "actionMetaSleepSubtitle": "Pause before continuing",
   "actionMetaFunctionLabel": "Function",
@@ -288,6 +290,36 @@
   "actionActivateWindowHint": "e.g. $initial_window_under_pointer_id",
   "actionActivateWindowTooltip": "Window ID to activate. A plain value is treated as a literal window ID. An exact $name value is resolved through Input Actions' Value parser if the variable is registered when the config is loaded; the variable's value is read when the action runs. This is not string interpolation, so $name text is treated as one literal string and will not combine a variable with text.",
   "actionActivateWindowVariablePickerTooltip": "Choose a window ID variable",
+  "actionReplaceTextRulesLabel": "Replacement rules",
+  "actionReplaceTextRulesHelp": "Rules are checked in order. The first regex matching the surrounding text at the cursor is used.",
+  "actionReplaceTextAddRule": "Add rule",
+  "actionReplaceTextRuleLabel": "Rule {index}",
+  "@actionReplaceTextRuleLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "actionReplaceTextRegexLabel": "Regex",
+  "actionReplaceTextRegexHint": ":calc(.*)",
+  "actionReplaceTextReplacementLabel": "Replacement",
+  "actionReplaceTextTextMode": "Text",
+  "actionReplaceTextCommandMode": "Command",
+  "actionReplaceTextTextHint": "example@example.com",
+  "actionReplaceTextCommandHint": "printf \"$(qalc -t \"$match_1\")\"",
+  "actionReplaceTextRuleSummary": "{count, plural, =1{1 rule: {regex}} other{{count} rules: {regex}}}",
+  "@actionReplaceTextRuleSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "regex": {
+        "type": "String"
+      }
+    }
+  },
+  "actionReplaceTextFallbackSummary": "replace text",
   "valueStringRuntimeVariableHelp": "Use a literal ID or exactly $name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.",
   "tooltip_actionActivateWindow_bodyPrefix": "Use exactly ",
   "tooltip_actionActivateWindow_bodySuffix": " to focus the window stored in the respective runtime variable.",
@@ -297,6 +329,23 @@
   "tooltip_actionActivateWindow_unknownNote": "Unknown variables are allowed, but only registered variables resolve at config load.",
   "tooltip_actionActivateWindow_noInterpolationPrefix": "No interpolation: ",
   "tooltip_actionActivateWindow_noInterpolationSuffix": " is one literal string.",
+  "tooltip_actionReplaceText_body": "Matches the surrounding text reported by the focused application and replaces the matched text at the cursor.",
+  "tooltip_actionReplaceText_sectionLabel": "Examples",
+  "tooltip_actionReplaceText_literalExCode": ":email  ->  example@example.com",
+  "tooltip_actionReplaceText_literalExLabel": "simple literal replacement",
+  "tooltip_actionReplaceText_commandExCode": ":calc 2+2  ->  command uses $match_1",
+  "tooltip_actionReplaceText_commandExLabel": "compute replacement from the first capture",
+  "tooltip_actionReplaceText_matchNote": "Capture groups are exposed to command values as $match_0, $match_1, and so on.",
+  "tooltip_actionReplaceText_cursorNote": "A rule is eligible only when the regex match ends at the current cursor position.",
+  "tooltip_actionReplaceTextCommand_body": "Runs the command through /bin/sh -c and uses stdout as the replacement text.",
+  "tooltip_actionReplaceTextCommand_exampleLabel": "Example command",
+  "tooltip_actionReplaceTextCommand_exampleCode": "printf \"$(qalc -t \"$match_1\")\"",
+  "tooltip_actionReplaceTextCommand_exampleDesc": "For a calculator rule, $match_1 can be 2+2. qalc evaluates it and printf prints the result without adding its own newline.",
+  "tooltip_actionReplaceTextCommand_variablesLabel": "Variables",
+  "tooltip_actionReplaceTextCommand_match0": "$match_0 is the whole regex match.",
+  "tooltip_actionReplaceTextCommand_matchN": "$match_1 through $match_4 are capture groups. Missing captures are empty.",
+  "tooltip_actionReplaceTextCommand_envNote": "Referenced Input Actions variables are injected into the process environment, so shell syntax like \"$match_1\" expands normally.",
+  "tooltip_actionReplaceTextCommand_stdoutNote": "Use tools like printf or command flags such as -n when you do not want a trailing newline.",
   "addGestureTitle": "Add gesture",
   "addGestureChooseDevice": "Choose the device you want to add a gesture for.",
   "addGestureForDevice": "Add {device} gesture",

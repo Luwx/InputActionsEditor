@@ -3,7 +3,7 @@ import 'package:input_actions_editor/services/dbus_client.dart';
 
 class StrokeRecordingNotifier extends AsyncNotifier<String?> {
   @override
-  Future<String?> build() async => null;
+  String? build() => null;
 
   Future<String?> recordStroke() async {
     state = const AsyncLoading();

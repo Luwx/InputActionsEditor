@@ -21,6 +21,13 @@ String actionValueSummary(
         .ifEmpty(l10n.actionSummaryNotConfigured),
   ActivateWindowAction(:final windowId) =>
     windowId.trim().isEmpty ? l10n.actionSummaryNotConfigured : windowId.trim(),
+  ReplaceTextAction(:final rules) =>
+    rules.isEmpty
+        ? l10n.actionSummaryNotConfigured
+        : l10n.actionReplaceTextRuleSummary(
+            rules.length,
+            rules.first.regex,
+          ),
   SleepAction(:final milliseconds) => '$milliseconds ms',
   FunctionAction(:final expression) =>
     expression.trim().isEmpty
@@ -41,6 +48,7 @@ String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
         : _inputModeLabel(entries.first, l10n),
   PlasmaShortcutAction() => l10n.actionMetaPlasmaLabel,
   ActivateWindowAction() => l10n.actionMetaActivateWindowLabel,
+  ReplaceTextAction() => l10n.actionMetaReplaceTextLabel,
   SleepAction() => l10n.actionMetaSleepLabel,
   FunctionAction() => l10n.actionMetaFunctionLabel,
   RawAction() => l10n.actionMetaRawLabel,

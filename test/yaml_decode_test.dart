@@ -462,6 +462,28 @@ mouse:
       );
     });
 
+    test('commented-out action at key-level indent parses as disabled', () {
+      // Comment aligned with the "actions:" key instead of the list items.
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: stroke
+      strokes: [ 'MWQAzzIAZAA=' ]
+      mouse_buttons: [ right ]
+
+      actions:
+        - activate_window: $initial_window_under_pointer_id
+      # - sleep: 1
+        - input:
+            - keyboard: [ home ]
+        - activate_window: $previous_window_id
+''');
+      expect(c.mouseGestures.single.common.actions.length, 4);
+      final sleepAction = c.mouseGestures.single.common.actions[1];
+      expect(sleepAction.enabled, isFalse);
+      expect(sleepAction.action, const SleepAction(milliseconds: 1));
+    });
+
     test('command action with wait', () {
       final c = decodeConfig('''
 mouse:
@@ -581,6 +603,37 @@ mouse:
           shortcut: 'Window Close',
         ),
       );
+    });
+
+    test('replace_text parses literal and command rules in order', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - replace_text:
+            - regex: :calc{(.*)}
+              replace:
+                command: printf "$(qalc -t "$match_1")"
+            - regex: :email
+              replace: example@example.com
+''');
+      final action =
+          c.mouseGestures.single.common.actions.single.action
+              as ReplaceTextAction;
+
+      expect(action.rules, [
+        const TextSubstitutionRule(
+          regex: ':calc{(.*)}',
+          replace: CommandTextReplacementValue(
+            command: r'printf "$(qalc -t "$match_1")"',
+          ),
+        ),
+        const TextSubstitutionRule(
+          regex: ':email',
+          replace: LiteralTextReplacementValue(text: 'example@example.com'),
+        ),
+      ]);
     });
 
     test('sleep action parses milliseconds', () {

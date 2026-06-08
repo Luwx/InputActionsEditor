@@ -311,10 +311,12 @@ TreeTableLeaf _functionNode(
         final colors = context.theme.colors;
         final typography = context.theme.typography;
         return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 8, right: 4),
+              padding: const EdgeInsets.only(
+                right: 4,
+                left: 12,
+              ),
               child: Icon(
                 FLucideIcons.braces,
                 size: 14,
@@ -325,7 +327,7 @@ TreeTableLeaf _functionNode(
               tipBuilder: (context, controller) =>
                   const ConditionFunctionTooltip(),
               child: Padding(
-                padding: const EdgeInsets.only(top: 8, right: 10),
+                padding: const EdgeInsets.only(right: 10),
                 child: Text(
                   context.l10n.conditionFunctionLabel,
                   style: typography.sm.copyWith(color: colors.mutedForeground),

@@ -42,14 +42,37 @@ sealed class Action with _$Action {
   const factory Action.activateWindow({required String windowId}) =
       ActivateWindowAction;
 
+  const factory Action.replaceText({
+    @Default([]) List<TextSubstitutionRule> rules,
+  }) = ReplaceTextAction;
+
   const factory Action.sleep({required int milliseconds}) = SleepAction;
 
   /// A JavaScript function executed by the daemon for its side effects (the
   /// return value is ignored). [expression] is the raw `() => ...` source.
   const factory Action.function({required String expression}) = FunctionAction;
 
-  /// Raw YAML for action types we don't model (e.g. one:, replace_text:).
+  /// Raw YAML for action types we don't model (e.g. one:).
   const factory Action.raw({required String raw}) = RawAction;
+}
+
+@freezed
+@withMeta
+abstract class TextSubstitutionRule with _$TextSubstitutionRule {
+  const factory TextSubstitutionRule({
+    required String regex,
+    required TextReplacementValue replace,
+  }) = _TextSubstitutionRule;
+}
+
+@freezed
+@withMeta
+sealed class TextReplacementValue with _$TextReplacementValue {
+  const factory TextReplacementValue.literal({required String text}) =
+      LiteralTextReplacementValue;
+
+  const factory TextReplacementValue.command({required String command}) =
+      CommandTextReplacementValue;
 }
 
 enum InputDevice { keyboard, mouse }

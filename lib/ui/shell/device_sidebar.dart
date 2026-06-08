@@ -156,7 +156,7 @@ class DeviceSidebar extends HookConsumerWidget {
                                   },
                                 ),
                                 .item(
-                                  prefix: const Icon(FLucideIcons.filePlus),
+                                  prefix: const Icon(FLucideIcons.save),
                                   title: Text(l10n.actionSaveAs),
                                   onPress: () async {
                                     await controller.hide();

@@ -85,6 +85,10 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           'activateWindow',
           fields: [prop(ActivateWindowActionMeta.windowId)],
         ),
+        valueCase<ReplaceTextAction>(
+          'replaceText',
+          fields: [prop(ReplaceTextActionMeta.rules)],
+        ),
         valueCase<SleepAction>(
           'sleep',
           fields: [prop('duration', property: SleepActionMeta.milliseconds)],

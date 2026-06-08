@@ -487,6 +487,38 @@ mouse:
       );
     });
 
+    test('replace_text writes literal and command rules in order', () {
+      expect(
+        actionToMap(
+          const ReplaceTextAction(
+            rules: [
+              TextSubstitutionRule(
+                regex: ':calc{(.*)}',
+                replace: CommandTextReplacementValue(
+                  command: r'printf "$(qalc -t "$match_1")"',
+                ),
+              ),
+              TextSubstitutionRule(
+                regex: ':email',
+                replace: LiteralTextReplacementValue(
+                  text: 'example@example.com',
+                ),
+              ),
+            ],
+          ),
+        ),
+        {
+          'replace_text': [
+            {
+              'regex': ':calc{(.*)}',
+              'replace': {'command': r'printf "$(qalc -t "$match_1")"'},
+            },
+            {'regex': ':email', 'replace': 'example@example.com'},
+          ],
+        },
+      );
+    });
+
     test('sleep writes milliseconds', () {
       expect(actionToMap(const SleepAction(milliseconds: 750)), {'sleep': 750});
     });

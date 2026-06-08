@@ -455,7 +455,7 @@ class _MatchedGestureDetail extends StatelessWidget {
     final parts = <String>[];
 
     if (common.actions.isNotEmpty) {
-      final s = _actionSummaryText(common.actions.first.action);
+      final s = _actionSummaryText(common.actions.first.action, context.l10n);
       if (s.isNotEmpty) parts.add(s);
     }
     if (parts.isEmpty) return const SizedBox.shrink();
@@ -552,17 +552,20 @@ Object? _findGestureByIdOrName(String id, Config config) {
   return null;
 }
 
-String _actionSummaryText(Action action) => switch (action) {
-  CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
-  InputAction(:final entries) when entries.isEmpty => 'input (empty)',
-  InputAction(:final entries) =>
-    'input: ${entries.map((e) => e.device.name).join(', ')}',
-  PlasmaShortcutAction(:final shortcut) =>
-    shortcut.isEmpty ? 'plasma shortcut' : shortcut,
-  ActivateWindowAction(:final windowId) =>
-    windowId.isEmpty ? 'activate window' : 'activate $windowId',
-  SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
-  FunctionAction(:final expression) =>
-    expression.trim().isEmpty ? 'function' : expression.trim(),
-  RawAction() => 'raw yaml',
-};
+String _actionSummaryText(Action action, AppLocalizations l10n) =>
+    switch (action) {
+      CommandAction(:final command) =>
+        command.isEmpty ? '(no command)' : command,
+      InputAction(:final entries) when entries.isEmpty => 'input (empty)',
+      InputAction(:final entries) =>
+        'input: ${entries.map((e) => e.device.name).join(', ')}',
+      PlasmaShortcutAction(:final shortcut) =>
+        shortcut.isEmpty ? 'plasma shortcut' : shortcut,
+      ActivateWindowAction(:final windowId) =>
+        windowId.isEmpty ? 'activate window' : 'activate $windowId',
+      ReplaceTextAction() => l10n.actionReplaceTextFallbackSummary,
+      SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
+      FunctionAction(:final expression) =>
+        expression.trim().isEmpty ? 'function' : expression.trim(),
+      RawAction() => 'raw yaml',
+    };

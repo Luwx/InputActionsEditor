@@ -320,7 +320,7 @@ class _ActionsHeader extends ConsumerWidget {
           FButton(
             onPress: onAdd,
             prefix: const Icon(FLucideIcons.plus, size: 14),
-            child: Text(context.l10n.actionAdd),
+            child: Text(context.l10n.addAction),
           ),
       ],
     );

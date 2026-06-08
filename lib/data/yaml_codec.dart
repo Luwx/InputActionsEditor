@@ -517,18 +517,37 @@ String materializeDisabledYamlComments(String yamlText) {
     final uncommented = _uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
     final indent = _indentOf(parseLine);
-    _popContexts(contexts, indent);
+
+    // Before popping, check if this is a commented list item aligned with
+    // its parent key (e.g., "      # - sleep: 1" when "      actions:" is at
+    // indent 6). Such items must not pop the parent context.
+    final peekParent = contexts.isEmpty ? null : contexts.last;
+    final commentedAtKeyIndent =
+        peekParent != null &&
+        (peekParent.key == 'gestures' || peekParent.key == 'actions') &&
+        uncommented != null &&
+        _isListItemAt(parseLine, peekParent.indent);
+
+    if (!commentedAtKeyIndent) _popContexts(contexts, indent);
+
     final key = _blockKey(parseLine);
     if (key != null) {
       contexts.add(_YamlListContext(key, indent));
     }
 
-    final parent = contexts.isEmpty ? null : contexts.last;
-    if (parent != null &&
+    final parent = commentedAtKeyIndent
+        ? peekParent
+        : (contexts.isEmpty ? null : contexts.last);
+    final atNormalIndent =
+        parent != null &&
         (parent.key == 'gestures' || parent.key == 'actions') &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2)) {
-      final itemIndent = parent.indent + 2;
+        _isListItemAt(parseLine, parent.indent + 2);
+
+    if (atNormalIndent || commentedAtKeyIndent) {
+      final itemIndent = parent!.indent + 2;
+      // Re-indent lines when the comment was placed at the key level.
+      final indentOffset = commentedAtKeyIndent && !atNormalIndent ? 2 : 0;
       final block = <String>[];
       var j = i;
       while (j < lines.length) {
@@ -538,7 +557,7 @@ String materializeDisabledYamlComments(String yamlText) {
         final candidateIndent = _indentOf(candidateUncommented);
         if (j > i && candidateIndent <= parent.indent) break;
         if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
-        block.add(candidateUncommented);
+        block.add(' ' * indentOffset + candidateUncommented);
         j++;
       }
       final hasEnabled = block.any(
@@ -630,6 +649,11 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey('activate_window')) {
     return ActivateWindowAction(windowId: m['activate_window'].toString());
   }
+  if (m.containsKey('replace_text')) {
+    return ReplaceTextAction(
+      rules: _parseTextSubstitutionRules(m['replace_text']),
+    );
+  }
   if (m.containsKey('sleep')) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
   }
@@ -637,6 +661,30 @@ Action? _parseAction(YamlMap m) {
     return FunctionAction(expression: m['function'].toString());
   }
   return RawAction(raw: _dumpYamlNode(m));
+}
+
+List<TextSubstitutionRule> _parseTextSubstitutionRules(dynamic node) {
+  if (node is! YamlList) return [];
+  return node
+      .map(_parseTextSubstitutionRule)
+      .whereType<TextSubstitutionRule>()
+      .toList();
+}
+
+TextSubstitutionRule? _parseTextSubstitutionRule(dynamic node) {
+  if (node is! YamlMap) return null;
+  if (!node.containsKey('regex') || !node.containsKey('replace')) return null;
+  return TextSubstitutionRule(
+    regex: node['regex'].toString(),
+    replace: _parseTextReplacementValue(node['replace']),
+  );
+}
+
+TextReplacementValue _parseTextReplacementValue(dynamic node) {
+  if (node is YamlMap && node.containsKey('command')) {
+    return CommandTextReplacementValue(command: node['command'].toString());
+  }
+  return LiteralTextReplacementValue(text: node?.toString() ?? '');
 }
 
 dynamic _mergeActionsGeneric(dynamic g, List<TriggerAction> actions) {

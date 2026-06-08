@@ -303,6 +303,7 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
       shortcut.isEmpty ? 'plasma shortcut' : shortcut,
     ActivateWindowAction(:final windowId) =>
       windowId.isEmpty ? 'activate window' : 'activate $windowId',
+    ReplaceTextAction() => l10n.actionReplaceTextFallbackSummary,
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
     FunctionAction(:final expression) =>
       expression.trim().isEmpty ? 'function' : expression.trim(),
@@ -371,8 +372,16 @@ class _GestureTypeIcon extends StatelessWidget {
         surface: surface,
         border: border,
       ),
-      WheelGesture() => _SymbolGestureIcon(
-        icon: FLucideIcons.loaderPinwheel,
+      WheelGesture(:final direction) => _SymbolGestureIcon(
+        icon: switch (direction) {
+          WheelDirection.up => FLucideIcons.chevronUp,
+          WheelDirection.down => FLucideIcons.chevronDown,
+          WheelDirection.left => FLucideIcons.chevronLeft,
+          WheelDirection.right => FLucideIcons.chevronRight,
+          WheelDirection.upDown => FLucideIcons.chevronsUpDown,
+          WheelDirection.leftRight => FLucideIcons.chevronsLeftRight,
+          WheelDirection.any => FLucideIcons.lifeBuoy,
+        },
         color: primary,
         surface: surface,
         border: border,

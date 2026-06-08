@@ -73,6 +73,7 @@ enum ActionKind {
   input,
   plasmaShortcut,
   activateWindow,
+  replaceText,
   sleep,
   function,
   raw,
@@ -186,6 +187,30 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
           scope: location.gesture,
         );
   }
+
+  void replaceTextRules(List<TextSubstitutionRule> rules) {
+    final config = ref.read(configControllerProvider).value;
+    if (config == null) return;
+    final actions = gestureActionsLens(location.gesture).get(config);
+    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
+      return;
+    }
+    final current = actions[location.actionIndex];
+    ref
+        .read(configControllerProvider.notifier)
+        .add(
+          SetLens<List<TriggerAction>>(
+            gestureActionsLens(location.gesture),
+            [
+              ...actions.take(location.actionIndex),
+              current.copyWith(action: ReplaceTextAction(rules: rules)),
+              ...actions.skip(location.actionIndex + 1),
+            ],
+            label: 'Edit replace text rules',
+          ),
+          scope: location.gesture,
+        );
+  }
 }
 
 ActionKind _kindOf(Action? action) => switch (action) {
@@ -193,6 +218,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   InputAction() => ActionKind.input,
   PlasmaShortcutAction() => ActionKind.plasmaShortcut,
   ActivateWindowAction() => ActionKind.activateWindow,
+  ReplaceTextAction() => ActionKind.replaceText,
   SleepAction() => ActionKind.sleep,
   FunctionAction() => ActionKind.function,
   RawAction() => ActionKind.raw,

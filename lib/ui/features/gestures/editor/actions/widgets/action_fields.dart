@@ -8,6 +8,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/a
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_editor.dart'
     as input_entries_editor;
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/plasma_shortcut_sheet.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/replace_text_action_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/value_string_text_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
@@ -148,6 +149,7 @@ class ActionFields extends ConsumerWidget {
           );
         },
       ),
+      ActionKind.replaceText => const ReplaceTextActionEditor(),
       ActionKind.sleep => Builder(
         builder: (context) {
           final field = ref.actionField(

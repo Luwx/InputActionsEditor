@@ -47,7 +47,7 @@ class FunctionConditionInput extends HookWidget {
       child: TextField(
         controller: controller,
         minLines: 1,
-        maxLines: null,
+        maxLines: 6,
         keyboardType: TextInputType.multiline,
         style: typography.sm.copyWith(
           fontFamily: 'monospace',

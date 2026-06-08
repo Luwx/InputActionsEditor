@@ -676,6 +676,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaActivateWindowSubtitle => 'Focus a window by ID';
 
   @override
+  String get actionMetaReplaceTextLabel => 'Replace text';
+
+  @override
+  String get actionMetaReplaceTextSubtitle =>
+      'Replace text near the cursor using regex rules';
+
+  @override
   String get actionMetaSleepLabel => 'Sleep';
 
   @override
@@ -744,6 +751,57 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a window ID variable';
 
   @override
+  String get actionReplaceTextRulesLabel => 'Replacement rules';
+
+  @override
+  String get actionReplaceTextRulesHelp =>
+      'Rules are checked in order. The first regex matching the surrounding text at the cursor is used.';
+
+  @override
+  String get actionReplaceTextAddRule => 'Add rule';
+
+  @override
+  String actionReplaceTextRuleLabel(int index) {
+    return 'Rule $index';
+  }
+
+  @override
+  String get actionReplaceTextRegexLabel => 'Regex';
+
+  @override
+  String get actionReplaceTextRegexHint => ':calc(.*)';
+
+  @override
+  String get actionReplaceTextReplacementLabel => 'Replacement';
+
+  @override
+  String get actionReplaceTextTextMode => 'Text';
+
+  @override
+  String get actionReplaceTextCommandMode => 'Command';
+
+  @override
+  String get actionReplaceTextTextHint => 'example@example.com';
+
+  @override
+  String get actionReplaceTextCommandHint =>
+      'printf \"\$(qalc -t \"\$match_1\")\"';
+
+  @override
+  String actionReplaceTextRuleSummary(int count, String regex) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rules: $regex',
+      one: '1 rule: $regex',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionReplaceTextFallbackSummary => 'replace text';
+
+  @override
   String get valueStringRuntimeVariableHelp =>
       'Use a literal ID or exactly \$name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.';
 
@@ -775,6 +833,71 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tooltip_actionActivateWindow_noInterpolationSuffix =>
       ' is one literal string.';
+
+  @override
+  String get tooltip_actionReplaceText_body =>
+      'Matches the surrounding text reported by the focused application and replaces the matched text at the cursor.';
+
+  @override
+  String get tooltip_actionReplaceText_sectionLabel => 'Examples';
+
+  @override
+  String get tooltip_actionReplaceText_literalExCode =>
+      ':email  ->  example@example.com';
+
+  @override
+  String get tooltip_actionReplaceText_literalExLabel =>
+      'simple literal replacement';
+
+  @override
+  String get tooltip_actionReplaceText_commandExCode =>
+      ':calc 2+2  ->  command uses \$match_1';
+
+  @override
+  String get tooltip_actionReplaceText_commandExLabel =>
+      'compute replacement from the first capture';
+
+  @override
+  String get tooltip_actionReplaceText_matchNote =>
+      'Capture groups are exposed to command values as \$match_0, \$match_1, and so on.';
+
+  @override
+  String get tooltip_actionReplaceText_cursorNote =>
+      'A rule is eligible only when the regex match ends at the current cursor position.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_body =>
+      'Runs the command through /bin/sh -c and uses stdout as the replacement text.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleLabel => 'Example command';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleCode =>
+      'printf \"\$(qalc -t \"\$match_1\")\"';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleDesc =>
+      'For a calculator rule, \$match_1 can be 2+2. qalc evaluates it and printf prints the result without adding its own newline.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_variablesLabel => 'Variables';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_match0 =>
+      '\$match_0 is the whole regex match.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_matchN =>
+      '\$match_1 through \$match_4 are capture groups. Missing captures are empty.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_envNote =>
+      'Referenced Input Actions variables are injected into the process environment, so shell syntax like \"\$match_1\" expands normally.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_stdoutNote =>
+      'Use tools like printf or command flags such as -n when you do not want a trailing newline.';
 
   @override
   String get addGestureTitle => 'Add gesture';
@@ -1976,7 +2099,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tooltip_function_apisNote =>
-      'Call built-in APIs with require() — inputactions/core, inputactions/fs — and console.';
+      'Call built-in APIs with require() \"(inputactions/core, inputactions/fs)\" and console.';
 
   @override
   String get tooltip_function_callablePrefix =>
