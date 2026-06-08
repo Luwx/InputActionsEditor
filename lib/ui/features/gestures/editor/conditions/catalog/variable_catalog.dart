@@ -75,6 +75,7 @@ class VariableInfo {
     required this.description,
     this.flagValues,
     this.enumValues,
+    this.enumIcons,
   });
 
   final String name;
@@ -84,7 +85,40 @@ class VariableInfo {
   final String description;
   final List<String>? flagValues;
   final List<String>? enumValues;
+  final Map<String, IconData>? enumIcons;
 }
+
+const _cursorShapeIcons = <String, IconData>{
+  'alias': FLucideIcons.link,
+  'all_scroll': FLucideIcons.move,
+  'col_resize': FLucideIcons.arrowLeftRight,
+  'copy': FLucideIcons.copy,
+  'crosshair': FLucideIcons.crosshair,
+  'default': FLucideIcons.mousePointer,
+  'e_resize': FLucideIcons.arrowRight,
+  'ew_resize': FLucideIcons.arrowLeftRight,
+  'grab': FLucideIcons.grab,
+  'grabbing': FLucideIcons.hand,
+  'help': FLucideIcons.circleHelp,
+  'move': FLucideIcons.move,
+  'n_resize': FLucideIcons.arrowUp,
+  'ne_resize': FLucideIcons.arrowUpRight,
+  'nesw_resize': FLucideIcons.maximize2,
+  'not_allowed': FLucideIcons.ban,
+  'ns_resize': FLucideIcons.arrowUpDown,
+  'nw_resize': FLucideIcons.arrowUpLeft,
+  'nwse_resize': FLucideIcons.maximize2,
+  'pointer': FLucideIcons.pointer,
+  'progress': FLucideIcons.loaderPinwheel,
+  'row_resize': FLucideIcons.arrowUpDown,
+  's_resize': FLucideIcons.arrowDown,
+  'se_resize': FLucideIcons.arrowDownRight,
+  'sw_resize': FLucideIcons.arrowDownLeft,
+  'text': FLucideIcons.textCursor,
+  'up_arrow': FLucideIcons.arrowBigUp,
+  'w_resize': FLucideIcons.arrowLeft,
+  'wait': FLucideIcons.hourglass,
+};
 
 class VariableGroup {
   const VariableGroup({
@@ -661,6 +695,7 @@ const List<VariableGroup> kVariableGroups = [
         label: 'Cursor shape',
         pickerName: 'Cursor shape',
         type: VarType.enum_,
+        enumIcons: _cursorShapeIcons,
         enumValues: [
           'alias',
           'all_scroll',

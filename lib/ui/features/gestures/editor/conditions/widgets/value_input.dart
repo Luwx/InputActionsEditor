@@ -83,9 +83,39 @@ class ValueInput extends ConsumerWidget {
 
     if (type == VarType.enum_ && info?.enumValues != null) {
       final enumValues = info!.enumValues!;
+      final enumIcons = info!.enumIcons;
       final current = enumValues.contains(condition.value)
           ? condition.value
           : enumValues.first;
+      if (enumIcons != null) {
+        return FSelect<String>.rich(
+          key: ValueKey(condition.variable),
+          canRequestFocus: false,
+          format: (v) => v,
+          prefixBuilder: (_, style, variants) => Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Icon(enumIcons[current] ?? FLucideIcons.tag, size: 14),
+          ),
+          control: FSelectControl<String>.lifted(
+            value: current,
+            onChange: (value) {
+              if (value != null) onChanged(value);
+            },
+          ),
+          contentConstraints: const FPortalConstraints(
+            maxWidth: 260,
+            maxHeight: 280,
+          ),
+          children: [
+            for (final v in enumValues)
+              FSelectItem<String>.item(
+                value: v,
+                title: Text(v, overflow: TextOverflow.ellipsis),
+                prefix: Icon(enumIcons[v] ?? FLucideIcons.tag, size: 14),
+              ),
+          ],
+        );
+      }
       return FSelect<String>(
         key: ValueKey(condition.variable),
         canRequestFocus: false,
