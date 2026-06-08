@@ -41,12 +41,14 @@ _GestureListChoreography _useGestureListChoreography(
   final scrollTarget = useState<GestureLocation?>(null);
   final scrollTargetFlatIndex = useRef<int?>(null);
   final scrollTargetQueued = useRef(false);
+  final scrollTargetAnimated = useRef(true);
   final scrollTargetKey = useMemoized(GlobalKey.new);
 
   void clearScrollTarget() {
     scrollTarget.value = null;
     scrollTargetFlatIndex.value = null;
     scrollTargetQueued.value = false;
+    scrollTargetAnimated.value = true;
   }
 
   void scrollToTarget([int attempt = 0]) {
@@ -59,6 +61,7 @@ _GestureListChoreography _useGestureListChoreography(
         }
         return;
       }
+      final animated = scrollTargetAnimated.value;
       final ctx = scrollTargetKey.currentContext;
       if (ctx != null) {
         await Scrollable.ensureVisible(
@@ -76,22 +79,42 @@ _GestureListChoreography _useGestureListChoreography(
         final viewport = position.viewportDimension;
         final targetOffset =
             GestureListSection._headerHeight + flatIndex * 62.0 - viewport / 3;
-        await scrollController.animateTo(
-          targetOffset.clamp(
+        final clamped = targetOffset.clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        );
+        if (!animated) {
+          // Jump to a few items above the target, then glide the rest.
+          final jumpOffset = (targetOffset - 1 * 62.0).clamp(
             position.minScrollExtent,
             position.maxScrollExtent,
-          ),
+          );
+          scrollController.jumpTo(jumpOffset);
+          await scrollController.animateTo(
+            clamped,
+            duration: Durations.extralong1,
+            curve: Easing.emphasizedDecelerate,
+          );
+          clearScrollTarget();
+          return;
+        }
+        await scrollController.animateTo(
+          clamped,
           duration: Durations.short3,
           curve: Curves.easeOut,
         );
         scrollToTarget(attempt + 1);
       } else if (attempt < 12 &&
           position.pixels < position.maxScrollExtent - 1) {
-        await scrollController.animateTo(
-          position.maxScrollExtent,
-          duration: Durations.short3,
-          curve: Curves.easeOut,
-        );
+        if (animated) {
+          await scrollController.animateTo(
+            position.maxScrollExtent,
+            duration: Durations.short3,
+            curve: Curves.easeOut,
+          );
+        } else {
+          scrollController.jumpTo(position.maxScrollExtent);
+        }
         scrollToTarget(attempt + 1);
       } else {
         clearScrollTarget();
@@ -109,10 +132,11 @@ _GestureListChoreography _useGestureListChoreography(
     pendingAutoSelectFilter.value = null;
   }
 
-  void queueScrollToGesture(GestureLocation target) {
+  void queueScrollToGesture(GestureLocation target, {bool animated = true}) {
     scrollTarget.value = target;
     scrollTargetFlatIndex.value = null;
     scrollTargetQueued.value = false;
+    scrollTargetAnimated.value = animated;
   }
 
   void prepareScrollTarget(_GestureListViewModel viewModel) {
@@ -168,7 +192,7 @@ _GestureListChoreography _useGestureListChoreography(
 
   useEffect(() {
     final initial = ref.read(selectedGestureProvider);
-    if (initial != null) queueScrollToGesture(initial);
+    if (initial != null) queueScrollToGesture(initial, animated: false);
     return null;
   }, const []);
 

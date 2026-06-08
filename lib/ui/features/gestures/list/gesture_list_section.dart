@@ -143,7 +143,7 @@ class GestureListSection extends HookConsumerWidget {
         }
       },
       child: !hasConfig
-          ? const Center(child: CircularProgressIndicator.adaptive())
+          ? const Center(child: FCircularProgress.loader())
           : Builder(
               builder: (context) {
                 choreo.prepare(viewModel);

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -27,7 +28,9 @@ Future<(Config, String)> loadConfig() async {
   final file = File(path);
   if (!file.existsSync()) return (const Config(), '');
   final text = await file.readAsString();
-  return (decodeConfig(text), text);
+  await Future<void>.delayed(const Duration(milliseconds: 500));
+  final config = await compute(decodeConfig, text);
+  return (config, text);
 }
 
 Future<String?> pickConfigFilePath() async {
