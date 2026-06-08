@@ -1204,6 +1204,72 @@ abstract class AppLocalizations {
   /// **'Could not connect to the Input Actions daemon.'**
   String get strokesRecordingDaemonError;
 
+  /// No description provided for @strokesInstructionsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get strokesInstructionsHeader;
+
+  /// No description provided for @strokesMouseStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesMouseStep1;
+
+  /// No description provided for @strokesMouseStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw the stroke'**
+  String get strokesMouseStep2;
+
+  /// No description provided for @strokesMouseStep3WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get strokesMouseStep3WaitPart;
+
+  /// No description provided for @strokesMouseStep3Suffix.
+  ///
+  /// In en, this message translates to:
+  /// **' a moment after stopping'**
+  String get strokesMouseStep3Suffix;
+
+  /// No description provided for @strokesTouchpadStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesTouchpadStep1;
+
+  /// No description provided for @strokesTouchpadStep2Prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a stroke on the touchpad, then '**
+  String get strokesTouchpadStep2Prefix;
+
+  /// No description provided for @strokesTouchpadStep2WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'wait'**
+  String get strokesTouchpadStep2WaitPart;
+
+  /// No description provided for @strokesTouchscreenStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesTouchscreenStep1;
+
+  /// No description provided for @strokesTouchscreenStep2Prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a stroke on the screen, then '**
+  String get strokesTouchscreenStep2Prefix;
+
+  /// No description provided for @strokesTouchscreenStep2WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'wait'**
+  String get strokesTouchscreenStep2WaitPart;
+
   /// No description provided for @resetGestureDefaultsTooltip.
   ///
   /// In en, this message translates to:

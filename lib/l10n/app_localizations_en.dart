@@ -603,6 +603,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not connect to the Input Actions daemon.';
 
   @override
+  String get strokesInstructionsHeader => 'Instructions';
+
+  @override
+  String get strokesMouseStep1 => 'Press Record';
+
+  @override
+  String get strokesMouseStep2 => 'Draw the stroke';
+
+  @override
+  String get strokesMouseStep3WaitPart => 'Wait';
+
+  @override
+  String get strokesMouseStep3Suffix => ' a moment after stopping';
+
+  @override
+  String get strokesTouchpadStep1 => 'Press Record';
+
+  @override
+  String get strokesTouchpadStep2Prefix =>
+      'Draw a stroke on the touchpad, then ';
+
+  @override
+  String get strokesTouchpadStep2WaitPart => 'wait';
+
+  @override
+  String get strokesTouchscreenStep1 => 'Press Record';
+
+  @override
+  String get strokesTouchscreenStep2Prefix =>
+      'Draw a stroke on the screen, then ';
+
+  @override
+  String get strokesTouchscreenStep2WaitPart => 'wait';
+
+  @override
   String get resetGestureDefaultsTooltip =>
       'Clears optional overrides and advanced settings while keeping the gesture type and its core identifying fields, such as direction, shortcut, fingers, or stroke pattern.';
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/ui/common/path_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
@@ -84,7 +85,7 @@ class _StrokesFieldHostState extends State<_StrokesFieldHost> {
           setState(() {
             strokes = value;
           });
-        },
+        }, deviceType: DeviceType.mouse,
       ),
     );
   }

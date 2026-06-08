@@ -151,6 +151,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               return StrokesField(
                 strokes: strokesField.value,
                 onStrokesChanged: strokesField.onChanged,
+                deviceType: DeviceType.touchpad,
               );
             },
           ),

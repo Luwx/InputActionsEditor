@@ -290,7 +290,7 @@ List<_TriggerEntry> _triggerTypesFor(
     (
       label: l10n.gestureTypeStroke,
       description: l10n.templateMouseStrokeDescription,
-      icon: Icons.gesture_outlined,
+      icon: FLucideIcons.lineSquiggle,
       factory: () => const StrokeGesture(common: _common),
     ),
     (
@@ -478,13 +478,10 @@ class _DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final gestureCount = _triggerTypesFor(device, l10n).length;
     return _OptionTile(
       icon: _deviceIcon(device),
       title: gestureDeviceLabel(device, l10n),
-      description:
-          '${_deviceDescription(device, l10n)} $gestureCount'
-          'gesture type${gestureCount == 1 ? '' : 's'} available.',
+      description: _deviceDescription(device, l10n),
       onTap: onTap,
     );
   }
@@ -540,8 +537,8 @@ class _OptionTile extends StatelessWidget {
             prefix: AnimatedContainer(
               duration: Durations.short2,
               curve: Easing.standard,
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: Color.lerp(
                   colors.secondary,
@@ -552,7 +549,7 @@ class _OptionTile extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 16,
+                size: 24,
                 color: colors.secondaryForeground,
               ),
             ),

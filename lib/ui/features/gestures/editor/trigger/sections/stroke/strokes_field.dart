@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
@@ -18,11 +19,13 @@ class StrokesField extends HookConsumerWidget {
   const StrokesField({
     required this.strokes,
     required this.onStrokesChanged,
+    required this.deviceType,
     super.key,
   });
 
   final List<String> strokes;
   final void Function(List<String>) onStrokesChanged;
+  final DeviceType deviceType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,15 +75,18 @@ class StrokesField extends HookConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
-        if (strokes.isEmpty)
+        const SizedBox(height: 4),
+        if (strokes.isEmpty) ...[
           Text(
             context.l10n.strokesEmpty,
             style: context.theme.typography.xs.copyWith(
               color: context.theme.colors.mutedForeground,
             ),
-          )
-        else
+          ),
+          const SizedBox(height: 12),
+          _StrokeInstructions(deviceType: deviceType),
+          const SizedBox(height: 4),
+        ] else
           Wrap(
             children: [
               for (final (i, stroke) in strokes.indexed)
@@ -98,7 +104,7 @@ class StrokesField extends HookConsumerWidget {
                 ),
             ],
           ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         FButton(
           variant: .outline,
           size: .sm,
@@ -143,4 +149,82 @@ class StrokesField extends HookConsumerWidget {
       ],
     );
   }
+}
+
+class _StrokeInstructions extends StatelessWidget {
+  const _StrokeInstructions({required this.deviceType});
+
+  final DeviceType deviceType;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    // Each step is a list of segments; bold:true segments are rendered with w600.
+    final steps = switch (deviceType) {
+      DeviceType.mouse => [
+        [_Segment(l10n.strokesMouseStep1)],
+        [_Segment(l10n.strokesMouseStep2)],
+        [
+          _Segment(l10n.strokesMouseStep3WaitPart, bold: true),
+          _Segment(l10n.strokesMouseStep3Suffix),
+        ],
+      ],
+      DeviceType.touchpad => [
+        [_Segment(l10n.strokesTouchpadStep1)],
+        [
+          _Segment(l10n.strokesTouchpadStep2Prefix),
+          _Segment(l10n.strokesTouchpadStep2WaitPart, bold: true),
+        ],
+      ],
+      DeviceType.touchscreen => [
+        [_Segment(l10n.strokesTouchscreenStep1)],
+        [
+          _Segment(l10n.strokesTouchscreenStep2Prefix),
+          _Segment(l10n.strokesTouchscreenStep2WaitPart, bold: true),
+        ],
+      ],
+      _ => <List<_Segment>>[],
+    };
+
+    if (steps.isEmpty) return const SizedBox.shrink();
+
+    final baseStyle = context.theme.typography.xs.copyWith(
+      color: context.theme.colors.mutedForeground,
+    );
+    final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.w800);
+    final headerStyle = context.theme.typography.xs.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.strokesInstructionsHeader, style: headerStyle),
+        const SizedBox(height: 4),
+        for (final step in steps)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: '• ', style: baseStyle),
+                  for (final seg in step)
+                    TextSpan(
+                      text: seg.text,
+                      style: seg.bold ? boldStyle : baseStyle,
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Segment {
+  const _Segment(this.text, {this.bold = false});
+  final String text;
+  final bool bold;
 }

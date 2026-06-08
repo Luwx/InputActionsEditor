@@ -141,6 +141,7 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
               return StrokesField(
                 strokes: strokesField.value,
                 onStrokesChanged: strokesField.onChanged,
+                deviceType: DeviceType.touchscreen,
               );
             },
           ),

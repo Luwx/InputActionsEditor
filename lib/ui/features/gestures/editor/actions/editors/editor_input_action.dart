@@ -141,7 +141,7 @@ class EditorInputAction extends HookConsumerWidget {
                         const FDivider(
                           style: .delta(
                             padding: .value(
-                              EdgeInsets.only(bottom: 16, top: 4),
+                              EdgeInsets.only(bottom: 12, top: 16),
                             ),
                           ),
                         ),
@@ -470,94 +470,91 @@ class _InputEntryEditor extends HookWidget {
       for (final o in optionsList) o.label: o.mode,
     };
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final deviceField = FSelect<InputDevice>(
-                label: LabelWithTooltip(
-                  label: context.l10n.inputDeviceFieldLabel,
-                  tooltip: context.l10n.inputDeviceFieldTooltip,
-                ),
-                key: ValueKey(entry.device),
-                items: deviceOptions,
-                control: FSelectManagedControl<InputDevice>(
-                  initial: entry.device,
-                  onChange: (value) {
-                    if (value != null) {
-                      onChanged(entry.copyWith(device: value, tokens: []));
-                    }
-                  },
-                ),
-              );
-              final actionTypeField = FSelect<InputEntryMode>(
-                label: LabelWithTooltip(
-                  label: context.l10n.inputActionTypeLabel,
-                  tooltip: context.l10n.inputActionTypeTooltip,
-                ),
-                key: ValueKey(mode),
-                items: options,
-                control: FSelectManagedControl<InputEntryMode>(
-                  initial: mode,
-                  onChange: changeMode,
-                ),
-              );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final deviceField = FSelect<InputDevice>(
+              label: LabelWithTooltip(
+                label: context.l10n.inputDeviceFieldLabel,
+                tooltip: context.l10n.inputDeviceFieldTooltip,
+              ),
+              key: ValueKey(entry.device),
+              items: deviceOptions,
+              control: FSelectManagedControl<InputDevice>(
+                initial: entry.device,
+                onChange: (value) {
+                  if (value != null) {
+                    onChanged(entry.copyWith(device: value, tokens: []));
+                  }
+                },
+              ),
+            );
+            final actionTypeField = FSelect<InputEntryMode>(
+              label: LabelWithTooltip(
+                label: context.l10n.inputActionTypeLabel,
+                tooltip: context.l10n.inputActionTypeTooltip,
+              ),
+              key: ValueKey(mode),
+              items: options,
+              control: FSelectManagedControl<InputEntryMode>(
+                initial: mode,
+                onChange: changeMode,
+              ),
+            );
 
-              final compact = constraints.maxWidth < 580;
+            final compact = constraints.maxWidth < 580;
 
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(child: deviceField),
-                        const SizedBox(width: 12),
-                        Expanded(child: actionTypeField),
-                        const SizedBox(width: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: FButton(
-                            variant: .ghost,
-                            size: .sm,
-                            onPress: onDelete,
-                            child: const Icon(FLucideIcons.trash),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    inlineEditor,
-                  ],
-                );
-              }
-
-              return Row(
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 12,
                 children: [
-                  Expanded(child: deviceField),
-                  Expanded(flex: 2, child: actionTypeField),
-                  Expanded(flex: 3, child: inlineEditor),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 22),
-                    child: FButton(
-                      variant: .ghost,
-                      size: .sm,
-                      onPress: onDelete,
-                      child: const Icon(FLucideIcons.trash),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(child: deviceField),
+                      const SizedBox(width: 12),
+                      Expanded(child: actionTypeField),
+                      const SizedBox(width: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: FButton(
+                          variant: .ghost,
+                          size: .sm,
+                          onPress: onDelete,
+                          child: const Icon(FLucideIcons.trash),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  inlineEditor,
                 ],
               );
-            },
-          ),
-        ],
-      ),
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Expanded(child: deviceField),
+                Expanded(flex: 2, child: actionTypeField),
+                Expanded(flex: 3, child: inlineEditor),
+                Padding(
+                  padding: const EdgeInsets.only(top: 22),
+                  child: FButton(
+                    variant: .ghost,
+                    size: .sm,
+                    onPress: onDelete,
+                    child: const Icon(FLucideIcons.trash),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
