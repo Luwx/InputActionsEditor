@@ -420,7 +420,7 @@ class _ExpandedEditor extends HookConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          // const SizedBox(height: 8),
           switch (kind) {
             ActionKind.command => const EditorCommand(),
             ActionKind.input => const EditorInputAction(),
@@ -432,7 +432,7 @@ class _ExpandedEditor extends HookConsumerWidget {
             ActionKind.raw => const EditorRaw(),
             ActionKind.missing => const SizedBox.shrink(),
           },
-          const SizedBox(height: 16),
+          SizedBox(height: kind == .input ? 4 : 16),
           if (pinnedTriggerOptions.isNotEmpty) ...[
             ActionTriggerFields(fields: pinnedTriggerOptions),
             const SizedBox(height: 16),

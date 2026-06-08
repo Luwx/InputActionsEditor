@@ -118,16 +118,19 @@ class NewConditionMenu extends StatelessWidget {
                   onAddGroup?.call();
                 },
               ),
-            if (onAddFunction != null)
-              .item(
-                prefix: const Icon(FLucideIcons.braces),
-                title: Text(context.l10n.conditionMenuAddFunctionTitle),
-                subtitle: Text(context.l10n.conditionMenuAddFunctionSubtitle),
-                onPress: () async {
-                  await controller.hide();
-                  onAddFunction?.call();
-                },
-              ),
+              // disable functions for now
+            // if (onAddFunction != null)
+            //   .item(
+            //     prefix: const Icon(FLucideIcons.braces),
+            //     title: Text(context.l10n.conditionMenuAddFunctionTitle),
+            //     subtitle: Text(
+            //       context.l10n.conditionMenuAddFunctionSubtitle,
+            //     ),
+            //     onPress: () async {
+            //       await controller.hide();
+            //       onAddFunction?.call();
+            //     },
+            //   ),
           ],
         ),
       ],
