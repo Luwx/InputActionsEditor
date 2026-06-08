@@ -39,6 +39,9 @@ sealed class Action with _$Action {
     required String shortcut,
   }) = PlasmaShortcutAction;
 
+  const factory Action.activateWindow({required String windowId}) =
+      ActivateWindowAction;
+
   const factory Action.sleep({required int milliseconds}) = SleepAction;
 
   /// Raw YAML for action types we don't model (e.g. one:, replace_text:).

@@ -68,7 +68,15 @@ abstract class ActionEditorVm with _$ActionEditorVm {
   bool get exists => action != null;
 }
 
-enum ActionKind { command, input, plasmaShortcut, sleep, raw, missing }
+enum ActionKind {
+  command,
+  input,
+  plasmaShortcut,
+  activateWindow,
+  sleep,
+  raw,
+  missing,
+}
 
 class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   ActionListEditorNotifier(this.location);
@@ -183,6 +191,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   CommandAction() => ActionKind.command,
   InputAction() => ActionKind.input,
   PlasmaShortcutAction() => ActionKind.plasmaShortcut,
+  ActivateWindowAction() => ActionKind.activateWindow,
   SleepAction() => ActionKind.sleep,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,

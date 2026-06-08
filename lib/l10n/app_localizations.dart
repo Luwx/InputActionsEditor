@@ -1336,6 +1336,18 @@ abstract class AppLocalizations {
   /// **'Trigger a KDE global shortcut'**
   String get actionMetaPlasmaSubtitle;
 
+  /// No description provided for @actionMetaActivateWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate window'**
+  String get actionMetaActivateWindowLabel;
+
+  /// No description provided for @actionMetaActivateWindowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus a window by ID'**
+  String get actionMetaActivateWindowSubtitle;
+
   /// No description provided for @actionMetaSleepLabel.
   ///
   /// In en, this message translates to:
@@ -1425,6 +1437,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wait up to 30 seconds for the command to exit before executing the next action in the sequence.'**
   String get actionWaitForCompletionTooltip;
+
+  /// No description provided for @actionActivateWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Window ID'**
+  String get actionActivateWindowLabel;
+
+  /// No description provided for @actionActivateWindowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \$initial_window_under_pointer_id'**
+  String get actionActivateWindowHint;
+
+  /// No description provided for @actionActivateWindowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Window ID to activate. A plain value is treated as a literal window ID. An exact \$name value is resolved through Input Actions\' Value parser if the variable is registered when the config is loaded; the variable\'s value is read when the action runs. This is not string interpolation, so \$name text is treated as one literal string and will not combine a variable with text.'**
+  String get actionActivateWindowTooltip;
+
+  /// No description provided for @actionActivateWindowVariablePickerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a window ID variable'**
+  String get actionActivateWindowVariablePickerTooltip;
+
+  /// No description provided for @valueStringRuntimeVariableHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a literal ID or exactly \$name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.'**
+  String get valueStringRuntimeVariableHelp;
+
+  /// No description provided for @tooltip_actionActivateWindow_bodyPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use exactly '**
+  String get tooltip_actionActivateWindow_bodyPrefix;
+
+  /// No description provided for @tooltip_actionActivateWindow_bodySuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' to focus the window stored in the respective runtime variable.'**
+  String get tooltip_actionActivateWindow_bodySuffix;
+
+  /// No description provided for @tooltip_actionActivateWindow_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable'**
+  String get tooltip_actionActivateWindow_sectionLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_literalExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'literal window ID'**
+  String get tooltip_actionActivateWindow_literalExLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_variableExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'window under the pointer when the gesture started'**
+  String get tooltip_actionActivateWindow_variableExLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_unknownNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown variables are allowed, but only registered variables resolve at config load.'**
+  String get tooltip_actionActivateWindow_unknownNote;
+
+  /// No description provided for @tooltip_actionActivateWindow_noInterpolationPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'No interpolation: '**
+  String get tooltip_actionActivateWindow_noInterpolationPrefix;
+
+  /// No description provided for @tooltip_actionActivateWindow_noInterpolationSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' is one literal string.'**
+  String get tooltip_actionActivateWindow_noInterpolationSuffix;
 
   /// No description provided for @addGestureTitle.
   ///

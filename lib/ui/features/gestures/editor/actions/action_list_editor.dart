@@ -318,7 +318,6 @@ class _ActionsHeader extends ConsumerWidget {
         const Spacer(),
         if (onAdd != null)
           FButton(
-            variant: .outline,
             onPress: onAdd,
             prefix: const Icon(FLucideIcons.plus, size: 14),
             child: Text(context.l10n.actionAdd),
@@ -641,7 +640,7 @@ class _ExpandedEditor extends HookConsumerWidget {
         .toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

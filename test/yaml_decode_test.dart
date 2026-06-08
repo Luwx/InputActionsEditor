@@ -583,6 +583,22 @@ mouse:
       );
     });
 
+    test('activate_window action parses window id value', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - activate_window: $initial_window_under_pointer_id
+''');
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const ActivateWindowAction(
+          windowId: r'$initial_window_under_pointer_id',
+        ),
+      );
+    });
+
     test('unmodelled action (one:) becomes a RawAction', () {
       final c = decodeConfig('''
 touchpad:

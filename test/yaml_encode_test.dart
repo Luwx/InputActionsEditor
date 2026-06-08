@@ -476,6 +476,17 @@ mouse:
       );
     });
 
+    test('activate_window writes window id value', () {
+      expect(
+        actionToMap(
+          const ActivateWindowAction(
+            windowId: r'$initial_window_under_pointer_id',
+          ),
+        ),
+        {'activate_window': r'$initial_window_under_pointer_id'},
+      );
+    });
+
     test('sleep writes milliseconds', () {
       expect(actionToMap(const SleepAction(milliseconds: 750)), {'sleep': 750});
     });

@@ -81,6 +81,10 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
             prop(PlasmaShortcutActionMeta.shortcut),
           ],
         ),
+        valueCase<ActivateWindowAction>(
+          'activateWindow',
+          fields: [prop(ActivateWindowActionMeta.windowId)],
+        ),
         valueCase<SleepAction>(
           'sleep',
           fields: [prop('duration', property: SleepActionMeta.milliseconds)],

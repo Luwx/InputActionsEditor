@@ -459,6 +459,7 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   PlasmaShortcutAction(:final component, :final shortcut) => {
     'plasma_shortcut': '$component,$shortcut',
   },
+  ActivateWindowAction(:final windowId) => {'activate_window': windowId},
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
   RawAction(:final raw) => {'__raw': raw},
 };

@@ -559,6 +559,8 @@ String _actionSummaryText(Action action) => switch (action) {
     'input: ${entries.map((e) => e.device.name).join(', ')}',
   PlasmaShortcutAction(:final shortcut) =>
     shortcut.isEmpty ? 'plasma shortcut' : shortcut,
+  ActivateWindowAction(:final windowId) =>
+    windowId.isEmpty ? 'activate window' : 'activate $windowId',
   SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
   RawAction() => 'raw yaml',
 };

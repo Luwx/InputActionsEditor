@@ -40,6 +40,7 @@ enum _ActionKind {
   command,
   input,
   plasmaShortcut,
+  activateWindow,
   sleep,
   raw;
 
@@ -47,6 +48,7 @@ enum _ActionKind {
     _ActionKind.command => l10n.actionMetaCommandLabel,
     _ActionKind.input => l10n.actionMetaInputLabel,
     _ActionKind.plasmaShortcut => l10n.actionMetaPlasmaLabel,
+    _ActionKind.activateWindow => l10n.actionMetaActivateWindowLabel,
     _ActionKind.sleep => l10n.actionMetaSleepLabel,
     _ActionKind.raw => l10n.actionMetaRawLabel,
   };
@@ -55,6 +57,7 @@ enum _ActionKind {
     _ActionKind.command => l10n.actionMetaCommandSubtitle,
     _ActionKind.input => l10n.actionMetaInputSubtitle,
     _ActionKind.plasmaShortcut => l10n.actionMetaPlasmaSubtitle,
+    _ActionKind.activateWindow => l10n.actionMetaActivateWindowSubtitle,
     _ActionKind.sleep => l10n.actionMetaSleepSubtitle,
     _ActionKind.raw => l10n.actionMetaRawSubtitle,
   };
@@ -63,6 +66,7 @@ enum _ActionKind {
     _ActionKind.command => Icons.terminal,
     _ActionKind.input => Icons.keyboard_alt_outlined,
     _ActionKind.plasmaShortcut => PlasmaIcons.plasma,
+    _ActionKind.activateWindow => Icons.ads_click,
     _ActionKind.sleep => Icons.schedule_outlined,
     _ActionKind.raw => Icons.code_outlined,
   };
@@ -76,6 +80,7 @@ enum _ActionKind {
       component: '',
       shortcut: '',
     ),
+    _ActionKind.activateWindow => const ActivateWindowAction(windowId: ''),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
     _ActionKind.raw => const RawAction(raw: ''),
   };

@@ -32,6 +32,11 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
         subtitle: l10n.actionMetaPlasmaSubtitle,
         icon: PlasmaIcons.plasma,
       ),
+      ActivateWindowAction() => ActionMetaInfo(
+        label: l10n.actionMetaActivateWindowLabel,
+        subtitle: l10n.actionMetaActivateWindowSubtitle,
+        icon: Icons.ads_click,
+      ),
       SleepAction() => ActionMetaInfo(
         label: l10n.actionMetaSleepLabel,
         subtitle: l10n.actionMetaSleepSubtitle,

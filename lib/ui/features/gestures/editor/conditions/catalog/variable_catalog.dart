@@ -165,6 +165,20 @@ const List<VariableGroup> kVariableGroups = [
         description: 'Unique window ID, use to detect focused window',
       ),
       VariableInfo(
+        name: 'initial_window_id',
+        label: 'Initial active window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Active window ID captured when the trigger activates',
+      ),
+      VariableInfo(
+        name: 'previous_window_id',
+        label: 'Previous active window - ID',
+        pickerName: 'Previous ID',
+        type: VarType.string,
+        description: 'Window ID replaced by the last activate window action',
+      ),
+      VariableInfo(
         name: 'window_pid',
         label: 'Active window - process ID',
         pickerName: 'Process ID',
@@ -221,6 +235,13 @@ const List<VariableGroup> kVariableGroups = [
             'ID of hovered window, use to check it matches active window',
       ),
       VariableInfo(
+        name: 'initial_window_under_pointer_id',
+        label: 'Initial pointer window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Pointer window ID captured when the trigger activates',
+      ),
+      VariableInfo(
         name: 'window_under_pointer_pid',
         label: 'Pointer window - process ID',
         pickerName: 'Process ID',
@@ -275,6 +296,13 @@ const List<VariableGroup> kVariableGroups = [
         type: VarType.string,
         description:
             'ID of touched window, use to check it matches active window',
+      ),
+      VariableInfo(
+        name: 'initial_window_under_fingers_id',
+        label: 'Initial fingers window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Fingers window ID captured when the trigger activates',
       ),
       VariableInfo(
         name: 'window_under_fingers_pid',
@@ -779,3 +807,73 @@ VariableInfo? findVariable(String name) {
   }
   return null;
 }
+
+const List<VariableGroup> kWindowIdVariableGroups = [
+  VariableGroup(
+    name: 'Active Window',
+    icon: FLucideIcons.appWindow,
+    variables: [
+      VariableInfo(
+        name: 'window_id',
+        label: 'Active window - ID',
+        pickerName: 'ID',
+        type: VarType.string,
+        description: 'Current active window ID',
+      ),
+      VariableInfo(
+        name: 'initial_window_id',
+        label: 'Initial active window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Active window ID captured when the trigger activates',
+      ),
+      VariableInfo(
+        name: 'previous_window_id',
+        label: 'Previous active window - ID',
+        pickerName: 'Previous ID',
+        type: VarType.string,
+        description: 'Window ID replaced by the last activate window action',
+      ),
+    ],
+  ),
+  VariableGroup(
+    name: 'Window Under Pointer',
+    icon: FLucideIcons.mousePointer,
+    variables: [
+      VariableInfo(
+        name: 'window_under_pointer_id',
+        label: 'Pointer window - ID',
+        pickerName: 'ID',
+        type: VarType.string,
+        description: 'Current window ID under the pointer',
+      ),
+      VariableInfo(
+        name: 'initial_window_under_pointer_id',
+        label: 'Initial pointer window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Pointer window ID captured when the trigger activates',
+      ),
+    ],
+  ),
+  VariableGroup(
+    name: 'Window Under Fingers',
+    icon: FLucideIcons.hand,
+    variables: [
+      VariableInfo(
+        name: 'window_under_fingers_id',
+        label: 'Fingers window - ID',
+        pickerName: 'ID',
+        type: VarType.string,
+        description: 'Current window ID under touch contacts',
+      ),
+      VariableInfo(
+        name: 'initial_window_under_fingers_id',
+        label: 'Initial fingers window - ID',
+        pickerName: 'Initial ID',
+        type: VarType.string,
+        description: 'Fingers window ID captured when the trigger activates',
+      ),
+    ],
+  ),
+];

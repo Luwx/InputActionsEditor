@@ -624,6 +624,9 @@ Action? _parseAction(YamlMap m) {
       shortcut: parts.elementAtOrNull(1)?.trim() ?? '',
     );
   }
+  if (m.containsKey('activate_window')) {
+    return ActivateWindowAction(windowId: m['activate_window'].toString());
+  }
   if (m.containsKey('sleep')) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
   }

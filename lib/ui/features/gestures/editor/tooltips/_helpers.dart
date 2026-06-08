@@ -400,3 +400,24 @@ InlineSpan _monoSpan(String text, FColors colors, FTypography t) {
     ),
   );
 }
+
+InlineSpan _errorMonoSpan(String text, FColors colors, FTypography t) {
+  return WidgetSpan(
+    alignment: PlaceholderAlignment.baseline,
+    baseline: TextBaseline.alphabetic,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: colors.destructive.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        text,
+        style: t.xs.copyWith(
+          fontFamily: 'monospace',
+          color: colors.destructive,
+        ),
+      ),
+    ),
+  );
+}

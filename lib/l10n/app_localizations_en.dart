@@ -670,6 +670,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaPlasmaSubtitle => 'Trigger a KDE global shortcut';
 
   @override
+  String get actionMetaActivateWindowLabel => 'Activate window';
+
+  @override
+  String get actionMetaActivateWindowSubtitle => 'Focus a window by ID';
+
+  @override
   String get actionMetaSleepLabel => 'Sleep';
 
   @override
@@ -715,6 +721,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get actionWaitForCompletionTooltip =>
       'Wait up to 30 seconds for the command to exit before executing the next action in the sequence.';
+
+  @override
+  String get actionActivateWindowLabel => 'Window ID';
+
+  @override
+  String get actionActivateWindowHint =>
+      'e.g. \$initial_window_under_pointer_id';
+
+  @override
+  String get actionActivateWindowTooltip =>
+      'Window ID to activate. A plain value is treated as a literal window ID. An exact \$name value is resolved through Input Actions\' Value parser if the variable is registered when the config is loaded; the variable\'s value is read when the action runs. This is not string interpolation, so \$name text is treated as one literal string and will not combine a variable with text.';
+
+  @override
+  String get actionActivateWindowVariablePickerTooltip =>
+      'Choose a window ID variable';
+
+  @override
+  String get valueStringRuntimeVariableHelp =>
+      'Use a literal ID or exactly \$name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.';
+
+  @override
+  String get tooltip_actionActivateWindow_bodyPrefix => 'Use exactly ';
+
+  @override
+  String get tooltip_actionActivateWindow_bodySuffix =>
+      ' to focus the window stored in the respective runtime variable.';
+
+  @override
+  String get tooltip_actionActivateWindow_sectionLabel => 'Variable';
+
+  @override
+  String get tooltip_actionActivateWindow_literalExLabel => 'literal window ID';
+
+  @override
+  String get tooltip_actionActivateWindow_variableExLabel =>
+      'window under the pointer when the gesture started';
+
+  @override
+  String get tooltip_actionActivateWindow_unknownNote =>
+      'Unknown variables are allowed, but only registered variables resolve at config load.';
+
+  @override
+  String get tooltip_actionActivateWindow_noInterpolationPrefix =>
+      'No interpolation: ';
+
+  @override
+  String get tooltip_actionActivateWindow_noInterpolationSuffix =>
+      ' is one literal string.';
 
   @override
   String get addGestureTitle => 'Add gesture';

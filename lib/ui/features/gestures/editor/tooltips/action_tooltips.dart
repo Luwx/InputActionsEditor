@@ -46,6 +46,81 @@ class ActionConditionsTooltip extends StatelessWidget {
   }
 }
 
+class ActionActivateWindowTooltip extends StatelessWidget {
+  const ActionActivateWindowTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_actionActivateWindow_bodyPrefix),
+                _monoSpan(r'$variable_name', colors, t),
+                TextSpan(text: l10n.tooltip_actionActivateWindow_bodySuffix),
+              ],
+            ),
+          ),
+          _SectionLabel(
+            l10n.tooltip_actionActivateWindow_sectionLabel,
+            FLucideIcons.variable,
+            colors,
+            t,
+          ),
+          _ExRow(
+            r'$initial_window_under_pointer_id',
+            l10n.tooltip_actionActivateWindow_variableExLabel,
+            colors,
+            t,
+          ),
+          _Note(l10n.tooltip_actionActivateWindow_unknownNote, colors, t),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 6,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(
+                  FLucideIcons.triangleAlert,
+                  size: 11,
+                  color: colors.destructive.withValues(alpha: 0.85),
+                ),
+              ),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: l10n
+                            .tooltip_actionActivateWindow_noInterpolationPrefix,
+                      ),
+                      _errorMonoSpan(r'$name text', colors, t),
+                      TextSpan(
+                        text: l10n
+                            .tooltip_actionActivateWindow_noInterpolationSuffix,
+                      ),
+                    ],
+                  ),
+                  style: t.xs.copyWith(color: colors.mutedForeground),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ActionTriggerOnTooltip extends StatelessWidget {
   const ActionTriggerOnTooltip({super.key});
 
