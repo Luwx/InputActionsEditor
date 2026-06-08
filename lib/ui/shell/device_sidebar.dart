@@ -81,14 +81,14 @@ class DeviceSidebar extends HookConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              l10n.appName,
+                              'Input Actions',
                               style: context.theme.typography.lg.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              l10n.appSubtitle,
+                              'Editor',
                               style: context.theme.typography.xs.copyWith(
                                 color: context.theme.colors.mutedForeground,
                                 fontWeight: FontWeight.w400,

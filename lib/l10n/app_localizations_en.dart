@@ -9,12 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Input Actions';
-
-  @override
-  String get appSubtitle => 'Editor';
-
-  @override
   String get actionNew => 'New';
 
   @override

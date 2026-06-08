@@ -1,7 +1,5 @@
 {
   "@@locale": "en",
-  "appName": "Input Actions",
-  "appSubtitle": "Editor",
   "actionNew": "New",
   "actionLoad": "Load",
   "actionSave": "Save",

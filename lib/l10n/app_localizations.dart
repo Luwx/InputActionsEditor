@@ -94,18 +94,6 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
-  /// No description provided for @appName.
-  ///
-  /// In en, this message translates to:
-  /// **'Input Actions'**
-  String get appName;
-
-  /// No description provided for @appSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Editor'**
-  String get appSubtitle;
-
   /// No description provided for @actionNew.
   ///
   /// In en, this message translates to:
