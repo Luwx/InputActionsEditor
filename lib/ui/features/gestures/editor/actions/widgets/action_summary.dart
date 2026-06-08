@@ -22,6 +22,10 @@ String actionValueSummary(
   ActivateWindowAction(:final windowId) =>
     windowId.trim().isEmpty ? l10n.actionSummaryNotConfigured : windowId.trim(),
   SleepAction(:final milliseconds) => '$milliseconds ms',
+  FunctionAction(:final expression) =>
+    expression.trim().isEmpty
+        ? l10n.actionSummaryNotConfigured
+        : expression.trim().split('\n').first,
   RawAction(:final raw) =>
     raw.trim().isEmpty ? l10n.actionSummaryEmpty : raw.trim().split('\n').first,
 };
@@ -38,6 +42,7 @@ String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
   PlasmaShortcutAction() => l10n.actionMetaPlasmaLabel,
   ActivateWindowAction() => l10n.actionMetaActivateWindowLabel,
   SleepAction() => l10n.actionMetaSleepLabel,
+  FunctionAction() => l10n.actionMetaFunctionLabel,
   RawAction() => l10n.actionMetaRawLabel,
 };
 

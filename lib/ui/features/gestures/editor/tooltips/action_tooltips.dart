@@ -46,6 +46,120 @@ class ActionConditionsTooltip extends StatelessWidget {
   }
 }
 
+class ConditionFunctionTooltip extends StatelessWidget {
+  const ConditionFunctionTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_conditionFunction_body),
+          _SectionLabel(
+            l10n.tooltip_function_exampleLabel,
+            FLucideIcons.braces,
+            colors,
+            t,
+          ),
+          _ExRow(
+            '() => initialDirection == "l"',
+            l10n.tooltip_conditionFunction_exampleAnnotation,
+            colors,
+            t,
+          ),
+          _Note(
+            l10n.tooltip_conditionFunction_variablesNote,
+            colors,
+            t,
+            icon: FLucideIcons.variable,
+          ),
+          _Note(
+            l10n.tooltip_function_apisNote,
+            colors,
+            t,
+            icon: FLucideIcons.package,
+          ),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_function_callablePrefix),
+                _monoSpan('() => expression', colors, t),
+              ],
+            ),
+            style: t.xs.copyWith(color: colors.mutedForeground),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ActionFunctionTooltip extends StatelessWidget {
+  const ActionFunctionTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_actionFunction_body),
+          _SectionLabel(
+            l10n.tooltip_function_exampleLabel,
+            FLucideIcons.braces,
+            colors,
+            t,
+          ),
+          _ExRow(
+            '() => initialDirection = "l"',
+            l10n.tooltip_actionFunction_exampleAnnotation,
+            colors,
+            t,
+          ),
+          _Note(
+            l10n.tooltip_actionFunction_variablesNote,
+            colors,
+            t,
+            icon: FLucideIcons.variable,
+          ),
+          _Note(
+            l10n.tooltip_function_apisNote,
+            colors,
+            t,
+            icon: FLucideIcons.package,
+          ),
+          _Note(
+            l10n.tooltip_actionFunction_watchdogNote,
+            colors,
+            t,
+            icon: FLucideIcons.triangleAlert,
+          ),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_function_callablePrefix),
+                _monoSpan('() => expression', colors, t),
+              ],
+            ),
+            style: t.xs.copyWith(color: colors.mutedForeground),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ActionActivateWindowTooltip extends StatelessWidget {
   const ActionActivateWindowTooltip({super.key});
 

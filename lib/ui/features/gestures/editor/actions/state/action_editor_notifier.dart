@@ -74,6 +74,7 @@ enum ActionKind {
   plasmaShortcut,
   activateWindow,
   sleep,
+  function,
   raw,
   missing,
 }
@@ -193,6 +194,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   PlasmaShortcutAction() => ActionKind.plasmaShortcut,
   ActivateWindowAction() => ActionKind.activateWindow,
   SleepAction() => ActionKind.sleep,
+  FunctionAction() => ActionKind.function,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,
 };

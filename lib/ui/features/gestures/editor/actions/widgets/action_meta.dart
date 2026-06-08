@@ -42,6 +42,11 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
         subtitle: l10n.actionMetaSleepSubtitle,
         icon: Icons.schedule_outlined,
       ),
+      FunctionAction() => ActionMetaInfo(
+        label: l10n.actionMetaFunctionLabel,
+        subtitle: l10n.actionMetaFunctionSubtitle,
+        icon: Icons.functions,
+      ),
       RawAction() => ActionMetaInfo(
         label: l10n.actionMetaRawLabel,
         subtitle: l10n.actionMetaRawSubtitle,

@@ -455,11 +455,11 @@ String _deviceDescription(DeviceType device, AppLocalizations l10n) =>
     };
 
 IconData _deviceIcon(DeviceType device) => switch (device) {
-  DeviceType.mouse => Icons.mouse_outlined,
-  DeviceType.keyboard => Icons.keyboard_outlined,
-  DeviceType.pointer => Icons.ads_click_outlined,
-  DeviceType.touchpad => Icons.pan_tool_outlined,
-  DeviceType.touchscreen => Icons.smartphone_outlined,
+  DeviceType.mouse => FLucideIcons.mouse,
+  DeviceType.keyboard => FLucideIcons.keyboard,
+  DeviceType.pointer => FLucideIcons.mousePointer2,
+  DeviceType.touchpad => FLucideIcons.touchpad,
+  DeviceType.touchscreen => FLucideIcons.monitor,
 };
 
 // ---------------------------------------------------------------------------

@@ -304,6 +304,8 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
     ActivateWindowAction(:final windowId) =>
       windowId.isEmpty ? 'activate window' : 'activate $windowId',
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
+    FunctionAction(:final expression) =>
+      expression.trim().isEmpty ? 'function' : expression.trim(),
     RawAction() => 'raw yaml',
   };
 }

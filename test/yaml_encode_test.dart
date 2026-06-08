@@ -491,6 +491,15 @@ mouse:
       expect(actionToMap(const SleepAction(milliseconds: 750)), {'sleep': 750});
     });
 
+    test('function action writes function expression', () {
+      expect(
+        actionToMap(
+          const FunctionAction(expression: '() => initialDirection = "l"'),
+        ),
+        {'function': '() => initialDirection = "l"'},
+      );
+    });
+
     test('raw action writes __raw sentinel', () {
       expect(actionToMap(const RawAction(raw: 'one:\n- a')), {
         '__raw': 'one:\n- a',
@@ -523,6 +532,17 @@ mouse:
           ),
         ),
         r'!$window_maximized == true',
+      );
+    });
+
+    test('function condition writes function map', () {
+      expect(
+        conditionToYaml(
+          const FunctionCondition(
+            expression: '() => initialDirection == null',
+          ),
+        ),
+        {'function': '() => initialDirection == null'},
       );
     });
 

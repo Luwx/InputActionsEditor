@@ -123,6 +123,8 @@ String _conditionKey(Condition? c) {
     case ConditionGroup(:final mode, :final children):
       final parts = children.map(_conditionKey).toList()..sort();
       return '${mode.name}(${parts.join(',')})';
+    case FunctionCondition(:final expression):
+      return 'fn:${expression.trim()}';
     case RawCondition(:final raw):
       return 'raw:${raw.trim()}';
   }

@@ -89,6 +89,10 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           'sleep',
           fields: [prop('duration', property: SleepActionMeta.milliseconds)],
         ),
+        valueCase<FunctionAction>(
+          'function',
+          fields: [prop(FunctionActionMeta.expression)],
+        ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
         valueCase<InputAction>(
           'input',

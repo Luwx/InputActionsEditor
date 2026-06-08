@@ -431,6 +431,9 @@ Condition _parseCondition(dynamic node) {
         );
       }
     }
+    if (node.containsKey('function')) {
+      return FunctionCondition(expression: node['function'].toString());
+    }
   }
   return RawCondition(raw: node.toString());
 }
@@ -629,6 +632,9 @@ Action? _parseAction(YamlMap m) {
   }
   if (m.containsKey('sleep')) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
+  }
+  if (m.containsKey('function')) {
+    return FunctionAction(expression: m['function'].toString());
   }
   return RawAction(raw: _dumpYamlNode(m));
 }

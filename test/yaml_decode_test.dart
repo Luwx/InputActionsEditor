@@ -349,6 +349,20 @@ mouse:
       );
     });
 
+    test('function condition map becomes a FunctionCondition', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      conditions:
+        function: () => initialDirection == null
+''');
+      expect(
+        c.mouseGestures.single.common.conditions,
+        const FunctionCondition(expression: '() => initialDirection == null'),
+      );
+    });
+
     test('list of conditions becomes an all-group', () {
       final c = decodeConfig(r'''
 mouse:
@@ -581,6 +595,44 @@ mouse:
         c.mouseGestures.single.common.actions.single.action,
         const SleepAction(milliseconds: 750),
       );
+    });
+
+    test('function action parses expression', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - function: () => initialDirection = "l"
+''');
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const FunctionAction(expression: '() => initialDirection = "l"'),
+      );
+    });
+
+    test('function action with a function condition (both levels)', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: update
+          interval: -1
+          conditions:
+            function: () => initialDirection == null
+          function: () => initialDirection = "l"
+''');
+      final ta = c.mouseGestures.single.common.actions.single;
+      expect(
+        ta.action,
+        const FunctionAction(expression: '() => initialDirection = "l"'),
+      );
+      expect(
+        ta.conditions,
+        const FunctionCondition(expression: '() => initialDirection == null'),
+      );
+      expect(ta.interval, '-1');
     });
 
     test('activate_window action parses window id value', () {

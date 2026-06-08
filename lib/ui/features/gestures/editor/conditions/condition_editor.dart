@@ -110,7 +110,7 @@ class ConditionEditor extends StatelessWidget {
     final Condition next;
     if (current == null) {
       next = newCondition;
-    } else if (current is VariableCondition) {
+    } else if (current is VariableCondition || current is FunctionCondition) {
       next = ConditionGroup(children: [current, newCondition]);
     } else if (current is ConditionGroup) {
       next = current.copyWith(children: [...current.children, newCondition]);
@@ -126,12 +126,29 @@ class ConditionEditor extends StatelessWidget {
     final Condition next;
     if (current == null) {
       next = const ConditionGroup();
-    } else if (current is VariableCondition) {
+    } else if (current is VariableCondition || current is FunctionCondition) {
       next = ConditionGroup(children: [current, const ConditionGroup()]);
     } else if (current is ConditionGroup) {
       next = current.copyWith(
         children: [...current.children, const ConditionGroup()],
       );
+    } else {
+      return;
+    }
+
+    _setCondition(next);
+  }
+
+  void _addRootFunction() {
+    const newCondition = FunctionCondition(expression: '() => ');
+    final current = _effectiveCondition;
+    final Condition next;
+    if (current == null) {
+      next = newCondition;
+    } else if (current is VariableCondition || current is FunctionCondition) {
+      next = ConditionGroup(children: [current, newCondition]);
+    } else if (current is ConditionGroup) {
+      next = current.copyWith(children: [...current.children, newCondition]);
     } else {
       return;
     }
@@ -223,6 +240,7 @@ class ConditionEditor extends StatelessWidget {
               ? () => _addRootCondition(context)
               : null,
           onAddGroup: showRootButtons ? _addRootGroup : null,
+          onAddFunction: showRootButtons ? _addRootFunction : null,
           onExpand: expandCallback,
           expandHeroTag: expandCallback != null ? effectiveHeroTag : null,
           isExpanded: showMinimize,

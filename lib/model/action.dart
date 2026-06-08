@@ -44,6 +44,10 @@ sealed class Action with _$Action {
 
   const factory Action.sleep({required int milliseconds}) = SleepAction;
 
+  /// A JavaScript function executed by the daemon for its side effects (the
+  /// return value is ignored). [expression] is the raw `() => ...` source.
+  const factory Action.function({required String expression}) = FunctionAction;
+
   /// Raw YAML for action types we don't model (e.g. one:, replace_text:).
   const factory Action.raw({required String raw}) = RawAction;
 }

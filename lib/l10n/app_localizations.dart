@@ -1360,6 +1360,18 @@ abstract class AppLocalizations {
   /// **'Pause before continuing'**
   String get actionMetaSleepSubtitle;
 
+  /// No description provided for @actionMetaFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get actionMetaFunctionLabel;
+
+  /// No description provided for @actionMetaFunctionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a JavaScript function'**
+  String get actionMetaFunctionSubtitle;
+
   /// No description provided for @actionMetaRawLabel.
   ///
   /// In en, this message translates to:
@@ -3226,6 +3238,18 @@ abstract class AppLocalizations {
   /// **'500'**
   String get actionSleepDurationHint;
 
+  /// No description provided for @actionFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get actionFunctionLabel;
+
+  /// No description provided for @actionFunctionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'() => initialDirection = \"l\"'**
+  String get actionFunctionHint;
+
   /// No description provided for @groupMenuRename.
   ///
   /// In en, this message translates to:
@@ -3531,6 +3555,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collection of conditions.'**
   String get conditionMenuAddGroupSubtitle;
+
+  /// No description provided for @conditionMenuAddFunctionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get conditionMenuAddFunctionTitle;
+
+  /// No description provided for @conditionMenuAddFunctionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JavaScript expression evaluated at runtime.'**
+  String get conditionMenuAddFunctionSubtitle;
+
+  /// No description provided for @conditionFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get conditionFunctionLabel;
+
+  /// No description provided for @conditionFunctionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'() => initialDirection == \"l\"'**
+  String get conditionFunctionHint;
+
+  /// No description provided for @tooltip_function_exampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get tooltip_function_exampleLabel;
+
+  /// No description provided for @tooltip_function_apisNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Call built-in APIs with require() — inputactions/core, inputactions/fs — and console.'**
+  String get tooltip_function_apisNote;
+
+  /// No description provided for @tooltip_function_callablePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be a callable arrow function: '**
+  String get tooltip_function_callablePrefix;
+
+  /// No description provided for @tooltip_conditionFunction_body.
+  ///
+  /// In en, this message translates to:
+  /// **'A JavaScript function evaluated every time this condition is checked. It passes when the function returns a truthy value — use it for logic the built-in variable conditions can\'t express.'**
+  String get tooltip_conditionFunction_body;
+
+  /// No description provided for @tooltip_conditionFunction_exampleAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Passes while the script variable equals \"l\"'**
+  String get tooltip_conditionFunction_exampleAnnotation;
+
+  /// No description provided for @tooltip_conditionFunction_variablesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Read persistent script variables to track state across gestures.'**
+  String get tooltip_conditionFunction_variablesNote;
+
+  /// No description provided for @tooltip_actionFunction_body.
+  ///
+  /// In en, this message translates to:
+  /// **'A JavaScript function run for its side effects when this action executes. Its return value is ignored.'**
+  String get tooltip_actionFunction_body;
+
+  /// No description provided for @tooltip_actionFunction_exampleAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets a script variable other actions and conditions can read'**
+  String get tooltip_actionFunction_exampleAnnotation;
+
+  /// No description provided for @tooltip_actionFunction_variablesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Commonly used to set or update persistent script variables.'**
+  String get tooltip_actionFunction_variablesNote;
+
+  /// No description provided for @tooltip_actionFunction_watchdogNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-running loops are interrupted by a watchdog.'**
+  String get tooltip_actionFunction_watchdogNote;
 
   /// No description provided for @conditionVariableSelectorOpenHint.
   ///

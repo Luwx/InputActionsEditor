@@ -175,6 +175,37 @@ class ActionFields extends ConsumerWidget {
           );
         },
       ),
+      ActionKind.function => Builder(
+        builder: (context) {
+          final schemaField = ref.actionSchemaField(
+            context,
+            actionExpressionField,
+          );
+          return FTextField(
+            control: FTextFieldControl.managed(
+              initial: schemaField.textEditingValue,
+              onChange: schemaField.onTextChanged,
+            ),
+            label: UnsavedLabel(
+              state: schemaField.dirty,
+              onRevert: schemaField.onRevert,
+              child: LabelWithTooltip(
+                label: l10n.actionFunctionLabel,
+                tooltipContent: const ActionFunctionTooltip(),
+              ),
+            ),
+            hint: l10n.actionFunctionHint,
+            maxLines: null,
+            style: .delta(
+              contentTextStyle: FVariantsDelta.delta([
+                FVariantOperation.all(
+                  const TextStyleDelta.delta(fontFamily: 'monospace'),
+                ),
+              ]),
+            ),
+          );
+        },
+      ),
       ActionKind.raw => Builder(
         builder: (context) {
           final schemaField = ref.actionSchemaField(

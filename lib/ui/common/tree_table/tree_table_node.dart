@@ -10,17 +10,31 @@ sealed class TreeTableNode {
 }
 
 /// A leaf row. [cells] holds one widget per table column, in column order.
+///
+/// Alternatively, set [content] to render a single widget across the full data
+/// area (after the indent, before the trailing slot), ignoring column widths —
+/// useful for rows whose content doesn't map onto the columns (e.g. a free-form
+/// expression editor).
 class TreeTableLeaf extends TreeTableNode {
   const TreeTableLeaf({
     required super.key,
-    required this.cells,
+    this.cells = const [],
+    this.content,
     this.trailing,
     this.minHeight = 36,
-  });
+  }) : assert(
+         content != null || cells.length > 0,
+         'A leaf needs either cells or content.',
+       );
 
   /// One widget per column, in column order. The engine applies indentation
-  /// and column widths; cells supply only their own content.
+  /// and column widths; cells supply only their own content. Ignored when
+  /// [content] is set.
   final List<Widget> cells;
+
+  /// When set, the row renders this single widget across the full data area
+  /// instead of laying [cells] out per column.
+  final Widget? content;
 
   /// Fills the fixed trailing action slot (e.g. a delete button).
   final Widget? trailing;

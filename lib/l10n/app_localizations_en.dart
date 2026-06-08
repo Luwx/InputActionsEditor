@@ -682,6 +682,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaSleepSubtitle => 'Pause before continuing';
 
   @override
+  String get actionMetaFunctionLabel => 'Function';
+
+  @override
+  String get actionMetaFunctionSubtitle => 'Run a JavaScript function';
+
+  @override
   String get actionMetaRawLabel => 'Raw YAML';
 
   @override
@@ -1779,6 +1785,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSleepDurationHint => '500';
 
   @override
+  String get actionFunctionLabel => 'Function';
+
+  @override
+  String get actionFunctionHint => '() => initialDirection = \"l\"';
+
+  @override
   String get groupMenuRename => 'Rename';
 
   @override
@@ -1945,6 +1957,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conditionMenuAddGroupSubtitle => 'Collection of conditions.';
+
+  @override
+  String get conditionMenuAddFunctionTitle => 'Function';
+
+  @override
+  String get conditionMenuAddFunctionSubtitle =>
+      'JavaScript expression evaluated at runtime.';
+
+  @override
+  String get conditionFunctionLabel => 'Function';
+
+  @override
+  String get conditionFunctionHint => '() => initialDirection == \"l\"';
+
+  @override
+  String get tooltip_function_exampleLabel => 'Example';
+
+  @override
+  String get tooltip_function_apisNote =>
+      'Call built-in APIs with require() — inputactions/core, inputactions/fs — and console.';
+
+  @override
+  String get tooltip_function_callablePrefix =>
+      'Must be a callable arrow function: ';
+
+  @override
+  String get tooltip_conditionFunction_body =>
+      'A JavaScript function evaluated every time this condition is checked. It passes when the function returns a truthy value — use it for logic the built-in variable conditions can\'t express.';
+
+  @override
+  String get tooltip_conditionFunction_exampleAnnotation =>
+      'Passes while the script variable equals \"l\"';
+
+  @override
+  String get tooltip_conditionFunction_variablesNote =>
+      'Read persistent script variables to track state across gestures.';
+
+  @override
+  String get tooltip_actionFunction_body =>
+      'A JavaScript function run for its side effects when this action executes. Its return value is ignored.';
+
+  @override
+  String get tooltip_actionFunction_exampleAnnotation =>
+      'Sets a script variable other actions and conditions can read';
+
+  @override
+  String get tooltip_actionFunction_variablesNote =>
+      'Commonly used to set or update persistent script variables.';
+
+  @override
+  String get tooltip_actionFunction_watchdogNote =>
+      'Long-running loops are interrupted by a watchdog.';
 
   @override
   String get conditionVariableSelectorOpenHint => 'Click to open selector.';

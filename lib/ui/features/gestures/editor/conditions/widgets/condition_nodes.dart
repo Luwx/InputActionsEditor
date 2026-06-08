@@ -7,11 +7,13 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cata
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/constants.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/function_condition_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/mode_selector.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/operator_select.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/type_icon_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/value_input.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Three columns shared by every condition table (variable / operator / value).
@@ -73,6 +75,13 @@ TreeTableNode buildConditionNode(
         depth: depth,
         groups: groups,
         onChanged: (updated) => onChanged(updated),
+        onDelete: onDelete,
+      );
+    case final FunctionCondition c:
+      return _functionNode(
+        c,
+        key: ValueKey(path),
+        onChanged: onChanged,
         onDelete: onDelete,
       );
     case final RawCondition raw:
@@ -150,6 +159,14 @@ TreeTableGroup _groupNode(
       ),
       onAddGroup: () => onChanged(
         group.copyWith(children: [...group.children, const ConditionGroup()]),
+      ),
+      onAddFunction: () => onChanged(
+        group.copyWith(
+          children: [
+            ...group.children,
+            const FunctionCondition(expression: '() => '),
+          ],
+        ),
       ),
     ),
     trailing: depth > 0
@@ -281,6 +298,68 @@ TreeTableLeaf _leafNode(
   );
 }
 
+TreeTableLeaf _functionNode(
+  FunctionCondition condition, {
+  required Key key,
+  required ValueChanged<Condition> onChanged,
+  required VoidCallback onDelete,
+}) {
+  return TreeTableLeaf(
+    key: key,
+    content: Builder(
+      builder: (context) {
+        final colors = context.theme.colors;
+        final typography = context.theme.typography;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 8, right: 4),
+              child: Icon(
+                FLucideIcons.braces,
+                size: 14,
+                color: colors.mutedForeground,
+              ),
+            ),
+            AppTooltip(
+              tipBuilder: (context, controller) =>
+                  const ConditionFunctionTooltip(),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, right: 10),
+                child: Text(
+                  context.l10n.conditionFunctionLabel,
+                  style: typography.sm.copyWith(color: colors.mutedForeground),
+                ),
+              ),
+            ),
+            Expanded(
+              child: FunctionConditionInput(
+                expression: condition.expression,
+                onChanged: (value) =>
+                    onChanged(condition.copyWith(expression: value)),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+    trailing: Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: FButton(
+          variant: .ghost,
+          size: .sm,
+          onPress: onDelete,
+          child: Icon(
+            FLucideIcons.trash2,
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 TreeTableLeaf _rawNode(
   RawCondition raw, {
   required Key key,
@@ -318,6 +397,7 @@ class _GroupHeaderContent extends StatelessWidget {
     required this.onSetMode,
     required this.onAddCondition,
     required this.onAddGroup,
+    required this.onAddFunction,
   });
 
   final ConditionGroup group;
@@ -325,6 +405,7 @@ class _GroupHeaderContent extends StatelessWidget {
   final ValueChanged<ConditionGroupMode> onSetMode;
   final ValueChanged<VariableInfo> onAddCondition;
   final VoidCallback onAddGroup;
+  final VoidCallback onAddFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -354,6 +435,7 @@ class _GroupHeaderContent extends StatelessWidget {
             onAddCondition(picked);
           },
           onAddGroup: onAddGroup,
+          onAddFunction: onAddFunction,
         ),
       ],
     );

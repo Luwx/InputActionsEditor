@@ -461,6 +461,7 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   },
   ActivateWindowAction(:final windowId) => {'activate_window': windowId},
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
+  FunctionAction(:final expression) => {'function': expression},
   RawAction(:final raw) => {'__raw': raw},
 };
 
@@ -722,6 +723,7 @@ dynamic conditionToYaml(Condition c) => switch (c) {
       children,
     ).map(conditionToYaml).toList(),
   },
+  FunctionCondition(:final expression) => {'function': expression},
   RawCondition(:final raw) => raw,
 };
 
