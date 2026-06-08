@@ -3,13 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/ui/common/resize_divider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
 class GestureListWidthController extends Notifier<double> {
   @override
-  double build() => 0.3;
+  double build() => ref.read(initialAppStateProvider).gestureListWidth;
 
   @override
   set state(double value) => super.state = value;

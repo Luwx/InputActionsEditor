@@ -166,6 +166,12 @@ _GestureListChoreography _useGestureListChoreography(
     });
   }
 
+  useEffect(() {
+    final initial = ref.read(selectedGestureProvider);
+    if (initial != null) queueScrollToGesture(initial);
+    return null;
+  }, const []);
+
   ref
     ..listen(currentViewProvider, (prevView, nextView) {
       if (nextView != AppView.gestures) {
