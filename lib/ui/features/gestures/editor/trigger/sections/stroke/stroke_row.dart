@@ -30,7 +30,7 @@ class StrokeRow extends StatelessWidget {
     final data = decodeStrokeDetailed(stroke);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, right: 8),
+      padding: const EdgeInsets.only(bottom: 4, right: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -89,20 +89,14 @@ class StrokeRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
-                      if (data != null) ...[
+                      if (data != null)
                         Text(
                           l10n.strokeRowPoints(data.pointCount),
                           style: typography.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
-                        ),
-                        Text(
-                          strokeAspect(data.points),
-                          style: typography.xs.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                        ),
-                      ] else
+                        )
+                      else
                         Text(
                           l10n.strokeRowInvalidData,
                           style: typography.xs.copyWith(
@@ -166,7 +160,6 @@ class StrokeRow extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   StrokeMetaChip(label: l10n.strokeRowPoints(data.pointCount)),
-                  StrokeMetaChip(label: strokeAspect(data.points)),
                 ],
               ),
             ],

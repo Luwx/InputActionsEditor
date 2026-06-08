@@ -41,30 +41,3 @@ StrokeData? decodeStrokeDetailed(String raw) {
 
 List<Offset>? decodeStrokeBase64(String raw) =>
     decodeStrokeDetailed(raw)?.points;
-
-String strokeAspect(List<Offset> points) {
-  if (points.isEmpty) return '';
-
-  var minX = points.first.dx;
-  var maxX = minX;
-  var minY = points.first.dy;
-  var maxY = minY;
-
-  for (final point in points) {
-    if (point.dx < minX) minX = point.dx;
-    if (point.dx > maxX) maxX = point.dx;
-    if (point.dy < minY) minY = point.dy;
-    if (point.dy > maxY) maxY = point.dy;
-  }
-
-  final width = maxX - minX;
-  final height = maxY - minY;
-  if (width < 0.01 && height < 0.01) return 'point';
-  if (width < 0.01) return 'vertical';
-  if (height < 0.01) return 'horizontal';
-
-  final ratio = width / height;
-  if (ratio > 2.5) return 'wide';
-  if (ratio < 0.4) return 'tall';
-  return 'diagonal';
-}

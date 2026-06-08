@@ -202,31 +202,28 @@ class _Section extends StatelessWidget {
     final titleStyle = context.theme.typography.sm.copyWith(
       fontWeight: FontWeight.w600,
     );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (titleTooltip != null)
-            UnsavedLabel(
-              state: dirtyState,
-              onRevert: onRevert,
-              child: LabelWithTooltip(
-                label: title,
-                tooltip: titleTooltip,
-                textStyle: titleStyle,
-              ),
-            )
-          else
-            UnsavedLabel(
-              state: dirtyState,
-              onRevert: onRevert,
-              child: Text(title, style: titleStyle),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (titleTooltip != null)
+          UnsavedLabel(
+            state: dirtyState,
+            onRevert: onRevert,
+            child: LabelWithTooltip(
+              label: title,
+              tooltip: titleTooltip,
+              textStyle: titleStyle,
             ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
+          )
+        else
+          UnsavedLabel(
+            state: dirtyState,
+            onRevert: onRevert,
+            child: Text(title, style: titleStyle),
+          ),
+        const SizedBox(height: 8),
+        child,
+      ],
     );
   }
 }

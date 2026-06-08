@@ -35,7 +35,7 @@ class PressSection extends ConsumerWidget {
           value: instantField.value ?? false,
           onChange: (v) => instantField.onChanged(v ? true : null),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
       ],
     );
   }

@@ -22,23 +22,20 @@ class RotateSection extends StatelessWidget {
       l10n.directionClockwise: RotateDirection.clockwise,
       l10n.directionCounterclockwise: RotateDirection.counterclockwise,
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        width: 220,
-        child: FSelect<RotateDirection>(
-          key: ValueKey(direction),
-          items: directions,
-          control: FSelectManagedControl<RotateDirection>(
-            initial: direction,
-            onChange: (v) {
-              if (v != null) onDirectionChanged(v);
-            },
-          ),
-          label: LabelWithTooltip(
-            label: l10n.sectionRotateDirectionLabel,
-            tooltip: l10n.sectionRotateDirectionTooltip,
-          ),
+    return SizedBox(
+      width: 220,
+      child: FSelect<RotateDirection>(
+        key: ValueKey(direction),
+        items: directions,
+        control: FSelectManagedControl<RotateDirection>(
+          initial: direction,
+          onChange: (v) {
+            if (v != null) onDirectionChanged(v);
+          },
+        ),
+        label: LabelWithTooltip(
+          label: l10n.sectionRotateDirectionLabel,
+          tooltip: l10n.sectionRotateDirectionTooltip,
         ),
       ),
     );

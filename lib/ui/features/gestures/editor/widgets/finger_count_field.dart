@@ -30,37 +30,34 @@ class FingerCountField extends ConsumerWidget {
     );
     final value = field.value;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LabelWithTooltip(
-            label: context.l10n.sectionFingersLabel,
-            tooltip: context.l10n.sectionFingersTooltip,
-            textStyle: typography.sm.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            spacing: 6,
-            children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LabelWithTooltip(
+          label: context.l10n.sectionFingersLabel,
+          tooltip: context.l10n.sectionFingersTooltip,
+          textStyle: typography.sm.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          spacing: 6,
+          children: [
+            FButton(
+              variant: value == null ? .primary : .outline,
+              size: .sm,
+              onPress: () => field.onChanged(null),
+              child: Text(context.l10n.sectionFingersAny),
+            ),
+            for (int n = minFingers; n <= maxFingers; n++)
               FButton(
-                variant: value == null ? .primary : .outline,
+                variant: value == n ? .primary : .outline,
                 size: .sm,
-                onPress: () => field.onChanged(null),
-                child: Text(context.l10n.sectionFingersAny),
+                onPress: () => field.onChanged(n),
+                child: Text('$n'),
               ),
-              for (int n = minFingers; n <= maxFingers; n++)
-                FButton(
-                  variant: value == n ? .primary : .outline,
-                  size: .sm,
-                  onPress: () => field.onChanged(n),
-                  child: Text('$n'),
-                ),
-            ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }

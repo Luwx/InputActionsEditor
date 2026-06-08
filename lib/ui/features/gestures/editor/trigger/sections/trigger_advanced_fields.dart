@@ -15,11 +15,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
   const TriggerAdvancedFields({
     super.key,
     this.fields = TriggerAdvancedField.values,
-    this.topPadding = 16,
   });
 
   final Iterable<TriggerAdvancedField> fields;
-  final double topPadding;
 
   static bool hasNonDefaultFields(TriggerCommon c) =>
       c.conditions != null ||
@@ -91,8 +89,8 @@ class TriggerAdvancedFields extends ConsumerWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 16,
       children: [
-        if (topPadding > 0) SizedBox(height: topPadding),
         if (visibleFields.contains(TriggerAdvancedField.id) ||
             visibleFields.contains(TriggerAdvancedField.threshold) ||
             visibleFields.contains(TriggerAdvancedField.resumeTimeout)) ...[
@@ -160,7 +158,6 @@ class TriggerAdvancedFields extends ConsumerWidget {
             visibleFields.contains(TriggerAdvancedField.blockEvents) ||
             visibleFields.contains(TriggerAdvancedField.clearModifiers) ||
             visibleFields.contains(TriggerAdvancedField.setLastTrigger)) ...[
-          const SizedBox(height: 16),
           Column(
             spacing: 8,
             children: [
@@ -222,7 +219,6 @@ class TriggerAdvancedFields extends ConsumerWidget {
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.conditions)) ...[
-          const SizedBox(height: 16),
           ConditionEditor.generic(
             condition: conditionsField.value,
             onConditionChanged: conditionsField.onChanged,
@@ -234,7 +230,6 @@ class TriggerAdvancedFields extends ConsumerWidget {
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.endConditions)) ...[
-          const SizedBox(height: 12),
           ConditionEditor.generic(
             title: l10n.triggerEndConditionsTitle,
             dirtyState: endConditionsField.dirty,

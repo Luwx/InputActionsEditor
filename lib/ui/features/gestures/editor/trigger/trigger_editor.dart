@@ -73,10 +73,20 @@ class TriggerEditor extends HookConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        spacing: 16,
         children: [
-          for (final section in sections) section,
+          // for (final section in sections) section,
+          Column(
+            // mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 16,
+            children: sections,
+          ),
           if (pinnedFields.value.isNotEmpty)
-            TriggerAdvancedFields(fields: pinnedFields.value),
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 4),
+              child: TriggerAdvancedFields(fields: pinnedFields.value),
+            ),
           FAccordion(
             key: ValueKey(location.index),
             control: FAccordionControl.lifted(
@@ -97,7 +107,6 @@ class TriggerEditor extends HookConsumerWidget {
                 title: Text(context.l10n.triggerOtherOptions),
                 child: TriggerAdvancedFields(
                   fields: accordionFields,
-                  topPadding: 0,
                 ),
               ),
             ],

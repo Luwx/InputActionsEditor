@@ -62,88 +62,85 @@ class StrokesField extends HookConsumerWidget {
     });
     final recordingState = ref.watch(strokeRecordingProvider);
     final isRecording = recordingState.isLoading;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LabelWithTooltip(
-            label: context.l10n.strokesLabel,
-            tooltip: context.l10n.strokesTooltip,
-            textStyle: context.theme.typography.sm.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LabelWithTooltip(
+          label: context.l10n.strokesLabel,
+          tooltip: context.l10n.strokesTooltip,
+          textStyle: context.theme.typography.sm.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 8),
-          if (strokes.isEmpty)
-            Text(
-              context.l10n.strokesEmpty,
-              style: context.theme.typography.xs.copyWith(
-                color: context.theme.colors.mutedForeground,
-              ),
-            )
-          else
-            Wrap(
-              children: [
-                for (final (i, stroke) in strokes.indexed)
-                  StrokeRow(
-                    key: ValueKey('stroke-$i-$stroke'),
-                    stroke: stroke,
-                    index: i,
-                    animatePath:
-                        animatedStroke.value == stroke &&
-                        animatedIndex.value == i,
-                    onDelete: () {
-                      final updated = List<String>.of(strokes)..removeAt(i);
-                      onStrokesChanged(updated);
-                    },
-                  ),
-              ],
+        ),
+        const SizedBox(height: 8),
+        if (strokes.isEmpty)
+          Text(
+            context.l10n.strokesEmpty,
+            style: context.theme.typography.xs.copyWith(
+              color: context.theme.colors.mutedForeground,
             ),
-          const SizedBox(height: 8),
-          FButton(
-            variant: .outline,
-            size: .sm,
-            onPress: isRecording
-                ? null
-                : () async {
-                    final stroke = await ref
-                        .read(strokeRecordingProvider.notifier)
-                        .recordStroke();
-                    if (stroke == null) return;
-                    final appendedIndex = strokes.length;
-                    animatedStroke.value = stroke;
-                    animatedIndex.value = appendedIndex;
-                    onStrokesChanged([...strokes, stroke]);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      animatedStroke.value = null;
-                      animatedIndex.value = null;
-                    });
+          )
+        else
+          Wrap(
+            children: [
+              for (final (i, stroke) in strokes.indexed)
+                StrokeRow(
+                  key: ValueKey('stroke-$i-$stroke'),
+                  stroke: stroke,
+                  index: i,
+                  animatePath:
+                      animatedStroke.value == stroke &&
+                      animatedIndex.value == i,
+                  onDelete: () {
+                    final updated = List<String>.of(strokes)..removeAt(i);
+                    onStrokesChanged(updated);
                   },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isRecording)
-                  const Icon(Icons.radio_button_checked, color: Colors.red)
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(
-                        end: 1.2,
-                        duration: 400.ms,
-                        curve: Curves.easeInOut,
-                      )
-                else
-                  const Icon(Icons.radio_button_checked),
-                const SizedBox(width: 4),
-                Text(
-                  isRecording
-                      ? context.l10n.strokesRecording
-                      : context.l10n.strokesRecord,
                 ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
+        const SizedBox(height: 6),
+        FButton(
+          variant: .outline,
+          size: .sm,
+          onPress: isRecording
+              ? null
+              : () async {
+                  final stroke = await ref
+                      .read(strokeRecordingProvider.notifier)
+                      .recordStroke();
+                  if (stroke == null) return;
+                  final appendedIndex = strokes.length;
+                  animatedStroke.value = stroke;
+                  animatedIndex.value = appendedIndex;
+                  onStrokesChanged([...strokes, stroke]);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    animatedStroke.value = null;
+                    animatedIndex.value = null;
+                  });
+                },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isRecording)
+                const Icon(Icons.radio_button_checked, color: Colors.red)
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scaleXY(
+                      end: 1.2,
+                      duration: 400.ms,
+                      curve: Curves.easeInOut,
+                    )
+              else
+                const Icon(Icons.radio_button_checked),
+              const SizedBox(width: 4),
+              Text(
+                isRecording
+                    ? context.l10n.strokesRecording
+                    : context.l10n.strokesRecord,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

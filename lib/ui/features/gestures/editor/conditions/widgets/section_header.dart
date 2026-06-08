@@ -118,7 +118,7 @@ class NewConditionMenu extends StatelessWidget {
                   onAddGroup?.call();
                 },
               ),
-              // disable functions for now
+            // disable functions for now
             // if (onAddFunction != null)
             //   .item(
             //     prefix: const Icon(FLucideIcons.braces),

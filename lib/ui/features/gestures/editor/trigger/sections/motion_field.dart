@@ -25,50 +25,47 @@ class MotionField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 180,
-                child: FSelect<TriggerSpeed>(
-                  key: ValueKey(motion.speed ?? TriggerSpeed.any),
-                  items: _speeds,
-                  control: FSelectManagedControl<TriggerSpeed>(
-                    initial: motion.speed ?? TriggerSpeed.any,
-                    onChange: (v) {
-                      if (v != null) {
-                        onChanged(
-                          motion.copyWith(
-                            speed: v == TriggerSpeed.any ? null : v,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  label: LabelWithTooltip(
-                    label: context.l10n.motionSpeedLabel,
-                    tooltip: context.l10n.motionSpeedTooltip,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 180,
+              child: FSelect<TriggerSpeed>(
+                key: ValueKey(motion.speed ?? TriggerSpeed.any),
+                items: _speeds,
+                control: FSelectManagedControl<TriggerSpeed>(
+                  initial: motion.speed ?? TriggerSpeed.any,
+                  onChange: (v) {
+                    if (v != null) {
+                      onChanged(
+                        motion.copyWith(
+                          speed: v == TriggerSpeed.any ? null : v,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                label: LabelWithTooltip(
+                  label: context.l10n.motionSpeedLabel,
+                  tooltip: context.l10n.motionSpeedTooltip,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          FCheckbox(
-            label: LabelWithTooltip(
-              label: context.l10n.motionLockPointerLabel,
-              tooltip: context.l10n.motionLockPointerTooltip,
             ),
-            value: motion.lockPointer ?? false,
-            onChange: (v) =>
-                onChanged(motion.copyWith(lockPointer: v ? true : null)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        FCheckbox(
+          label: LabelWithTooltip(
+            label: context.l10n.motionLockPointerLabel,
+            tooltip: context.l10n.motionLockPointerTooltip,
           ),
-        ],
-      ),
+          value: motion.lockPointer ?? false,
+          onChange: (v) =>
+              onChanged(motion.copyWith(lockPointer: v ? true : null)),
+        ),
+      ],
     );
   }
 }

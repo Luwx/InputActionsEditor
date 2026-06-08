@@ -28,13 +28,8 @@ class TouchscreenGestureEditor extends StatelessWidget {
     return GestureEditorLayout(
       location: GestureLocation(device: DeviceType.touchscreen, index: index),
       sections: const [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FingerCountField(),
-            _TouchscreenTriggerSection(),
-          ],
-        ),
+        FingerCountField(),
+        _TouchscreenTriggerSection(),
       ],
     );
   }
@@ -62,6 +57,7 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
 
     return switch (kind) {
       TouchscreenTriggerType.swipe => Column(
+        spacing: 16,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Builder(
@@ -81,6 +77,7 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
       ),
       TouchscreenTriggerType.pinch => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Builder(
             builder: (context) {
@@ -99,6 +96,7 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
       ),
       TouchscreenTriggerType.rotate => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Builder(
             builder: (context) {
@@ -116,6 +114,7 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
         ],
       ),
       TouchscreenTriggerType.circle => Column(
+        spacing: 12,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [const CircleSection(), motion],
       ),

@@ -27,23 +27,20 @@ class WheelSection extends ConsumerWidget {
       l10n.wheelDirectionUpDown: WheelDirection.upDown,
       l10n.wheelDirectionLeftRight: WheelDirection.leftRight,
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        width: 220,
-        child: FSelect<WheelDirection>(
-          key: ValueKey(directionField.value),
-          items: directions,
-          control: FSelectManagedControl<WheelDirection>(
-            initial: directionField.value,
-            onChange: (v) {
-              if (v != null) directionField.onChanged(v);
-            },
-          ),
-          label: LabelWithTooltip(
-            label: l10n.sectionWheelDirectionLabel,
-            tooltip: l10n.sectionWheelDirectionTooltip,
-          ),
+    return SizedBox(
+      width: 220,
+      child: FSelect<WheelDirection>(
+        key: ValueKey(directionField.value),
+        items: directions,
+        control: FSelectManagedControl<WheelDirection>(
+          initial: directionField.value,
+          onChange: (v) {
+            if (v != null) directionField.onChanged(v);
+          },
+        ),
+        label: LabelWithTooltip(
+          label: l10n.sectionWheelDirectionLabel,
+          tooltip: l10n.sectionWheelDirectionTooltip,
         ),
       ),
     );

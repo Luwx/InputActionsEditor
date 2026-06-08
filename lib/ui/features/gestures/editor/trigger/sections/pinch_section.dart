@@ -22,23 +22,20 @@ class PinchSection extends StatelessWidget {
       l10n.pinchDirectionIn: PinchDirection.inward,
       l10n.pinchDirectionOut: PinchDirection.outward,
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        width: 220,
-        child: FSelect<PinchDirection>(
-          key: ValueKey(direction),
-          items: directions,
-          control: FSelectManagedControl<PinchDirection>(
-            initial: direction,
-            onChange: (v) {
-              if (v != null) onDirectionChanged(v);
-            },
-          ),
-          label: LabelWithTooltip(
-            label: l10n.sectionPinchDirectionLabel,
-            tooltip: l10n.sectionPinchDirectionTooltip,
-          ),
+    return SizedBox(
+      width: 220,
+      child: FSelect<PinchDirection>(
+        key: ValueKey(direction),
+        items: directions,
+        control: FSelectManagedControl<PinchDirection>(
+          initial: direction,
+          onChange: (v) {
+            if (v != null) onDirectionChanged(v);
+          },
+        ),
+        label: LabelWithTooltip(
+          label: l10n.sectionPinchDirectionLabel,
+          tooltip: l10n.sectionPinchDirectionTooltip,
         ),
       ),
     );
