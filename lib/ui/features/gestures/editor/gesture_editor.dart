@@ -88,14 +88,14 @@ class _GestureEditorView extends HookConsumerWidget {
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
       addActionVisible.value = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!scrollController.hasClients) return;
-        await scrollController.animateTo(
-          0,
-          duration: Durations.medium1,
-          curve: Easing.standard,
-        );
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) async {
+      //   if (!scrollController.hasClients) return;
+      //   await scrollController.animateTo(
+      //     0,
+      //     duration: Durations.medium1,
+      //     curve: Easing.standard,
+      //   );
+      // });
     });
 
     final l10n = context.l10n;
@@ -249,6 +249,9 @@ class _GestureEditorView extends HookConsumerWidget {
           ),
           _SaveIntent: CallbackAction<_SaveIntent>(
             onInvoke: (_) async {
+              final isDirty =
+                  ref.read(configControllerProvider).value?.isDirty ?? false;
+              if (!isDirty) return null;
               await ref.read(configControllerProvider.notifier).save();
               if (!context.mounted) return null;
               showFToast(
