@@ -72,8 +72,7 @@ class GestureListSection extends HookConsumerWidget {
       Gesture gesture, {
       String? groupId,
     }) {
-      final config = ref.read(configControllerProvider).value;
-      if (config == null) return;
+      final config = ref.read(draftConfigProvider);
       final existingGestures = config.gesturesForDevice(device);
       final newIndex = existingGestures.length;
       final l10n = context.l10n;
@@ -112,9 +111,6 @@ class GestureListSection extends HookConsumerWidget {
     // equality, so they rebuild the affected row (which reads its own gesture),
     // not this section.
     final viewModel = ref.watch(gestureListStructureProvider);
-    final hasConfig = ref.watch(
-      configControllerProvider.select((s) => s.value != null),
-    );
     final selection = ref.watch(selectedGestureProvider);
     final multiSelect = ref.watch(multiSelectControllerProvider);
     final multiSelectNotifier = ref.read(
@@ -148,328 +144,315 @@ class GestureListSection extends HookConsumerWidget {
           multiSelectNotifier.exit();
         }
       },
-      child: !hasConfig
-          ? const Center(child: FCircularProgress.loader())
-          : Builder(
-              builder: (context) {
-                choreo.prepare(viewModel);
-                final reorderEntries =
-                    <ReorderableGroupableListEntry<GestureLocation, String>>[];
-                final gestureItemsByKey = <GestureLocation, _GestureRowItem>{};
-                final groupItemsById = <String, _GroupHeaderItem>{};
-                for (final flatItem in viewModel.flatItems) {
-                  switch (flatItem) {
-                    case _GroupHeaderItem():
-                      groupItemsById[flatItem.group.id] = flatItem;
-                      reorderEntries.add(
-                        ReorderableGroupableGroup<GestureLocation, String>(
-                          key: ValueKey('group:${flatItem.group.id}'),
-                          id: flatItem.group.id,
-                        ),
-                      );
-                    case _GestureRowItem():
-                      final key = GestureLocation(
-                        device: flatItem.device,
-                        index: flatItem.configIndex,
-                      );
-                      gestureItemsByKey[key] = flatItem;
-                      final editId = flatItem.editId;
-                      // A reordered row enters at its new slot from a fresh
-                      // element, so its key is bumped to force a remount and it
-                      // renders invisible for one frame so the expand starts at
-                      // height 0.
-                      final isEntering =
-                          editId != null &&
-                          transitions.entering.contains(editId);
-                      final isHidden =
-                          editId != null &&
-                          transitions.enteringHidden.contains(editId);
-                      reorderEntries.add(
-                        ReorderableGroupableItem<GestureLocation, String>(
-                          // Keyed by stable identity (editId), not position, so
-                          // a removed row disposes its own element instead of
-                          // its collapsed cross-fade bleeding onto the row that
-                          // shifts up. Falls back to position only for the
-                          // impossible null editId.
-                          key: ValueKey(
-                            editId != null
-                                ? (isEntering
-                                      ? 'gid:$editId:enter'
-                                      : 'gid:$editId')
-                                : '${flatItem.device.name}:'
-                                      '${flatItem.configIndex}',
-                          ),
-                          id: key,
-                          groupId: deviceFilter == null
-                              ? null
-                              : flatItem.groupId,
-                          isFirstInGroup: flatItem.isFirstInGroup,
-                          isLastInGroup: flatItem.isLastInGroup,
-                          isVisible: flatItem.isVisible && !isHidden,
-                        ),
-                      );
-                  }
-                }
-
-                // Insert collapsing ghosts at the slots their rows vacated,
-                // from the highest anchor down so earlier inserts don't shift
-                // later anchors.
-                final ghostByKey = <Key, _GhostRow>{};
-                final orderedGhosts = [...transitions.ghosts]
-                  ..sort((a, b) => b.anchorIndex.compareTo(a.anchorIndex));
-                for (final ghost in orderedGhosts) {
-                  final ghostKey = ValueKey('ghost:${ghost.editId}');
-                  ghostByKey[ghostKey] = ghost;
-                  reorderEntries.insert(
-                    ghost.anchorIndex.clamp(0, reorderEntries.length),
-                    ReorderableGroupableItem<GestureLocation, String>(
-                      key: ghostKey,
-                      id: GestureLocation(
-                        device: ghost.device,
-                        index: -1 - ghost.editId,
-                      ),
-                      groupId: ghost.groupId,
-                      isVisible: !ghost.collapsing,
-                      interactive: false,
-                    ),
-                  );
-                }
-
-                return ScrollbarMediaPadding(
-                  topInset: GestureListSection._headerHeight,
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    slivers: [
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: PinnedHeaderDelegate(
-                          minExtentValue: GestureListSection._headerHeight,
-                          maxExtentValue: GestureListSection._headerHeight,
-                          child: _GestureListHeader(
-                            title: title,
-                            countLabel: countLabel,
-                            deviceFilter: deviceFilter,
-                            isMultiSelectMode: isMultiSelectMode,
-                            onGestureAdded: handleGestureAdded,
-                            onAddGroup: deviceFilter != null
-                                ? () => addGroupDialog(deviceFilter)
-                                : null,
-                            onExitMultiSelect: multiSelectNotifier.exit,
-                          ),
-                        ),
-                      ),
-                      if (viewModel.flatItems.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Text(
-                              'No gestures yet.',
-                              style: typography.sm.copyWith(
-                                color: colors.mutedForeground,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ReorderableGroupableList<GestureLocation, String>(
-                          entries: reorderEntries,
-                          scrollController: scrollController,
-                          borderColor: colors.border,
-                          reorderEnabled: viewModel.reorderEnabled,
-                          selectedItemIds:
-                              multiSelect
-                                  ?.where(
-                                    (key) =>
-                                        key.device == viewModel.deviceFilter,
-                                  )
-                                  .toSet() ??
-                              const {},
-                          showTrailingDropZone: viewModel.deviceFilter != null,
-                          itemDragLabelBuilder: (_, count) => count == 1
-                              ? 'Move gesture'
-                              : 'Move $count gestures',
-                          groupDragLabelBuilder: (group) =>
-                              groupItemsById[group.id]?.group.name ??
-                              'Move group',
-                          onItemsReordered: (result) =>
-                              transitions.requestItemsReorder(
-                                device: viewModel.deviceFilter!,
-                                result: result,
-                                flatItems: viewModel.flatItems,
-                              ),
-                          onGroupReordered: (from, to) =>
-                              _GestureListController(
-                                ref,
-                                context,
-                              ).applyGroupReorder(
-                                viewModel.deviceFilter!,
-                                from,
-                                to,
-                              ),
-                          groupBuilder: (context, groupEntry, reorderHandle) {
-                            final flatItem = groupItemsById[groupEntry.id]!;
-                            return _GroupHeaderRow(
-                              key: groupEntry.key,
-                              index: viewModel.flatItems.indexOf(flatItem),
-                              group: flatItem.group,
-                              device: flatItem.device,
-                              isCollapsed: flatItem.isCollapsed,
-                              gestureCount: flatItem.gestureCount,
-                              showTopBorder:
-                                  viewModel.flatItems.indexOf(flatItem) > 0,
-                              borderColor: colors.border,
-                              reorderHandle: reorderHandle,
-                              onToggleCollapse: () =>
-                                  collapsedNotifier.toggle(flatItem.group.id),
-                              onRename: () => _showRenameDialog(
-                                context,
-                                title: 'Rename Group',
-                                initial: flatItem.group.name,
-                                onConfirm: (name) {
-                                  if (name.trim().isEmpty) return;
-                                  listNotifier.updateGroup(
-                                    flatItem.group.id,
-                                    (g) => g.copyWith(name: name.trim()),
-                                  );
-                                },
-                              ),
-                              onToggleEnabled: () => listNotifier.updateGroup(
-                                flatItem.group.id,
-                                (g) => g.copyWith(enabled: !g.enabled),
-                              ),
-                              onBreakdown: () =>
-                                  listNotifier.removeGroupAndUngroup(
-                                    flatItem.group.id,
-                                  ),
-                              onDelete: () =>
-                                  listNotifier.deleteGroupWithGestures(
-                                    flatItem.group.id,
-                                    flatItem.device,
-                                  ),
-                              onAddGesture: () => showAddGestureDialogForDevice(
-                                context,
-                                flatItem.device,
-                                (device, gesture) => handleGestureAdded(
-                                  device,
-                                  gesture,
-                                  groupId: flatItem.group.id,
-                                ),
-                              ),
-                            );
-                          },
-                          itemOverlayBuilder: (context, itemEntry) {
-                            final item = gestureItemsByKey[itemEntry.id]!;
-                            final gestureConflicts = isMultiSelectMode
-                                ? const <GestureConflict>[]
-                                : conflicts.forGesture(
-                                    item.device,
-                                    item.configIndex,
-                                  );
-                            return gestureConflicts.isNotEmpty
-                                ? _ConflictTileIcon(
-                                    conflicts: gestureConflicts,
-                                    focus: (
-                                      device: item.device,
-                                      index: item.configIndex,
-                                    ),
-                                  )
-                                : null;
-                          },
-                          itemBuilder: (context, itemEntry, _, isDragging) {
-                            final ghost = ghostByKey[itemEntry.key];
-                            if (ghost != null) {
-                              return GestureListTile(
-                                device: ghost.device,
-                                index: -1,
-                                gestureOverride: ghost.gesture,
-                                newlyAddedMarkerId: null,
-                                isSelected: false,
-                                isMultiSelectMode: false,
-                                isMultiSelected: false,
-                                groupDisabled:
-                                    ghost.groupId != null &&
-                                    viewModel.disabledGroupIds.contains(
-                                      ghost.groupId,
-                                    ),
-                                onTap: () {},
-                              );
-                            }
-                            final item = gestureItemsByKey[itemEntry.id]!;
-                            final selectionKey = itemEntry.id;
-                            final isSelected =
-                                !isMultiSelectMode &&
-                                selection?.device == item.device &&
-                                selection?.index == item.configIndex;
-                            final isMultiSelected =
-                                multiSelect?.contains(selectionKey) ?? false;
-                            final markerId =
-                                (addedMarker?.index == item.configIndex &&
-                                    deviceFilter != null &&
-                                    addedMarker?.index == item.configIndex)
-                                ? addedMarker?.id
-                                : null;
-                            final groupDisabled =
-                                item.groupId != null &&
-                                viewModel.disabledGroupIds.contains(
-                                  item.groupId,
-                                );
-                            final row = AnimatedOpacity(
-                              duration: Durations.short2,
-                              opacity: isDragging ? 0.45 : 1,
-                              child: _ContextMenuTile(
-                                item: item,
-                                newlyAddedMarkerId: markerId,
-                                isSelected: isSelected,
-                                isMultiSelectMode: isMultiSelectMode,
-                                isMultiSelected: isMultiSelected,
-                                groupDisabled: groupDisabled,
-                                onTap: () {
-                                  if (isMultiSelectMode) {
-                                    multiSelectNotifier.toggle(selectionKey);
-                                  } else {
-                                    context.selectGesture(
-                                      item.device,
-                                      item.configIndex,
-                                    );
-                                  }
-                                },
-                                onLongPress: () {
-                                  if (isMultiSelectMode) {
-                                    multiSelectNotifier.toggle(selectionKey);
-                                  } else {
-                                    context.clearGestureSelection();
-                                    multiSelectNotifier.enter(selectionKey);
-                                  }
-                                },
-                                onDuplicate: () =>
-                                    listNotifier.duplicateGesture(
-                                      item.device,
-                                      item.configIndex,
-                                    ),
-                                onDelete: () => transitions.requestDelete(
-                                  device: item.device,
-                                  configIndex: item.configIndex,
-                                  flatItems: viewModel.flatItems,
-                                ),
-                              ),
-                            );
-
-                            final isScrollTarget =
-                                choreo.scrollTarget?.device == item.device &&
-                                choreo.scrollTarget?.index == item.configIndex;
-                            return isScrollTarget
-                                ? KeyedSubtree(
-                                    key: choreo.scrollTargetKey,
-                                    child: row,
-                                  )
-                                : row;
-                          },
-                        ),
-                    ],
+      child: Builder(
+        builder: (context) {
+          choreo.prepare(viewModel);
+          final reorderEntries =
+              <ReorderableGroupableListEntry<GestureLocation, String>>[];
+          final gestureItemsByKey = <GestureLocation, _GestureRowItem>{};
+          final groupItemsById = <String, _GroupHeaderItem>{};
+          for (final flatItem in viewModel.flatItems) {
+            switch (flatItem) {
+              case _GroupHeaderItem():
+                groupItemsById[flatItem.group.id] = flatItem;
+                reorderEntries.add(
+                  ReorderableGroupableGroup<GestureLocation, String>(
+                    key: ValueKey('group:${flatItem.group.id}'),
+                    id: flatItem.group.id,
                   ),
                 );
-              },
+              case _GestureRowItem():
+                final key = GestureLocation(
+                  device: flatItem.device,
+                  index: flatItem.configIndex,
+                );
+                gestureItemsByKey[key] = flatItem;
+                final editId = flatItem.editId;
+                // A reordered row enters at its new slot from a fresh
+                // element, so its key is bumped to force a remount and it
+                // renders invisible for one frame so the expand starts at
+                // height 0.
+                final isEntering =
+                    editId != null && transitions.entering.contains(editId);
+                final isHidden =
+                    editId != null &&
+                    transitions.enteringHidden.contains(editId);
+                reorderEntries.add(
+                  ReorderableGroupableItem<GestureLocation, String>(
+                    // Keyed by stable identity (editId), not position, so
+                    // a removed row disposes its own element instead of
+                    // its collapsed cross-fade bleeding onto the row that
+                    // shifts up. Falls back to position only for the
+                    // impossible null editId.
+                    key: ValueKey(
+                      editId != null
+                          ? (isEntering ? 'gid:$editId:enter' : 'gid:$editId')
+                          : '${flatItem.device.name}:'
+                                '${flatItem.configIndex}',
+                    ),
+                    id: key,
+                    groupId: deviceFilter == null ? null : flatItem.groupId,
+                    isFirstInGroup: flatItem.isFirstInGroup,
+                    isLastInGroup: flatItem.isLastInGroup,
+                    isVisible: flatItem.isVisible && !isHidden,
+                  ),
+                );
+            }
+          }
+
+          // Insert collapsing ghosts at the slots their rows vacated,
+          // from the highest anchor down so earlier inserts don't shift
+          // later anchors.
+          final ghostByKey = <Key, _GhostRow>{};
+          final orderedGhosts = [...transitions.ghosts]
+            ..sort((a, b) => b.anchorIndex.compareTo(a.anchorIndex));
+          for (final ghost in orderedGhosts) {
+            final ghostKey = ValueKey('ghost:${ghost.editId}');
+            ghostByKey[ghostKey] = ghost;
+            reorderEntries.insert(
+              ghost.anchorIndex.clamp(0, reorderEntries.length),
+              ReorderableGroupableItem<GestureLocation, String>(
+                key: ghostKey,
+                id: GestureLocation(
+                  device: ghost.device,
+                  index: -1 - ghost.editId,
+                ),
+                groupId: ghost.groupId,
+                isVisible: !ghost.collapsing,
+                interactive: false,
+              ),
+            );
+          }
+
+          return ScrollbarMediaPadding(
+            topInset: GestureListSection._headerHeight,
+            child: CustomScrollView(
+              controller: scrollController,
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: PinnedHeaderDelegate(
+                    minExtentValue: GestureListSection._headerHeight,
+                    maxExtentValue: GestureListSection._headerHeight,
+                    child: _GestureListHeader(
+                      title: title,
+                      countLabel: countLabel,
+                      deviceFilter: deviceFilter,
+                      isMultiSelectMode: isMultiSelectMode,
+                      onGestureAdded: handleGestureAdded,
+                      onAddGroup: deviceFilter != null
+                          ? () => addGroupDialog(deviceFilter)
+                          : null,
+                      onExitMultiSelect: multiSelectNotifier.exit,
+                    ),
+                  ),
+                ),
+                if (viewModel.flatItems.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(
+                        'No gestures yet.',
+                        style: typography.sm.copyWith(
+                          color: colors.mutedForeground,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ReorderableGroupableList<GestureLocation, String>(
+                    entries: reorderEntries,
+                    scrollController: scrollController,
+                    borderColor: colors.border,
+                    reorderEnabled: viewModel.reorderEnabled,
+                    selectedItemIds:
+                        multiSelect
+                            ?.where(
+                              (key) => key.device == viewModel.deviceFilter,
+                            )
+                            .toSet() ??
+                        const {},
+                    showTrailingDropZone: viewModel.deviceFilter != null,
+                    itemDragLabelBuilder: (_, count) =>
+                        count == 1 ? 'Move gesture' : 'Move $count gestures',
+                    groupDragLabelBuilder: (group) =>
+                        groupItemsById[group.id]?.group.name ?? 'Move group',
+                    onItemsReordered: (result) =>
+                        transitions.requestItemsReorder(
+                          device: viewModel.deviceFilter!,
+                          result: result,
+                          flatItems: viewModel.flatItems,
+                        ),
+                    onGroupReordered: (from, to) =>
+                        _GestureListController(
+                          ref,
+                          context,
+                        ).applyGroupReorder(
+                          viewModel.deviceFilter!,
+                          from,
+                          to,
+                        ),
+                    groupBuilder: (context, groupEntry, reorderHandle) {
+                      final flatItem = groupItemsById[groupEntry.id]!;
+                      return _GroupHeaderRow(
+                        key: groupEntry.key,
+                        index: viewModel.flatItems.indexOf(flatItem),
+                        group: flatItem.group,
+                        device: flatItem.device,
+                        isCollapsed: flatItem.isCollapsed,
+                        gestureCount: flatItem.gestureCount,
+                        showTopBorder:
+                            viewModel.flatItems.indexOf(flatItem) > 0,
+                        borderColor: colors.border,
+                        reorderHandle: reorderHandle,
+                        onToggleCollapse: () =>
+                            collapsedNotifier.toggle(flatItem.group.id),
+                        onRename: () => _showRenameDialog(
+                          context,
+                          title: 'Rename Group',
+                          initial: flatItem.group.name,
+                          onConfirm: (name) {
+                            if (name.trim().isEmpty) return;
+                            listNotifier.updateGroup(
+                              flatItem.group.id,
+                              (g) => g.copyWith(name: name.trim()),
+                            );
+                          },
+                        ),
+                        onToggleEnabled: () => listNotifier.updateGroup(
+                          flatItem.group.id,
+                          (g) => g.copyWith(enabled: !g.enabled),
+                        ),
+                        onBreakdown: () => listNotifier.removeGroupAndUngroup(
+                          flatItem.group.id,
+                        ),
+                        onDelete: () => listNotifier.deleteGroupWithGestures(
+                          flatItem.group.id,
+                          flatItem.device,
+                        ),
+                        onAddGesture: () => showAddGestureDialogForDevice(
+                          context,
+                          flatItem.device,
+                          (device, gesture) => handleGestureAdded(
+                            device,
+                            gesture,
+                            groupId: flatItem.group.id,
+                          ),
+                        ),
+                      );
+                    },
+                    itemOverlayBuilder: (context, itemEntry) {
+                      final item = gestureItemsByKey[itemEntry.id]!;
+                      final gestureConflicts = isMultiSelectMode
+                          ? const <GestureConflict>[]
+                          : conflicts.forGesture(
+                              item.device,
+                              item.configIndex,
+                            );
+                      return gestureConflicts.isNotEmpty
+                          ? _ConflictTileIcon(
+                              conflicts: gestureConflicts,
+                              focus: (
+                                device: item.device,
+                                index: item.configIndex,
+                              ),
+                            )
+                          : null;
+                    },
+                    itemBuilder: (context, itemEntry, _, isDragging) {
+                      final ghost = ghostByKey[itemEntry.key];
+                      if (ghost != null) {
+                        return GestureListTile(
+                          device: ghost.device,
+                          index: -1,
+                          gestureOverride: ghost.gesture,
+                          newlyAddedMarkerId: null,
+                          isSelected: false,
+                          isMultiSelectMode: false,
+                          isMultiSelected: false,
+                          groupDisabled:
+                              ghost.groupId != null &&
+                              viewModel.disabledGroupIds.contains(
+                                ghost.groupId,
+                              ),
+                          onTap: () {},
+                        );
+                      }
+                      final item = gestureItemsByKey[itemEntry.id]!;
+                      final selectionKey = itemEntry.id;
+                      final isSelected =
+                          !isMultiSelectMode &&
+                          selection?.device == item.device &&
+                          selection?.index == item.configIndex;
+                      final isMultiSelected =
+                          multiSelect?.contains(selectionKey) ?? false;
+                      final markerId =
+                          (addedMarker?.index == item.configIndex &&
+                              deviceFilter != null &&
+                              addedMarker?.index == item.configIndex)
+                          ? addedMarker?.id
+                          : null;
+                      final groupDisabled =
+                          item.groupId != null &&
+                          viewModel.disabledGroupIds.contains(
+                            item.groupId,
+                          );
+                      final row = AnimatedOpacity(
+                        duration: Durations.short2,
+                        opacity: isDragging ? 0.45 : 1,
+                        child: _ContextMenuTile(
+                          item: item,
+                          newlyAddedMarkerId: markerId,
+                          isSelected: isSelected,
+                          isMultiSelectMode: isMultiSelectMode,
+                          isMultiSelected: isMultiSelected,
+                          groupDisabled: groupDisabled,
+                          onTap: () {
+                            if (isMultiSelectMode) {
+                              multiSelectNotifier.toggle(selectionKey);
+                            } else {
+                              context.selectGesture(
+                                item.device,
+                                item.configIndex,
+                              );
+                            }
+                          },
+                          onLongPress: () {
+                            if (isMultiSelectMode) {
+                              multiSelectNotifier.toggle(selectionKey);
+                            } else {
+                              context.clearGestureSelection();
+                              multiSelectNotifier.enter(selectionKey);
+                            }
+                          },
+                          onDuplicate: () => listNotifier.duplicateGesture(
+                            item.device,
+                            item.configIndex,
+                          ),
+                          onDelete: () => transitions.requestDelete(
+                            device: item.device,
+                            configIndex: item.configIndex,
+                            flatItems: viewModel.flatItems,
+                          ),
+                        ),
+                      );
+
+                      final isScrollTarget =
+                          choreo.scrollTarget?.device == item.device &&
+                          choreo.scrollTarget?.index == item.configIndex;
+                      return isScrollTarget
+                          ? KeyedSubtree(
+                              key: choreo.scrollTargetKey,
+                              child: row,
+                            )
+                          : row;
+                    },
+                  ),
+              ],
             ),
+          );
+        },
+      ),
     );
   }
 }

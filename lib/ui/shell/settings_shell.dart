@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/ui/features/settings/settings_list_section.dart';
+import 'package:input_actions_editor/ui/shell/config_gate.dart';
 import 'package:kwin_blur/kwin_blur.dart';
 
 /// Settings shell: settings sidebar + content area.
@@ -20,6 +21,7 @@ class SettingsShell extends ConsumerWidget {
     final transparent = ref.watch(
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
+    final gatedContent = ConfigGate(child: child);
     return FScaffold(
       sidebar: Blurred(
         disabled: !transparent,
@@ -28,8 +30,11 @@ class SettingsShell extends ConsumerWidget {
       ),
       childPad: false,
       child: transparent
-          ? ColoredBox(color: context.theme.colors.background, child: child)
-          : child,
+          ? ColoredBox(
+              color: context.theme.colors.background,
+              child: gatedContent,
+            )
+          : gatedContent,
     );
   }
 }

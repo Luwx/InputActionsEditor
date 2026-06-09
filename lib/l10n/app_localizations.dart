@@ -868,6 +868,24 @@ abstract class AppLocalizations {
   /// **'Details'**
   String get configLoadClipboardDetailsButton;
 
+  /// No description provided for @configLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your configuration'**
+  String get configLoadFailedTitle;
+
+  /// No description provided for @actionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get actionRetry;
+
+  /// No description provided for @actionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get actionDetails;
+
   /// No description provided for @dialogClipboardLoadTitle.
   ///
   /// In en, this message translates to:

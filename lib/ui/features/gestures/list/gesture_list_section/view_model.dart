@@ -32,14 +32,6 @@ final class _GestureListViewModel extends Equatable {
     );
   }
 
-  static const empty = _GestureListViewModel(
-    flatItems: [],
-    gestureCount: 0,
-    reorderEnabled: false,
-    deviceFilter: null,
-    disabledGroupIds: {},
-  );
-
   final List<_FlatItem> flatItems;
   final int gestureCount;
   final bool reorderEnabled;
@@ -58,8 +50,7 @@ final class _GestureListViewModel extends Equatable {
 }
 
 final gestureListStructureProvider = Provider<_GestureListViewModel>((ref) {
-  final config = ref.watch(configControllerProvider.select((s) => s.value));
-  if (config == null) return _GestureListViewModel.empty;
+  final config = ref.watch(draftConfigProvider);
   return _GestureListViewModel.fromConfig(
     config: config,
     deviceFilter: ref.watch(deviceFilterProvider),

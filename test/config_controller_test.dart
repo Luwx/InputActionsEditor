@@ -5,6 +5,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
@@ -90,10 +91,8 @@ class _SeededController extends ConfigController {
   final Config _normalized;
 
   @override
-  Config? get savedConfig => _normalized;
-
-  @override
-  Future<Config> build() async => _normalized;
+  Future<EditSession> build() async =>
+      EditSession(draft: _normalized, saved: _normalized);
 }
 
 ProviderContainer _makeContainer(Config seed) {
@@ -109,7 +108,10 @@ ProviderContainer _makeContainer(Config seed) {
 ConfigController _notifier(ProviderContainer c) =>
     c.read(configControllerProvider.notifier);
 
-Config _config(ProviderContainer c) => c.read(configControllerProvider).value!;
+EditSession _session(ProviderContainer c) =>
+    c.read(configControllerProvider).value!;
+
+Config _config(ProviderContainer c) => _session(c).draft;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -420,21 +422,21 @@ void main() {
     test('starts clean after build', () async {
       final c = _makeContainer(const Config());
       await c.read(configControllerProvider.future);
-      expect(_notifier(c).isDirty, isFalse);
+      expect(_session(c).isDirty, isFalse);
     });
 
     test('becomes dirty after an edit', () async {
       final c = _makeContainer(const Config());
       await c.read(configControllerProvider.future);
       _notifier(c).add(AddGesture(DeviceType.mouse, _mouse1));
-      expect(_notifier(c).isDirty, isTrue);
+      expect(_session(c).isDirty, isTrue);
     });
 
     test('returns false when state is still loading', () {
       final c = _makeContainer(const Config());
-      final notifier = _notifier(c);
-      if (c.read(configControllerProvider).isLoading) {
-        expect(notifier.isDirty, isFalse);
+      final loaded = c.read(configControllerProvider);
+      if (loaded.isLoading) {
+        expect(loaded.value?.isDirty ?? false, isFalse);
       }
     });
 
@@ -509,53 +511,52 @@ void main() {
 
     test('a settings edit marks only the settings slice dirty', () async {
       final c = _makeContainer(seed);
-      final n = await ready(c)
-        ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
-      expect(n.isSettingsDirty, isTrue);
-      expect(n.isGesturesDirty, isFalse);
-      expect(n.isDirty, isTrue);
+      (await ready(c)).add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2));
+      expect(_session(c).settingsDirty.isDirty, isTrue);
+      expect(_session(c).gesturesDirty.isDirty, isFalse);
+      expect(_session(c).isDirty, isTrue);
     });
 
     test('a gesture edit marks only the gesture slice dirty', () async {
       final c = _makeContainer(seed);
-      final n = await ready(c)
-        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')));
-      expect(n.isGesturesDirty, isTrue);
-      expect(n.isSettingsDirty, isFalse);
+      (await ready(c)).add(
+        UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')),
+      );
+      expect(_session(c).gesturesDirty.isDirty, isTrue);
+      expect(_session(c).settingsDirty.isDirty, isFalse);
     });
 
     test('gesture groups count as gesture data, not settings', () async {
       final c = _makeContainer(seed);
-      final n = await ready(c)
-        ..add(AddGestureGroup(_group1));
-      expect(n.isGesturesDirty, isTrue);
-      expect(n.isSettingsDirty, isFalse);
+      (await ready(c)).add(AddGestureGroup(_group1));
+      expect(_session(c).gesturesDirty.isDirty, isTrue);
+      expect(_session(c).settingsDirty.isDirty, isFalse);
     });
 
     test('discardSettings reverts settings but keeps gesture edits', () async {
       final c = _makeContainer(seed);
-      final n = await ready(c)
+      (await ready(c))
         ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
         ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
         ..discardSettings();
 
       expect(_config(c).mouseSpeed?.events, 4); // settings restored
       expect(_config(c).mouseGestures.single.common.name, 'renamed'); // kept
-      expect(n.isSettingsDirty, isFalse);
-      expect(n.isGesturesDirty, isTrue);
+      expect(_session(c).settingsDirty.isDirty, isFalse);
+      expect(_session(c).gesturesDirty.isDirty, isTrue);
     });
 
     test('discardGestures reverts gestures but keeps settings edits', () async {
       final c = _makeContainer(seed);
-      final n = await ready(c)
+      (await ready(c))
         ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
         ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
         ..discardGestures();
 
       expect(_config(c).mouseGestures.single.common.name, 'm1'); // restored
       expect(_config(c).mouseSpeed?.events, 8); // kept
-      expect(n.isGesturesDirty, isFalse);
-      expect(n.isSettingsDirty, isTrue);
+      expect(_session(c).gesturesDirty.isDirty, isFalse);
+      expect(_session(c).settingsDirty.isDirty, isTrue);
     });
   });
 }

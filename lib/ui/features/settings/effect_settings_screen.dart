@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,15 +24,9 @@ class EffectSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(
-      configControllerProvider.select((state) => state.value),
-    );
+    final config = ref.watch(draftConfigProvider);
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-
-    if (config == null) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
 
     final gs = config.globalSettings;
     final savedSettings = ref.watch(savedGlobalSettingsProvider);

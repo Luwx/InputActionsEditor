@@ -52,9 +52,7 @@ class HistoryScreen extends ConsumerWidget {
       );
     }
 
-    final config = ref.watch(
-      configControllerProvider.select((s) => s.value),
-    );
+    final config = ref.watch(draftConfigProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

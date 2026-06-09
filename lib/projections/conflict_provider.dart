@@ -62,10 +62,8 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
   }
 
   ConflictReport _compute() {
-    final config = ref.read(configControllerProvider).value;
-    return config == null
-        ? ConflictReport.empty
-        : ConflictReport(detectConflicts(config));
+    final config = ref.read(draftConfigProvider);
+    return ConflictReport(detectConflicts(config));
   }
 
   void _onConfigChanged() {

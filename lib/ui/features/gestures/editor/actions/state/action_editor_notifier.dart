@@ -88,10 +88,9 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   @override
   ActionListEditorVm build() {
     final common = ref.watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        return config == null ? null : gestureAt(config, location)?.common;
-      }),
+      configControllerProvider.select(
+        (state) => gestureAt(state.requireValue.draft, location)?.common,
+      ),
     );
     final dirtyState = ref.watch(
       gestureSectionDirtyStateProvider(
@@ -159,10 +158,9 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
   @override
   ActionEditorVm build() {
     final action = ref.watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        return config == null ? null : actionAt(config, location);
-      }),
+      configControllerProvider.select(
+        (state) => actionAt(state.requireValue.draft, location),
+      ),
     );
     return ActionEditorVm(
       location: location,
@@ -189,8 +187,7 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
   }
 
   void replaceTextRules(List<TextSubstitutionRule> rules) {
-    final config = ref.read(configControllerProvider).value;
-    if (config == null) return;
+    final config = ref.read(draftConfigProvider);
     final actions = gestureActionsLens(location.gesture).get(config);
     if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
       return;

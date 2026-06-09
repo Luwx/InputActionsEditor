@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,10 +161,12 @@ class _SeededController extends ConfigController {
   final Config _config;
 
   @override
-  Config? get savedConfig => _config;
-
-  @override
-  Future<Config> build() async => assignEditIds(_config);
+  Future<EditSession> build() {
+    final normalized = assignEditIds(_config);
+    return SynchronousFuture(
+      EditSession(draft: normalized, saved: normalized),
+    );
+  }
 }
 
 void main() {

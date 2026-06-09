@@ -7,13 +7,15 @@ import 'package:input_actions_editor/app_state/app/local_settings_provider.dart'
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/app_routes.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // cached once, kdeglobals either exists or it doesn't
@@ -251,7 +253,7 @@ Future<void> _handleMouseBack(BuildContext context, WidgetRef ref) async {
       (!nav.canBack || nav.history[nav.cursor - 1] is! SettingsDestination);
   if (leavingSettings) {
     final controller = ref.read(configControllerProvider.notifier);
-    if (controller.isSettingsDirty) {
+    if (ref.read(settingsDirtyStateProvider).isDirty) {
       final action = await showUnsavedChangesDialog(context);
       if (action == null) return;
       if (action == UnsavedChangesAction.apply) {

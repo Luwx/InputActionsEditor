@@ -61,7 +61,9 @@ class GestureListTile extends ConsumerWidget {
     final gesture =
         gestureOverride ??
         ref.watch(
-          configControllerProvider.select((s) => gestureAt(s.value, location)),
+          configControllerProvider.select(
+            (s) => gestureAt(s.requireValue.draft, location),
+          ),
         );
     if (gesture == null) return const SizedBox.shrink();
     final common = gesture.common;
@@ -442,6 +444,7 @@ class _SymbolGestureIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(6),
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: 20, color: color),

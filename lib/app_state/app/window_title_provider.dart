@@ -7,7 +7,8 @@ String appWindowTitle({required bool isDirty}) =>
     isDirty ? '*$appWindowBaseTitle' : appWindowBaseTitle;
 
 final windowTitleProvider = Provider<String>((ref) {
-  ref.watch(configControllerProvider);
-  final isDirty = ref.read(configControllerProvider.notifier).isDirty;
+  final isDirty = ref.watch(
+    configControllerProvider.select((s) => s.value?.isDirty ?? false),
+  );
   return appWindowTitle(isDirty: isDirty);
 });

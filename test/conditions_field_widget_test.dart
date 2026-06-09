@@ -1,18 +1,32 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+
+/// Resolves config synchronously to AsyncData, these widgets read config
+/// (via `requireValue`) and are rendered without the root load gate.
+class _LoadedConfig extends ConfigController {
+  @override
+  Future<EditSession> build() =>
+      SynchronousFuture(const EditSession(draft: Config(), saved: Config()));
+}
 
 Widget _host({
   required Condition? condition,
   ValueChanged<Condition?>? onChanged,
 }) {
   return ProviderScope(
-    overrides: [kwinSupportedProvider.overrideWith((ref) => false)],
+    overrides: [
+      kwinSupportedProvider.overrideWith((ref) => false),
+      configControllerProvider.overrideWith(_LoadedConfig.new),
+    ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

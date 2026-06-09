@@ -168,8 +168,7 @@ _GestureListChoreography _useGestureListChoreography(
 
   void tryAutoSelectFirstGesture() {
     if (!pendingAutoSelect.value) return;
-    final config = ref.read(configControllerProvider).value;
-    if (config == null) return;
+    final config = ref.read(draftConfigProvider);
     final filter = pendingAutoSelectFilter.value;
     final items = _buildFlatList(
       config,

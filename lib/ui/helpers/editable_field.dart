@@ -110,14 +110,12 @@ extension FieldAccess on WidgetRef {
 }
 
 ({bool readable, T? value}) _readLens<T>(
-  AsyncValue<Config> state,
+  AsyncValue<EditSession> state,
   Lens<T> lens,
   bool Function(Config config)? canRead,
 ) {
-  final config = state.value;
-  if (config == null ||
-      !lens.canGet(config) ||
-      (canRead != null && !canRead(config))) {
+  final config = state.requireValue.draft;
+  if (!lens.canGet(config) || (canRead != null && !canRead(config))) {
     return (readable: false, value: null);
   }
   return (readable: true, value: lens.get(config));

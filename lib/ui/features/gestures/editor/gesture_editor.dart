@@ -369,19 +369,17 @@ class _MultiSelectPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final (:canEnable, :canDisable) = ref.watch(
       configControllerProvider.select((state) {
-        final config = state.value;
+        final config = state.requireValue.draft;
         var canEnable = false;
         var canDisable = false;
-        if (config != null) {
-          for (final sel in selected) {
-            final gestures = config.gesturesForDevice(sel.device);
-            if (sel.index < 0 || sel.index >= gestures.length) continue;
-            final isEnabled = gestures[sel.index].common.enabled != false;
-            if (isEnabled) {
-              canDisable = true;
-            } else {
-              canEnable = true;
-            }
+        for (final sel in selected) {
+          final gestures = config.gesturesForDevice(sel.device);
+          if (sel.index < 0 || sel.index >= gestures.length) continue;
+          final isEnabled = gestures[sel.index].common.enabled != false;
+          if (isEnabled) {
+            canDisable = true;
+          } else {
+            canEnable = true;
           }
         }
         return (canEnable: canEnable, canDisable: canDisable);

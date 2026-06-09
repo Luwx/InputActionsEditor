@@ -85,7 +85,8 @@ class _StrokesFieldHostState extends State<_StrokesFieldHost> {
           setState(() {
             strokes = value;
           });
-        }, deviceType: DeviceType.mouse,
+        },
+        deviceType: DeviceType.mouse,
       ),
     );
   }

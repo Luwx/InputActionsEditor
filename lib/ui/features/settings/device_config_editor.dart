@@ -1,5 +1,4 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
-import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,15 +26,9 @@ class DeviceConfigEditor extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final config = ref.watch(
-      configControllerProvider.select((state) => state.value),
-    );
+    final config = ref.watch(draftConfigProvider);
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-
-    if (config == null) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
 
     final deviceType = _sectionToDeviceType(section);
     final deviceLabel = _sectionLabel(section, l10n);

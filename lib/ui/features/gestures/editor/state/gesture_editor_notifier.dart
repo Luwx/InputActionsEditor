@@ -54,7 +54,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   GestureEditorState build() {
     final gesture = ref.watch(
       configControllerProvider.select(
-        (state) => gestureAt(state.value, location),
+        (state) => gestureAt(state.requireValue.draft, location),
       ),
     );
     final triggerDirtyState = ref.watch(

@@ -41,17 +41,17 @@ class DeviceSidebar extends HookConsumerWidget {
           currentView != AppView.gestures || currentFilter != device;
 
       if (changingFilter) {
-        final config = ref.read(configControllerProvider).value;
-        if (config != null) {
-          final first = firstGestureForFilter(config, device);
-          if (first != null) {
-            context.goToGesturesSelectFirst(
-              filter: device,
-              device: first.device,
-              index: first.index,
-            );
-            return;
-          }
+        final config = ref.read(configControllerProvider).value?.draft;
+        final first = config == null
+            ? null
+            : firstGestureForFilter(config, device);
+        if (first != null) {
+          context.goToGesturesSelectFirst(
+            filter: device,
+            device: first.device,
+            index: first.index,
+          );
+          return;
         }
       }
 
@@ -283,7 +283,7 @@ class DeviceSidebar extends HookConsumerWidget {
 Future<void> _newConfigDocument(BuildContext context, WidgetRef ref) async {
   final configController = ref.read(configControllerProvider.notifier);
 
-  if (configController.isDirty) {
+  if (ref.read(configControllerProvider).value?.isDirty ?? false) {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return;
     if (action == UnsavedChangesAction.apply) {
@@ -305,7 +305,7 @@ Future<void> _newConfigDocument(BuildContext context, WidgetRef ref) async {
 Future<void> _loadConfigDocument(BuildContext context, WidgetRef ref) async {
   final configController = ref.read(configControllerProvider.notifier);
 
-  if (configController.isDirty) {
+  if (ref.read(configControllerProvider).value?.isDirty ?? false) {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return; // cancelled
     if (action == UnsavedChangesAction.apply) {
@@ -377,7 +377,7 @@ Future<void> _loadFromClipboard(BuildContext context, WidgetRef ref) async {
 
   if (!context.mounted) return;
 
-  final currentConfig = ref.read(configControllerProvider).value;
+  final currentConfig = ref.read(configControllerProvider).value?.draft;
   final isEmpty = currentConfig == null || currentConfig.totalGestureCount == 0;
 
   ClipboardLoadAction loadAction;
@@ -392,7 +392,7 @@ Future<void> _loadFromClipboard(BuildContext context, WidgetRef ref) async {
   switch (loadAction) {
     case ClipboardLoadAction.newConfig:
       if (!context.mounted) return;
-      if (configController.isDirty) {
+      if (ref.read(configControllerProvider).value?.isDirty ?? false) {
         final unsavedAction = await showUnsavedChangesDialog(context);
         if (unsavedAction == null) return;
         if (unsavedAction == UnsavedChangesAction.apply) {

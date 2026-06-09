@@ -29,9 +29,6 @@ class TextValueInput extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final controller = useTextEditingController(text: value);
-    final focusNode = useFocusNode();
-    final isHovered = useState(false);
-    final isFocused = useState(false);
 
     // Sync controller when external value changes (didUpdateWidget).
     final prevValue = usePrevious(value);
@@ -39,42 +36,40 @@ class TextValueInput extends HookWidget {
       controller.text = value;
     }
 
-    useEffect(() {
-      void onFocusChange() => isFocused.value = focusNode.hasFocus;
-      focusNode.addListener(onFocusChange);
-      return () => focusNode.removeListener(onFocusChange);
-    }, const []);
-
-    // TODO(me): propper style it without idle hack
-    final idleStyle = FTextFieldStyleDelta.delta(
+    final idle =
+        FTextFieldVariantConstraint.not(
+          FTextFieldVariant.hovered,
+        ).and(
+          FTextFieldVariantConstraint.not(FTextFieldVariant.focused),
+        );
+    final style = FTextFieldStyleDelta.delta(
       border: .delta([
-        .base(
+        .exact(
+          {
+            idle,
+          },
           OutlineInputBorder(
             borderSide: const BorderSide(color: Colors.transparent),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
       ]),
-      color: .delta([.all(Colors.transparent)]),
+      color: .delta([
+        .exact({idle}, Colors.transparent),
+      ]),
     );
 
-    final active = isFocused.value || isHovered.value;
-    final textField = MouseRegion(
-      onEnter: (_) => isHovered.value = true,
-      onExit: (_) => isHovered.value = false,
-      child: FTextField(
-        focusNode: focusNode,
-        style: active ? const FTextFieldStyleDelta.delta() : idleStyle,
-        control: FTextFieldControl.lifted(
-          value: controller.value,
-          onChange: (v) {
-            controller.value = v;
-            onChanged(v.text);
-          },
-        ),
-        autofocus: autofocus,
-        hint: hint,
+    final textField = FTextField(
+      style: style,
+      control: FTextFieldControl.lifted(
+        value: controller.value,
+        onChange: (v) {
+          controller.value = v;
+          onChanged(v.text);
+        },
       ),
+      autofocus: autofocus,
+      hint: hint,
     );
 
     if (onDetect == null) return textField;

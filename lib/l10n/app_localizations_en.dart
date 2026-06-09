@@ -406,6 +406,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configLoadClipboardDetailsButton => 'Details';
 
   @override
+  String get configLoadFailedTitle => 'Couldn\'t load your configuration';
+
+  @override
+  String get actionRetry => 'Retry';
+
+  @override
+  String get actionDetails => 'Details';
+
+  @override
   String get dialogClipboardLoadTitle => 'Load from Clipboard';
 
   @override

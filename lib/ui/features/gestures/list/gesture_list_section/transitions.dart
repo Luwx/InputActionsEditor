@@ -131,12 +131,8 @@ _GestureTransitions _useGestureTransitions(
     required int configIndex,
     required List<_FlatItem> flatItems,
   }) {
-    final gestures = ref
-        .read(configControllerProvider)
-        .value
-        ?.gesturesForDevice(device);
-    final gesture =
-        (gestures != null && configIndex >= 0 && configIndex < gestures.length)
+    final gestures = ref.read(draftConfigProvider).gesturesForDevice(device);
+    final gesture = (configIndex >= 0 && configIndex < gestures.length)
         ? gestures[configIndex]
         : null;
     // Commit the delete immediately.
@@ -164,30 +160,25 @@ _GestureTransitions _useGestureTransitions(
     required ReorderableItemsResult<GestureLocation, String> result,
     required List<_FlatItem> flatItems,
   }) {
-    final gestures = ref
-        .read(configControllerProvider)
-        .value
-        ?.gesturesForDevice(device);
+    final gestures = ref.read(draftConfigProvider).gesturesForDevice(device);
     final newGhosts = <_GhostRow>[];
     final movedIds = <int>{};
-    if (gestures != null) {
-      for (final id in result.movedItemIds) {
-        if (id.index < 0 || id.index >= gestures.length) continue;
-        final gesture = gestures[id.index];
-        final editId = gesture.common.editId;
-        if (editId == null) continue;
-        movedIds.add(editId);
-        newGhosts.add(
-          _GhostRow(
-            editId: editId,
-            gesture: gesture,
-            device: device,
-            groupId: gesture.common.groupId,
-            anchorIndex: _ghostAnchorIndex(flatItems, editId),
-            collapsing: false,
-          ),
-        );
-      }
+    for (final id in result.movedItemIds) {
+      if (id.index < 0 || id.index >= gestures.length) continue;
+      final gesture = gestures[id.index];
+      final editId = gesture.common.editId;
+      if (editId == null) continue;
+      movedIds.add(editId);
+      newGhosts.add(
+        _GhostRow(
+          editId: editId,
+          gesture: gesture,
+          device: device,
+          groupId: gesture.common.groupId,
+          anchorIndex: _ghostAnchorIndex(flatItems, editId),
+          collapsing: false,
+        ),
+      );
     }
 
     // Commit the reorder immediately so the drop feels instant.

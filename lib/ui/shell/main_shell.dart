@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -15,15 +14,12 @@ import 'package:input_actions_editor/services/window_service.dart'
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/shell/config_gate.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
 import 'package:kwin_blur/kwin_blur.dart';
 
 /// Persistent app shell: device sidebar + content area.
-///
-/// Kept alive in the widget tree (offstage behind the settings shell when
-/// settings is open) so scroll position and other state survive view switches.
-/// The [child] is the animated content surface MiniRouter supplies; this shell
-/// only provides the surrounding chrome.
 class MainShell extends HookConsumerWidget {
   const MainShell({required this.child, super.key});
 
@@ -38,7 +34,9 @@ class MainShell extends HookConsumerWidget {
       final windowSvc = ref.read(windowServiceProvider)
         ..onCloseRequested = () async {
           final controller = ref.read(configControllerProvider.notifier);
-          if (!controller.isDirty) return true;
+          if (!(ref.read(configControllerProvider).value?.isDirty ?? false)) {
+            return true;
+          }
 
           final ctx = contextRef.value;
           if (!ctx.mounted) return true;
@@ -69,9 +67,34 @@ class MainShell extends HookConsumerWidget {
       return () => windowSvc.onCloseRequested = null;
     }, const []);
 
+    ref.listen(configLoadErrorProvider, (_, error) {
+      if (error == null || !context.mounted) return;
+      final l10n = context.l10n;
+      showFToast(
+        context: context,
+        variant: .destructive,
+        icon: const Icon(FLucideIcons.triangleAlert),
+        title: Text(l10n.configLoadFailedTitle),
+        description: Text('$error'),
+        duration: const Duration(seconds: 8),
+        suffixBuilder: (toastContext, entry) => FButton(
+          size: .sm,
+          onPress: () {
+            entry.dismiss();
+            unawaited(
+              ref.read(configControllerProvider.notifier).reload(),
+            );
+          },
+          suffix: const Icon(FLucideIcons.refreshCw, size: 12),
+          child: Text(l10n.actionRetry),
+        ),
+      );
+    });
+
     final transparent = ref.watch(
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
+    final gatedContent = ConfigGate(child: child);
     return FScaffold(
       sidebar: Blurred(
         disabled: !transparent,
@@ -82,9 +105,9 @@ class MainShell extends HookConsumerWidget {
       child: transparent
           ? ColoredBox(
               color: context.theme.colors.background,
-              child: child,
+              child: gatedContent,
             )
-          : child,
+          : gatedContent,
     );
   }
 }
