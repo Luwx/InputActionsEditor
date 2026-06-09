@@ -7,6 +7,7 @@ final windowServiceProvider = Provider<WindowService>((_) => WindowService());
 
 class WindowService with WindowListener {
   Future<bool> Function()? onCloseRequested;
+  bool _destroying = false;
 
   Future<void> initialize() async {
     await windowManager.setPreventClose(true);
@@ -17,11 +18,17 @@ class WindowService with WindowListener {
     windowManager.removeListener(this);
   }
 
-  Future<void> setTitle(String title) => windowManager.setTitle(title);
+  Future<void> setTitle(String title) {
+    if (_destroying) return Future.value();
+    return windowManager.setTitle(title);
+  }
 
   @override
   Future<void> onWindowClose() async {
     final shouldClose = await onCloseRequested?.call() ?? true;
-    if (shouldClose) await windowManager.destroy();
+    if (shouldClose) {
+      _destroying = true;
+      await windowManager.destroy();
+    }
   }
 }
