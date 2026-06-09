@@ -52,7 +52,7 @@ class GestureRedirectTargetController extends Notifier<GestureLocation?> {
   GestureLocation? build() => null;
 
   @override
-  set state(GestureLocation? target) => state = target;
+  set state(GestureLocation? target) => super.state = target;
 
   void clear() => state = null;
 }
@@ -89,10 +89,7 @@ extension AppNavigation on BuildContext {
   void redirectToGesture(DeviceType device, int index) {
     _container
         .read(gestureRedirectTargetProvider.notifier)
-        .state = GestureLocation(
-      device: device,
-      index: index,
-    );
+        .state = GestureLocation(device: device, index: index);
     selectGesture(device, index);
   }
 
