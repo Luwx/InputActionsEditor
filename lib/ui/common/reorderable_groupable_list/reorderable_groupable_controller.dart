@@ -32,7 +32,7 @@ final class ReorderableGroupableController<I, G> {
   const ReorderableGroupableController();
 
   /// Moves [draggedIds] so they sit immediately before [targetItemId],
-  /// inheriting the group inferred from that insertion point.
+  /// inheriting the target row's group (what you drop above, you join).
   ReorderableItemsResult<I, G>? moveItemsBeforeItem(
     List<ReorderableGroupableListEntry<I, G>> entries,
     Set<I> draggedIds,
@@ -40,7 +40,13 @@ final class ReorderableGroupableController<I, G> {
   ) {
     final targetFlatIndex = _flatIndexBeforeItem(entries, targetItemId);
     if (targetFlatIndex < 0) return null;
-    return _moveToFlatIndex(entries, draggedIds, targetFlatIndex);
+    final target = entries[targetFlatIndex] as ReorderableGroupableItem<I, G>;
+    return _moveToFlatIndex(
+      entries,
+      draggedIds,
+      targetFlatIndex,
+      groupId: target.groupId,
+    );
   }
 
   /// Moves [draggedIds] to the end of the group identified by [groupId].
@@ -53,8 +59,21 @@ final class ReorderableGroupableController<I, G> {
       entries,
       draggedIds,
       _flatIndexForGroupAppend(entries, groupId),
-      forcedGroupId: groupId,
-      useForcedGroupId: true,
+      groupId: groupId,
+    );
+  }
+
+  /// Moves [draggedIds] to sit immediately after the group [groupId],
+  /// ungrouping them.
+  ReorderableItemsResult<I, G>? moveItemsAfterGroup(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    Set<I> draggedIds,
+    G groupId,
+  ) {
+    return _moveToFlatIndex(
+      entries,
+      draggedIds,
+      _flatIndexForGroupAppend(entries, groupId),
     );
   }
 
@@ -63,12 +82,7 @@ final class ReorderableGroupableController<I, G> {
     List<ReorderableGroupableListEntry<I, G>> entries,
     Set<I> draggedIds,
   ) {
-    return _moveToFlatIndex(
-      entries,
-      draggedIds,
-      entries.length,
-      useForcedGroupId: true,
-    );
+    return _moveToFlatIndex(entries, draggedIds, entries.length);
   }
 
   /// Computes the `(from, to)` index pair to move group [draggedId] so it sits
@@ -96,12 +110,14 @@ final class ReorderableGroupableController<I, G> {
     return (from: from, to: order.length);
   }
 
+  /// Inserts the dragged items at [targetFlatIndex] (in original-list
+  /// coordinates) and assigns them [groupId]. The group is always supplied by
+  /// the caller, every entry point knows the membership the drop implies.
   ReorderableItemsResult<I, G>? _moveToFlatIndex(
     List<ReorderableGroupableListEntry<I, G>> entries,
     Set<I> draggedIds,
     int targetFlatIndex, {
-    G? forcedGroupId,
-    bool useForcedGroupId = false,
+    G? groupId,
   }) {
     if (draggedIds.isEmpty) return null;
 
@@ -130,31 +146,40 @@ final class ReorderableGroupableController<I, G> {
       newFlat.length,
     );
 
-    final newGroupId = useForcedGroupId
-        ? forcedGroupId
-        : _inferGroupId(newFlat, insertAt);
     newFlat.insertAll(insertAt, oldItems);
 
+    final newOrderedIds = [
+      for (final entry in newFlat)
+        if (entry is ReorderableGroupableItem<I, G>) entry.id,
+    ];
+
+    // Reject no-ops so callers (and the drop indicators driven by
+    // `onWillAccept`) don't react to a move that changes nothing, e.g.
+    // dropping an item back onto its own slot or just below its own group.
+    final groupUnchanged = oldItems.every((item) => item.groupId == groupId);
+    if (groupUnchanged && _sameOrder(entries, newOrderedIds)) return null;
+
     return ReorderableItemsResult<I, G>(
-      orderedItemIds: [
-        for (final entry in newFlat)
-          if (entry is ReorderableGroupableItem<I, G>) entry.id,
-      ],
+      orderedItemIds: newOrderedIds,
       movedItemIds: {for (final item in oldItems) item.id},
-      groupId: newGroupId,
+      groupId: groupId,
     );
   }
 
-  G? _inferGroupId(
+  /// Whether the item ids in [entries] (in order) match [orderedIds] exactly.
+  bool _sameOrder(
     List<ReorderableGroupableListEntry<I, G>> entries,
-    int insertAt,
+    List<I> orderedIds,
   ) {
-    for (var index = insertAt - 1; index >= 0; index--) {
-      final entry = entries[index];
-      if (entry is ReorderableGroupableItem<I, G>) return entry.groupId;
-      if (entry is ReorderableGroupableGroup<I, G>) return entry.id;
+    var index = 0;
+    for (final entry in entries) {
+      if (entry is! ReorderableGroupableItem<I, G>) continue;
+      if (index >= orderedIds.length || entry.id != orderedIds[index]) {
+        return false;
+      }
+      index++;
     }
-    return null;
+    return index == orderedIds.length;
   }
 
   int _flatIndexBeforeItem(

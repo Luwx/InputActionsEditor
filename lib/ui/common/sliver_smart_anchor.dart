@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// Drives a [SliverSmartAnchor]: while [isAnchoring] is true, the sliver keeps
-/// the bottom of an expanding region visible, scrolling the content above it
-/// up only when the growing child would otherwise push that bottom past the
+/// Drives a [SliverSmartAnchor]: while [belowExtent] is non-null, the sliver
+/// keeps the bottom of an expanding region visible, scrolling the content above
+/// it up only when the growing child would otherwise push that bottom past the
 /// viewport's lower edge.
 ///
 /// The anchored region's bottom is located through [belowExtent] — the height
@@ -15,12 +15,16 @@ import 'package:flutter/widgets.dart';
 /// derives the live anchor offset as `childExtent - belowExtent` each frame.
 /// Measuring out of band keeps the sliver from reading descendant sizes during
 /// its own layout, which Flutter forbids.
+///
+/// Set [belowExtent] to null to disable correction (e.g. when no row is
+/// anchored or after [clearAnchor] is called).
 class ScrollAnchorController {
   /// Whether the anchored sliver's growth should be corrected this frame.
+  /// Retained for compatibility; the sliver gates corrections on [belowExtent].
   bool isAnchoring = false;
 
   /// Height of the content below the anchor, in the child's coordinate space,
-  /// or null until the caller has measured it for the current session.
+  /// or null when no anchor session is active.
   double? belowExtent;
 }
 
@@ -154,13 +158,12 @@ class RenderSliverSmartAnchor extends RenderSliverSingleBoxAdapter {
   double? _anchorCorrection(double childExtent) {
     final last = _lastChildExtent;
     if (last == null || last == childExtent) return null;
-    if (!_controller.isAnchoring) return null;
-
-    final belowExtent = _controller.belowExtent;
-    if (belowExtent == null) return null;
 
     final delta = childExtent - last;
     if (delta <= 0) return null; // expansion only; collapse is left alone.
+
+    final belowExtent = _controller.belowExtent;
+    if (belowExtent == null) return null;
 
     final position = scrollPosition();
     if (position == null || !position.hasContentDimensions) return null;

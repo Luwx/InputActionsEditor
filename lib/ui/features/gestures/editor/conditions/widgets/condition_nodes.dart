@@ -7,11 +7,13 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cata
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/constants.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/function_condition_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/mode_selector.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/operator_select.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/type_icon_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/value_input.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Three columns shared by every condition table (variable / operator / value).
@@ -55,16 +57,12 @@ TreeTableNode buildConditionNode(
   required VoidCallback onDelete,
   required List<VariableGroup>? groups,
 }) {
-  final colors = context.theme.colors;
-  final typography = context.theme.typography;
-
   switch (condition) {
     case final VariableCondition c:
       return _leafNode(
+        context,
         c,
         key: ValueKey(path),
-        colors: colors,
-        typography: typography,
         groups: groups,
         onChanged: (updated) => onChanged(updated),
         onDelete: onDelete,
@@ -79,12 +77,17 @@ TreeTableNode buildConditionNode(
         onChanged: (updated) => onChanged(updated),
         onDelete: onDelete,
       );
+    case final FunctionCondition c:
+      return _functionNode(
+        c,
+        key: ValueKey(path),
+        onChanged: onChanged,
+        onDelete: onDelete,
+      );
     case final RawCondition raw:
       return _rawNode(
         raw,
         key: ValueKey(path),
-        colors: colors,
-        typography: typography,
       );
   }
 }
@@ -157,6 +160,14 @@ TreeTableGroup _groupNode(
       onAddGroup: () => onChanged(
         group.copyWith(children: [...group.children, const ConditionGroup()]),
       ),
+      onAddFunction: () => onChanged(
+        group.copyWith(
+          children: [
+            ...group.children,
+            const FunctionCondition(expression: '() => '),
+          ],
+        ),
+      ),
     ),
     trailing: depth > 0
         ? FButton(
@@ -171,14 +182,15 @@ TreeTableGroup _groupNode(
 }
 
 TreeTableLeaf _leafNode(
+  BuildContext context,
   VariableCondition condition, {
   required Key key,
-  required FColors colors,
-  required FTypography typography,
   required List<VariableGroup>? groups,
   required ValueChanged<VariableCondition> onChanged,
   required VoidCallback onDelete,
 }) {
+  final colors = context.theme.colors;
+  final typography = context.theme.typography;
   final info = findVariable(condition.variable);
   final operators = info?.type.operators ?? ['==', '!='];
   final currentOperator = operators.contains(condition.operator)
@@ -194,7 +206,6 @@ TreeTableLeaf _leafNode(
             width: kConditionLeadingWidth,
             child: _NegateButton(
               negate: condition.negate,
-              colors: colors,
               onToggle: () =>
                   onChanged(condition.copyWith(negate: !condition.negate)),
             ),
@@ -202,6 +213,9 @@ TreeTableLeaf _leafNode(
           Expanded(
             child: Builder(
               builder: (context) {
+                final variableLabel =
+                    info?.localizedLabel(context.l10n) ??
+                    '\$${condition.variable}';
                 return FItem(
                   style: .delta(
                     backgroundColor: .delta([.base(Colors.transparent)]),
@@ -220,13 +234,21 @@ TreeTableLeaf _leafNode(
                     ),
                   ),
                   prefix: info != null ? TypeIconBadge(type: info.type) : null,
-                  title: Text(
-                    info?.localizedLabel(context.l10n) ??
-                        '\$${condition.variable}',
-                    style: typography.sm.copyWith(
-                      color: colors.foreground,
+                  title: AppTooltip(
+                    tipBuilder: (context, controller) => Text(
+                      '$variableLabel\n'
+                      '${context.l10n.conditionVariableSelectorOpenHint}',
+                      style: context.theme.typography.xs.copyWith(
+                        color: context.theme.colors.mutedForeground,
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      variableLabel,
+                      style: typography.sm.copyWith(
+                        color: colors.foreground,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   onPress: () async {
                     final picked = await showVariablePicker(
@@ -264,8 +286,6 @@ TreeTableLeaf _leafNode(
           condition: condition,
           info: info,
           onChanged: (value) => onChanged(condition.copyWith(value: value)),
-          colors: colors,
-          typography: typography,
         ),
       ),
     ],
@@ -278,24 +298,92 @@ TreeTableLeaf _leafNode(
   );
 }
 
+TreeTableLeaf _functionNode(
+  FunctionCondition condition, {
+  required Key key,
+  required ValueChanged<Condition> onChanged,
+  required VoidCallback onDelete,
+}) {
+  return TreeTableLeaf(
+    key: key,
+    content: Builder(
+      builder: (context) {
+        final colors = context.theme.colors;
+        final typography = context.theme.typography;
+        return Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                right: 4,
+                left: 12,
+              ),
+              child: Icon(
+                FLucideIcons.braces,
+                size: 14,
+                color: colors.mutedForeground,
+              ),
+            ),
+            AppTooltip(
+              tipBuilder: (context, controller) =>
+                  const ConditionFunctionTooltip(),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Text(
+                  context.l10n.conditionFunctionLabel,
+                  style: typography.sm.copyWith(color: colors.mutedForeground),
+                ),
+              ),
+            ),
+            Expanded(
+              child: FunctionConditionInput(
+                expression: condition.expression,
+                onChanged: (value) =>
+                    onChanged(condition.copyWith(expression: value)),
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+    trailing: Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: FButton(
+          variant: .ghost,
+          size: .sm,
+          onPress: onDelete,
+          child: Icon(
+            FLucideIcons.trash2,
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 TreeTableLeaf _rawNode(
   RawCondition raw, {
   required Key key,
-  required FColors colors,
-  required FTypography typography,
 }) {
   return TreeTableLeaf(
     key: key,
     cells: [
       Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          raw.raw,
-          style: typography.xs.copyWith(
-            color: colors.mutedForeground,
-            fontFamily: 'monospace',
-          ),
-          overflow: TextOverflow.ellipsis,
+        child: Builder(
+          builder: (context) {
+            final colors = context.theme.colors;
+            final typography = context.theme.typography;
+            return Text(
+              raw.raw,
+              style: typography.xs.copyWith(
+                color: colors.mutedForeground,
+                fontFamily: 'monospace',
+              ),
+              overflow: TextOverflow.ellipsis,
+            );
+          },
         ),
       ),
       const SizedBox.shrink(),
@@ -311,6 +399,7 @@ class _GroupHeaderContent extends StatelessWidget {
     required this.onSetMode,
     required this.onAddCondition,
     required this.onAddGroup,
+    required this.onAddFunction,
   });
 
   final ConditionGroup group;
@@ -318,6 +407,7 @@ class _GroupHeaderContent extends StatelessWidget {
   final ValueChanged<ConditionGroupMode> onSetMode;
   final ValueChanged<VariableInfo> onAddCondition;
   final VoidCallback onAddGroup;
+  final VoidCallback onAddFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -347,6 +437,7 @@ class _GroupHeaderContent extends StatelessWidget {
             onAddCondition(picked);
           },
           onAddGroup: onAddGroup,
+          onAddFunction: onAddFunction,
         ),
       ],
     );
@@ -356,16 +447,16 @@ class _GroupHeaderContent extends StatelessWidget {
 class _NegateButton extends StatelessWidget {
   const _NegateButton({
     required this.negate,
-    required this.colors,
     required this.onToggle,
   });
 
   final bool negate;
-  final FColors colors;
   final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+
     return AppTooltip(
       tipBuilder: (context, controller) => Text(
         negate ? 'Negate condition' : 'Un-negate condition',

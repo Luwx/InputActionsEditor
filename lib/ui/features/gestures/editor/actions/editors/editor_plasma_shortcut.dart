@@ -26,16 +26,15 @@ bool _isApp(KGlobalAccelComponent c) {
       n.startsWith('io_');
 }
 
-class PlasmaShortcutSheetPicker extends ConsumerStatefulWidget {
-  const PlasmaShortcutSheetPicker({super.key});
+class EditorPlasmaShortcut extends ConsumerStatefulWidget {
+  const EditorPlasmaShortcut({super.key});
 
   @override
-  ConsumerState<PlasmaShortcutSheetPicker> createState() =>
-      _PlasmaShortcutSheetPickerState();
+  ConsumerState<EditorPlasmaShortcut> createState() =>
+      _EditorPlasmaShortcutState();
 }
 
-class _PlasmaShortcutSheetPickerState
-    extends ConsumerState<PlasmaShortcutSheetPicker> {
+class _EditorPlasmaShortcutState extends ConsumerState<EditorPlasmaShortcut> {
   bool _manualEntry = false;
 
   @override

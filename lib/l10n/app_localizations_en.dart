@@ -9,10 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Input Actions';
-
-  @override
-  String get appSubtitle => 'Editor';
+  String get actionNew => 'New';
 
   @override
   String get actionLoad => 'Load';
@@ -25,6 +22,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionDiscardChanges => 'Discard changes';
+
+  @override
+  String get actionLoadFromClipboard => 'Load from clipboard';
+
+  @override
+  String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
   String get actionOk => 'OK';
@@ -394,6 +397,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configSaveSuccess => 'Config saved.';
 
   @override
+  String get configCopyToClipboardSuccess => 'Config copied to clipboard.';
+
+  @override
+  String get configLoadClipboardError => 'Could not parse clipboard YAML.';
+
+  @override
+  String get configLoadClipboardDetailsButton => 'Details';
+
+  @override
+  String get configLoadFailedTitle => 'Couldn\'t load your configuration';
+
+  @override
+  String get actionRetry => 'Retry';
+
+  @override
+  String get actionDetails => 'Details';
+
+  @override
+  String get dialogClipboardLoadTitle => 'Load from Clipboard';
+
+  @override
+  String get dialogClipboardLoadBody =>
+      'How would you like to load the clipboard config?';
+
+  @override
+  String get dialogClipboardLoadActionNew => 'New config';
+
+  @override
+  String get dialogClipboardLoadActionMerge => 'Merge';
+
+  @override
   String get gestureCopyYamlSuccess => 'Gesture YAML copied.';
 
   @override
@@ -578,6 +612,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not connect to the Input Actions daemon.';
 
   @override
+  String get strokesInstructionsHeader => 'Instructions';
+
+  @override
+  String get strokesMouseStep1 => 'Press Record';
+
+  @override
+  String get strokesMouseStep2 => 'Draw the stroke';
+
+  @override
+  String get strokesMouseStep3WaitPart => 'Wait';
+
+  @override
+  String get strokesMouseStep3Suffix => ' a moment after stopping';
+
+  @override
+  String get strokesTouchpadStep1 => 'Press Record';
+
+  @override
+  String get strokesTouchpadStep2Prefix =>
+      'Draw a stroke on the touchpad, then ';
+
+  @override
+  String get strokesTouchpadStep2WaitPart => 'wait';
+
+  @override
+  String get strokesTouchscreenStep1 => 'Press Record';
+
+  @override
+  String get strokesTouchscreenStep2Prefix =>
+      'Draw a stroke on the screen, then ';
+
+  @override
+  String get strokesTouchscreenStep2WaitPart => 'wait';
+
+  @override
   String get resetGestureDefaultsTooltip =>
       'Clears optional overrides and advanced settings while keeping the gesture type and its core identifying fields, such as direction, shortcut, fingers, or stroke pattern.';
 
@@ -639,10 +708,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaPlasmaSubtitle => 'Trigger a KDE global shortcut';
 
   @override
+  String get actionMetaActivateWindowLabel => 'Activate window';
+
+  @override
+  String get actionMetaActivateWindowSubtitle => 'Focus a window by ID';
+
+  @override
+  String get actionMetaReplaceTextLabel => 'Replace text';
+
+  @override
+  String get actionMetaReplaceTextSubtitle =>
+      'Replace text near the cursor using regex rules';
+
+  @override
   String get actionMetaSleepLabel => 'Sleep';
 
   @override
   String get actionMetaSleepSubtitle => 'Pause before continuing';
+
+  @override
+  String get actionMetaFunctionLabel => 'Function';
+
+  @override
+  String get actionMetaFunctionSubtitle => 'Run a JavaScript function';
 
   @override
   String get actionMetaRawLabel => 'Raw YAML';
@@ -684,6 +772,170 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get actionWaitForCompletionTooltip =>
       'Wait up to 30 seconds for the command to exit before executing the next action in the sequence.';
+
+  @override
+  String get actionActivateWindowLabel => 'Window ID';
+
+  @override
+  String get actionActivateWindowHint =>
+      'e.g. \$initial_window_under_pointer_id';
+
+  @override
+  String get actionActivateWindowTooltip =>
+      'Window ID to activate. A plain value is treated as a literal window ID. An exact \$name value is resolved through Input Actions\' Value parser if the variable is registered when the config is loaded; the variable\'s value is read when the action runs. This is not string interpolation, so \$name text is treated as one literal string and will not combine a variable with text.';
+
+  @override
+  String get actionActivateWindowVariablePickerTooltip =>
+      'Choose a window ID variable';
+
+  @override
+  String get actionReplaceTextRulesLabel => 'Replacement rules';
+
+  @override
+  String get actionReplaceTextRulesHelp =>
+      'Rules are checked in order. The first regex matching the surrounding text at the cursor is used.';
+
+  @override
+  String get actionReplaceTextAddRule => 'Add rule';
+
+  @override
+  String actionReplaceTextRuleLabel(int index) {
+    return 'Rule $index';
+  }
+
+  @override
+  String get actionReplaceTextRegexLabel => 'Regex';
+
+  @override
+  String get actionReplaceTextRegexHint => ':calc(.*)';
+
+  @override
+  String get actionReplaceTextReplacementLabel => 'Replacement';
+
+  @override
+  String get actionReplaceTextTextMode => 'Text';
+
+  @override
+  String get actionReplaceTextCommandMode => 'Command';
+
+  @override
+  String get actionReplaceTextTextHint => 'example@example.com';
+
+  @override
+  String get actionReplaceTextCommandHint =>
+      'printf \"\$(qalc -t \"\$match_1\")\"';
+
+  @override
+  String actionReplaceTextRuleSummary(int count, String regex) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rules: $regex',
+      one: '1 rule: $regex',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionReplaceTextFallbackSummary => 'replace text';
+
+  @override
+  String get valueStringRuntimeVariableHelp =>
+      'Use a literal ID or exactly \$name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.';
+
+  @override
+  String get tooltip_actionActivateWindow_bodyPrefix => 'Use exactly ';
+
+  @override
+  String get tooltip_actionActivateWindow_bodySuffix =>
+      ' to focus the window stored in the respective runtime variable.';
+
+  @override
+  String get tooltip_actionActivateWindow_sectionLabel => 'Variable';
+
+  @override
+  String get tooltip_actionActivateWindow_literalExLabel => 'literal window ID';
+
+  @override
+  String get tooltip_actionActivateWindow_variableExLabel =>
+      'window under the pointer when the gesture started';
+
+  @override
+  String get tooltip_actionActivateWindow_unknownNote =>
+      'Unknown variables are allowed, but only registered variables resolve at config load.';
+
+  @override
+  String get tooltip_actionActivateWindow_noInterpolationPrefix =>
+      'No interpolation: ';
+
+  @override
+  String get tooltip_actionActivateWindow_noInterpolationSuffix =>
+      ' is one literal string.';
+
+  @override
+  String get tooltip_actionReplaceText_body =>
+      'Matches the surrounding text reported by the focused application and replaces the matched text at the cursor.';
+
+  @override
+  String get tooltip_actionReplaceText_sectionLabel => 'Examples';
+
+  @override
+  String get tooltip_actionReplaceText_literalExCode =>
+      ':email  ->  example@example.com';
+
+  @override
+  String get tooltip_actionReplaceText_literalExLabel =>
+      'simple literal replacement';
+
+  @override
+  String get tooltip_actionReplaceText_commandExCode =>
+      ':calc 2+2  ->  command uses \$match_1';
+
+  @override
+  String get tooltip_actionReplaceText_commandExLabel =>
+      'compute replacement from the first capture';
+
+  @override
+  String get tooltip_actionReplaceText_matchNote =>
+      'Capture groups are exposed to command values as \$match_0, \$match_1, and so on.';
+
+  @override
+  String get tooltip_actionReplaceText_cursorNote =>
+      'A rule is eligible only when the regex match ends at the current cursor position.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_body =>
+      'Runs the command through /bin/sh -c and uses stdout as the replacement text.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleLabel => 'Example command';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleCode =>
+      'printf \"\$(qalc -t \"\$match_1\")\"';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_exampleDesc =>
+      'For a calculator rule, \$match_1 can be 2+2. qalc evaluates it and printf prints the result without adding its own newline.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_variablesLabel => 'Variables';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_match0 =>
+      '\$match_0 is the whole regex match.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_matchN =>
+      '\$match_1 through \$match_4 are capture groups. Missing captures are empty.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_envNote =>
+      'Referenced Input Actions variables are injected into the process environment, so shell syntax like \"\$match_1\" expands normally.';
+
+  @override
+  String get tooltip_actionReplaceTextCommand_stdoutNote =>
+      'Use tools like printf or command flags such as -n when you do not want a trailing newline.';
 
   @override
   String get addGestureTitle => 'Add gesture';
@@ -1593,6 +1845,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Available buttons: left, right, middle, back, forward.';
 
   @override
+  String get tooltip_recordingConvertShortcut_body =>
+      'Rewrites the recording as named chord notation, e.g. ctrl+shift+t or a, s, d.';
+
+  @override
+  String get tooltip_recordingConvertShortcut_enabledLabel => 'Enabled';
+
+  @override
+  String get tooltip_recordingConvertShortcut_enabledDesc =>
+      'all keys in each group are pressed before any are released';
+
+  @override
+  String get tooltip_recordingConvertShortcut_disabledLabel => 'Disabled';
+
+  @override
+  String get tooltip_recordingConvertShortcut_disabledDesc =>
+      'presses and releases interleave, use the token format instead';
+
+  @override
   String get dialogUnsavedChangesTitle => 'Unsaved Changes';
 
   @override
@@ -1601,6 +1871,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionApply => 'Apply';
+
+  @override
+  String get addAction => 'Add Action';
 
   @override
   String get dialogAddActionTitle => 'Add action';
@@ -1673,6 +1946,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSleepDurationHint => '500';
 
   @override
+  String get actionFunctionLabel => 'Function';
+
+  @override
+  String get actionFunctionHint => '() => initialDirection = \"l\"';
+
+  @override
   String get groupMenuRename => 'Rename';
 
   @override
@@ -1720,6 +1999,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inputKeySequenceStopAdd => 'Stop & Add';
+
+  @override
+  String get inputKeySequenceRecordingConvertShortcut => 'Chord format';
+
+  @override
+  String get inputKeySequenceRecordingClear => 'Clear';
+
+  @override
+  String get inputKeySequenceBrowseTip => 'Browse available keys';
+
+  @override
+  String get inputKeyBrowseHint => 'Search keys…';
+
+  @override
+  String get inputKeyBrowseEmpty => 'No matching keys';
 
   @override
   String get inputButtonSequenceLabel => 'Button Sequence';
@@ -1824,6 +2118,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conditionMenuAddGroupSubtitle => 'Collection of conditions.';
+
+  @override
+  String get conditionMenuAddFunctionTitle => 'Function';
+
+  @override
+  String get conditionMenuAddFunctionSubtitle =>
+      'JavaScript expression evaluated at runtime.';
+
+  @override
+  String get conditionFunctionLabel => 'Function';
+
+  @override
+  String get conditionFunctionHint => '() => initialDirection == \"l\"';
+
+  @override
+  String get tooltip_function_exampleLabel => 'Example';
+
+  @override
+  String get tooltip_function_apisNote =>
+      'Call built-in APIs with require() \"(inputactions/core, inputactions/fs)\" and console.';
+
+  @override
+  String get tooltip_function_callablePrefix =>
+      'Must be a callable arrow function: ';
+
+  @override
+  String get tooltip_conditionFunction_body =>
+      'A JavaScript function evaluated every time this condition is checked. It passes when the function returns a truthy value — use it for logic the built-in variable conditions can\'t express.';
+
+  @override
+  String get tooltip_conditionFunction_exampleAnnotation =>
+      'Passes while the script variable equals \"l\"';
+
+  @override
+  String get tooltip_conditionFunction_variablesNote =>
+      'Read persistent script variables to track state across gestures.';
+
+  @override
+  String get tooltip_actionFunction_body =>
+      'A JavaScript function run for its side effects when this action executes. Its return value is ignored.';
+
+  @override
+  String get tooltip_actionFunction_exampleAnnotation =>
+      'Sets a script variable other actions and conditions can read';
+
+  @override
+  String get tooltip_actionFunction_variablesNote =>
+      'Commonly used to set or update persistent script variables.';
+
+  @override
+  String get tooltip_actionFunction_watchdogNote =>
+      'Long-running loops are interrupted by a watchdog.';
+
+  @override
+  String get conditionVariableSelectorOpenHint => 'Click to open selector.';
 
   @override
   String get renameGroupHint => 'Group';

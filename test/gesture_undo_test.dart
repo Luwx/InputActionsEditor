@@ -30,6 +30,7 @@ void main() {
     String? thresholdAt(ProviderContainer c, int i) => c
         .read(configControllerProvider)
         .value!
+        .draft
         .mouseGestures[i]
         .common
         .threshold;
@@ -146,12 +147,13 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceEnabled = false;
 
-      expect(notifier.isDirty, isFalse);
+      bool isDirty() => c.read(configControllerProvider).value!.isDirty;
+      expect(isDirty(), isFalse);
       notifier.add(setThreshold(0, '99'), scope: loc);
-      expect(notifier.isDirty, isTrue);
+      expect(isDirty(), isTrue);
 
       notifier.undo(scope: loc);
-      expect(notifier.isDirty, isFalse);
+      expect(isDirty(), isFalse);
     });
   });
 
@@ -209,8 +211,6 @@ class _SeededController extends ConfigController {
   final Config _normalized;
 
   @override
-  Config? get savedConfig => _normalized;
-
-  @override
-  Future<Config> build() async => _normalized;
+  Future<EditSession> build() async =>
+      EditSession(draft: _normalized, saved: _normalized);
 }

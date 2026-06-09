@@ -20,7 +20,8 @@ import 'package:yaml/yaml.dart';
 
 Config decodeConfig(String yamlText) {
   if (yamlText.trim().isEmpty) return const Config();
-  final doc = loadYaml(yamlText);
+  final parseText = materializeDisabledYamlCommentsRecursively(yamlText);
+  final doc = loadYaml(parseText);
   if (doc == null) return const Config();
   final map = doc as YamlMap;
 
@@ -430,6 +431,9 @@ Condition _parseCondition(dynamic node) {
         );
       }
     }
+    if (node.containsKey('function')) {
+      return FunctionCondition(expression: node['function'].toString());
+    }
   }
   return RawCondition(raw: node.toString());
 }
@@ -470,6 +474,7 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   final action = _parseAction(node);
   if (action == null) return null;
   return TriggerAction(
+    enabled: node['enabled'] as bool?,
     on: node.containsKey('on')
         ? TriggerOn.fromYaml(node['on'] as String? ?? '')
         : null,
@@ -483,6 +488,145 @@ TriggerAction? _parseTriggerAction(dynamic node) {
     id: node['id'] as String?,
     limit: node['limit'] as int?,
   );
+}
+
+String materializeDisabledYamlCommentsRecursively(String yamlText) {
+  var current = yamlText;
+  while (true) {
+    final next = materializeDisabledYamlComments(current);
+    if (next == current) return current;
+    current = next;
+  }
+}
+
+/// Converts fully commented-out gesture/action list items back into ordinary
+/// YAML before parsing, with `enabled: false` injected when absent.
+///
+/// YAML libraries intentionally discard comments, but disabled items are stored
+/// as comments so the runtime ignores them. This boundary helper recognizes
+/// only list items under `gestures:` and `actions:` blocks; ordinary comments
+/// elsewhere remain comments.
+String materializeDisabledYamlComments(String yamlText) {
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  final contexts = <_YamlListContext>[];
+
+  var i = 0;
+  while (i < lines.length) {
+    final line = lines[i];
+    final uncommented = _uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    final indent = _indentOf(parseLine);
+
+    // Before popping, check if this is a commented list item aligned with
+    // its parent key (e.g., "      # - sleep: 1" when "      actions:" is at
+    // indent 6). Such items must not pop the parent context.
+    final peekParent = contexts.isEmpty ? null : contexts.last;
+    final commentedAtKeyIndent =
+        peekParent != null &&
+        (peekParent.key == 'gestures' || peekParent.key == 'actions') &&
+        uncommented != null &&
+        _isListItemAt(parseLine, peekParent.indent);
+
+    if (!commentedAtKeyIndent) _popContexts(contexts, indent);
+
+    final key = _blockKey(parseLine);
+    if (key != null) {
+      contexts.add(_YamlListContext(key, indent));
+    }
+
+    final parent = commentedAtKeyIndent
+        ? peekParent
+        : (contexts.isEmpty ? null : contexts.last);
+    final atNormalIndent =
+        parent != null &&
+        (parent.key == 'gestures' || parent.key == 'actions') &&
+        uncommented != null &&
+        _isListItemAt(parseLine, parent.indent + 2);
+
+    if (atNormalIndent || commentedAtKeyIndent) {
+      final itemIndent = parent!.indent + 2;
+      // Re-indent lines when the comment was placed at the key level.
+      final indentOffset = commentedAtKeyIndent && !atNormalIndent ? 2 : 0;
+      final block = <String>[];
+      var j = i;
+      while (j < lines.length) {
+        final candidate = lines[j];
+        final candidateUncommented = _uncommentYamlLine(candidate);
+        if (candidateUncommented == null) break;
+        final candidateIndent = _indentOf(candidateUncommented);
+        if (j > i && candidateIndent <= parent.indent) break;
+        if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
+        block.add(' ' * indentOffset + candidateUncommented);
+        j++;
+      }
+      final hasEnabled = block.any(
+        (l) =>
+            _listItemKeyAt(l, 'enabled', itemIndent) ||
+            (_keyAt(l, 'enabled') && _indentOf(l) == parent.indent + 4),
+      );
+      out.addAll(block);
+      if (!hasEnabled) {
+        out.add('${' '.padRight(parent.indent + 4)}enabled: false');
+      }
+      i = j;
+      continue;
+    }
+
+    out.add(line);
+    i++;
+  }
+
+  return out.join('\n');
+}
+
+final class _YamlListContext {
+  const _YamlListContext(this.key, this.indent);
+
+  final String key;
+  final int indent;
+}
+
+void _popContexts(List<_YamlListContext> contexts, int indent) {
+  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
+    contexts.removeLast();
+  }
+}
+
+String? _uncommentYamlLine(String line) {
+  final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
+  if (match == null) return null;
+  return '${match.group(1)}${match.group(2)}';
+}
+
+int _indentOf(String line) {
+  var i = 0;
+  while (i < line.length && line.codeUnitAt(i) == 0x20) {
+    i++;
+  }
+  return i;
+}
+
+String? _blockKey(String line) {
+  final trimmed = line.trimRight();
+  final match = RegExp(
+    r'^(\s*)([A-Za-z_][A-Za-z0-9_]*):\s*$',
+  ).firstMatch(trimmed);
+  return match?.group(2);
+}
+
+bool _isListItemAt(String line, int indent) =>
+    _indentOf(line) == indent && line.substring(indent).startsWith('- ');
+
+bool _keyAt(String line, String key) {
+  final trimmed = line.trimLeft();
+  return trimmed == '$key:' || trimmed.startsWith('$key: ');
+}
+
+bool _listItemKeyAt(String line, String key, int indent) {
+  if (!_isListItemAt(line, indent)) return false;
+  final body = line.substring(indent + 2).trimLeft();
+  return body == '$key:' || body.startsWith('$key: ');
 }
 
 Action? _parseAction(YamlMap m) {
@@ -502,10 +646,45 @@ Action? _parseAction(YamlMap m) {
       shortcut: parts.elementAtOrNull(1)?.trim() ?? '',
     );
   }
+  if (m.containsKey('activate_window')) {
+    return ActivateWindowAction(windowId: m['activate_window'].toString());
+  }
+  if (m.containsKey('replace_text')) {
+    return ReplaceTextAction(
+      rules: _parseTextSubstitutionRules(m['replace_text']),
+    );
+  }
   if (m.containsKey('sleep')) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
   }
+  if (m.containsKey('function')) {
+    return FunctionAction(expression: m['function'].toString());
+  }
   return RawAction(raw: _dumpYamlNode(m));
+}
+
+List<TextSubstitutionRule> _parseTextSubstitutionRules(dynamic node) {
+  if (node is! YamlList) return [];
+  return node
+      .map(_parseTextSubstitutionRule)
+      .whereType<TextSubstitutionRule>()
+      .toList();
+}
+
+TextSubstitutionRule? _parseTextSubstitutionRule(dynamic node) {
+  if (node is! YamlMap) return null;
+  if (!node.containsKey('regex') || !node.containsKey('replace')) return null;
+  return TextSubstitutionRule(
+    regex: node['regex'].toString(),
+    replace: _parseTextReplacementValue(node['replace']),
+  );
+}
+
+TextReplacementValue _parseTextReplacementValue(dynamic node) {
+  if (node is YamlMap && node.containsKey('command')) {
+    return CommandTextReplacementValue(command: node['command'].toString());
+  }
+  return LiteralTextReplacementValue(text: node?.toString() ?? '');
 }
 
 dynamic _mergeActionsGeneric(dynamic g, List<TriggerAction> actions) {

@@ -25,7 +25,7 @@ void main() {
       expect(result.groupId, isNull);
     });
 
-    test('inherits the group of the insertion point', () {
+    test("inherits the target row's group", () {
       final entries = [
         _group('a'),
         _item(0, group: 'a'),
@@ -38,6 +38,37 @@ void main() {
 
       expect(result!.orderedItemIds, [0, 2, 1]);
       expect(result.groupId, 'a');
+    });
+
+    test('ungroups when dropped before an ungrouped row after a group', () {
+      final entries = [
+        _group('a'),
+        _item(0, group: 'a'),
+        _item(1, group: 'a'),
+        _item(2),
+      ];
+
+      // Drop grouped item 0 before the ungrouped row 2: it joins row 2's
+      // (absent) group rather than being re-absorbed into group 'a'.
+      final result = controller.moveItemsBeforeItem(entries, {0}, 2);
+
+      expect(result!.orderedItemIds, [1, 0, 2]);
+      expect(result.groupId, isNull);
+    });
+
+    test('joins a later group when dropped before its first row', () {
+      final entries = [
+        _group('a'),
+        _item(0, group: 'a'),
+        _group('b'),
+        _item(1, group: 'b'),
+      ];
+
+      // Drop item 0 before the first row of group 'b'.
+      final result = controller.moveItemsBeforeItem(entries, {0}, 1);
+
+      expect(result!.orderedItemIds, [0, 1]);
+      expect(result.groupId, 'b');
     });
 
     test('adjusts the insert index when dragged items precede the target', () {
@@ -54,6 +85,12 @@ void main() {
       final entries = [_group('a'), _item(0, group: 'a')];
 
       expect(controller.moveItemsBeforeItem(entries, {0}, 99), isNull);
+    });
+
+    test('returns null when dropping an item onto its own slot', () {
+      final entries = [_item(0), _item(1), _item(2)];
+
+      expect(controller.moveItemsBeforeItem(entries, {1}, 1), isNull);
     });
   });
 
@@ -87,6 +124,53 @@ void main() {
       expect(result!.orderedItemIds, [0, 2, 1]);
       expect(result.groupId, 'a');
     });
+  });
+
+  group('moveItemsAfterGroup', () {
+    test('drops items ungrouped immediately after the group', () {
+      final entries = [
+        _group('a'),
+        _item(0, group: 'a'),
+        _item(1, group: 'a'),
+        _item(2),
+      ];
+
+      final result = controller.moveItemsAfterGroup(entries, {0}, 'a');
+
+      // Item 0 lands after the group's remaining rows but before the existing
+      // ungrouped row, and is itself ungrouped.
+      expect(result!.orderedItemIds, [1, 0, 2]);
+      expect(result.groupId, isNull);
+      expect(result.movedItemIds, {0});
+    });
+
+    test('lands before a following group when one exists', () {
+      final entries = [
+        _group('a'),
+        _item(0, group: 'a'),
+        _group('b'),
+        _item(1, group: 'b'),
+      ];
+
+      final result = controller.moveItemsAfterGroup(entries, {1}, 'a');
+
+      expect(result!.orderedItemIds, [0, 1]);
+      expect(result.groupId, isNull);
+    });
+
+    test(
+      'returns null when the item already sits ungrouped after the group',
+      () {
+        final entries = [
+          _group('a'),
+          _item(0, group: 'a'),
+          _item(1),
+        ];
+
+        // Item 1 is already ungrouped immediately after group 'a': no change.
+        expect(controller.moveItemsAfterGroup(entries, {1}, 'a'), isNull);
+      },
+    );
   });
 
   group('moveItemsToEnd', () {

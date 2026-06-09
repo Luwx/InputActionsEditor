@@ -46,6 +46,313 @@ class ActionConditionsTooltip extends StatelessWidget {
   }
 }
 
+class ConditionFunctionTooltip extends StatelessWidget {
+  const ConditionFunctionTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_conditionFunction_body),
+          _SectionLabel(
+            l10n.tooltip_function_exampleLabel,
+            FLucideIcons.braces,
+            colors,
+            t,
+          ),
+          _ExRow(
+            '() => initialDirection == "l"',
+            l10n.tooltip_conditionFunction_exampleAnnotation,
+            colors,
+            t,
+          ),
+          _Note(
+            l10n.tooltip_conditionFunction_variablesNote,
+            colors,
+            t,
+            icon: FLucideIcons.variable,
+          ),
+          _Note(
+            l10n.tooltip_function_apisNote,
+            colors,
+            t,
+            icon: FLucideIcons.package,
+          ),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_function_callablePrefix),
+                _monoSpan('() => expression', colors, t),
+              ],
+            ),
+            style: t.xs.copyWith(color: colors.mutedForeground),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ActionFunctionTooltip extends StatelessWidget {
+  const ActionFunctionTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_actionFunction_body),
+          _SectionLabel(
+            l10n.tooltip_function_exampleLabel,
+            FLucideIcons.braces,
+            colors,
+            t,
+          ),
+          _ExRow(
+            '() => initialDirection = "l"',
+            l10n.tooltip_actionFunction_exampleAnnotation,
+            colors,
+            t,
+          ),
+          _Note(
+            l10n.tooltip_actionFunction_variablesNote,
+            colors,
+            t,
+            icon: FLucideIcons.variable,
+          ),
+          _Note(
+            l10n.tooltip_function_apisNote,
+            colors,
+            t,
+            icon: FLucideIcons.package,
+          ),
+          _Note(
+            l10n.tooltip_actionFunction_watchdogNote,
+            colors,
+            t,
+            icon: FLucideIcons.triangleAlert,
+          ),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_function_callablePrefix),
+                _monoSpan('() => expression', colors, t),
+              ],
+            ),
+            style: t.xs.copyWith(color: colors.mutedForeground),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ActionActivateWindowTooltip extends StatelessWidget {
+  const ActionActivateWindowTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: l10n.tooltip_actionActivateWindow_bodyPrefix),
+                _monoSpan(r'$variable_name', colors, t),
+                TextSpan(text: l10n.tooltip_actionActivateWindow_bodySuffix),
+              ],
+            ),
+          ),
+          _SectionLabel(
+            l10n.tooltip_actionActivateWindow_sectionLabel,
+            FLucideIcons.variable,
+            colors,
+            t,
+          ),
+          _ExRow(
+            r'$initial_window_under_pointer_id',
+            l10n.tooltip_actionActivateWindow_variableExLabel,
+            colors,
+            t,
+          ),
+          _Note(l10n.tooltip_actionActivateWindow_unknownNote, colors, t),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 6,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(
+                  FLucideIcons.triangleAlert,
+                  size: 11,
+                  color: colors.destructive.withValues(alpha: 0.85),
+                ),
+              ),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: l10n
+                            .tooltip_actionActivateWindow_noInterpolationPrefix,
+                      ),
+                      _errorMonoSpan(r'$name text', colors, t),
+                      TextSpan(
+                        text: l10n
+                            .tooltip_actionActivateWindow_noInterpolationSuffix,
+                      ),
+                    ],
+                  ),
+                  style: t.xs.copyWith(color: colors.mutedForeground),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ActionReplaceTextTooltip extends StatelessWidget {
+  const ActionReplaceTextTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_actionReplaceText_body),
+          _SectionLabel(
+            l10n.tooltip_actionReplaceText_sectionLabel,
+            FLucideIcons.lightbulb,
+            colors,
+            t,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              _ExRow(
+                l10n.tooltip_actionReplaceText_literalExCode,
+                l10n.tooltip_actionReplaceText_literalExLabel,
+                colors,
+                t,
+              ),
+              _ExRow(
+                l10n.tooltip_actionReplaceText_commandExCode,
+                l10n.tooltip_actionReplaceText_commandExLabel,
+                colors,
+                t,
+              ),
+            ],
+          ),
+          _Note(
+            l10n.tooltip_actionReplaceText_matchNote,
+            colors,
+            t,
+            icon: FLucideIcons.variable,
+          ),
+          _Note(
+            l10n.tooltip_actionReplaceText_cursorNote,
+            colors,
+            t,
+            icon: FLucideIcons.info,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ActionReplaceTextCommandTooltip extends StatelessWidget {
+  const ActionReplaceTextCommandTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_actionReplaceTextCommand_body),
+          _SectionLabel(
+            l10n.tooltip_actionReplaceTextCommand_exampleLabel,
+            FLucideIcons.lightbulb,
+            colors,
+            t,
+          ),
+          _ExRow(
+            l10n.tooltip_actionReplaceTextCommand_exampleCode,
+            l10n.tooltip_actionReplaceTextCommand_exampleDesc,
+            colors,
+            t,
+          ),
+          _SectionLabel(
+            l10n.tooltip_actionReplaceTextCommand_variablesLabel,
+            FLucideIcons.variable,
+            colors,
+            t,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              _Bullet(l10n.tooltip_actionReplaceTextCommand_match0, colors, t),
+              _Bullet(l10n.tooltip_actionReplaceTextCommand_matchN, colors, t),
+            ],
+          ),
+          _Note(
+            l10n.tooltip_actionReplaceTextCommand_envNote,
+            colors,
+            t,
+            icon: FLucideIcons.info,
+          ),
+          _Note(
+            l10n.tooltip_actionReplaceTextCommand_stdoutNote,
+            colors,
+            t,
+            icon: FLucideIcons.info,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ActionTriggerOnTooltip extends StatelessWidget {
   const ActionTriggerOnTooltip({super.key});
 

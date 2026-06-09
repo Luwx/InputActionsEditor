@@ -211,7 +211,7 @@ class GrowingFrostedHeaderDelegate extends SliverPersistentHeaderDelegate {
 class SliverFrostedAppBar extends StatelessWidget {
   const SliverFrostedAppBar({
     required this.title,
-    this.titleWidget,
+    this.titleBuilder,
     this.subtitle,
     this.leading,
     this.trailing,
@@ -223,7 +223,7 @@ class SliverFrostedAppBar extends StatelessWidget {
   static const double maxHeight = GrowingFrostedHeaderDelegate.maxHeight;
 
   final String title;
-  final Widget? titleWidget;
+  final Widget Function(TextStyle?)? titleBuilder;
   final String? subtitle;
   final Widget? leading;
   final Widget? trailing;
@@ -234,7 +234,8 @@ class SliverFrostedAppBar extends StatelessWidget {
     return SliverPersistentHeader(
       pinned: true,
       delegate: GrowingFrostedHeaderDelegate(
-        titleBuilder: (style) => titleWidget ?? Text(title, style: style),
+        titleBuilder: (style) =>
+            titleBuilder?.call(style) ?? Text(title, style: style),
         subtitle: subtitle,
         leading: leading,
         trailing: trailing,

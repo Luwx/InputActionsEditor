@@ -1,32 +1,29 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/gestures.dart'
-    show
-        PointerDeviceKind,
-        PointerDownEvent,
-        PointerUpEvent,
-        kBackMouseButton,
-        kForwardMouseButton,
-        kMiddleMouseButton,
-        kPrimaryMouseButton,
-        kSecondaryMouseButton;
-import 'package:flutter/material.dart' show Colors, Icons;
-import 'package:flutter/services.dart'
-    show HardwareKeyboard, KeyDownEvent, KeyEvent, KeyUpEvent;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:flutter_hooks/flutter_hooks.dart';
+
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
+import 'package:input_actions_editor/domain/misc/keyboard_key_search_index.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
+
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
@@ -39,14 +36,133 @@ const Map<int, String> _mouseButtonNames = {
   kForwardMouseButton: 'forward',
 };
 
-class InputEntryEditor extends HookWidget {
-  const InputEntryEditor({
+class EditorInputAction extends HookConsumerWidget {
+  const EditorInputAction({super.key});
+
+  static const Map<String, InputDevice> deviceOptions = {
+    'Keyboard': InputDevice.keyboard,
+    'Mouse': InputDevice.mouse,
+  };
+
+  void _addEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+  ) {
+    onChanged([...current, const InputEntry(device: InputDevice.keyboard)]);
+  }
+
+  void _removeEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+    int index,
+  ) {
+    onChanged(List<InputEntry>.of(current)..removeAt(index));
+  }
+
+  void _updateEntry(
+    List<InputEntry> current,
+    void Function(List<InputEntry>) onChanged,
+    int index,
+    InputEntry updated,
+  ) {
+    final list = List<InputEntry>.of(current);
+    list[index] = updated;
+    onChanged(list);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesField = ref.actionField(
+      context,
+      actionInputEntriesLens,
+      fallbackValue: () => const <InputEntry>[],
+    );
+    final currentEntries = entriesField.value;
+    // final colors = context.theme.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            UnsavedLabel(
+              state: entriesField.dirty,
+              onRevert: entriesField.onRevert,
+              child: Text(
+                context.l10n.inputDevicesLabel,
+                style: context.theme.typography.sm.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            FButton(
+              variant: .outline,
+              size: .sm,
+              onPress: () => _addEntry(currentEntries, entriesField.onChanged),
+              prefix: const Icon(FLucideIcons.plus, size: 14),
+              child: Text(context.l10n.inputAddDevice),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            // border: Border.all(color: colors.border),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            // padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (index, entry) in currentEntries.indexed)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _InputEntryEditor(
+                        index: index,
+                        entry: entry,
+                        deviceOptions: deviceOptions,
+                        onChanged: (updated) => _updateEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                          updated,
+                        ),
+                        onDelete: () => _removeEntry(
+                          currentEntries,
+                          entriesField.onChanged,
+                          index,
+                        ),
+                      ),
+                      if (index != currentEntries.length - 1)
+                        const FDivider(
+                          style: .delta(
+                            padding: .value(
+                              EdgeInsets.only(bottom: 12, top: 16),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InputEntryEditor extends HookWidget {
+  const _InputEntryEditor({
     required this.index,
     required this.entry,
     required this.deviceOptions,
     required this.onChanged,
     required this.onDelete,
-    super.key,
   });
 
   final int index;
@@ -77,13 +193,13 @@ class InputEntryEditor extends HookWidget {
             KeySequenceParser.parse(keySeqController.text),
           ).join(', ') !=
           tokenKey) {
-        keySeqController.text = tokenKey;
+        unawaited(Future.microtask(() => keySeqController.text = tokenKey));
       }
       if (KeySequenceParser.toTokens(
             KeySequenceParser.parse(mouseSeqController.text),
           ).join(', ') !=
           tokenKey) {
-        mouseSeqController.text = tokenKey;
+        unawaited(Future.microtask(() => mouseSeqController.text = tokenKey));
       }
       return null;
     }, [tokenKey]);
@@ -129,15 +245,21 @@ class InputEntryEditor extends HookWidget {
       HardwareKeyboard.instance.addHandler(onKeyEvent);
     }
 
-    void stopRecording({required bool append}) {
+    void stopRecording({
+      required bool append,
+      bool convertToShortcut = false,
+    }) {
       final handler = keyHandlerRef.value;
       if (handler != null) {
         HardwareKeyboard.instance.removeHandler(handler);
         keyHandlerRef.value = null;
       }
       if (append && liveKeyTokens.value.isNotEmpty) {
+        final tokens = liveKeyTokens.value;
+        final appended = convertToShortcut
+            ? KeySequenceParser.tokensToShortcutString(tokens)
+            : tokens.join(', ');
         final existing = keySeqController.text.trim();
-        final appended = liveKeyTokens.value.join(', ');
         keySeqController.text = existing.isEmpty
             ? appended
             : '$existing, $appended';
@@ -209,11 +331,11 @@ class InputEntryEditor extends HookWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: isKeyboardRecording.value
-                      ? _buildKeyboardRecordingView(
-                          context,
-                          controller,
-                          liveKeyTokens.value,
+                      ? _KeyboardRecordingView(
+                          controller: controller,
+                          liveKeyTokens: liveKeyTokens.value,
                           stopRecording: stopRecording,
+                          onClear: () => liveKeyTokens.value = [],
                         )
                       : _buildKeyboardRecordStart(
                           context,
@@ -222,6 +344,33 @@ class InputEntryEditor extends HookWidget {
                 ),
               ),
               child: const Icon(Icons.radio_button_checked, size: 16),
+            ),
+          ),
+          const SizedBox(width: 4),
+          AppTooltip(
+            tipBuilder: (context, _) => Text(
+              context.l10n.inputKeySequenceBrowseTip,
+              style: context.theme.typography.xs.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+            child: FPopover(
+              groupId: timelinePopoverGroup,
+              constraints: const FPortalConstraints(maxWidth: 260),
+              builder: (context, controller, child) => FButton.icon(
+                size: .sm,
+                onPress: controller.toggle,
+                child: child,
+              ),
+              popoverBuilder: (context, controller) => _KeyBrowserPopover(
+                onSelect: (scancode) {
+                  final existing = keySeqController.text.trim();
+                  keySeqController.text = existing.isEmpty
+                      ? scancode
+                      : '$existing, $scancode';
+                },
+              ),
+              child: const Icon(FLucideIcons.search, size: 15),
             ),
           ),
           const SizedBox(width: 8),
@@ -321,94 +470,91 @@ class InputEntryEditor extends HookWidget {
       for (final o in optionsList) o.label: o.mode,
     };
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final deviceField = FSelect<InputDevice>(
-                label: LabelWithTooltip(
-                  label: context.l10n.inputDeviceFieldLabel,
-                  tooltip: context.l10n.inputDeviceFieldTooltip,
-                ),
-                key: ValueKey(entry.device),
-                items: deviceOptions,
-                control: FSelectManagedControl<InputDevice>(
-                  initial: entry.device,
-                  onChange: (value) {
-                    if (value != null) {
-                      onChanged(entry.copyWith(device: value, tokens: []));
-                    }
-                  },
-                ),
-              );
-              final actionTypeField = FSelect<InputEntryMode>(
-                label: LabelWithTooltip(
-                  label: context.l10n.inputActionTypeLabel,
-                  tooltip: context.l10n.inputActionTypeTooltip,
-                ),
-                key: ValueKey(mode),
-                items: options,
-                control: FSelectManagedControl<InputEntryMode>(
-                  initial: mode,
-                  onChange: changeMode,
-                ),
-              );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final deviceField = FSelect<InputDevice>(
+              label: LabelWithTooltip(
+                label: context.l10n.inputDeviceFieldLabel,
+                tooltip: context.l10n.inputDeviceFieldTooltip,
+              ),
+              key: ValueKey(entry.device),
+              items: deviceOptions,
+              control: FSelectManagedControl<InputDevice>(
+                initial: entry.device,
+                onChange: (value) {
+                  if (value != null) {
+                    onChanged(entry.copyWith(device: value, tokens: []));
+                  }
+                },
+              ),
+            );
+            final actionTypeField = FSelect<InputEntryMode>(
+              label: LabelWithTooltip(
+                label: context.l10n.inputActionTypeLabel,
+                tooltip: context.l10n.inputActionTypeTooltip,
+              ),
+              key: ValueKey(mode),
+              items: options,
+              control: FSelectManagedControl<InputEntryMode>(
+                initial: mode,
+                onChange: changeMode,
+              ),
+            );
 
-              final compact = constraints.maxWidth < 620;
+            final compact = constraints.maxWidth < 580;
 
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(child: deviceField),
-                        const SizedBox(width: 12),
-                        Expanded(child: actionTypeField),
-                        const SizedBox(width: 12),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: FButton(
-                            variant: .ghost,
-                            size: .sm,
-                            onPress: onDelete,
-                            child: const Icon(FLucideIcons.trash),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    inlineEditor,
-                  ],
-                );
-              }
-
-              return Row(
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 12,
                 children: [
-                  Expanded(child: deviceField),
-                  Expanded(flex: 2, child: actionTypeField),
-                  Expanded(flex: 3, child: inlineEditor),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 22),
-                    child: FButton(
-                      variant: .ghost,
-                      size: .sm,
-                      onPress: onDelete,
-                      child: const Icon(FLucideIcons.trash),
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(child: deviceField),
+                      const SizedBox(width: 12),
+                      Expanded(child: actionTypeField),
+                      const SizedBox(width: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: FButton(
+                          variant: .ghost,
+                          size: .sm,
+                          onPress: onDelete,
+                          child: const Icon(FLucideIcons.trash),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  inlineEditor,
                 ],
               );
-            },
-          ),
-        ],
-      ),
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Expanded(child: deviceField),
+                Expanded(flex: 2, child: actionTypeField),
+                Expanded(flex: 3, child: inlineEditor),
+                Padding(
+                  padding: const EdgeInsets.only(top: 22),
+                  child: FButton(
+                    variant: .ghost,
+                    size: .sm,
+                    onPress: onDelete,
+                    child: const Icon(FLucideIcons.trash),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -468,86 +614,239 @@ Widget _buildKeyboardRecordStart(
   );
 }
 
-Widget _buildKeyboardRecordingView(
-  BuildContext context,
-  FPopoverController controller,
-  List<String> liveKeyTokens, {
-  required void Function({required bool append}) stopRecording,
-}) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          const Icon(
-            Icons.radio_button_checked,
-            color: Colors.redAccent,
-            size: 14,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            context.l10n.inputKeySequenceRecordingTitle,
-            style: context.theme.typography.sm.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 10),
-      if (liveKeyTokens.isEmpty)
-        Text(
-          context.l10n.inputKeySequenceRecordPrompt,
-          style: context.theme.typography.sm.copyWith(
-            color: context.theme.colors.mutedForeground,
-          ),
-        )
-      else
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
+class _KeyboardRecordingView extends HookWidget {
+  const _KeyboardRecordingView({
+    required this.controller,
+    required this.liveKeyTokens,
+    required this.stopRecording,
+    required this.onClear,
+  });
+
+  final FPopoverController controller;
+  final List<String> liveKeyTokens;
+  final void Function({required bool append, bool convertToShortcut})
+  stopRecording;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final convertChecked = useState(true);
+    final canConvert = KeySequenceParser.canExpressAsShortcut(liveKeyTokens);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            for (final token in liveKeyTokens)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(color: context.theme.colors.border),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Text(token, style: context.theme.typography.xs),
-                ),
+            const Icon(
+              Icons.radio_button_checked,
+              color: Colors.redAccent,
+              size: 14,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              context.l10n.inputKeySequenceRecordingTitle,
+              style: context.theme.typography.sm.copyWith(
+                fontWeight: FontWeight.w600,
               ),
+            ),
           ],
         ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          FButton(
-            size: .sm,
-            onPress: () async {
-              stopRecording(append: true);
-              await controller.hide();
-            },
-            child: Text(context.l10n.inputKeySequenceStopAdd),
+        const SizedBox(height: 10),
+        if (liveKeyTokens.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              context.l10n.inputKeySequenceRecordPrompt,
+              style: context.theme.typography.sm.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final token in liveKeyTokens)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: context.theme.colors.border),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(token, style: context.theme.typography.xs),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-          FButton(
-            variant: .ghost,
-            size: .sm,
-            onPress: () async {
-              stopRecording(append: false);
-              await controller.hide();
-            },
-            child: Text(context.l10n.actionCancel),
+        const SizedBox(height: 8),
+        FCheckbox(
+          value: canConvert && convertChecked.value,
+          enabled: canConvert,
+          onChange: (v) => convertChecked.value = v,
+          // label: Text(
+          //   context.l10n.inputKeySequenceRecordingConvertShortcut,
+          // ),
+          label: LabelWithTooltip(
+            label: context.l10n.inputKeySequenceRecordingConvertShortcut,
+            tooltipContent: const ConvertToShortcutTooltip(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            FButton(
+              size: .sm,
+              onPress: () async {
+                stopRecording(
+                  append: true,
+                  convertToShortcut: canConvert && convertChecked.value,
+                );
+                await controller.hide();
+              },
+              child: Text(context.l10n.inputKeySequenceStopAdd),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              variant: .ghost,
+              size: .sm,
+              onPress: onClear,
+              child: Text(context.l10n.inputKeySequenceRecordingClear),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              variant: .ghost,
+              size: .sm,
+              onPress: () async {
+                stopRecording(append: false);
+                await controller.hide();
+              },
+              child: Text(context.l10n.actionCancel),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _KeyBrowserPopover extends HookWidget {
+  const _KeyBrowserPopover({required this.onSelect});
+
+  final void Function(String scancode) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final query = useState('');
+    final searchController = useTextEditingController();
+    final results = useMemoized(
+      () => query.value.trim().isEmpty
+          ? keySearchIndex
+          : keySearchIndex.where((e) => e.matches(query.value)).toList(),
+      [query.value],
+    );
+
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
+        children: [
+          FTextField(
+            control: FTextFieldControl.managed(
+              controller: searchController,
+              onChange: (v) => query.value = v.text,
+            ),
+            hint: context.l10n.inputKeyBrowseHint,
+            autofocus: true,
+          ),
+          SizedBox(
+            height: 220,
+            child: results.isEmpty
+                ? Center(
+                    child: Text(
+                      context.l10n.inputKeyBrowseEmpty,
+                      style: t.xs.copyWith(color: colors.mutedForeground),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemExtent: 32,
+                    itemBuilder: (context, i) => _KeyResultTile(
+                      entry: results[i],
+                      onSelect: onSelect,
+                    ),
+                  ),
           ),
         ],
       ),
-    ],
-  );
+    );
+  }
+}
+
+class _KeyResultTile extends HookWidget {
+  const _KeyResultTile({required this.entry, required this.onSelect});
+
+  final KeyEntry entry;
+  final void Function(String scancode) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final hovered = useState(false);
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+
+    return MouseRegion(
+      onEnter: (_) => hovered.value = true,
+      onExit: (_) => hovered.value = false,
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onSelect(entry.scancode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: hovered.value
+                ? colors.secondary.withValues(alpha: 0.8)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              Text(
+                entry.label,
+                style: t.sm.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  entry.scancode,
+                  style: t.xs.copyWith(
+                    color: colors.mutedForeground,
+                    fontFamily: 'monospace',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Widget _buildMouseRecordPopover(

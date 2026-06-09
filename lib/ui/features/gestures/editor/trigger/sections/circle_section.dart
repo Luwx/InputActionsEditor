@@ -30,23 +30,20 @@ class CircleSection extends ConsumerWidget {
       l10n.directionClockwise: CircleDirection.clockwise,
       l10n.directionCounterclockwise: CircleDirection.counterclockwise,
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        width: 220,
-        child: FSelect<CircleDirection>(
-          key: ValueKey(value),
-          items: directions,
-          control: FSelectManagedControl<CircleDirection>(
-            initial: value,
-            onChange: (v) {
-              if (v != null) directionField.onChanged(v);
-            },
-          ),
-          label: LabelWithTooltip(
-            label: l10n.sectionCircleDirectionLabel,
-            tooltip: l10n.sectionCircleDirectionTooltip,
-          ),
+    return SizedBox(
+      width: 220,
+      child: FSelect<CircleDirection>(
+        key: ValueKey(value),
+        items: directions,
+        control: FSelectManagedControl<CircleDirection>(
+          initial: value,
+          onChange: (v) {
+            if (v != null) directionField.onChanged(v);
+          },
+        ),
+        label: LabelWithTooltip(
+          label: l10n.sectionCircleDirectionLabel,
+          tooltip: l10n.sectionCircleDirectionTooltip,
         ),
       ),
     );

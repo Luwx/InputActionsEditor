@@ -68,7 +68,17 @@ abstract class ActionEditorVm with _$ActionEditorVm {
   bool get exists => action != null;
 }
 
-enum ActionKind { command, input, plasmaShortcut, sleep, raw, missing }
+enum ActionKind {
+  command,
+  input,
+  plasmaShortcut,
+  activateWindow,
+  replaceText,
+  sleep,
+  function,
+  raw,
+  missing,
+}
 
 class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   ActionListEditorNotifier(this.location);
@@ -78,10 +88,9 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   @override
   ActionListEditorVm build() {
     final common = ref.watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        return config == null ? null : gestureAt(config, location)?.common;
-      }),
+      configControllerProvider.select(
+        (state) => gestureAt(state.requireValue.draft, location)?.common,
+      ),
     );
     final dirtyState = ref.watch(
       gestureSectionDirtyStateProvider(
@@ -115,6 +124,18 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   void reorder(int oldIndex, int newIndex) =>
       _dispatch(ReorderAction(location, oldIndex, newIndex));
 
+  void setEnabled(int index, bool enabled) {
+    _dispatch(
+      SetLens<bool?>(
+        actionEnabledLens(
+          ActionLocation(gesture: location, actionIndex: index),
+        ),
+        enabled ? null : false,
+        label: enabled ? 'enable action' : 'disable action',
+      ),
+    );
+  }
+
   /// Restores the whole action list to its last-saved value as one undo step.
   void revert() {
     final savedActions = state.savedActions;
@@ -137,10 +158,9 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
   @override
   ActionEditorVm build() {
     final action = ref.watch(
-      configControllerProvider.select((state) {
-        final config = state.value;
-        return config == null ? null : actionAt(config, location);
-      }),
+      configControllerProvider.select(
+        (state) => actionAt(state.requireValue.draft, location),
+      ),
     );
     return ActionEditorVm(
       location: location,
@@ -165,13 +185,39 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
           scope: location.gesture,
         );
   }
+
+  void replaceTextRules(List<TextSubstitutionRule> rules) {
+    final config = ref.read(draftConfigProvider);
+    final actions = gestureActionsLens(location.gesture).get(config);
+    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
+      return;
+    }
+    final current = actions[location.actionIndex];
+    ref
+        .read(configControllerProvider.notifier)
+        .add(
+          SetLens<List<TriggerAction>>(
+            gestureActionsLens(location.gesture),
+            [
+              ...actions.take(location.actionIndex),
+              current.copyWith(action: ReplaceTextAction(rules: rules)),
+              ...actions.skip(location.actionIndex + 1),
+            ],
+            label: 'Edit replace text rules',
+          ),
+          scope: location.gesture,
+        );
+  }
 }
 
 ActionKind _kindOf(Action? action) => switch (action) {
   CommandAction() => ActionKind.command,
   InputAction() => ActionKind.input,
   PlasmaShortcutAction() => ActionKind.plasmaShortcut,
+  ActivateWindowAction() => ActionKind.activateWindow,
+  ReplaceTextAction() => ActionKind.replaceText,
   SleepAction() => ActionKind.sleep,
+  FunctionAction() => ActionKind.function,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,
 };

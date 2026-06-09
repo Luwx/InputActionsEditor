@@ -14,10 +14,10 @@ import 'package:input_actions_editor/store/config_controller.dart';
 /// Dirty state of the settings slice (everything that is not gesture data).
 /// Drives the settings-wide Save/Discard control: `.isDirty` enables Save,
 /// `.canRevert` enables Discard. Reactive companion to
-/// `ConfigController.isSettingsDirty`.
+/// `EditSession.settingsDirty`.
 final settingsDirtyStateProvider = Provider<DirtyMarkState>((ref) {
   return settingsDirtyState(
-    ref.watch(configControllerProvider).value,
+    ref.watch(draftConfigProvider),
     ref.watch(savedConfigProvider),
   );
 });
@@ -25,7 +25,7 @@ final settingsDirtyStateProvider = Provider<DirtyMarkState>((ref) {
 /// Dirty state of the gesture slice. Mirror of [settingsDirtyStateProvider].
 final gesturesDirtyStateProvider = Provider<DirtyMarkState>((ref) {
   return gesturesDirtyState(
-    ref.watch(configControllerProvider).value,
+    ref.watch(draftConfigProvider),
     ref.watch(savedConfigProvider),
   );
 });
@@ -35,19 +35,16 @@ final gesturesDirtyStateProvider = Provider<DirtyMarkState>((ref) {
 /// Drives the sidebar's Discard action. Derived as a `bool` so consumers
 /// rebuild only when discardability actually flips, rather than on every edit
 /// (which is what watching the raw config value forces).
-final canDiscardChangesProvider = Provider<bool>((ref) {
-  // Recompute whenever the draft or the saved baseline changes.
-  ref
-    ..watch(configControllerProvider)
-    ..watch(savedConfigProvider);
-  final controller = ref.read(configControllerProvider.notifier);
-  return controller.isDirty && controller.savedConfig != null;
-});
+final canDiscardChangesProvider = Provider<bool>(
+  (ref) => ref.watch(
+    configControllerProvider.select((s) => s.value?.canDiscard ?? false),
+  ),
+);
 
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
     Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {
       final currentRead = _readLens(
-        ref.watch(configControllerProvider).value,
+        ref.watch(draftConfigProvider),
         lens,
       );
       final savedRead = _readLens(ref.watch(savedConfigProvider), lens);
@@ -62,7 +59,7 @@ final ProviderFamily<DirtyMarkState, RootConfigDirtyField>
 rootConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, RootConfigDirtyField>((ref, field) {
       final current = comparableRootConfigFieldValue(
-        ref.watch(configControllerProvider).value,
+        ref.watch(draftConfigProvider),
         field,
       );
       final savedConfig = ref.watch(savedConfigProvider);
@@ -80,7 +77,7 @@ gestureDirtyStateProvider = Provider.family<DirtyMarkState, GestureLocation>((
   location,
 ) {
   final current = comparableGesture(
-    gestureAt(ref.watch(configControllerProvider).value, location),
+    gestureAt(ref.watch(draftConfigProvider), location),
   );
   final saved = comparableGesture(
     gestureAt(ref.watch(savedConfigProvider), location),
@@ -96,7 +93,7 @@ final ProviderFamily<DirtyMarkState, GestureSectionLocation>
 gestureSectionDirtyStateProvider =
     Provider.family<DirtyMarkState, GestureSectionLocation>((ref, location) {
       final current = gestureAt(
-        ref.watch(configControllerProvider).value,
+        ref.watch(draftConfigProvider),
         location.gesture,
       )?.common;
 
@@ -117,7 +114,7 @@ final ProviderFamily<DirtyMarkState, GestureLocation>
 gestureTriggerConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, GestureLocation>((ref, location) {
       final currentGesture = gestureAt(
-        ref.watch(configControllerProvider).value,
+        ref.watch(draftConfigProvider),
         location,
       );
       final savedGesture = gestureAt(ref.watch(savedConfigProvider), location);
@@ -137,7 +134,7 @@ gestureTriggerConfigDirtyStateProvider =
 final ProviderFamily<DirtyMarkState, ActionLocation> actionDirtyStateProvider =
     Provider.family<DirtyMarkState, ActionLocation>((ref, location) {
       final current = comparableTriggerActionValue(
-        actionAt(ref.watch(configControllerProvider).value, location),
+        actionAt(ref.watch(draftConfigProvider), location),
       );
       final saved = comparableTriggerActionValue(
         actionAt(ref.watch(savedConfigProvider), location),

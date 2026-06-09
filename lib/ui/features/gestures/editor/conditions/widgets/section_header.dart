@@ -5,28 +5,26 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
-    required this.colors,
-    required this.typography,
     this.title = 'Trigger Conditions',
     this.titleWidget,
     this.tooltip,
     this.tooltipContent,
     this.onAddCondition,
     this.onAddGroup,
+    this.onAddFunction,
     this.onExpand,
     this.expandHeroTag,
     this.isExpanded = false,
     super.key,
   });
 
-  final FColors colors;
-  final FTypography typography;
   final String title;
   final Widget? titleWidget;
   final String? tooltip;
   final Widget? tooltipContent;
   final VoidCallback? onAddCondition;
   final VoidCallback? onAddGroup;
+  final VoidCallback? onAddFunction;
 
   /// Called when the expand/collapse button is pressed.
   final VoidCallback? onExpand;
@@ -39,6 +37,7 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = context.theme.typography;
     final titleStyle = typography.sm.copyWith(fontWeight: FontWeight.w600);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -59,6 +58,7 @@ class SectionHeader extends StatelessWidget {
           NewConditionMenu(
             onAddCondition: onAddCondition,
             onAddGroup: onAddGroup,
+            onAddFunction: onAddFunction,
           ),
         if (onExpand != null) ...[
           const SizedBox(width: 4),
@@ -81,11 +81,13 @@ class NewConditionMenu extends StatelessWidget {
   const NewConditionMenu({
     required this.onAddCondition,
     required this.onAddGroup,
+    this.onAddFunction,
     super.key,
   });
 
   final VoidCallback? onAddCondition;
   final VoidCallback? onAddGroup;
+  final VoidCallback? onAddFunction;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +118,19 @@ class NewConditionMenu extends StatelessWidget {
                   onAddGroup?.call();
                 },
               ),
+            // disable functions for now
+            // if (onAddFunction != null)
+            //   .item(
+            //     prefix: const Icon(FLucideIcons.braces),
+            //     title: Text(context.l10n.conditionMenuAddFunctionTitle),
+            //     subtitle: Text(
+            //       context.l10n.conditionMenuAddFunctionSubtitle,
+            //     ),
+            //     onPress: () async {
+            //       await controller.hide();
+            //       onAddFunction?.call();
+            //     },
+            //   ),
           ],
         ),
       ],

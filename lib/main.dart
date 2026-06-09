@@ -7,6 +7,7 @@ import 'package:dbus/dbus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app.dart';
+import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/app/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
@@ -22,6 +23,7 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final settings = LocalSettingsService(prefs).load();
+  final appState = AppStateController.load(prefs);
 
   if (settings.minimizeToTray) {
     await _setupTrayMode();
@@ -43,6 +45,7 @@ void main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        initialAppStateProvider.overrideWithValue(appState),
         windowServiceProvider.overrideWithValue(windowService),
         if (initialKde != null)
           kdeColorSchemeInitialProvider.overrideWithValue(initialKde),

@@ -4,25 +4,38 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
 /// A short, human-readable summary of an action's value for the collapsed row.
-String actionValueSummary(Action action, AppLocalizations l10n) =>
-    switch (action) {
-      CommandAction(:final command) =>
-        command.trim().isEmpty ? l10n.actionSummaryNoCommand : command.trim(),
-      InputAction(:final entries) => _inputEntriesSummary(entries, l10n),
-      PlasmaShortcutAction(:final component, :final shortcut) =>
-        [
-              component,
-              shortcut,
-            ]
-            .where((s) => s.trim().isNotEmpty)
-            .join('  ·  ')
-            .ifEmpty(l10n.actionSummaryNotConfigured),
-      SleepAction(:final milliseconds) => '$milliseconds ms',
-      RawAction(:final raw) =>
-        raw.trim().isEmpty
-            ? l10n.actionSummaryEmpty
-            : raw.trim().split('\n').first,
-    };
+String actionValueSummary(
+  Action action,
+  AppLocalizations l10n,
+) => switch (action) {
+  CommandAction(:final command) =>
+    command.trim().isEmpty ? l10n.actionSummaryNoCommand : command.trim(),
+  InputAction(:final entries) => _inputEntriesSummary(entries, l10n),
+  PlasmaShortcutAction(:final component, :final shortcut) =>
+    [
+          component,
+          shortcut,
+        ]
+        .where((s) => s.trim().isNotEmpty)
+        .join('  ·  ')
+        .ifEmpty(l10n.actionSummaryNotConfigured),
+  ActivateWindowAction(:final windowId) =>
+    windowId.trim().isEmpty ? l10n.actionSummaryNotConfigured : windowId.trim(),
+  ReplaceTextAction(:final rules) =>
+    rules.isEmpty
+        ? l10n.actionSummaryNotConfigured
+        : l10n.actionReplaceTextRuleSummary(
+            rules.length,
+            rules.first.regex,
+          ),
+  SleepAction(:final milliseconds) => '$milliseconds ms',
+  FunctionAction(:final expression) =>
+    expression.trim().isEmpty
+        ? l10n.actionSummaryNotConfigured
+        : expression.trim().split('\n').first,
+  RawAction(:final raw) =>
+    raw.trim().isEmpty ? l10n.actionSummaryEmpty : raw.trim().split('\n').first,
+};
 
 /// A specific title for the collapsed row. For input actions this reflects the
 /// input mode (e.g. "Key sequence", "Text input") rather than the generic
@@ -34,7 +47,10 @@ String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
         ? l10n.inputModeGeneric
         : _inputModeLabel(entries.first, l10n),
   PlasmaShortcutAction() => l10n.actionMetaPlasmaLabel,
+  ActivateWindowAction() => l10n.actionMetaActivateWindowLabel,
+  ReplaceTextAction() => l10n.actionMetaReplaceTextLabel,
   SleepAction() => l10n.actionMetaSleepLabel,
+  FunctionAction() => l10n.actionMetaFunctionLabel,
   RawAction() => l10n.actionMetaRawLabel,
 };
 

@@ -227,3 +227,147 @@ class ButtonSequenceTooltip extends StatelessWidget {
     );
   }
 }
+
+class ConvertToShortcutTooltip extends StatelessWidget {
+  const ConvertToShortcutTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.theme.colors;
+    final t = context.theme.typography;
+    final codeBg = colors.muted.withValues(alpha: 0.45);
+    const sep = TextSpan(text: ' ');
+    final arrow = TextSpan(text: '  →  ', style: t.xs);
+
+    return TooltipShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 10,
+        children: [
+          Text(l10n.tooltip_recordingConvertShortcut_body),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  Icon(FLucideIcons.check, size: 11, color: colors.primary),
+                  Text(
+                    l10n.tooltip_recordingConvertShortcut_enabledLabel,
+                    style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              Text(
+                l10n.tooltip_recordingConvertShortcut_enabledDesc,
+                style: t.xs.copyWith(color: colors.mutedForeground),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: codeBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          _tokenSpan('+ctrl', colors, t, press: true),
+                          sep,
+                          _tokenSpan('+t', colors, t, press: true),
+                          sep,
+                          _tokenSpan('-t', colors, t, press: false),
+                          sep,
+                          _tokenSpan('-ctrl', colors, t, press: false),
+                          arrow,
+                          _monoSpan('ctrl+t', colors, t),
+                        ],
+                      ),
+                    ),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          _tokenSpan('+a', colors, t, press: true),
+                          sep,
+                          _tokenSpan('-a', colors, t, press: false),
+                          sep,
+                          _tokenSpan('+s', colors, t, press: true),
+                          sep,
+                          _tokenSpan('-s', colors, t, press: false),
+                          arrow,
+                          _monoSpan('a, s', colors, t),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 4,
+                children: [
+                  Icon(FLucideIcons.x, size: 11, color: colors.destructive),
+                  Text(
+                    l10n.tooltip_recordingConvertShortcut_disabledLabel,
+                    style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              Text(
+                l10n.tooltip_recordingConvertShortcut_disabledDesc,
+                style: t.xs.copyWith(color: colors.mutedForeground),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: codeBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      _tokenSpan('+ctrl', colors, t, press: true),
+                      sep,
+                      _tokenSpan('+t', colors, t, press: true),
+                      sep,
+                      _tokenSpan('-t', colors, t, press: false),
+                      sep,
+                      _tokenSpan('+a', colors, t, press: true),
+                      sep,
+                      TextSpan(
+                        text: '···',
+                        style: t.xs.copyWith(color: colors.mutedForeground),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

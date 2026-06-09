@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -9,8 +11,10 @@ import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/keyboard_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/mouse_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/pointer_gesture_editor.dart';
@@ -23,6 +27,7 @@ import 'package:input_actions_editor/ui/features/gestures/list/state/multi_selec
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
+import 'package:scroll_animator/scroll_animator.dart';
 
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
@@ -50,12 +55,39 @@ class _GestureEditorView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scrollController = useScrollController();
+    final scrollController = useMemoized(
+      () => AnimatedScrollController(
+        animationFactory: const ChromiumEaseInOut(),
+      ),
+    );
+    useEffect(() => scrollController.dispose, const []);
     final anchorController = useMemoized(ScrollAnchorController.new);
+    final addActionHeaderKey = useMemoized(GlobalKey.new);
+    final addActionCallbackRef = useRef<Future<void> Function()?>(null);
+    final addActionVisible = useState(false);
+    final tickerProvider = useSingleTickerProvider();
     final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
+
+    useEffect(() {
+      final ticker = tickerProvider.createTicker((_) {
+        final ctx = addActionHeaderKey.currentContext;
+        if (ctx == null) return;
+        final renderBox = ctx.findRenderObject() as RenderBox?;
+        if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
+          return;
+        }
+        final bottom =
+            renderBox.localToGlobal(Offset.zero).dy + renderBox.size.height;
+        final hidden = bottom < GrowingFrostedHeaderDelegate.minHeight;
+        if (addActionVisible.value != hidden) addActionVisible.value = hidden;
+      });
+      unawaited(ticker.start());
+      return ticker.dispose;
+    }, const []);
 
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
+      addActionVisible.value = false;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!scrollController.hasClients) return;
         await scrollController.animateTo(
@@ -103,48 +135,71 @@ class _GestureEditorView extends HookConsumerWidget {
                 onRename: gestureEditor.rename,
               ),
               subtitle: header.subtitle,
-              trailing: _GestureHeaderMenu(
-                isEnabled: header.isEnabled,
-                onToggleEnabled: () =>
-                    gestureEditor.setEnabled(!header.isEnabled),
-                onResetDefaults: () {
-                  final gesture = ref
-                      .read(gestureEditorProvider(location))
-                      .gesture;
-                  if (gesture != null) gestureEditor.resetDefaults(gesture);
-                },
-                onDuplicate: () {
-                  gestureEditor.duplicate();
-                  context.selectGesture(location.device, location.index + 1);
-                },
-                onCopyYaml: () async {
-                  final gesture = ref
-                      .read(gestureEditorProvider(location))
-                      .gesture;
-                  if (gesture == null) return;
-                  await Clipboard.setData(
-                    ClipboardData(
-                      text: gestureYamlSnippet(
-                        device: location.device,
-                        gesture: gesture,
-                      ),
-                    ),
-                  );
-                  if (!context.mounted) return;
-                  showFToast(
-                    context: context,
-                    title: Text(context.l10n.gestureCopyYamlSuccess),
-                    suffixBuilder: (context, entry) => FButton.icon(
-                      onPress: entry.dismiss,
-                      child: const Icon(FLucideIcons.x),
-                    ),
-                    duration: const Duration(seconds: 3),
-                  );
-                },
-                onDelete: () {
-                  context.clearGestureSelection();
-                  gestureEditor.delete();
-                },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FButton(
+                    key: const ValueKey('add-action'),
+                    variant: .ghost,
+                    size: .sm,
+                    onPress: () => addActionCallbackRef.value?.call(),
+                    prefix: const Icon(FLucideIcons.plus),
+                    child: Text(context.l10n.addAction),
+                  ).appearToggle(
+                    visible: addActionVisible.value,
+                    axis: Axis.horizontal,
+                    slideFactor: 0.8,
+                    duration: Durations.short4,
+                  ),
+                  _GestureHeaderMenu(
+                    isEnabled: header.isEnabled,
+                    onToggleEnabled: () =>
+                        gestureEditor.setEnabled(!header.isEnabled),
+                    onResetDefaults: () {
+                      final gesture = ref
+                          .read(gestureEditorProvider(location))
+                          .gesture;
+                      if (gesture != null) {
+                        gestureEditor.resetDefaults(gesture);
+                      }
+                    },
+                    onDuplicate: () {
+                      gestureEditor.duplicate();
+                      context.selectGesture(
+                        location.device,
+                        location.index + 1,
+                      );
+                    },
+                    onCopyYaml: () async {
+                      final gesture = ref
+                          .read(gestureEditorProvider(location))
+                          .gesture;
+                      if (gesture == null) return;
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text: gestureYamlSnippet(
+                            device: location.device,
+                            gesture: gesture,
+                          ),
+                        ),
+                      );
+                      if (!context.mounted) return;
+                      showFToast(
+                        context: context,
+                        title: Text(context.l10n.gestureCopyYamlSuccess),
+                        suffixBuilder: (context, entry) => FButton.icon(
+                          onPress: entry.dismiss,
+                          child: const Icon(FLucideIcons.x),
+                        ),
+                        duration: const Duration(seconds: 3),
+                      );
+                    },
+                    onDelete: () {
+                      context.clearGestureSelection();
+                      gestureEditor.delete();
+                    },
+                  ),
+                ],
               ),
               horizontalPadding: 16,
             ),
@@ -158,7 +213,11 @@ class _GestureEditorView extends HookConsumerWidget {
                   : null,
               child: ScrollAnchorScope(
                 controller: anchorController,
-                child: _GestureEditorBody(location: location),
+                child: AddActionScope(
+                  headerKey: addActionHeaderKey,
+                  callbackRef: addActionCallbackRef,
+                  child: _GestureEditorBody(location: location),
+                ),
               ),
             ),
           ),
@@ -310,19 +369,17 @@ class _MultiSelectPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final (:canEnable, :canDisable) = ref.watch(
       configControllerProvider.select((state) {
-        final config = state.value;
+        final config = state.requireValue.draft;
         var canEnable = false;
         var canDisable = false;
-        if (config != null) {
-          for (final sel in selected) {
-            final gestures = config.gesturesForDevice(sel.device);
-            if (sel.index < 0 || sel.index >= gestures.length) continue;
-            final isEnabled = gestures[sel.index].common.enabled != false;
-            if (isEnabled) {
-              canDisable = true;
-            } else {
-              canEnable = true;
-            }
+        for (final sel in selected) {
+          final gestures = config.gesturesForDevice(sel.device);
+          if (sel.index < 0 || sel.index >= gestures.length) continue;
+          final isEnabled = gestures[sel.index].common.enabled != false;
+          if (isEnabled) {
+            canDisable = true;
+          } else {
+            canEnable = true;
           }
         }
         return (canEnable: canEnable, canDisable: canDisable);
@@ -455,7 +512,7 @@ class _GestureHeaderMenu extends StatelessWidget {
               },
             ),
             .item(
-              prefix: const Icon(Icons.content_copy),
+              prefix: const Icon(FLucideIcons.code),
               title: Text(context.l10n.gestureMenuCopyYaml),
               onPress: () async {
                 await controller.hide();

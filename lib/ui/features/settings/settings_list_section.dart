@@ -4,6 +4,8 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
@@ -107,7 +109,7 @@ class SettingsListSection extends ConsumerWidget {
 
 Future<void> _guardedCloseSettings(BuildContext context, WidgetRef ref) async {
   final controller = ref.read(configControllerProvider.notifier);
-  if (controller.isSettingsDirty) {
+  if (ref.read(settingsDirtyStateProvider).isDirty) {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return;
     if (action == UnsavedChangesAction.apply) {

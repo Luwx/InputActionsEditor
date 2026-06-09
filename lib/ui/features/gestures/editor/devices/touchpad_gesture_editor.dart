@@ -28,13 +28,8 @@ class TouchpadGestureEditor extends StatelessWidget {
     return GestureEditorLayout(
       location: GestureLocation(device: DeviceType.touchpad, index: index),
       sections: const [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FingerCountField(),
-            _TouchpadTriggerSection(),
-          ],
-        ),
+        FingerCountField(),
+        _TouchpadTriggerSection(),
       ],
     );
   }
@@ -63,6 +58,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
     return switch (kind) {
       TouchpadTriggerType.swipe => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
         children: [
           Builder(
             builder: (context) {
@@ -81,6 +77,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
       ),
       TouchpadTriggerType.pinch => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Builder(
             builder: (context) {
@@ -99,6 +96,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
       ),
       TouchpadTriggerType.rotate => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
           Builder(
             builder: (context) {
@@ -117,7 +115,11 @@ class _TouchpadTriggerSection extends ConsumerWidget {
       ),
       TouchpadTriggerType.circle => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [const CircleSection(), motion],
+        spacing: 12,
+        children: [
+          const CircleSection(),
+          motion,
+        ],
       ),
       TouchpadTriggerType.tap => const InfoSection(
         title: 'Tap',
@@ -138,6 +140,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
       ),
       TouchpadTriggerType.stroke => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
         children: [
           Builder(
             builder: (context) {
@@ -148,6 +151,7 @@ class _TouchpadTriggerSection extends ConsumerWidget {
               return StrokesField(
                 strokes: strokesField.value,
                 onStrokesChanged: strokesField.onChanged,
+                deviceType: DeviceType.touchpad,
               );
             },
           ),

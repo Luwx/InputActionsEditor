@@ -446,8 +446,6 @@ class _FakeConfigController extends ConfigController {
   final Config? saved;
 
   @override
-  Config? get savedConfig => saved;
-
-  @override
-  Future<Config> build() async => current;
+  Future<EditSession> build() async =>
+      EditSession(draft: current, saved: saved);
 }

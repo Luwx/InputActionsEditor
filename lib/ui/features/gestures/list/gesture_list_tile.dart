@@ -61,7 +61,9 @@ class GestureListTile extends ConsumerWidget {
     final gesture =
         gestureOverride ??
         ref.watch(
-          configControllerProvider.select((s) => gestureAt(s.value, location)),
+          configControllerProvider.select(
+            (s) => gestureAt(s.requireValue.draft, location),
+          ),
         );
     if (gesture == null) return const SizedBox.shrink();
     final common = gesture.common;
@@ -301,7 +303,12 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
           .join(' · '),
     PlasmaShortcutAction(:final shortcut) =>
       shortcut.isEmpty ? 'plasma shortcut' : shortcut,
+    ActivateWindowAction(:final windowId) =>
+      windowId.isEmpty ? 'activate window' : 'activate $windowId',
+    ReplaceTextAction() => l10n.actionReplaceTextFallbackSummary,
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
+    FunctionAction(:final expression) =>
+      expression.trim().isEmpty ? 'function' : expression.trim(),
     RawAction() => 'raw yaml',
   };
 }
@@ -367,8 +374,16 @@ class _GestureTypeIcon extends StatelessWidget {
         surface: surface,
         border: border,
       ),
-      WheelGesture() => _SymbolGestureIcon(
-        icon: FLucideIcons.loaderPinwheel,
+      WheelGesture(:final direction) => _SymbolGestureIcon(
+        icon: switch (direction) {
+          WheelDirection.up => FLucideIcons.chevronUp,
+          WheelDirection.down => FLucideIcons.chevronDown,
+          WheelDirection.left => FLucideIcons.chevronLeft,
+          WheelDirection.right => FLucideIcons.chevronRight,
+          WheelDirection.upDown => FLucideIcons.chevronsUpDown,
+          WheelDirection.leftRight => FLucideIcons.chevronsLeftRight,
+          WheelDirection.any => FLucideIcons.lifeBuoy,
+        },
         color: primary,
         surface: surface,
         border: border,
@@ -429,6 +444,7 @@ class _SymbolGestureIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(6),
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: 20, color: color),

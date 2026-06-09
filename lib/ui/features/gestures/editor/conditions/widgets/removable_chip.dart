@@ -5,18 +5,17 @@ class RemovableChip extends StatelessWidget {
   const RemovableChip({
     required this.label,
     required this.onRemove,
-    required this.colors,
-    required this.typography,
     super.key,
   });
 
   final String label;
   final VoidCallback onRemove;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
     return Container(
       padding: const EdgeInsets.only(left: 6, right: 4, top: 2, bottom: 2),
       decoration: BoxDecoration(

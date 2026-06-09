@@ -18,6 +18,12 @@ sealed class Condition with _$Condition {
     @Default([]) List<Condition> children,
   }) = ConditionGroup;
 
+  /// A JavaScript function evaluated by the daemon; the condition is satisfied
+  /// when it returns a truthy value. [expression] is the raw `() => ...`
+  /// source.
+  const factory Condition.function({required String expression}) =
+      FunctionCondition;
+
   /// Raw YAML string for conditions we cannot parse into the structured model.
   const factory Condition.raw({required String raw}) = RawCondition;
 }

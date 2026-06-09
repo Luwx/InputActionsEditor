@@ -16,6 +16,71 @@ import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 enum _DialogStep { device, type }
 
+Future<void> showAddGestureDialogForDevice(
+  BuildContext context,
+  DeviceType device,
+  void Function(DeviceType device, Gesture gesture) onGestureAdded,
+) async {
+  final types = _triggerTypesFor(device, context.l10n);
+  if (types.length == 1) {
+    onGestureAdded(device, types.single.factory());
+    return;
+  }
+  await _showTypePicker(context, device, onGestureAdded, types: types);
+}
+
+Future<void> _showTypePicker(
+  BuildContext context,
+  DeviceType device,
+  void Function(DeviceType, Gesture) onGestureAdded, {
+  List<_TriggerEntry>? types,
+}) async {
+  final availableTypes = types ?? _triggerTypesFor(device, context.l10n);
+  await showFDialog<void>(
+    context: context,
+    builder: (ctx, style, animation) => AppDialog(
+      animation: animation,
+      title: Text(
+        context.l10n.addGestureForDevice(
+          gestureDeviceLabel(device, context.l10n),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Text(
+              context.l10n.addGestureSelectTemplate(
+                gestureDeviceNoun(device, context.l10n),
+              ),
+              style: context.theme.typography.sm.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final type in availableTypes)
+              _TypeTile(
+                type: type,
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  onGestureAdded(device, type.factory());
+                },
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        FButton(
+          variant: .outline,
+          onPress: () => Navigator.of(ctx).pop(),
+          child: Text(context.l10n.actionCancel),
+        ),
+      ],
+    ),
+  );
+}
+
 class AddGestureButton extends StatelessWidget {
   const AddGestureButton({
     required this.deviceFilter,
@@ -31,14 +96,8 @@ class AddGestureButton extends StatelessWidget {
     return FButton(
       size: .sm,
       onPress: () => _show(context),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(FLucideIcons.plus),
-          const SizedBox(width: 4),
-          Text(context.l10n.addGestureTitle),
-        ],
-      ),
+      prefix: const Icon(FLucideIcons.plus),
+      child: Text(context.l10n.addGestureTitle),
     );
   }
 
@@ -46,7 +105,11 @@ class AddGestureButton extends StatelessWidget {
     if (deviceFilter == null) {
       await _showDeviceThenTypePicker(context);
     } else {
-      await _showTypePickerOrAdd(context, deviceFilter!);
+      await showAddGestureDialogForDevice(
+        context,
+        deviceFilter!,
+        onGestureAdded,
+      );
     }
   }
 
@@ -59,71 +122,7 @@ class AddGestureButton extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _showTypePickerOrAdd(BuildContext context, DeviceType device) {
-    final types = _triggerTypesFor(device, context.l10n);
-    if (types.length == 1) {
-      onGestureAdded(device, types.single.factory());
-      return Future.value();
-    }
-    return _showTypePicker(context, device, types: types);
-  }
-
-  Future<void> _showTypePicker(
-    BuildContext context,
-    DeviceType device, {
-    List<_TriggerEntry>? types,
-  }) async {
-    final availableTypes = types ?? _triggerTypesFor(device, context.l10n);
-    await showFDialog<void>(
-      context: context,
-      builder: (ctx, style, animation) => AppDialog(
-        animation: animation,
-        title: Text(
-          context.l10n.addGestureForDevice(
-            gestureDeviceLabel(device, context.l10n),
-          ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Text(
-                context.l10n.addGestureSelectTemplate(
-                  gestureDeviceNoun(device, context.l10n),
-                ),
-                style: context.theme.typography.sm.copyWith(
-                  color: context.theme.colors.mutedForeground,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final type in availableTypes)
-                _TypeTile(
-                  type: type,
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    onGestureAdded(device, type.factory());
-                  },
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          FButton(
-            variant: .outline,
-            onPress: () => Navigator.of(ctx).pop(),
-            child: Text(context.l10n.actionCancel),
-          ),
-        ],
-      ),
-    );
-  }
 }
-
-// ---------------------------------------------------------------------------
-// Single-dialog with shared-axis transition (no-filter case)
-// ---------------------------------------------------------------------------
 
 class _AddGestureDialogContent extends StatefulWidget {
   const _AddGestureDialogContent({
@@ -291,7 +290,7 @@ List<_TriggerEntry> _triggerTypesFor(
     (
       label: l10n.gestureTypeStroke,
       description: l10n.templateMouseStrokeDescription,
-      icon: Icons.gesture_outlined,
+      icon: FLucideIcons.lineSquiggle,
       factory: () => const StrokeGesture(common: _common),
     ),
     (
@@ -456,11 +455,11 @@ String _deviceDescription(DeviceType device, AppLocalizations l10n) =>
     };
 
 IconData _deviceIcon(DeviceType device) => switch (device) {
-  DeviceType.mouse => Icons.mouse_outlined,
-  DeviceType.keyboard => Icons.keyboard_outlined,
-  DeviceType.pointer => Icons.ads_click_outlined,
-  DeviceType.touchpad => Icons.pan_tool_outlined,
-  DeviceType.touchscreen => Icons.smartphone_outlined,
+  DeviceType.mouse => FLucideIcons.mouse,
+  DeviceType.keyboard => FLucideIcons.keyboard,
+  DeviceType.pointer => FLucideIcons.mousePointer2,
+  DeviceType.touchpad => FLucideIcons.touchpad,
+  DeviceType.touchscreen => FLucideIcons.monitor,
 };
 
 // ---------------------------------------------------------------------------
@@ -479,13 +478,10 @@ class _DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final gestureCount = _triggerTypesFor(device, l10n).length;
     return _OptionTile(
       icon: _deviceIcon(device),
       title: gestureDeviceLabel(device, l10n),
-      description:
-          '${_deviceDescription(device, l10n)} $gestureCount'
-          'gesture type${gestureCount == 1 ? '' : 's'} available.',
+      description: _deviceDescription(device, l10n),
       onTap: onTap,
     );
   }
@@ -541,8 +537,8 @@ class _OptionTile extends StatelessWidget {
             prefix: AnimatedContainer(
               duration: Durations.short2,
               curve: Easing.standard,
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: Color.lerp(
                   colors.secondary,
@@ -553,7 +549,7 @@ class _OptionTile extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                size: 16,
+                size: 24,
                 color: colors.secondaryForeground,
               ),
             ),

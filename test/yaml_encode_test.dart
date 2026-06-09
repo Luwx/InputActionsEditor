@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -186,6 +188,118 @@ void main() {
     });
   });
 
+  group('encodeConfig disabled comments', () {
+    test('disabled gestures are emitted as commented-out YAML', () {
+      const config = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              name: 'Disabled Press',
+              enabled: false,
+              actions: [
+                TriggerAction(action: CommandAction(command: 'echo hi')),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      final yaml = encodeConfig(config, '');
+      expect(yaml, contains('# - type: press'));
+      expect(yaml, contains('# name: Disabled Press'));
+      expect(yaml, contains('# enabled: false'));
+      expect(yaml, contains('# - command: echo hi'));
+    });
+
+    test('disabled actions are emitted as commented-out YAML', () {
+      const config = Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(
+                  enabled: false,
+                  action: CommandAction(command: 'echo hi'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      final yaml = encodeConfig(config, '');
+      expect(yaml, contains('- type: press'));
+      expect(yaml, contains('# - enabled: false'));
+      expect(yaml, contains('# command: echo hi'));
+      expect(yaml, isNot(contains('# - type: press')));
+    });
+
+    test(
+      'disabled action stays disabled when enclosing gesture is re-enabled',
+      () {
+        const disabledConfig = Config(
+          mouseGestures: [
+            PressGesture(
+              common: TriggerCommon(
+                enabled: false,
+                actions: [
+                  TriggerAction(
+                    enabled: false,
+                    action: CommandAction(command: 'echo hi'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final disabledYaml = encodeConfig(disabledConfig, '');
+        expect(disabledYaml, contains('# - type: press'));
+        expect(disabledYaml, contains('# # - enabled: false'));
+        final decoded = decodeConfig(disabledYaml);
+        expect(decoded.mouseGestures.single.common.enabled, isFalse);
+        expect(
+          decoded.mouseGestures.single.common.actions.single.enabled,
+          isFalse,
+        );
+
+        final gesture = decoded.mouseGestures.single;
+        final reenabled = decoded.copyWith(
+          mouseGestures: [
+            gesture.withCommon(gesture.common.copyWith(enabled: null)),
+          ],
+        );
+        final yaml = encodeConfig(reenabled, disabledYaml);
+        expect(yaml, contains('- type: press'));
+        expect(yaml, isNot(contains('# - type: press')));
+        expect(yaml, contains('# - enabled: false'));
+        expect(yaml, contains('# command: echo hi'));
+      },
+    );
+
+    test(
+      'disabling preserves already-commented properties as double comments',
+      () {
+        final decoded = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+''');
+
+        final yaml = encodeConfig(decoded, '''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+''');
+        expect(yaml, contains('#   # threshold: 42'));
+      },
+    );
+  });
+
   group('keyboard / pointer encoders skip mouse buttons', () {
     test('shortcut writes shortcut list, never mouse_buttons', () {
       expect(
@@ -362,8 +476,60 @@ void main() {
       );
     });
 
+    test('activate_window writes window id value', () {
+      expect(
+        actionToMap(
+          const ActivateWindowAction(
+            windowId: r'$initial_window_under_pointer_id',
+          ),
+        ),
+        {'activate_window': r'$initial_window_under_pointer_id'},
+      );
+    });
+
+    test('replace_text writes literal and command rules in order', () {
+      expect(
+        actionToMap(
+          const ReplaceTextAction(
+            rules: [
+              TextSubstitutionRule(
+                regex: ':calc{(.*)}',
+                replace: CommandTextReplacementValue(
+                  command: r'printf "$(qalc -t "$match_1")"',
+                ),
+              ),
+              TextSubstitutionRule(
+                regex: ':email',
+                replace: LiteralTextReplacementValue(
+                  text: 'example@example.com',
+                ),
+              ),
+            ],
+          ),
+        ),
+        {
+          'replace_text': [
+            {
+              'regex': ':calc{(.*)}',
+              'replace': {'command': r'printf "$(qalc -t "$match_1")"'},
+            },
+            {'regex': ':email', 'replace': 'example@example.com'},
+          ],
+        },
+      );
+    });
+
     test('sleep writes milliseconds', () {
       expect(actionToMap(const SleepAction(milliseconds: 750)), {'sleep': 750});
+    });
+
+    test('function action writes function expression', () {
+      expect(
+        actionToMap(
+          const FunctionAction(expression: '() => initialDirection = "l"'),
+        ),
+        {'function': '() => initialDirection = "l"'},
+      );
     });
 
     test('raw action writes __raw sentinel', () {
@@ -398,6 +564,17 @@ void main() {
           ),
         ),
         r'!$window_maximized == true',
+      );
+    });
+
+    test('function condition writes function map', () {
+      expect(
+        conditionToYaml(
+          const FunctionCondition(
+            expression: '() => initialDirection == null',
+          ),
+        ),
+        {'function': '() => initialDirection == null'},
       );
     });
 

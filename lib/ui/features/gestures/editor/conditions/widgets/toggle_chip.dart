@@ -6,16 +6,12 @@ class ToggleChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    required this.colors,
-    required this.typography,
     super.key,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {

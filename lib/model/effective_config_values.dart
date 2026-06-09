@@ -7,6 +7,10 @@ extension CommandActionEffectiveValuesX on CommandAction {
   bool get effectiveWait => wait ?? false;
 }
 
+extension TriggerActionEffectiveValuesX on TriggerAction {
+  bool get effectiveEnabled => enabled ?? true;
+}
+
 extension TriggerCommonEffectiveValuesX on TriggerCommon {
   bool get effectiveEnabled => enabled ?? true;
 

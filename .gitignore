@@ -35,6 +35,7 @@ migrate_working_dir/
 /coverage/
 /docs/
 /scripts/
+/packaging/
 
 # Generated Dart files in lib
 /lib/**/*.g.dart

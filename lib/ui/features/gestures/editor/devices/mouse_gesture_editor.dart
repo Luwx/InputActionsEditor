@@ -26,13 +26,8 @@ class MouseGestureEditor extends StatelessWidget {
     return GestureEditorLayout(
       location: GestureLocation(device: DeviceType.mouse, index: index),
       sections: const [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _MouseTriggerSection(),
-            MouseButtonsField(),
-          ],
-        ),
+        _MouseTriggerSection(),
+        MouseButtonsField(),
       ],
     );
   }

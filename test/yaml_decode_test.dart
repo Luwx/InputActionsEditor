@@ -229,6 +229,43 @@ mouse:
 ''');
       expect(c.mouseGestures.single.common.threshold, '42');
     });
+
+    test('commented-out gesture parses as disabled', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Disabled Press
+    #   # threshold: 42
+    #   actions:
+    #     - command: echo hi
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.name, 'Disabled Press');
+      expect(common.enabled, isFalse);
+      expect(common.threshold, isNull);
+      expect(
+        common.actions.single.action,
+        const CommandAction(command: 'echo hi'),
+      );
+    });
+
+    test('commented-out gesture preserves a nested disabled action', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    # - type: press
+    #   enabled: false
+    #   actions:
+    #     # - enabled: false
+    #       # command: echo hi
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.enabled, isFalse);
+      final action = common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(action.action, const CommandAction(command: 'echo hi'));
+    });
   });
 
   group('decodeConfig - conditions', () {
@@ -309,6 +346,20 @@ mouse:
       expect(
         c.mouseGestures.single.common.conditions,
         const RawCondition(raw: 'something_unparseable'),
+      );
+    });
+
+    test('function condition map becomes a FunctionCondition', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      conditions:
+        function: () => initialDirection == null
+''');
+      expect(
+        c.mouseGestures.single.common.conditions,
+        const FunctionCondition(expression: '() => initialDirection == null'),
       );
     });
 
@@ -394,6 +445,45 @@ mouse:
   });
 
   group('decodeConfig - actions', () {
+    test('commented-out action parses as disabled', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        # - command: echo hi
+        #   wait: true
+''');
+      final action = c.mouseGestures.single.common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(
+        action.action,
+        const CommandAction(command: 'echo hi', wait: true),
+      );
+    });
+
+    test('commented-out action at key-level indent parses as disabled', () {
+      // Comment aligned with the "actions:" key instead of the list items.
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: stroke
+      strokes: [ 'MWQAzzIAZAA=' ]
+      mouse_buttons: [ right ]
+
+      actions:
+        - activate_window: $initial_window_under_pointer_id
+      # - sleep: 1
+        - input:
+            - keyboard: [ home ]
+        - activate_window: $previous_window_id
+''');
+      expect(c.mouseGestures.single.common.actions.length, 4);
+      final sleepAction = c.mouseGestures.single.common.actions[1];
+      expect(sleepAction.enabled, isFalse);
+      expect(sleepAction.action, const SleepAction(milliseconds: 1));
+    });
+
     test('command action with wait', () {
       final c = decodeConfig('''
 mouse:
@@ -515,6 +605,37 @@ mouse:
       );
     });
 
+    test('replace_text parses literal and command rules in order', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - replace_text:
+            - regex: :calc{(.*)}
+              replace:
+                command: printf "$(qalc -t "$match_1")"
+            - regex: :email
+              replace: example@example.com
+''');
+      final action =
+          c.mouseGestures.single.common.actions.single.action
+              as ReplaceTextAction;
+
+      expect(action.rules, [
+        const TextSubstitutionRule(
+          regex: ':calc{(.*)}',
+          replace: CommandTextReplacementValue(
+            command: r'printf "$(qalc -t "$match_1")"',
+          ),
+        ),
+        const TextSubstitutionRule(
+          regex: ':email',
+          replace: LiteralTextReplacementValue(text: 'example@example.com'),
+        ),
+      ]);
+    });
+
     test('sleep action parses milliseconds', () {
       final c = decodeConfig('''
 mouse:
@@ -526,6 +647,60 @@ mouse:
       expect(
         c.mouseGestures.single.common.actions.single.action,
         const SleepAction(milliseconds: 750),
+      );
+    });
+
+    test('function action parses expression', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - function: () => initialDirection = "l"
+''');
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const FunctionAction(expression: '() => initialDirection = "l"'),
+      );
+    });
+
+    test('function action with a function condition (both levels)', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: update
+          interval: -1
+          conditions:
+            function: () => initialDirection == null
+          function: () => initialDirection = "l"
+''');
+      final ta = c.mouseGestures.single.common.actions.single;
+      expect(
+        ta.action,
+        const FunctionAction(expression: '() => initialDirection = "l"'),
+      );
+      expect(
+        ta.conditions,
+        const FunctionCondition(expression: '() => initialDirection == null'),
+      );
+      expect(ta.interval, '-1');
+    });
+
+    test('activate_window action parses window id value', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - activate_window: $initial_window_under_pointer_id
+''');
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const ActivateWindowAction(
+          windowId: r'$initial_window_under_pointer_id',
+        ),
       );
     });
 

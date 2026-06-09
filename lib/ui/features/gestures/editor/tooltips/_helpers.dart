@@ -84,7 +84,6 @@ class _OutcomeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
       children: [
@@ -92,18 +91,20 @@ class _OutcomeRow extends StatelessWidget {
           padding: const EdgeInsets.only(top: 1),
           child: Icon(icon, size: 11, color: iconColor),
         ),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: '$label  ',
-                style: t.xs.copyWith(fontWeight: FontWeight.w600),
-              ),
-              TextSpan(
-                text: description,
-                style: t.xs.copyWith(color: colors.mutedForeground),
-              ),
-            ],
+        Flexible(
+          child: RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label  ',
+                  style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: description,
+                  style: t.xs.copyWith(color: colors.mutedForeground),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -395,6 +396,27 @@ InlineSpan _monoSpan(String text, FColors colors, FTypography t) {
       child: Text(
         text,
         style: t.xs.copyWith(fontFamily: 'monospace'),
+      ),
+    ),
+  );
+}
+
+InlineSpan _errorMonoSpan(String text, FColors colors, FTypography t) {
+  return WidgetSpan(
+    alignment: PlaceholderAlignment.baseline,
+    baseline: TextBaseline.alphabetic,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: colors.destructive.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        text,
+        style: t.xs.copyWith(
+          fontFamily: 'monospace',
+          color: colors.destructive,
+        ),
       ),
     ),
   );

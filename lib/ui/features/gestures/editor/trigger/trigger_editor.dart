@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
@@ -13,23 +14,28 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class TriggerEditor extends ConsumerWidget {
+class TriggerEditor extends HookConsumerWidget {
   const TriggerEditor({
     required this.sections,
-    required this.hasAdvanced,
+    required this.initialAdvancedFields,
     this.dirtyState,
     this.onRevert,
     super.key,
   });
 
   final List<Widget> sections;
-  final bool hasAdvanced;
+  final Set<TriggerAdvancedField> initialAdvancedFields;
   final DirtyMarkState? dirtyState;
   final VoidCallback? onRevert;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = context.gestureLocation;
+    final pinnedFields = useState(initialAdvancedFields);
+    final optionsExpanded = useState(false);
+    final accordionFields = TriggerAdvancedField.values
+        .where((field) => !pinnedFields.value.contains(field))
+        .toList();
     final conflicts = ref
         .watch(conflictReportProvider)
         .forGesture(location.device, location.index);
@@ -38,6 +44,7 @@ class TriggerEditor extends ConsumerWidget {
       color: context.theme.colors.card.withValues(alpha: 0.55),
       titleWidget: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           UnsavedLabel(
             state: dirtyState,
@@ -66,10 +73,29 @@ class TriggerEditor extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        spacing: 16,
         children: [
-          for (final section in sections) section,
+          // for (final section in sections) section,
+          Column(
+            // mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 16,
+            children: sections,
+          ),
+          if (pinnedFields.value.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 4),
+              child: TriggerAdvancedFields(fields: pinnedFields.value),
+            ),
           FAccordion(
             key: ValueKey(location.index),
+            control: FAccordionControl.lifted(
+              expanded: (index) => index == 0 && optionsExpanded.value,
+              onChange: (index, exp) {
+                if (index != 0 || optionsExpanded.value == exp) return;
+                optionsExpanded.value = exp;
+              },
+            ),
             style: const .delta(
               dividerStyle: .delta(
                 color: Colors.transparent,
@@ -79,8 +105,9 @@ class TriggerEditor extends ConsumerWidget {
             children: [
               FAccordionItem(
                 title: Text(context.l10n.triggerOtherOptions),
-                initiallyExpanded: hasAdvanced,
-                child: const TriggerAdvancedFields(),
+                child: TriggerAdvancedFields(
+                  fields: accordionFields,
+                ),
               ),
             ],
           ),

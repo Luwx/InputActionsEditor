@@ -209,10 +209,28 @@ class _TreeTableState extends State<TreeTable> {
         truncateDeepestGuideBelowConnector: isLast,
         child: Padding(
           padding: _rowPadding,
-          child: Row(children: _leafCells(leaf, layout, depth)),
+          child: Row(
+            children: leaf.content != null
+                ? _fullWidthLeaf(leaf, depth)
+                : _leafCells(leaf, layout, depth),
+          ),
         ),
       ),
     );
+  }
+
+  /// Lays a [TreeTableLeaf.content] row across the full data area (after the
+  /// indent), keeping the fixed trailing action slot aligned with other rows.
+  List<Widget> _fullWidthLeaf(TreeTableLeaf leaf, int depth) {
+    return [
+      SizedBox(width: _style.indentWidth(depth)),
+      Expanded(child: leaf.content!),
+      if (widget.trailingWidth > 0)
+        SizedBox(
+          width: widget.trailingWidth,
+          child: leaf.trailing ?? const SizedBox.shrink(),
+        ),
+    ];
   }
 
   List<Widget> _leafCells(

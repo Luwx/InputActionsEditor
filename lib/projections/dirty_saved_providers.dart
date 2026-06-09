@@ -12,10 +12,10 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
-final savedConfigProvider = Provider<Config?>((ref) {
-  ref.watch(configControllerProvider);
-  return ref.read(configControllerProvider.notifier).savedConfig;
-});
+final savedConfigProvider = Provider<Config?>(
+  (ref) =>
+      ref.watch(configControllerProvider.select((s) => s.requireValue.saved)),
+);
 
 final ProviderFamily<Gesture?, GestureLocation> savedGestureProvider =
     Provider.family<Gesture?, GestureLocation>(

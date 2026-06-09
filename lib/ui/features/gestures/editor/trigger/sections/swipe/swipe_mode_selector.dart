@@ -146,7 +146,7 @@ class SwipeModeSelector extends HookWidget {
             );
           },
         ),
-        const SizedBox(height: 12),
+        // const SizedBox(height: 12),
       ],
     );
   }

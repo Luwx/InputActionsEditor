@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/data/yaml_codec.dart' show decodeConfig;
 import 'package:input_actions_editor/data/yaml_io.dart' as yaml_io;
 import 'package:input_actions_editor/model/config.dart';
 
@@ -22,4 +23,9 @@ class ConfigRepository {
 
   Future<void> saveToPath(Config config, String originalText, String path) =>
       yaml_io.saveConfigToPath(config, originalText, path);
+
+  Config decodeFromText(String text) => decodeConfig(text);
+
+  String encodeToText(Config config, String originalText) =>
+      yaml_io.encodeConfig(config, originalText);
 }

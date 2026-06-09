@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -38,10 +39,18 @@ class NavController extends Notifier<NavState> {
   );
 
   @override
-  NavState build() => const NavState(
-    history: [GesturesDestination()],
-    cursor: 0,
-  );
+  NavState build() {
+    final initial = ref.read(initialAppStateProvider);
+    return NavState(
+      history: [
+        GesturesDestination(
+          filter: initial.gestureFilter,
+          open: initial.selectedGesture,
+        ),
+      ],
+      cursor: 0,
+    );
+  }
 
   /// Navigate to [d], optionally replacing the current history entry.
   ///

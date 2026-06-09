@@ -1,0 +1,47 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/enums.dart';
+
+part 'app_state.freezed.dart';
+
+@freezed
+abstract class AppState with _$AppState {
+  const factory AppState({
+    DeviceType? gestureFilter,
+    GestureLocation? selectedGesture,
+    @Default(0.3) double gestureListWidth,
+  }) = _AppState;
+
+  const AppState._();
+
+  factory AppState.fromJson(Map<String, dynamic> json) {
+    final filterName = json['gesture_filter'] as String?;
+    final filter = filterName != null
+        ? DeviceType.values.where((v) => v.name == filterName).firstOrNull
+        : null;
+
+    final deviceName = json['gesture_device'] as String?;
+    final device = deviceName != null
+        ? DeviceType.values.where((v) => v.name == deviceName).firstOrNull
+        : null;
+    final index = json['gesture_index'] as int?;
+    final selectedGesture = device != null && index != null
+        ? GestureLocation(device: device, index: index)
+        : null;
+
+    return AppState(
+      gestureFilter: filter,
+      selectedGesture: selectedGesture,
+      gestureListWidth: (json['gesture_list_width'] as num?)?.toDouble() ?? 0.3,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (gestureFilter != null) 'gesture_filter': gestureFilter!.name,
+    if (selectedGesture != null) ...{
+      'gesture_device': selectedGesture!.device.name,
+      'gesture_index': selectedGesture!.index,
+    },
+    'gesture_list_width': gestureListWidth,
+  };
+}

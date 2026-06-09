@@ -94,17 +94,11 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('en')];
 
-  /// No description provided for @appName.
+  /// No description provided for @actionNew.
   ///
   /// In en, this message translates to:
-  /// **'Input Actions'**
-  String get appName;
-
-  /// No description provided for @appSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Editor'**
-  String get appSubtitle;
+  /// **'New'**
+  String get actionNew;
 
   /// No description provided for @actionLoad.
   ///
@@ -129,6 +123,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard changes'**
   String get actionDiscardChanges;
+
+  /// No description provided for @actionLoadFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from clipboard'**
+  String get actionLoadFromClipboard;
+
+  /// No description provided for @actionCopyToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to clipboard'**
+  String get actionCopyToClipboard;
 
   /// No description provided for @actionOk.
   ///
@@ -844,6 +850,66 @@ abstract class AppLocalizations {
   /// **'Config saved.'**
   String get configSaveSuccess;
 
+  /// No description provided for @configCopyToClipboardSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Config copied to clipboard.'**
+  String get configCopyToClipboardSuccess;
+
+  /// No description provided for @configLoadClipboardError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not parse clipboard YAML.'**
+  String get configLoadClipboardError;
+
+  /// No description provided for @configLoadClipboardDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get configLoadClipboardDetailsButton;
+
+  /// No description provided for @configLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your configuration'**
+  String get configLoadFailedTitle;
+
+  /// No description provided for @actionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get actionRetry;
+
+  /// No description provided for @actionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get actionDetails;
+
+  /// No description provided for @dialogClipboardLoadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from Clipboard'**
+  String get dialogClipboardLoadTitle;
+
+  /// No description provided for @dialogClipboardLoadBody.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to load the clipboard config?'**
+  String get dialogClipboardLoadBody;
+
+  /// No description provided for @dialogClipboardLoadActionNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New config'**
+  String get dialogClipboardLoadActionNew;
+
+  /// No description provided for @dialogClipboardLoadActionMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get dialogClipboardLoadActionMerge;
+
   /// No description provided for @gestureCopyYamlSuccess.
   ///
   /// In en, this message translates to:
@@ -1156,6 +1222,72 @@ abstract class AppLocalizations {
   /// **'Could not connect to the Input Actions daemon.'**
   String get strokesRecordingDaemonError;
 
+  /// No description provided for @strokesInstructionsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions'**
+  String get strokesInstructionsHeader;
+
+  /// No description provided for @strokesMouseStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesMouseStep1;
+
+  /// No description provided for @strokesMouseStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw the stroke'**
+  String get strokesMouseStep2;
+
+  /// No description provided for @strokesMouseStep3WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait'**
+  String get strokesMouseStep3WaitPart;
+
+  /// No description provided for @strokesMouseStep3Suffix.
+  ///
+  /// In en, this message translates to:
+  /// **' a moment after stopping'**
+  String get strokesMouseStep3Suffix;
+
+  /// No description provided for @strokesTouchpadStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesTouchpadStep1;
+
+  /// No description provided for @strokesTouchpadStep2Prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a stroke on the touchpad, then '**
+  String get strokesTouchpadStep2Prefix;
+
+  /// No description provided for @strokesTouchpadStep2WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'wait'**
+  String get strokesTouchpadStep2WaitPart;
+
+  /// No description provided for @strokesTouchscreenStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Press Record'**
+  String get strokesTouchscreenStep1;
+
+  /// No description provided for @strokesTouchscreenStep2Prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a stroke on the screen, then '**
+  String get strokesTouchscreenStep2Prefix;
+
+  /// No description provided for @strokesTouchscreenStep2WaitPart.
+  ///
+  /// In en, this message translates to:
+  /// **'wait'**
+  String get strokesTouchscreenStep2WaitPart;
+
   /// No description provided for @resetGestureDefaultsTooltip.
   ///
   /// In en, this message translates to:
@@ -1276,6 +1408,30 @@ abstract class AppLocalizations {
   /// **'Trigger a KDE global shortcut'**
   String get actionMetaPlasmaSubtitle;
 
+  /// No description provided for @actionMetaActivateWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate window'**
+  String get actionMetaActivateWindowLabel;
+
+  /// No description provided for @actionMetaActivateWindowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus a window by ID'**
+  String get actionMetaActivateWindowSubtitle;
+
+  /// No description provided for @actionMetaReplaceTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace text'**
+  String get actionMetaReplaceTextLabel;
+
+  /// No description provided for @actionMetaReplaceTextSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace text near the cursor using regex rules'**
+  String get actionMetaReplaceTextSubtitle;
+
   /// No description provided for @actionMetaSleepLabel.
   ///
   /// In en, this message translates to:
@@ -1287,6 +1443,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause before continuing'**
   String get actionMetaSleepSubtitle;
+
+  /// No description provided for @actionMetaFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get actionMetaFunctionLabel;
+
+  /// No description provided for @actionMetaFunctionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a JavaScript function'**
+  String get actionMetaFunctionSubtitle;
 
   /// No description provided for @actionMetaRawLabel.
   ///
@@ -1365,6 +1533,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wait up to 30 seconds for the command to exit before executing the next action in the sequence.'**
   String get actionWaitForCompletionTooltip;
+
+  /// No description provided for @actionActivateWindowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Window ID'**
+  String get actionActivateWindowLabel;
+
+  /// No description provided for @actionActivateWindowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. \$initial_window_under_pointer_id'**
+  String get actionActivateWindowHint;
+
+  /// No description provided for @actionActivateWindowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Window ID to activate. A plain value is treated as a literal window ID. An exact \$name value is resolved through Input Actions\' Value parser if the variable is registered when the config is loaded; the variable\'s value is read when the action runs. This is not string interpolation, so \$name text is treated as one literal string and will not combine a variable with text.'**
+  String get actionActivateWindowTooltip;
+
+  /// No description provided for @actionActivateWindowVariablePickerTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a window ID variable'**
+  String get actionActivateWindowVariablePickerTooltip;
+
+  /// No description provided for @actionReplaceTextRulesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement rules'**
+  String get actionReplaceTextRulesLabel;
+
+  /// No description provided for @actionReplaceTextRulesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules are checked in order. The first regex matching the surrounding text at the cursor is used.'**
+  String get actionReplaceTextRulesHelp;
+
+  /// No description provided for @actionReplaceTextAddRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Add rule'**
+  String get actionReplaceTextAddRule;
+
+  /// No description provided for @actionReplaceTextRuleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rule {index}'**
+  String actionReplaceTextRuleLabel(int index);
+
+  /// No description provided for @actionReplaceTextRegexLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Regex'**
+  String get actionReplaceTextRegexLabel;
+
+  /// No description provided for @actionReplaceTextRegexHint.
+  ///
+  /// In en, this message translates to:
+  /// **':calc(.*)'**
+  String get actionReplaceTextRegexHint;
+
+  /// No description provided for @actionReplaceTextReplacementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement'**
+  String get actionReplaceTextReplacementLabel;
+
+  /// No description provided for @actionReplaceTextTextMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get actionReplaceTextTextMode;
+
+  /// No description provided for @actionReplaceTextCommandMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get actionReplaceTextCommandMode;
+
+  /// No description provided for @actionReplaceTextTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'example@example.com'**
+  String get actionReplaceTextTextHint;
+
+  /// No description provided for @actionReplaceTextCommandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'printf \"\$(qalc -t \"\$match_1\")\"'**
+  String get actionReplaceTextCommandHint;
+
+  /// No description provided for @actionReplaceTextRuleSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 rule: {regex}} other{{count} rules: {regex}}}'**
+  String actionReplaceTextRuleSummary(int count, String regex);
+
+  /// No description provided for @actionReplaceTextFallbackSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'replace text'**
+  String get actionReplaceTextFallbackSummary;
+
+  /// No description provided for @valueStringRuntimeVariableHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a literal ID or exactly \$name. Unknown variables are not blocked, but they must exist in Input Actions when the config is loaded.'**
+  String get valueStringRuntimeVariableHelp;
+
+  /// No description provided for @tooltip_actionActivateWindow_bodyPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use exactly '**
+  String get tooltip_actionActivateWindow_bodyPrefix;
+
+  /// No description provided for @tooltip_actionActivateWindow_bodySuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' to focus the window stored in the respective runtime variable.'**
+  String get tooltip_actionActivateWindow_bodySuffix;
+
+  /// No description provided for @tooltip_actionActivateWindow_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable'**
+  String get tooltip_actionActivateWindow_sectionLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_literalExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'literal window ID'**
+  String get tooltip_actionActivateWindow_literalExLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_variableExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'window under the pointer when the gesture started'**
+  String get tooltip_actionActivateWindow_variableExLabel;
+
+  /// No description provided for @tooltip_actionActivateWindow_unknownNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown variables are allowed, but only registered variables resolve at config load.'**
+  String get tooltip_actionActivateWindow_unknownNote;
+
+  /// No description provided for @tooltip_actionActivateWindow_noInterpolationPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'No interpolation: '**
+  String get tooltip_actionActivateWindow_noInterpolationPrefix;
+
+  /// No description provided for @tooltip_actionActivateWindow_noInterpolationSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' is one literal string.'**
+  String get tooltip_actionActivateWindow_noInterpolationSuffix;
+
+  /// No description provided for @tooltip_actionReplaceText_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches the surrounding text reported by the focused application and replaces the matched text at the cursor.'**
+  String get tooltip_actionReplaceText_body;
+
+  /// No description provided for @tooltip_actionReplaceText_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Examples'**
+  String get tooltip_actionReplaceText_sectionLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_literalExCode.
+  ///
+  /// In en, this message translates to:
+  /// **':email  ->  example@example.com'**
+  String get tooltip_actionReplaceText_literalExCode;
+
+  /// No description provided for @tooltip_actionReplaceText_literalExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'simple literal replacement'**
+  String get tooltip_actionReplaceText_literalExLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_commandExCode.
+  ///
+  /// In en, this message translates to:
+  /// **':calc 2+2  ->  command uses \$match_1'**
+  String get tooltip_actionReplaceText_commandExCode;
+
+  /// No description provided for @tooltip_actionReplaceText_commandExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'compute replacement from the first capture'**
+  String get tooltip_actionReplaceText_commandExLabel;
+
+  /// No description provided for @tooltip_actionReplaceText_matchNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture groups are exposed to command values as \$match_0, \$match_1, and so on.'**
+  String get tooltip_actionReplaceText_matchNote;
+
+  /// No description provided for @tooltip_actionReplaceText_cursorNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A rule is eligible only when the regex match ends at the current cursor position.'**
+  String get tooltip_actionReplaceText_cursorNote;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the command through /bin/sh -c and uses stdout as the replacement text.'**
+  String get tooltip_actionReplaceTextCommand_body;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example command'**
+  String get tooltip_actionReplaceTextCommand_exampleLabel;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleCode.
+  ///
+  /// In en, this message translates to:
+  /// **'printf \"\$(qalc -t \"\$match_1\")\"'**
+  String get tooltip_actionReplaceTextCommand_exampleCode;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_exampleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'For a calculator rule, \$match_1 can be 2+2. qalc evaluates it and printf prints the result without adding its own newline.'**
+  String get tooltip_actionReplaceTextCommand_exampleDesc;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_variablesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variables'**
+  String get tooltip_actionReplaceTextCommand_variablesLabel;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_match0.
+  ///
+  /// In en, this message translates to:
+  /// **'\$match_0 is the whole regex match.'**
+  String get tooltip_actionReplaceTextCommand_match0;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_matchN.
+  ///
+  /// In en, this message translates to:
+  /// **'\$match_1 through \$match_4 are capture groups. Missing captures are empty.'**
+  String get tooltip_actionReplaceTextCommand_matchN;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_envNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Referenced Input Actions variables are injected into the process environment, so shell syntax like \"\$match_1\" expands normally.'**
+  String get tooltip_actionReplaceTextCommand_envNote;
+
+  /// No description provided for @tooltip_actionReplaceTextCommand_stdoutNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Use tools like printf or command flags such as -n when you do not want a trailing newline.'**
+  String get tooltip_actionReplaceTextCommand_stdoutNote;
 
   /// No description provided for @addGestureTitle.
   ///
@@ -2890,6 +3316,36 @@ abstract class AppLocalizations {
   /// **'Available buttons: left, right, middle, back, forward.'**
   String get tooltip_buttonSequence_noteButtons;
 
+  /// No description provided for @tooltip_recordingConvertShortcut_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrites the recording as named chord notation, e.g. ctrl+shift+t or a, s, d.'**
+  String get tooltip_recordingConvertShortcut_body;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_enabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get tooltip_recordingConvertShortcut_enabledLabel;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_enabledDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'all keys in each group are pressed before any are released'**
+  String get tooltip_recordingConvertShortcut_enabledDesc;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_disabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get tooltip_recordingConvertShortcut_disabledLabel;
+
+  /// No description provided for @tooltip_recordingConvertShortcut_disabledDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'presses and releases interleave, use the token format instead'**
+  String get tooltip_recordingConvertShortcut_disabledDesc;
+
   /// No description provided for @dialogUnsavedChangesTitle.
   ///
   /// In en, this message translates to:
@@ -2907,6 +3363,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get actionApply;
+
+  /// No description provided for @addAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Action'**
+  String get addAction;
 
   /// No description provided for @dialogAddActionTitle.
   ///
@@ -3040,6 +3502,18 @@ abstract class AppLocalizations {
   /// **'500'**
   String get actionSleepDurationHint;
 
+  /// No description provided for @actionFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get actionFunctionLabel;
+
+  /// No description provided for @actionFunctionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'() => initialDirection = \"l\"'**
+  String get actionFunctionHint;
+
   /// No description provided for @groupMenuRename.
   ///
   /// In en, this message translates to:
@@ -3129,6 +3603,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop & Add'**
   String get inputKeySequenceStopAdd;
+
+  /// No description provided for @inputKeySequenceRecordingConvertShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Chord format'**
+  String get inputKeySequenceRecordingConvertShortcut;
+
+  /// No description provided for @inputKeySequenceRecordingClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get inputKeySequenceRecordingClear;
+
+  /// No description provided for @inputKeySequenceBrowseTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse available keys'**
+  String get inputKeySequenceBrowseTip;
+
+  /// No description provided for @inputKeyBrowseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search keys…'**
+  String get inputKeyBrowseHint;
+
+  /// No description provided for @inputKeyBrowseEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching keys'**
+  String get inputKeyBrowseEmpty;
 
   /// No description provided for @inputButtonSequenceLabel.
   ///
@@ -3315,6 +3819,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collection of conditions.'**
   String get conditionMenuAddGroupSubtitle;
+
+  /// No description provided for @conditionMenuAddFunctionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get conditionMenuAddFunctionTitle;
+
+  /// No description provided for @conditionMenuAddFunctionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'JavaScript expression evaluated at runtime.'**
+  String get conditionMenuAddFunctionSubtitle;
+
+  /// No description provided for @conditionFunctionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function'**
+  String get conditionFunctionLabel;
+
+  /// No description provided for @conditionFunctionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'() => initialDirection == \"l\"'**
+  String get conditionFunctionHint;
+
+  /// No description provided for @tooltip_function_exampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Example'**
+  String get tooltip_function_exampleLabel;
+
+  /// No description provided for @tooltip_function_apisNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Call built-in APIs with require() \"(inputactions/core, inputactions/fs)\" and console.'**
+  String get tooltip_function_apisNote;
+
+  /// No description provided for @tooltip_function_callablePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be a callable arrow function: '**
+  String get tooltip_function_callablePrefix;
+
+  /// No description provided for @tooltip_conditionFunction_body.
+  ///
+  /// In en, this message translates to:
+  /// **'A JavaScript function evaluated every time this condition is checked. It passes when the function returns a truthy value — use it for logic the built-in variable conditions can\'t express.'**
+  String get tooltip_conditionFunction_body;
+
+  /// No description provided for @tooltip_conditionFunction_exampleAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Passes while the script variable equals \"l\"'**
+  String get tooltip_conditionFunction_exampleAnnotation;
+
+  /// No description provided for @tooltip_conditionFunction_variablesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Read persistent script variables to track state across gestures.'**
+  String get tooltip_conditionFunction_variablesNote;
+
+  /// No description provided for @tooltip_actionFunction_body.
+  ///
+  /// In en, this message translates to:
+  /// **'A JavaScript function run for its side effects when this action executes. Its return value is ignored.'**
+  String get tooltip_actionFunction_body;
+
+  /// No description provided for @tooltip_actionFunction_exampleAnnotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets a script variable other actions and conditions can read'**
+  String get tooltip_actionFunction_exampleAnnotation;
+
+  /// No description provided for @tooltip_actionFunction_variablesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Commonly used to set or update persistent script variables.'**
+  String get tooltip_actionFunction_variablesNote;
+
+  /// No description provided for @tooltip_actionFunction_watchdogNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-running loops are interrupted by a watchdog.'**
+  String get tooltip_actionFunction_watchdogNote;
+
+  /// No description provided for @conditionVariableSelectorOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to open selector.'**
+  String get conditionVariableSelectorOpenHint;
 
   /// No description provided for @renameGroupHint.
   ///

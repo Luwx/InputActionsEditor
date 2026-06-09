@@ -57,7 +57,6 @@ class _VariablePickerDialog extends HookWidget {
     }
 
     final colors = context.theme.colors;
-    final typography = context.theme.typography;
     final filteredList = filtered();
 
     return Dialog(
@@ -73,8 +72,6 @@ class _VariablePickerDialog extends HookWidget {
           children: [
             _SearchBar(
               onChanged: (v) => query.value = v,
-              colors: colors,
-              typography: typography,
             ),
             Divider(color: colors.border, height: 1),
             Flexible(
@@ -88,11 +85,7 @@ class _VariablePickerDialog extends HookWidget {
                   var offset = 0;
                   for (final entry in filteredList) {
                     if (index == offset) {
-                      return _GroupHeader(
-                        group: entry.group,
-                        colors: colors,
-                        typography: typography,
-                      );
+                      return _GroupHeader(group: entry.group);
                     }
                     offset++;
                     if (index < offset + entry.variables.length) {
@@ -102,8 +95,6 @@ class _VariablePickerDialog extends HookWidget {
                         groupIcon: entry.group.icon,
                         isSelected: v.name == currentVariable,
                         onTap: () => Navigator.of(ctx).pop(v),
-                        colors: colors,
-                        typography: typography,
                       );
                     }
                     offset += entry.variables.length;
@@ -122,16 +113,15 @@ class _VariablePickerDialog extends HookWidget {
 class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.onChanged,
-    required this.colors,
-    required this.typography,
   });
 
   final ValueChanged<String> onChanged;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -168,18 +158,15 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _GroupHeader extends StatelessWidget {
-  const _GroupHeader({
-    required this.group,
-    required this.colors,
-    required this.typography,
-  });
+  const _GroupHeader({required this.group});
 
   final VariableGroup group;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(
@@ -206,26 +193,25 @@ class _VariableItem extends StatelessWidget {
     required this.groupIcon,
     required this.isSelected,
     required this.onTap,
-    required this.colors,
-    required this.typography,
   });
 
   final VariableInfo info;
   final IconData groupIcon;
   final bool isSelected;
   final VoidCallback onTap;
-  final FColors colors;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
     return FTooltip(
       tipBuilder: (context, controller) => Text(
         '${info.localizedLabel(context.l10n)}\n'
         'Type: ${info.type.typeName(context.l10n)}',
       ),
       child: FItem(
-        prefix: _TypeBadge(type: info.type, typography: typography),
+        prefix: _TypeBadge(type: info.type),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -250,13 +236,14 @@ class _VariableItem extends StatelessWidget {
 }
 
 class _TypeBadge extends StatelessWidget {
-  const _TypeBadge({required this.type, required this.typography});
+  const _TypeBadge({required this.type});
 
   final VarType type;
-  final FTypography typography;
 
   @override
   Widget build(BuildContext context) {
+    final typography = context.theme.typography;
+
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
