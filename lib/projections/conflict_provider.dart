@@ -57,7 +57,7 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
     // control the cadence instead of tracking the config one-for-one.
     ref
       ..onDispose(() => _timer?.cancel())
-      ..listen(configControllerProvider, (_, _) => _onConfigChanged());
+      ..listen(draftConfigProvider, (_, _) => _onConfigChanged());
     return _compute();
   }
 
