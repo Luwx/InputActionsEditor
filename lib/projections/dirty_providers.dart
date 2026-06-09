@@ -41,6 +41,12 @@ final canDiscardChangesProvider = Provider<bool>(
   ),
 );
 
+final isDirtyProvider = Provider<bool>(
+  (ref) => ref.watch(
+    configControllerProvider.select((s) => s.value?.isDirty ?? false),
+  ),
+);
+
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
     Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {
       final currentRead = _readLens(
