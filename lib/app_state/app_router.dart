@@ -87,9 +87,8 @@ extension AppNavigation on BuildContext {
   }
 
   void redirectToGesture(DeviceType device, int index) {
-    _container
-        .read(gestureRedirectTargetProvider.notifier)
-        .state = GestureLocation(device: device, index: index);
+    _container.read(gestureRedirectTargetProvider.notifier).state =
+        GestureLocation(device: device, index: index);
     selectGesture(device, index);
   }
 
