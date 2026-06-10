@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/edit/edit_ids.dart'
+    show assignEditIds;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -8,21 +12,22 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 
 void main() {
   group('action lenses', () {
-    const location = ActionLocation(
-      gesture: GestureLocation(device: DeviceType.mouse, index: 0),
-      actionIndex: 0,
-    );
-
-    const config = Config(
-      mouseGestures: [
-        PressGesture(
-          common: TriggerCommon(
-            actions: [
-              TriggerAction(action: CommandAction(command: 'old')),
-            ],
+    final config = assignEditIds(
+      const Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(action: CommandAction(command: 'old')),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+    final location = ActionLocation(
+      gesture: gestureLocationAt(config, DeviceType.mouse, 0)!,
+      actionIndex: 0,
     );
 
     test('actionCommandLens reads and writes a command action', () {
@@ -47,27 +52,29 @@ void main() {
   });
 
   group('generated gesture lenses', () {
-    const location = GestureLocation(device: DeviceType.mouse, index: 0);
-    const config = Config(
-      mouseGestures: [
-        PressGesture(
-          common: TriggerCommon(
-            id: 'old-id',
-            threshold: '5',
-            resumeTimeout: 10,
-            accelerated: true,
-            blockEvents: true,
-            clearModifiers: false,
-            setLastTrigger: true,
-            mouseButtons: [MouseButtonValue.left],
-            mouseButtonsExactOrder: true,
-            actions: [
-              TriggerAction(action: CommandAction(command: 'old')),
-            ],
+    final config = assignEditIds(
+      const Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              id: 'old-id',
+              threshold: '5',
+              resumeTimeout: 10,
+              accelerated: true,
+              blockEvents: true,
+              clearModifiers: false,
+              setLastTrigger: true,
+              mouseButtons: [MouseButtonValue.left],
+              mouseButtonsExactOrder: true,
+              actions: [
+                TriggerAction(action: CommandAction(command: 'old')),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+    final location = gestureLocationAt(config, DeviceType.mouse, 0)!;
 
     test('edits common scalar and collection fields', () {
       final idLens = gestureIdLens(location);

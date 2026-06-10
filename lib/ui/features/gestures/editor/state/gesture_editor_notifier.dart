@@ -4,7 +4,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureAt;
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -71,10 +72,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void updateCommon(TriggerCommon Function(TriggerCommon) update) {
-    _config.add(
-      UpdateGestureCommon(location.device, location.index, update),
-      scope: location,
-    );
+    _config.add(UpdateGestureCommon(location, update), scope: location);
   }
 
   void rename(String name) {
@@ -90,20 +88,16 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void duplicate() {
-    _config.add(DuplicateGesture(location.device, location.index));
+    _config.add(DuplicateGesture(location));
   }
 
   void delete() {
-    _config.add(RemoveGesture(location.device, location.index));
+    _config.add(RemoveGesture(location));
   }
 
   void updateGesture(Object Function(Object) update) {
     _config.add(
-      UpdateGesture(
-        location.device,
-        location.index,
-        (gesture) => update(gesture) as Gesture,
-      ),
+      UpdateGesture(location, (gesture) => update(gesture) as Gesture),
       scope: location,
     );
   }

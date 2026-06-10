@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
+import 'package:input_actions_editor/model/app_state.dart'
+    show StoredGestureSelection;
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
 class NavState extends Equatable {
@@ -41,15 +45,35 @@ class NavController extends Notifier<NavState> {
   @override
   NavState build() {
     final initial = ref.read(initialAppStateProvider);
+    _restoreSelection(initial.selectedGesture);
     return NavState(
-      history: [
-        GesturesDestination(
-          filter: initial.gestureFilter,
-          open: initial.selectedGesture,
-        ),
-      ],
+      history: [GesturesDestination(filter: initial.gestureFilter)],
       cursor: 0,
     );
+  }
+
+  /// Resolves the persisted (positional) selection into an identity location
+  /// once the config first loads, patching the pristine initial destination in
+  /// place. EditIds are process-local, so this is the only point where a
+  /// stored index becomes a [GestureLocation]; if the user navigates before
+  /// the load resolves, the restore is dropped.
+  void _restoreSelection(StoredGestureSelection? stored) {
+    if (stored == null) return;
+    ref.listen(configControllerProvider, (prev, next) {
+      final draft = next.value?.draft;
+      if (draft == null || prev?.value != null) return;
+      if (state case NavState(
+        history: [GesturesDestination(open: null, :final filter)],
+        cursor: 0,
+      )) {
+        final location = gestureLocationAt(draft, stored.device, stored.index);
+        if (location == null) return;
+        state = NavState(
+          history: [GesturesDestination(open: location, filter: filter)],
+          cursor: 0,
+        );
+      }
+    });
   }
 
   /// Navigate to [d], optionally replacing the current history entry.
@@ -95,28 +119,15 @@ class NavController extends Notifier<NavState> {
     }
   }
 
-  /// Patches all history entries after a gesture is deleted at [deletedIndex]
-  /// for [device].
-  ///
-  /// - Entries pointing at the deleted index lose their open gesture.
-  /// - Entries pointing at a higher index are decremented to stay correct.
-  /// - All other entries are unchanged.
-  void onGestureDeleted(DeviceType device, int deletedIndex) {
+  /// Drops [deleted] from every history entry that has it open. Locations are
+  /// identity-keyed, so other entries stay valid as-is — no index shifting.
+  void onGestureDeleted(GestureLocation deleted) {
     final patched = state.history.map((dest) {
       if (dest case GesturesDestination(
         open: final open?,
         :final filter,
-      ) when open.device == device) {
-        if (open.index == deletedIndex) {
-          return GesturesDestination(filter: filter);
-        }
-        if (open.index > deletedIndex) {
-          return GesturesDestination(
-            // open: (device: device, index: open.index - 1),
-            open: GestureLocation(device: device, index: open.index - 1),
-            filter: filter,
-          );
-        }
+      ) when open == deleted) {
+        return GesturesDestination(filter: filter);
       }
       return dest;
     }).toList();

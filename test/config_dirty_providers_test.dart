@@ -4,6 +4,8 @@ import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show ActionLocation, GestureLocation, actionCommandLens, gestureIdLens;
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -48,8 +50,8 @@ void main() {
         expect(
           container.read(
             gestureSectionDirtyStateProvider(
-              const GestureSectionLocation(
-                gesture: GestureLocation(device: DeviceType.mouse, index: 0),
+              GestureSectionLocation(
+                gesture: _mouse0(container),
                 field: GestureSectionDirtyField.mouseButtons,
               ),
             ),
@@ -100,8 +102,8 @@ void main() {
         expect(
           container.read(
             gestureSectionDirtyStateProvider(
-              const GestureSectionLocation(
-                gesture: GestureLocation(device: DeviceType.mouse, index: 0),
+              GestureSectionLocation(
+                gesture: _mouse0(container),
                 field: GestureSectionDirtyField.actions,
               ),
             ),
@@ -155,10 +157,7 @@ void main() {
         expect(
           container.read(
             actionDirtyStateProvider(
-              const ActionLocation(
-                gesture: GestureLocation(device: DeviceType.mouse, index: 0),
-                actionIndex: 0,
-              ),
+              ActionLocation(gesture: _mouse0(container), actionIndex: 0),
             ),
           ),
           DirtyMarkState.clean,
@@ -167,10 +166,6 @@ void main() {
     );
 
     test('lens dirty reports changed scalar fields', () async {
-      const location = ActionLocation(
-        gesture: GestureLocation(device: DeviceType.mouse, index: 0),
-        actionIndex: 0,
-      );
       const savedConfig = Config(
         mouseGestures: [
           PressGesture(
@@ -201,6 +196,10 @@ void main() {
       addTearDown(container.dispose);
       await container.read(configControllerProvider.future);
 
+      final location = ActionLocation(
+        gesture: _mouse0(container),
+        actionIndex: 0,
+      );
       expect(
         container.read(lensDirtyStateProvider(actionCommandLens(location))),
         DirtyMarkState.changedFromSaved,
@@ -208,7 +207,6 @@ void main() {
     });
 
     test('lens dirty treats a missing saved path as new unsaved', () async {
-      const location = GestureLocation(device: DeviceType.mouse, index: 0);
       const currentConfig = Config(
         mouseGestures: [
           PressGesture(common: TriggerCommon(id: 'new')),
@@ -223,14 +221,14 @@ void main() {
       await container.read(configControllerProvider.future);
 
       expect(
-        container.read(lensDirtyStateProvider(gestureIdLens(location))),
+        container.read(
+          lensDirtyStateProvider(gestureIdLens(_mouse0(container))),
+        ),
         DirtyMarkState.newUnsaved,
       );
     });
 
     group('gestureTriggerConfigDirtyState', () {
-      const location = GestureLocation(device: DeviceType.mouse, index: 0);
-
       test(
         'is changedFromSaved when swipe mode changes direction→angle',
         () async {
@@ -259,7 +257,9 @@ void main() {
           await container.read(configControllerProvider.future);
 
           expect(
-            container.read(gestureTriggerConfigDirtyStateProvider(location)),
+            container.read(
+              gestureTriggerConfigDirtyStateProvider(_mouse0(container)),
+            ),
             DirtyMarkState.changedFromSaved,
           );
         },
@@ -291,7 +291,9 @@ void main() {
         await container.read(configControllerProvider.future);
 
         expect(
-          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          container.read(
+            gestureTriggerConfigDirtyStateProvider(_mouse0(container)),
+          ),
           DirtyMarkState.changedFromSaved,
         );
       });
@@ -311,7 +313,9 @@ void main() {
         await container.read(configControllerProvider.future);
 
         expect(
-          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          container.read(
+            gestureTriggerConfigDirtyStateProvider(_mouse0(container)),
+          ),
           DirtyMarkState.clean,
         );
       });
@@ -342,7 +346,9 @@ void main() {
         await container.read(configControllerProvider.future);
 
         expect(
-          container.read(gestureTriggerConfigDirtyStateProvider(location)),
+          container.read(
+            gestureTriggerConfigDirtyStateProvider(_mouse0(container)),
+          ),
           DirtyMarkState.changedFromSaved,
         );
       });
@@ -379,7 +385,9 @@ void main() {
           await container.read(configControllerProvider.future);
 
           expect(
-            container.read(gestureTriggerConfigDirtyStateProvider(location)),
+            container.read(
+              gestureTriggerConfigDirtyStateProvider(_mouse0(container)),
+            ),
             DirtyMarkState.clean,
           );
         },
@@ -414,11 +422,7 @@ void main() {
         await container.read(configControllerProvider.future);
 
         expect(
-          container.read(
-            gestureDirtyStateProvider(
-              const GestureLocation(device: DeviceType.mouse, index: 0),
-            ),
-          ),
+          container.read(gestureDirtyStateProvider(_mouse0(container))),
           DirtyMarkState.clean,
         );
       },
@@ -446,6 +450,21 @@ class _FakeConfigController extends ConfigController {
   final Config? saved;
 
   @override
-  Future<EditSession> build() async =>
-      EditSession(draft: current, saved: saved);
+  Future<EditSession> build() async {
+    // Mirror the production session: the draft gets editIds and the saved
+    // baseline shares them by position, so identity locations address the
+    // same gesture in both snapshots.
+    final draft = assignEditIds(current);
+    return EditSession(
+      draft: draft,
+      saved: saved == null ? null : preserveEditIds(from: draft, to: saved!),
+    );
+  }
 }
+
+/// Identity location of the first mouse gesture in the live draft.
+GestureLocation _mouse0(ProviderContainer container) => gestureLocationAt(
+  container.read(configControllerProvider).requireValue.draft,
+  DeviceType.mouse,
+  0,
+)!;

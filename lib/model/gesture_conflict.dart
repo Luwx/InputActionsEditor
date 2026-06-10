@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureLocation;
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -10,8 +11,9 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 
 part 'gesture_conflict.freezed.dart';
 
-/// Points to a single gesture: which device list and its index within it.
-typedef GestureRef = ({DeviceType device, int index});
+/// Points to a single gesture by identity, so a conflict keeps naming the same
+/// gesture while the (debounced) report lags behind list edits and reorders.
+typedef GestureRef = GestureLocation;
 
 /// The nature of a detected conflict.
 enum ConflictKind {
@@ -45,10 +47,8 @@ abstract class GestureConflict with _$GestureConflict {
   GestureRef other(GestureRef focus) => focus == a ? b : a;
   String otherLabel(GestureRef focus) => focus == a ? bLabel : aLabel;
 
-  String describeFrom(GestureRef focus) {
-    final ref = other(focus);
-    return 'Conflicts with "${otherLabel(focus)}" (#${ref.index + 1}): $reason';
-  }
+  String describeFrom(GestureRef focus) =>
+      'Conflicts with "${otherLabel(focus)}": $reason';
 }
 
 String gestureDisplayName(Object gesture) {

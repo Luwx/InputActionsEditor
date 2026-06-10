@@ -30,20 +30,19 @@ class GestureCommands {
     _config.add(AddGesture(device, gesture));
   }
 
-  void duplicateGesture(DeviceType device, int index) {
-    _config.add(DuplicateGesture(device, index));
+  void duplicateGesture(GestureLocation location) {
+    _config.add(DuplicateGesture(location));
   }
 
-  void removeGesture(DeviceType device, int index) {
-    _config.add(RemoveGesture(device, index));
+  void removeGesture(GestureLocation location) {
+    _config.add(RemoveGesture(location));
   }
 
   void enableGestures(Iterable<GestureLocation> gestures) {
     for (final gesture in gestures) {
       _config.add(
         UpdateGestureCommon(
-          gesture.device,
-          gesture.index,
+          gesture,
           (common) => common.copyWith(enabled: null),
         ),
       );
@@ -54,8 +53,7 @@ class GestureCommands {
     for (final gesture in gestures) {
       _config.add(
         UpdateGestureCommon(
-          gesture.device,
-          gesture.index,
+          gesture,
           (common) => common.copyWith(enabled: false),
         ),
       );
@@ -84,8 +82,8 @@ class GestureCommands {
 
   void reorderGesturesAndGroups(
     DeviceType device,
-    List<int> newOrder,
-    Map<int, String?> assignments,
+    List<GestureLocation> newOrder,
+    Map<GestureLocation, String?> assignments,
   ) {
     _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
   }

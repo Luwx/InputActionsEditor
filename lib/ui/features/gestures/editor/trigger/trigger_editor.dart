@@ -36,9 +36,7 @@ class TriggerEditor extends HookConsumerWidget {
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinnedFields.value.contains(field))
         .toList();
-    final conflicts = ref
-        .watch(conflictReportProvider)
-        .forGesture(location.device, location.index);
+    final conflicts = ref.watch(conflictReportProvider).forGesture(location);
 
     return SectionCard(
       color: context.theme.colors.card.withValues(alpha: 0.55),
@@ -60,9 +58,8 @@ class TriggerEditor extends HookConsumerWidget {
           _TriggerConflictBadge(
             key: ValueKey('trigger-conflict-${conflicts.length}'),
             conflicts: conflicts,
-            focus: (device: location.device, index: location.index),
-            onJump: (target) =>
-                context.redirectToGesture(target.device, target.index),
+            focus: location,
+            onJump: context.redirectToGesture,
           ).appearToggle(
             visible: conflicts.isNotEmpty,
             duration: Durations.short3,
@@ -88,7 +85,7 @@ class TriggerEditor extends HookConsumerWidget {
               child: TriggerAdvancedFields(fields: pinnedFields.value),
             ),
           FAccordion(
-            key: ValueKey(location.index),
+            key: ValueKey(location.editId),
             control: FAccordionControl.lifted(
               expanded: (index) => index == 0 && optionsExpanded.value,
               onChange: (index, exp) {

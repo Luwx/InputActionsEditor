@@ -47,11 +47,7 @@ class DeviceSidebar extends HookConsumerWidget {
             ? null
             : firstGestureForFilter(config, device);
         if (first != null) {
-          context.goToGesturesSelectFirst(
-            filter: device,
-            device: first.device,
-            index: first.index,
-          );
+          context.goToGesturesSelectFirst(filter: device, location: first);
           return;
         }
       }

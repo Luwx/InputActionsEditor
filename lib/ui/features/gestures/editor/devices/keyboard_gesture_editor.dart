@@ -10,16 +10,16 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture
 
 class KeyboardGestureEditor extends StatelessWidget {
   const KeyboardGestureEditor({
-    required this.index,
+    required this.location,
     super.key,
   });
 
-  final int index;
+  final GestureLocation location;
 
   @override
   Widget build(BuildContext context) {
     return GestureEditorLayout(
-      location: GestureLocation(device: DeviceType.keyboard, index: index),
+      location: location,
       sections: const [_KeyboardTriggerSection()],
     );
   }

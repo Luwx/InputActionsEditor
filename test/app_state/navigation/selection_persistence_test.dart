@@ -12,7 +12,7 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final nav = container.read(navProvider.notifier);
-      const open = GestureLocation(device: DeviceType.mouse, index: 2);
+      const open = GestureLocation(device: DeviceType.mouse, editId: 2);
 
       nav.go(const GesturesDestination(open: open));
       expect(container.read(selectedGestureProvider), open);
@@ -43,7 +43,7 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final nav = container.read(navProvider.notifier);
-      const open = GestureLocation(device: DeviceType.mouse, index: 1);
+      const open = GestureLocation(device: DeviceType.mouse, editId: 1);
 
       nav.go(const GesturesDestination(open: open));
       expect(container.read(selectedGestureProvider), isNotNull);

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
@@ -12,7 +14,7 @@ import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
 class _FakeConfigController extends ConfigController {
-  _FakeConfigController(this._seed);
+  _FakeConfigController(Config seed) : _seed = assignEditIds(seed);
 
   final Config _seed;
 
@@ -81,16 +83,17 @@ void main() {
             ),
           );
 
-      final strokeIndex =
-          container.read(draftConfigProvider).mouseGestures.length - 1;
+      final draft = container.read(draftConfigProvider);
+      final stroke = gestureLocationAt(
+        draft,
+        DeviceType.mouse,
+        draft.mouseGestures.length - 1,
+      )!;
       final report = container.read(conflictReportProvider);
 
       expect(report.hasAny, isTrue);
-      expect(report.forGesture(DeviceType.mouse, strokeIndex), hasLength(1));
-      expect(
-        report.forGesture(DeviceType.mouse, strokeIndex).single.kind,
-        ConflictKind.instantPress,
-      );
+      expect(report.forGesture(stroke), hasLength(1));
+      expect(report.forGesture(stroke).single.kind, ConflictKind.instantPress);
     });
 
     test('edit that removes the conflict clears the report', () async {
@@ -107,26 +110,23 @@ void main() {
             const StrokeGesture(common: TriggerCommon()),
           ),
         );
-      final strokeIndex =
-          container.read(draftConfigProvider).mouseGestures.length - 1;
+      final draft = container.read(draftConfigProvider);
+      final stroke = gestureLocationAt(
+        draft,
+        DeviceType.mouse,
+        draft.mouseGestures.length - 1,
+      )!;
 
       expect(container.read(conflictReportProvider).hasAny, isTrue);
 
       // Assigning [left] (size 1) makes the stroke mutually exclusive with the
       // size-2 instant, press plugin requires pressed-count == button list size
       controller.add(
-        SetLens(
-          gestureMouseButtonsLens(
-            GestureLocation(device: DeviceType.mouse, index: strokeIndex),
-          ),
-          [MouseButtonValue.left],
-        ),
+        SetLens(gestureMouseButtonsLens(stroke), [MouseButtonValue.left]),
       );
 
       expect(
-        container
-            .read(conflictReportProvider)
-            .forGesture(DeviceType.mouse, strokeIndex),
+        container.read(conflictReportProvider).forGesture(stroke),
         isEmpty,
       );
     });
@@ -150,28 +150,27 @@ void main() {
               const StrokeGesture(common: TriggerCommon()),
             ),
           );
-        final strokeIndex =
-            container.read(draftConfigProvider).mouseGestures.length - 1;
-        final strokeRef = (device: DeviceType.mouse, index: strokeIndex);
-        const instantPressRef = (device: DeviceType.mouse, index: 0);
+        final draft = container.read(draftConfigProvider);
+        final strokeLocation = gestureLocationAt(
+          draft,
+          DeviceType.mouse,
+          draft.mouseGestures.length - 1,
+        )!;
+        final instantPressLocation = gestureLocationAt(
+          draft,
+          DeviceType.mouse,
+          0,
+        )!;
 
         var report = container.read(conflictReportProvider);
-        expect(report.forGesture(DeviceType.mouse, strokeIndex), hasLength(1));
+        expect(report.forGesture(strokeLocation), hasLength(1));
         expect(
-          report.forGesture(DeviceType.mouse, strokeIndex).single.kind,
+          report.forGesture(strokeLocation).single.kind,
           ConflictKind.instantPress,
         );
         expect(
-          report
-              .forGesture(DeviceType.mouse, strokeIndex)
-              .single
-              .other(strokeRef),
-          instantPressRef,
-        );
-
-        final strokeLocation = GestureLocation(
-          device: DeviceType.mouse,
-          index: strokeIndex,
+          report.forGesture(strokeLocation).single.other(strokeLocation),
+          instantPressLocation,
         );
 
         // Step 2 assign [left] only: no conflict (size 1 ≠ size 2).
@@ -181,9 +180,7 @@ void main() {
           ]),
         );
         expect(
-          container
-              .read(conflictReportProvider)
-              .forGesture(DeviceType.mouse, strokeIndex),
+          container.read(conflictReportProvider).forGesture(strokeLocation),
           isEmpty,
         );
 
@@ -194,9 +191,7 @@ void main() {
           ]),
         );
         expect(
-          container
-              .read(conflictReportProvider)
-              .forGesture(DeviceType.mouse, strokeIndex),
+          container.read(conflictReportProvider).forGesture(strokeLocation),
           isEmpty,
         );
 
@@ -208,9 +203,9 @@ void main() {
           ),
         );
         report = container.read(conflictReportProvider);
-        expect(report.forGesture(DeviceType.mouse, strokeIndex), hasLength(1));
+        expect(report.forGesture(strokeLocation), hasLength(1));
         expect(
-          report.forGesture(DeviceType.mouse, strokeIndex).single.kind,
+          report.forGesture(strokeLocation).single.kind,
           ConflictKind.instantPress,
         );
       },

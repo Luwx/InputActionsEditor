@@ -456,6 +456,13 @@ final EditTree<Config> configTree = editTree<Config>(
       lens: 'gestureLens',
       discriminator: 'device',
       generateLocation: true,
+      // Identity coordinate: locations carry the gesture's in-memory editId
+      // instead of a list index, so the same location addresses the same
+      // gesture in the draft and the saved baseline regardless of reorders.
+      key: listKey<Gesture, int>(
+        field: 'editId',
+        get: (g) => g.common.editId,
+      ),
       shared: [
         child(
           'common',

@@ -85,9 +85,7 @@ gestureDirtyStateProvider = Provider.family<DirtyMarkState, GestureLocation>((
   final current = comparableGesture(
     gestureAt(ref.watch(draftConfigProvider), location),
   );
-  final saved = comparableGesture(
-    gestureAt(ref.watch(savedConfigProvider), location),
-  );
+  final saved = comparableGesture(ref.watch(savedGestureProvider(location)));
   return dirtyMarkState(
     current: current,
     saved: saved,
@@ -103,10 +101,7 @@ gestureSectionDirtyStateProvider =
         location.gesture,
       )?.common;
 
-      final savedGesture = gestureAt(
-        ref.watch(savedConfigProvider),
-        location.gesture,
-      );
+      final savedGesture = ref.watch(savedGestureProvider(location.gesture));
       final saved = savedGesture?.common;
 
       return dirtyMarkState(
@@ -123,7 +118,7 @@ gestureTriggerConfigDirtyStateProvider =
         ref.watch(draftConfigProvider),
         location,
       );
-      final savedGesture = gestureAt(ref.watch(savedConfigProvider), location);
+      final savedGesture = ref.watch(savedGestureProvider(location));
       return dirtyMarkState(
         current: [
           comparableTriggerConfigValue(currentGesture?.common),
@@ -143,7 +138,7 @@ final ProviderFamily<DirtyMarkState, ActionLocation> actionDirtyStateProvider =
         actionAt(ref.watch(draftConfigProvider), location),
       );
       final saved = comparableTriggerActionValue(
-        actionAt(ref.watch(savedConfigProvider), location),
+        ref.watch(savedActionProvider(location)),
       );
       return dirtyMarkState(
         current: current,

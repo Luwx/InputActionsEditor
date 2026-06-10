@@ -75,8 +75,7 @@ final class _GestureTransitions {
   final Set<int> enteringHidden;
 
   final void Function({
-    required DeviceType device,
-    required int configIndex,
+    required GestureLocation location,
     required List<_FlatItem> flatItems,
   })
   requestDelete;
@@ -127,26 +126,22 @@ _GestureTransitions _useGestureTransitions(
   }
 
   void requestDelete({
-    required DeviceType device,
-    required int configIndex,
+    required GestureLocation location,
     required List<_FlatItem> flatItems,
   }) {
-    final gestures = ref.read(draftConfigProvider).gesturesForDevice(device);
-    final gesture = (configIndex >= 0 && configIndex < gestures.length)
-        ? gestures[configIndex]
-        : null;
+    final gesture = gestureAt(ref.read(draftConfigProvider), location);
     // Commit the delete immediately.
-    ref.read(gestureCommandsProvider).removeGesture(device, configIndex);
-    ref.read(navProvider.notifier).onGestureDeleted(device, configIndex);
+    ref.read(gestureCommandsProvider).removeGesture(location);
+    ref.read(navProvider.notifier).onGestureDeleted(location);
 
-    final editId = gesture?.common.editId;
-    if (gesture == null || editId == null) return;
+    if (gesture == null) return;
+    final editId = location.editId;
     ghosts.value = [
       ...ghosts.value,
       _GhostRow(
         editId: editId,
         gesture: gesture,
-        device: device,
+        device: location.device,
         groupId: gesture.common.groupId,
         anchorIndex: _ghostAnchorIndex(flatItems, editId),
         collapsing: false,
@@ -160,14 +155,13 @@ _GestureTransitions _useGestureTransitions(
     required ReorderableItemsResult<GestureLocation, String> result,
     required List<_FlatItem> flatItems,
   }) {
-    final gestures = ref.read(draftConfigProvider).gesturesForDevice(device);
+    final draft = ref.read(draftConfigProvider);
     final newGhosts = <_GhostRow>[];
     final movedIds = <int>{};
     for (final id in result.movedItemIds) {
-      if (id.index < 0 || id.index >= gestures.length) continue;
-      final gesture = gestures[id.index];
-      final editId = gesture.common.editId;
-      if (editId == null) continue;
+      final gesture = gestureAt(draft, id);
+      final editId = gesture?.common.editId;
+      if (gesture == null || editId == null) continue;
       movedIds.add(editId);
       newGhosts.add(
         _GhostRow(

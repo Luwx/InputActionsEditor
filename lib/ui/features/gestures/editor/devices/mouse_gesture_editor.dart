@@ -15,16 +15,16 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/mouse_b
 
 class MouseGestureEditor extends StatelessWidget {
   const MouseGestureEditor({
-    required this.index,
+    required this.location,
     super.key,
   });
 
-  final int index;
+  final GestureLocation location;
 
   @override
   Widget build(BuildContext context) {
     return GestureEditorLayout(
-      location: GestureLocation(device: DeviceType.mouse, index: index),
+      location: location,
       sections: const [
         _MouseTriggerSection(),
         MouseButtonsField(),

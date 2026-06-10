@@ -24,8 +24,7 @@ final ProviderFamily<Gesture?, GestureLocation> savedGestureProvider =
 
 final ProviderFamily<TriggerCommon?, GestureLocation>
 savedGestureCommonProvider = Provider.family<TriggerCommon?, GestureLocation>(
-  (ref, location) =>
-      gestureAt(ref.watch(savedConfigProvider), location)?.common,
+  (ref, location) => ref.watch(savedGestureProvider(location))?.common,
 );
 
 final ProviderFamily<TriggerAction?, ActionLocation> savedActionProvider =

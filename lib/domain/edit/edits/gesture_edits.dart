@@ -1,4 +1,6 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -8,14 +10,16 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 List<Gesture> _gestures(Config config, DeviceType device) =>
     config.gesturesForDevice(device).cast<Gesture>();
 
-/// Resolves the identity-stable coalescing key for an in-place edit to the
-/// gesture at [index] of [device]: its `editId`, which survives reorders, so a
-/// burst of edits to the same gesture folds into one undo step even if the
-/// gesture moved. Falls back to the position when no id is assigned yet.
-Object _gestureCoalesceKey(Config before, DeviceType device, int index) {
-  final list = _gestures(before, device);
-  if (index < 0 || index >= list.length) return (device, index);
-  return list[index].common.editId ?? (device, index);
+/// The list position of [location]'s gesture at apply time, or -1 when it no
+/// longer exists. The single point where an identity coordinate becomes a list
+/// slot, so an edit (or its redo) keeps targeting the same gesture however the
+/// list has been reordered in between.
+int _indexOf(Config config, GestureLocation location) {
+  final list = _gestures(config, location.device);
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].common.editId == location.editId) return i;
+  }
+  return -1;
 }
 
 /// Appends [gesture] to [device]'s list.
@@ -39,21 +43,24 @@ final class AddGesture extends ConfigEdit {
       RestoreConfig(config, label: 'remove gesture');
 }
 
-/// Removes the gesture at [index] of [device]'s list.
+/// Removes [location]'s gesture (no-op when it no longer exists).
 final class RemoveGesture extends ConfigEdit {
-  RemoveGesture(this.device, this.index);
+  RemoveGesture(this.location);
 
-  final DeviceType device;
-  final int index;
+  final GestureLocation location;
 
   @override
-  String get label => 'remove ${device.name} gesture';
+  String get label => 'remove ${location.device.name} gesture';
 
   @override
   Config apply(Config config) {
-    final list = _gestures(config, device);
-    if (index < 0 || index >= list.length) return config;
-    return config.withGesturesForDevice(device, [...list]..removeAt(index));
+    final index = _indexOf(config, location);
+    if (index < 0) return config;
+    final list = _gestures(config, location.device);
+    return config.withGesturesForDevice(
+      location.device,
+      [...list]..removeAt(index),
+    );
   }
 
   @override
@@ -61,22 +68,22 @@ final class RemoveGesture extends ConfigEdit {
       RestoreConfig(config, label: 'add gesture');
 }
 
-/// Inserts a copy of the gesture at [index] right after it.
+/// Inserts a copy of [location]'s gesture right after it.
 final class DuplicateGesture extends ConfigEdit {
-  DuplicateGesture(this.device, this.index);
+  DuplicateGesture(this.location);
 
-  final DeviceType device;
-  final int index;
+  final GestureLocation location;
 
   @override
-  String get label => 'duplicate ${device.name} gesture';
+  String get label => 'duplicate ${location.device.name} gesture';
 
   @override
   Config apply(Config config) {
-    final list = _gestures(config, device);
-    if (index < 0 || index >= list.length) return config;
+    final index = _indexOf(config, location);
+    if (index < 0) return config;
+    final list = _gestures(config, location.device);
     return config.withGesturesForDevice(
-      device,
+      location.device,
       [...list]..insert(index + 1, list[index]),
     );
   }
@@ -112,23 +119,23 @@ final class ReorderGesture extends ConfigEdit {
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'reorder');
 }
 
-/// Transforms the gesture at [index] in place.
+/// Transforms [location]'s gesture in place.
 final class UpdateGesture extends ConfigEdit with CoalescingEdit {
-  UpdateGesture(this.device, this.index, this.transform);
+  UpdateGesture(this.location, this.transform);
 
-  final DeviceType device;
-  final int index;
+  final GestureLocation location;
   final Gesture Function(Gesture gesture) transform;
 
   @override
-  String get label => 'update ${device.name} gesture';
+  String get label => 'update ${location.device.name} gesture';
 
   @override
   Config apply(Config config) {
-    final list = _gestures(config, device);
-    if (index < 0 || index >= list.length) return config;
+    final index = _indexOf(config, location);
+    if (index < 0) return config;
+    final list = _gestures(config, location.device);
     return config.withGesturesForDevice(
-      device,
+      location.device,
       [...list]..[index] = transform(list[index]),
     );
   }
@@ -137,28 +144,27 @@ final class UpdateGesture extends ConfigEdit with CoalescingEdit {
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'update');
 
   @override
-  Object coalesceKeyFor(Config before) =>
-      _gestureCoalesceKey(before, device, index);
+  Object coalesceKeyFor(Config before) => location;
 }
 
-/// Transforms the shared [TriggerCommon] of the gesture at [index].
+/// Transforms the shared [TriggerCommon] of [location]'s gesture.
 final class UpdateGestureCommon extends ConfigEdit with CoalescingEdit {
-  UpdateGestureCommon(this.device, this.index, this.transform);
+  UpdateGestureCommon(this.location, this.transform);
 
-  final DeviceType device;
-  final int index;
+  final GestureLocation location;
   final TriggerCommon Function(TriggerCommon common) transform;
 
   @override
-  String get label => 'update ${device.name} gesture';
+  String get label => 'update ${location.device.name} gesture';
 
   @override
   Config apply(Config config) {
-    final list = _gestures(config, device);
-    if (index < 0 || index >= list.length) return config;
+    final index = _indexOf(config, location);
+    if (index < 0) return config;
+    final list = _gestures(config, location.device);
     final gesture = list[index];
     return config.withGesturesForDevice(
-      device,
+      location.device,
       [...list]..[index] = gesture.withCommon(transform(gesture.common)),
     );
   }
@@ -167,6 +173,5 @@ final class UpdateGestureCommon extends ConfigEdit with CoalescingEdit {
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'update');
 
   @override
-  Object coalesceKeyFor(Config before) =>
-      _gestureCoalesceKey(before, device, index);
+  Object coalesceKeyFor(Config before) => location;
 }

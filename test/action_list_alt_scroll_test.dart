@@ -133,7 +133,7 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
                           child: const EditLocationScope(
                             gesture: GestureLocation(
                               device: DeviceType.mouse,
-                              index: 0,
+                              editId: _seedEditId,
                             ),
                             child: ActionListEditor(),
                           ),
@@ -154,9 +154,17 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
   }
 }
 
+/// Pre-assigned identity for the single seeded gesture, so the const
+/// [EditLocationScope] can address it without reading the draft.
+const _seedEditId = 9001;
+
 class _SeededController extends ConfigController {
   _SeededController(TriggerCommon common)
-    : _config = Config(mouseGestures: [PressGesture(common: common)]);
+    : _config = Config(
+        mouseGestures: [
+          PressGesture(common: common.copyWith(editId: _seedEditId)),
+        ],
+      );
 
   final Config _config;
 

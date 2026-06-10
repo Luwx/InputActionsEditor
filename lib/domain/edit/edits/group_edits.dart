@@ -1,4 +1,6 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -179,18 +181,18 @@ final class ReorderAndUpdateGroup extends ConfigEdit {
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'regroup');
 }
 
-/// Reorders [device]'s gestures to [newOrder] and reassigns the group of every
-/// gesture keyed by its old index in [changedGroupIdsByOldIndex].
+/// Reorders [device]'s gestures to [newOrder] (identity locations in their new
+/// order) and reassigns the group of every gesture in [changedGroupIds].
+///
+/// A no-op unless [newOrder] covers the device's list exactly — a location
+/// that no longer resolves, or a gesture it misses, means the drop went stale
+/// against a newer config; applying it partially would scramble the list.
 final class ReorderAndUpdateGroups extends ConfigEdit {
-  ReorderAndUpdateGroups(
-    this.device,
-    this.newOrder,
-    this.changedGroupIdsByOldIndex,
-  );
+  ReorderAndUpdateGroups(this.device, this.newOrder, this.changedGroupIds);
 
   final DeviceType device;
-  final List<int> newOrder;
-  final Map<int, String?> changedGroupIdsByOldIndex;
+  final List<GestureLocation> newOrder;
+  final Map<GestureLocation, String?> changedGroupIds;
 
   @override
   String get label => 'regroup';
@@ -198,12 +200,18 @@ final class ReorderAndUpdateGroups extends ConfigEdit {
   @override
   Config apply(Config config) {
     final original = _gestures(config, device);
-    final out = [
-      for (final oldIdx in newOrder)
-        changedGroupIdsByOldIndex.containsKey(oldIdx)
-            ? _withGroupId(original[oldIdx], changedGroupIdsByOldIndex[oldIdx])
-            : original[oldIdx],
-    ];
+    if (newOrder.length != original.length) return config;
+    final byEditId = {for (final g in original) g.common.editId: g};
+    final out = <Gesture>[];
+    for (final location in newOrder) {
+      final gesture = byEditId[location.editId];
+      if (gesture == null) return config;
+      out.add(
+        changedGroupIds.containsKey(location)
+            ? _withGroupId(gesture, changedGroupIds[location])
+            : gesture,
+      );
+    }
     return config.withGesturesForDevice(device, out);
   }
 

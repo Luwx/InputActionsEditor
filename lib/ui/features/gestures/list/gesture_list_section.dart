@@ -11,6 +11,8 @@ import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureAt, gestureLocationAt;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -83,8 +85,16 @@ class GestureListSection extends HookConsumerWidget {
       );
       ref.read(gestureCommandsProvider).addGesture(device, named);
       ref.read(addedGestureProvider.notifier).markAdded(newIndex);
-      context.selectGesture(device, newIndex);
-      choreo.scrollToGesture(GestureLocation(device: device, index: newIndex));
+      // The editId is assigned when the add lands in the draft, so the
+      // identity location is only known after the dispatch.
+      final location = gestureLocationAt(
+        ref.read(draftConfigProvider),
+        device,
+        newIndex,
+      );
+      if (location == null) return;
+      context.selectGesture(location);
+      choreo.scrollToGesture(location);
     }
 
     Future<void> addGroupDialog(DeviceType device) {
@@ -156,10 +166,7 @@ class GestureListSection extends HookConsumerWidget {
                   ),
                 );
               case _GestureRowItem():
-                final key = GestureLocation(
-                  device: flatItem.device,
-                  index: flatItem.configIndex,
-                );
+                final key = flatItem.location;
                 gestureItemsByKey[key] = flatItem;
                 final editId = flatItem.editId;
                 // A reordered row enters at its new slot from a fresh
@@ -207,9 +214,11 @@ class GestureListSection extends HookConsumerWidget {
               ghost.anchorIndex.clamp(0, reorderEntries.length),
               ReorderableGroupableItem<GestureLocation, String>(
                 key: ghostKey,
+                // Negative editIds are never assigned, so a ghost's id can
+                // never collide with (or resolve to) a live gesture.
                 id: GestureLocation(
                   device: ghost.device,
-                  index: -1 - ghost.editId,
+                  editId: -1 - ghost.editId,
                 ),
                 groupId: ghost.groupId,
                 isVisible: !ghost.collapsing,
@@ -337,20 +346,13 @@ class GestureListSection extends HookConsumerWidget {
                     );
                   },
               itemOverlayBuilder: (context, itemEntry) {
-                final item = gestureItemsByKey[itemEntry.id]!;
                 final gestureConflicts = isMultiSelectMode
                     ? const <GestureConflict>[]
-                    : conflicts.forGesture(
-                        item.device,
-                        item.configIndex,
-                      );
+                    : conflicts.forGesture(itemEntry.id);
                 return gestureConflicts.isNotEmpty
                     ? _ConflictTileIcon(
                         conflicts: gestureConflicts,
-                        focus: (
-                          device: item.device,
-                          index: item.configIndex,
-                        ),
+                        focus: itemEntry.id,
                       )
                     : null;
               },
@@ -358,8 +360,10 @@ class GestureListSection extends HookConsumerWidget {
                 final ghost = ghostByKey[itemEntry.key];
                 if (ghost != null) {
                   return GestureListTile(
-                    device: ghost.device,
-                    index: -1,
+                    location: GestureLocation(
+                      device: ghost.device,
+                      editId: -1 - ghost.editId,
+                    ),
                     gestureOverride: ghost.gesture,
                     newlyAddedMarkerId: null,
                     isSelected: false,
@@ -376,9 +380,7 @@ class GestureListSection extends HookConsumerWidget {
                 final item = gestureItemsByKey[itemEntry.id]!;
                 final selectionKey = itemEntry.id;
                 final isSelected =
-                    !isMultiSelectMode &&
-                    selection?.device == item.device &&
-                    selection?.index == item.configIndex;
+                    !isMultiSelectMode && selection == selectionKey;
                 final isMultiSelected =
                     multiSelect?.contains(selectionKey) ?? false;
                 final markerId =
@@ -406,10 +408,7 @@ class GestureListSection extends HookConsumerWidget {
                       if (isMultiSelectMode) {
                         multiSelectNotifier.toggle(selectionKey);
                       } else {
-                        context.selectGesture(
-                          item.device,
-                          item.configIndex,
-                        );
+                        context.selectGesture(selectionKey);
                       }
                     },
                     onLongPress: () {
@@ -420,21 +419,16 @@ class GestureListSection extends HookConsumerWidget {
                         multiSelectNotifier.enter(selectionKey);
                       }
                     },
-                    onDuplicate: () => listNotifier.duplicateGesture(
-                      item.device,
-                      item.configIndex,
-                    ),
+                    onDuplicate: () =>
+                        listNotifier.duplicateGesture(selectionKey),
                     onDelete: () => transitions.requestDelete(
-                      device: item.device,
-                      configIndex: item.configIndex,
+                      location: selectionKey,
                       flatItems: viewModel.flatItems,
                     ),
                   ),
                 );
 
-                final isScrollTarget =
-                    choreo.scrollTarget?.device == item.device &&
-                    choreo.scrollTarget?.index == item.configIndex;
+                final isScrollTarget = choreo.scrollTarget == itemEntry.id;
                 return isScrollTarget
                     ? KeyedSubtree(
                         key: choreo.scrollTargetKey,
@@ -465,21 +459,12 @@ class _ConflictTileIcon extends ConsumerWidget {
 
     // Keep the indicator quiet when the user has only touched the *other* side
     // of the conflict
-    final focusDirty = ref.watch(
-      gestureDirtyProvider(
-        GestureLocation(device: focus.device, index: focus.index),
-      ),
-    );
+    final focusDirty = ref.watch(gestureDirtyProvider(focus));
     final visible = focusDirty
         ? conflicts
-        : conflicts.where((c) {
-            final other = c.other(focus);
-            return !ref.watch(
-              gestureDirtyProvider(
-                GestureLocation(device: other.device, index: other.index),
-              ),
-            );
-          }).toList();
+        : conflicts
+              .where((c) => !ref.watch(gestureDirtyProvider(c.other(focus))))
+              .toList();
     if (visible.isEmpty) return const SizedBox.shrink();
 
     final names = visible.map((c) => c.otherLabel(focus)).join(', ');

@@ -25,8 +25,7 @@ import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
-    required this.device,
-    required this.index,
+    required this.location,
     required this.newlyAddedMarkerId,
     required this.isSelected,
     required this.isMultiSelectMode,
@@ -37,8 +36,7 @@ class GestureListTile extends ConsumerWidget {
     super.key,
   });
 
-  final DeviceType device;
-  final int index;
+  final GestureLocation location;
 
   ///Used for a transient "ghost" copy that keeps showing a row's
   /// content after it has been removed/moved
@@ -57,7 +55,6 @@ class GestureListTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final location = GestureLocation(device: device, index: index);
     final gesture =
         gestureOverride ??
         ref.watch(

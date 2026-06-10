@@ -5,7 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureIndexOf;
 import 'package:input_actions_editor/model/app_state.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,7 +44,7 @@ class AppStateController extends Notifier<void> {
             prefs,
             AppState(
               gestureFilter: filter,
-              selectedGesture: open,
+              selectedGesture: _storedSelection(open),
               gestureListWidth: ref.read(gestureListWidthProvider),
             ),
           );
@@ -52,11 +56,22 @@ class AppStateController extends Notifier<void> {
           prefs,
           AppState(
             gestureFilter: nav is GesturesDestination ? nav.filter : null,
-            selectedGesture: nav is GesturesDestination ? nav.open : null,
+            selectedGesture: _storedSelection(
+              nav is GesturesDestination ? nav.open : null,
+            ),
             gestureListWidth: next,
           ),
         );
       });
+  }
+
+  /// Identity locations don't survive a restart, so the open gesture persists
+  /// as its current position in the draft.
+  StoredGestureSelection? _storedSelection(GestureLocation? open) {
+    if (open == null) return null;
+    final draft = ref.read(configControllerProvider).value?.draft;
+    final index = gestureIndexOf(draft, open);
+    return index == null ? null : (device: open.device, index: index);
   }
 
   void _save(SharedPreferences prefs, AppState state) =>

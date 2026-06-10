@@ -326,11 +326,7 @@ void main() {
       ],
     );
     final conflict = detectConflicts(config).single;
-    final fromFirst = conflict.describeFrom((
-      device: DeviceType.mouse,
-      index: 0,
-    ));
+    final fromFirst = conflict.describeFrom(conflict.a);
     expect(fromFirst, contains('Second'));
-    expect(fromFirst, contains('#2'));
   });
 }

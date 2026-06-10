@@ -17,16 +17,16 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture
 
 class TouchscreenGestureEditor extends StatelessWidget {
   const TouchscreenGestureEditor({
-    required this.index,
+    required this.location,
     super.key,
   });
 
-  final int index;
+  final GestureLocation location;
 
   @override
   Widget build(BuildContext context) {
     return GestureEditorLayout(
-      location: GestureLocation(device: DeviceType.touchscreen, index: index),
+      location: location,
       sections: const [
         FingerCountField(),
         _TouchscreenTriggerSection(),
