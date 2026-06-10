@@ -168,7 +168,7 @@ class _TriggerConflictBadge extends StatelessWidget {
           color: kGestureWarningColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: kGestureWarningColor.withValues(alpha: 0.4),
+            color: kGestureWarningColor.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
