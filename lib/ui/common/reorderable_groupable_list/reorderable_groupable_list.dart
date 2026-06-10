@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/bounce_free_scroll_physics.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/shrink_compensated_sliver.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
 
 /// Horizontal inset applied to grouped rows (and aligned drop indicators) so
@@ -167,17 +168,9 @@ class _ReorderableGroupableListState<I, G>
   int? _routedPointer;
   bool _isDragging = false;
 
-  // Stable per-group keys on the pinned header boxes, so the collapse handler
-  // can read a header's painted position frame by frame.
+  // Stable per-group keys on the pinned header boxes, so the header scroll
+  // measurement can read a header's painted position frame by frame.
   final Map<G, GlobalKey> _headerKeys = {};
-
-  // Invalidation token for the collapse-pin frame loop; bumping it stops any
-  // loop from a previous collapse.
-  int _collapsePinGeneration = 0;
-
-  // True only while the collapse-pin loop is itself driving the scroll offset,
-  // so its own corrections are not mistaken for a user scroll.
-  bool _selfScrolling = false;
 
   @override
   void initState() {
@@ -187,136 +180,10 @@ class _ReorderableGroupableListState<I, G>
 
   @override
   void dispose() {
-    _collapsePinGeneration++;
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _removePointerRoute();
     _stopAutoScroll();
     super.dispose();
-  }
-
-  @override
-  void didUpdateWidget(covariant ReorderableGroupableList<I, G> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final collapsingGroupId = _collapsingGroupId(
-      oldWidget.entries,
-      widget.entries,
-    );
-    if (collapsingGroupId != null) _pinCollapsingHeader(collapsingGroupId);
-  }
-
-  // The id of a group whose rows just started collapsing (an item going
-  // visible to hidden), or null. Only a collapse can push a pinned header out.
-  G? _collapsingGroupId(
-    List<ReorderableGroupableListEntry<I, G>> oldEntries,
-    List<ReorderableGroupableListEntry<I, G>> newEntries,
-  ) {
-    final wasVisible = <I, bool>{};
-    for (final entry in oldEntries) {
-      if (entry case ReorderableGroupableItem<I, G>(
-        :final id,
-        :final isVisible,
-      )) {
-        wasVisible[id] = isVisible;
-      }
-    }
-    for (final entry in newEntries) {
-      if (entry case ReorderableGroupableItem<I, G>(
-        :final id,
-        :final isVisible,
-        :final groupId?,
-      )) {
-        if (wasVisible[id] == true && !isVisible) return groupId;
-      }
-    }
-    return null;
-  }
-
-  // Holds a collapsing group's pinned header where it was when the collapse
-  // began. As the group shrinks SliverMainAxisGroup would otherwise push the
-  // header up and out (worse the deeper the scroll), so each frame we scroll up
-  // just enough to undo that push until the animation settles.
-  void _pinCollapsingHeader(G groupId) {
-    if (!widget.scrollController.hasClients) return;
-    final generation = ++_collapsePinGeneration;
-    final position = widget.scrollController.position;
-
-    // Cancel any in-flight scroll momentum first.
-    _selfScrolling = true;
-    widget.scrollController.jumpTo(position.pixels);
-    _selfScrolling = false;
-
-    final stopwatch = Stopwatch()..start();
-    double? anchorY;
-    var done = false;
-
-    // If the user scrolls while we hold the header, hand the viewport back to
-    // them
-    void onUserScroll() {
-      if (!_selfScrolling) done = true;
-    }
-
-    void finish() {
-      if (done) return;
-      done = true;
-      position.removeListener(onUserScroll);
-    }
-
-    position.addListener(onUserScroll);
-
-    void tick() {
-      if (done ||
-          !mounted ||
-          generation != _collapsePinGeneration ||
-          !widget.scrollController.hasClients) {
-        finish();
-        return;
-      }
-      final headerBox = _headerKeys[groupId]?.currentContext
-          ?.findRenderObject();
-      if (headerBox is RenderBox && headerBox.hasSize) {
-        final headerY = headerBox.localToGlobal(Offset.zero).dy;
-        if (anchorY == null) {
-          // Capture the pinned position on the first frame. Bail if the header
-          // is above the viewport (scrolled past, not pinned at the top).
-          final viewportTop = _viewportTop();
-          if (viewportTop != null && headerY < viewportTop - 0.5) {
-            finish();
-            return;
-          }
-          anchorY = headerY;
-        } else {
-          final pushedUpBy = anchorY! - headerY;
-          if (pushedUpBy > 0.5) {
-            final next = (position.pixels - pushedUpBy).clamp(
-              position.minScrollExtent,
-              position.maxScrollExtent,
-            );
-            if (next != position.pixels) {
-              _selfScrolling = true;
-              widget.scrollController.jumpTo(next);
-              _selfScrolling = false;
-            }
-          }
-        }
-      }
-      if (stopwatch.elapsedMilliseconds < 400) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => tick());
-      } else {
-        finish();
-      }
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => tick());
-  }
-
-  double? _viewportTop() {
-    final viewportContext =
-        widget.scrollController.position.context.notificationContext;
-    final box = viewportContext?.findRenderObject();
-    if (box is RenderBox && box.hasSize) {
-      return box.localToGlobal(Offset.zero).dy;
-    }
-    return null;
   }
 
   bool _handleKeyEvent(KeyEvent event) {
@@ -520,8 +387,9 @@ class _ReorderableGroupableListState<I, G>
 
     return CustomScrollView(
       controller: widget.scrollController,
-      // Wrap the ambient physics so flinging is unchanged but the idle offset
-      // stays in bounds, stopping a collapse from bouncing the viewport.
+      // Wrap the ambient physics so a shrinking extent keeps the offset in
+      // bounds (idle and mid-fling), stopping a collapse from bouncing the
+      // viewport.
       physics: BounceFreeScrollPhysics(
         parent: ScrollConfiguration.of(context).getScrollPhysics(context),
       ),
@@ -533,25 +401,37 @@ class _ReorderableGroupableListState<I, G>
           // Each group is a pinned header, its rows, and a trailing hairline
           // that separates it from the next group (scrolling under the next
           // pinned header). The app header draws no line of its own.
+          // [ShrinkCompensatedSliver] corrects the scroll offset during layout
+          // while a segment's rows collapse, so the shrink never pushes a
+          // pinned header (or the content on screen) upward. Keyed so a
+          // segment reorder is not mistaken for a shrink.
           for (var s = 0; s < segments.length; s++)
             switch (segments[s]) {
               _GroupSegment<I, G>(:final group, :final items) =>
-                SliverMainAxisGroup(
-                  slivers: [
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _GroupHeaderDelegate(
-                        extent: widget.groupHeaderExtent,
-                        builder: (context, isPinned) =>
-                            _buildGroupHeader(context, group, isPinned),
+                ShrinkCompensatedSliver(
+                  key: group.key,
+                  pinnedExtent: widget.groupHeaderExtent,
+                  sliver: SliverMainAxisGroup(
+                    slivers: [
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _GroupHeaderDelegate(
+                          extent: widget.groupHeaderExtent,
+                          builder: (context, isPinned) =>
+                              _buildGroupHeader(context, group, isPinned),
+                        ),
                       ),
-                    ),
-                    _buildItemSliver(context, items),
-                    if (s < segments.length - 2) _scrollingSeparatorSliver(),
-                  ],
+                      _buildItemSliver(context, items),
+                      if (s < segments.length - 2) _scrollingSeparatorSliver(),
+                    ],
+                  ),
                 ),
-              _UngroupedSegment<I, G>(:final items) => SliverMainAxisGroup(
-                slivers: [_buildItemSliver(context, items)],
+              _UngroupedSegment<I, G>(:final items) => ShrinkCompensatedSliver(
+                // An ungrouped segment is only created with at least one item.
+                key: items.first.item.key,
+                sliver: SliverMainAxisGroup(
+                  slivers: [_buildItemSliver(context, items)],
+                ),
               ),
             },
           if (widget.reorderEnabled && widget.showTrailingDropZone)

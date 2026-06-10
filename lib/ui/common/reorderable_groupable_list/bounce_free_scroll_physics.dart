@@ -1,13 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// Scroll physics that clamp the offset back into bounds while the position is
-/// idle, so a shrinking content extent never leaves it in overscroll.
+/// Scroll physics that clamp the offset back into bounds when the content
+/// extent changes, so a shrinking extent never leaves the position in
+/// overscroll.
 ///
-/// Collapsing a group above a bottom-anchored viewport shrinks the content; the
-/// default physics then spring the offset back, which reads as a "bounce".
+/// Collapsing a group above a bottom-anchored viewport shrinks the content;
+/// the default physics then spring the offset back, which reads as a "bounce".
 /// Clamping in [adjustPositionForNewDimensions] tracks the shrink through the
-/// layout-safe correction path instead. Live drags and flings are untouched.
+/// layout-safe correction path instead, both while idle and during a fling,
+/// where the ballistic activity re-simulates from the clamped offset and ends
+/// at the boundary rather than springing back. Only an active drag is left
+/// untouched.
 class BounceFreeScrollPhysics extends ScrollPhysics {
   const BounceFreeScrollPhysics({super.parent});
 
@@ -28,7 +32,9 @@ class BounceFreeScrollPhysics extends ScrollPhysics {
       isScrolling: isScrolling,
       velocity: velocity,
     );
-    if (isScrolling || velocity != 0.0) return adjusted;
+    // An active drag is isScrolling with zero velocity; everything else
+    // (idle, ballistic) gets clamped into the new bounds.
+    if (isScrolling && velocity == 0.0) return adjusted;
     return clampDouble(
       adjusted,
       newPosition.minScrollExtent,
