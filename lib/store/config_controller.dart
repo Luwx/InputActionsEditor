@@ -404,3 +404,18 @@ final draftConfigProvider = Provider<Config>(
   (ref) =>
       ref.watch(configControllerProvider.select((s) => s.requireValue.draft)),
 );
+
+/// Watches a pure projection of the live [EditSession].
+///
+/// Every projection provider must depend on [configControllerProvider] in a
+/// single hop, which this helper enforces by construction. Chains of derived
+/// providers are not safe to watch from widgets: an intermediate element whose
+/// listeners are all gone gets paused, misses controller updates, and is
+/// flushed lazily the next time something watches through it. When that
+/// something is a tile mounting during sliver layout, the flush invalidates
+/// the other paused providers downstream mid-build and riverpod calls
+/// `setState` on the root `UncontrolledProviderScope`, "setState() or
+/// markNeedsBuild() called during build". The controller itself is never
+/// stale, so a single-hop select has nothing to flush at mount time.
+T selectSession<T>(Ref ref, T Function(EditSession session) project) =>
+    ref.watch(configControllerProvider.select((s) => project(s.requireValue)));

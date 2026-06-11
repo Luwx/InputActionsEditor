@@ -88,66 +88,107 @@ class ActionListEditor extends HookConsumerWidget {
                   ? choreo.anchor.anchorKey
                   : null;
               final expanded = choreo.expanded.contains(index);
-              return AnimatedContainer(
+              return _ActionRow(
                 key: ValueKey('action-row-$index'),
-                duration: Durations.medium1,
-                curve: Easing.standard,
-                margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  color: expanded
-                      ? colors.foreground.withValues(alpha: 0.03)
-                      : null,
-                  border: Border.all(
-                    color: colors.border,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    _RowHeader(
-                      index: index,
-                      actionLocation: actionLocation,
-                      expanded: expanded,
-                      onToggle: () => choreo.toggle(index),
-                      onDuplicate: () => choreo.duplicate(index),
-                      onDelete: () => choreo.remove(index),
-                      onEnabledChanged: (enabled) => ref
-                          .read(
-                            actionListEditorProvider(gestureLocation).notifier,
-                          )
-                          .setEnabled(index, enabled),
-                      onDragPointerChanged: choreo.setDragPointer,
-                    ),
-                    AnimatedSize(
-                      duration: Durations.medium1,
-                      curve: Easing.standard,
-                      alignment: Alignment.topCenter,
-                      onEnd: expanded ? choreo.anchor.end : null,
-                      child: expanded
-                          ? EditLocationScope(
-                              action: actionLocation,
-                              child: _ExpandedEditor(
-                                onOptionsExpanded: () =>
-                                    choreo.anchor.begin(index),
-                                footerKey: ValueKey('action-footer-$index'),
-                                pinnedTriggerOptions:
-                                    choreo.pinnedTriggerOptions[index] ??
-                                    const {},
-                              ),
-                            )
-                          : const SizedBox(width: double.infinity),
-                    ),
-                    // Sits outside the AnimatedSize so its position
-                    // tracks the row's animating bottom edge, giving the
-                    // SliverSmartAnchor a live target.
-                    if (anchorKey != null) SizedBox(key: anchorKey, height: 0),
-                  ],
-                ),
+                index: index,
+                expanded: expanded,
+                colors: colors,
+                actionLocation: actionLocation,
+                choreo: choreo,
+                gestureLocation: gestureLocation,
+                anchorKey: anchorKey,
               );
             },
           ),
         SizedBox(key: choreo.anchor.bottomKey, height: 0),
       ],
+    );
+  }
+}
+
+class _ActionRow extends HookConsumerWidget {
+  const _ActionRow({
+    required this.index,
+    required this.expanded,
+    required this.colors,
+    required this.actionLocation,
+    required this.choreo,
+    required this.gestureLocation,
+    required this.anchorKey,
+    super.key,
+  });
+
+  final int index;
+  final bool expanded;
+  final FColors colors;
+  final ActionLocation actionLocation;
+  final _ActionListChoreography choreo;
+  final GestureLocation gestureLocation;
+  final GlobalKey<State<StatefulWidget>>? anchorKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isHeaderHovered = useValueNotifier(false);
+    final color = useListenableSelector(isHeaderHovered, () {
+      return isHeaderHovered.value || expanded
+          ? colors.foreground.withValues(alpha: 0.03)
+          : Colors.transparent;
+    });
+
+    return AnimatedContainer(
+      duration: Durations.medium1,
+      curve: Easing.standard,
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(
+          color: colors.border,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          MouseRegion(
+            onEnter: (_) => isHeaderHovered.value = true,
+            onExit: (_) => isHeaderHovered.value = false,
+            child: _RowHeader(
+              index: index,
+              actionLocation: actionLocation,
+              expanded: expanded,
+              onToggle: () => choreo.toggle(index),
+              onDuplicate: () => choreo.duplicate(index),
+              onDelete: () => choreo.remove(index),
+              onEnabledChanged: (enabled) => ref
+                  .read(
+                    actionListEditorProvider(gestureLocation).notifier,
+                  )
+                  .setEnabled(index, enabled),
+              onDragPointerChanged: choreo.setDragPointer,
+            ),
+          ),
+          AnimatedSize(
+            duration: Durations.medium1,
+            curve: Easing.standard,
+            alignment: Alignment.topCenter,
+            onEnd: expanded ? choreo.anchor.end : null,
+            child: expanded
+                ? EditLocationScope(
+                    action: actionLocation,
+                    child: _ExpandedEditor(
+                      onOptionsExpanded: () => choreo.anchor.begin(index),
+                      footerKey: ValueKey('action-footer-$index'),
+                      pinnedTriggerOptions:
+                          choreo.pinnedTriggerOptions[index] ?? const {},
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+          // Sits outside the AnimatedSize so its position
+          // tracks the row's animating bottom edge, giving the
+          // SliverSmartAnchor a live target.
+          if (anchorKey != null) SizedBox(key: anchorKey, height: 0),
+        ],
+      ),
     );
   }
 }
@@ -221,7 +262,6 @@ class _RowHeader extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isTitleHovered = useState(false);
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
@@ -234,125 +274,119 @@ class _RowHeader extends HookConsumerWidget {
     final chips = actionMetaChips(action, l10n);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: MouseRegion(
-        onEnter: (_) => isTitleHovered.value = true,
-        onExit: (_) => isTitleHovered.value = false,
-        child: Row(
-          children: [
-            Listener(
-              onPointerDown: (e) => onDragPointerChanged(e.pointer),
-              onPointerUp: (_) => onDragPointerChanged(null),
-              onPointerCancel: (_) => onDragPointerChanged(null),
-              child: ReorderableDragStartListener(
-                index: index,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.grab,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
-                        ),
-                        child: Icon(
-                          FLucideIcons.gripVertical,
-                          size: 14,
-                          color: colors.mutedForeground.withValues(alpha: 0.45),
-                        ),
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Listener(
+            onPointerDown: (e) => onDragPointerChanged(e.pointer),
+            onPointerUp: (_) => onDragPointerChanged(null),
+            onPointerCancel: (_) => onDragPointerChanged(null),
+            child: ReorderableDragStartListener(
+              index: index,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.grab,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${index + 1}',
-                        style: context.theme.typography.xs,
+                      child: Icon(
+                        FLucideIcons.gripVertical,
+                        size: 14,
+                        color: colors.mutedForeground.withValues(alpha: 0.45),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${index + 1}',
+                      style: context.theme.typography.xs,
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onToggle,
-                child: Opacity(
-                  opacity: action.enabled == false ? 0.5 : 1,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: colors.secondary,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          meta.icon,
-                          size: 17,
-                          color: colors.secondaryForeground,
-                        ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onToggle,
+              child: Opacity(
+                opacity: action.enabled == false ? 0.5 : 1,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: colors.secondary,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 12),
-                      UnsavedLabel(
-                        isDirty: isDirty,
-                        child: Text(
-                          actionRowTitle(action.action, l10n),
-                          style: typography.sm.copyWith(
-                            fontWeight: FontWeight.w700,
-                            decoration: action.enabled == false
-                                ? TextDecoration.lineThrough
-                                : isTitleHovered.value
-                                ? TextDecoration.underline
-                                : TextDecoration.none,
-                            decorationColor: colors.foreground.withValues(
-                              alpha: action.enabled == false ? 1 : 0.5,
-                            ),
-                            decorationThickness: 2,
+                      child: Icon(
+                        meta.icon,
+                        size: 17,
+                        color: colors.secondaryForeground,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    UnsavedLabel(
+                      isDirty: isDirty,
+                      child: Text(
+                        actionRowTitle(action.action, l10n),
+                        style: typography.sm.copyWith(
+                          fontWeight: FontWeight.w700,
+                          decoration: action.enabled == false
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          decorationColor: colors.foreground.withValues(
+                            alpha: action.enabled == false ? 1 : 0.5,
                           ),
+                          decorationThickness: 2,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        actionValueSummary(action.action, l10n),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.sm.copyWith(
+                          color: colors.mutedForeground,
+                        ),
+                      ),
+                    ),
+                    if (chips.isNotEmpty) ...[
                       const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          actionValueSummary(action.action, l10n),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.sm.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                        ),
-                      ),
-                      if (chips.isNotEmpty) ...[
-                        const SizedBox(width: 14),
-                        _MetaChips(chips: chips),
-                      ],
+                      _MetaChips(chips: chips),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            FButton.icon(
-              variant: .ghost,
-              onPress: onToggle,
-              child: Icon(
-                expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
-              ),
+          ),
+          const SizedBox(width: 8),
+          FButton.icon(
+            variant: .ghost,
+            onPress: onToggle,
+            child: Icon(
+              expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
             ),
-            FButton.icon(
-              variant: .ghost,
-              onPress: onDelete,
-              child: const Icon(FLucideIcons.trash),
-            ),
-            FCheckbox(
-              value: action.enabled != false,
-              onChange: onEnabledChanged,
-            ),
-          ],
-        ),
+          ),
+          FButton.icon(
+            variant: .ghost,
+            onPress: onDelete,
+            child: const Icon(FLucideIcons.trash),
+          ),
+          FCheckbox(
+            value: action.enabled != false,
+            onChange: onEnabledChanged,
+          ),
+        ],
       ),
     );
   }

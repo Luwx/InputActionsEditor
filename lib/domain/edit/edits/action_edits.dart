@@ -1,7 +1,7 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureActionsLens;
+    show gestureActionsLens, gestureAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 
@@ -11,10 +11,8 @@ import 'package:input_actions_editor/model/config.dart';
 /// the command layer, not the view-model) and uses [RestoreConfig] as its
 /// inverse, since the precise reverse of a list splice is tedious to derive.
 
-bool _gestureExists(Config config, GestureLocation location) {
-  final list = config.gesturesForDevice(location.device);
-  return location.index >= 0 && location.index < list.length;
-}
+bool _gestureExists(Config config, GestureLocation location) =>
+    gestureAt(config, location) != null;
 
 List<TriggerAction> _actions(Config config, GestureLocation location) =>
     gestureActionsLens(location).get(config);

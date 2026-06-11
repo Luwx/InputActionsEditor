@@ -435,12 +435,12 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 1),
+            open: GestureLocation(device: mouse, editId: 1),
           ),
         );
 
@@ -448,7 +448,7 @@ void main() {
       expect(
         _state(container).current,
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 1),
+          open: GestureLocation(device: mouse, editId: 1),
         ),
       );
     });
@@ -460,12 +460,12 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 1),
+            open: GestureLocation(device: mouse, editId: 1),
           ),
         )
         ..back();
@@ -473,7 +473,7 @@ void main() {
       expect(
         _state(container).current,
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 0),
+          open: GestureLocation(device: mouse, editId: 0),
         ),
       );
     });
@@ -485,12 +485,12 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 1),
+            open: GestureLocation(device: mouse, editId: 1),
           ),
         )
         ..back()
@@ -499,7 +499,7 @@ void main() {
       expect(
         _state(container).current,
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 1),
+          open: GestureLocation(device: mouse, editId: 1),
         ),
       );
     });
@@ -511,12 +511,12 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         );
 
@@ -532,7 +532,7 @@ void main() {
         _controller(container)
           ..go(
             const GesturesDestination(
-              open: GestureLocation(device: mouse, index: 0),
+              open: GestureLocation(device: mouse, editId: 0),
             ),
           )
           ..go(const GesturesDestination(), replace: true);
@@ -547,18 +547,16 @@ void main() {
   group('NavController.onGestureDeleted', () {
     const mouse = DeviceType.mouse;
     const keyboard = DeviceType.keyboard;
+    const deleted = GestureLocation(device: mouse, editId: 2);
 
-    test('clears open when pointing at the deleted index', () {
+    test('clears open when pointing at the deleted gesture', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       _controller(container).go(
-        const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 2),
-          filter: mouse,
-        ),
+        const GesturesDestination(open: deleted, filter: mouse),
       );
-      _controller(container).onGestureDeleted(mouse, 2);
+      _controller(container).onGestureDeleted(deleted);
 
       expect(
         _state(container).current,
@@ -566,44 +564,24 @@ void main() {
       );
     });
 
-    test('decrements open.index when it was above the deleted index', () {
+    test('leaves entries open on other gestures untouched', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      // Identity locations stay valid across deletes — no index shifting.
       _controller(
         container,
       ).go(
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 5),
+          open: GestureLocation(device: mouse, editId: 5),
         ),
       );
-      _controller(container).onGestureDeleted(mouse, 2);
+      _controller(container).onGestureDeleted(deleted);
 
       expect(
         _state(container).current,
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 4),
-        ),
-      );
-    });
-
-    test('leaves open.index unchanged when it was below the deleted index', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      _controller(
-        container,
-      ).go(
-        const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 1),
-        ),
-      );
-      _controller(container).onGestureDeleted(mouse, 3);
-
-      expect(
-        _state(container).current,
-        const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 1),
+          open: GestureLocation(device: mouse, editId: 5),
         ),
       );
     });
@@ -616,15 +594,15 @@ void main() {
         container,
       ).go(
         const GesturesDestination(
-          open: GestureLocation(device: keyboard, index: 2),
+          open: GestureLocation(device: keyboard, editId: 2),
         ),
       );
-      _controller(container).onGestureDeleted(mouse, 2);
+      _controller(container).onGestureDeleted(deleted);
 
       expect(
         _state(container).current,
         const GesturesDestination(
-          open: GestureLocation(device: keyboard, index: 2),
+          open: GestureLocation(device: keyboard, editId: 2),
         ),
       );
     });
@@ -636,44 +614,34 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
+        ..go(const GesturesDestination(open: deleted, filter: mouse))
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 3),
+            open: GestureLocation(device: mouse, editId: 5),
           ),
         )
-        ..go(
-          const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 5),
-          ),
-        );
+        ..go(const GesturesDestination(open: deleted));
 
-      _controller(container).onGestureDeleted(mouse, 2);
+      _controller(container).onGestureDeleted(deleted);
 
       final history = _state(container).history;
-      // index 0 is below deleted — unchanged
       expect(
         history[1],
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 0),
+          open: GestureLocation(device: mouse, editId: 0),
         ),
       );
-      // index 3 is above deleted — decremented
-      expect(
-        history[2],
-        const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 2),
-        ),
-      );
-      // index 5 is above deleted — decremented
+      expect(history[2], const GesturesDestination(filter: mouse));
       expect(
         history[3],
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 4),
+          open: GestureLocation(device: mouse, editId: 5),
         ),
       );
+      expect(history[4], const GesturesDestination());
     });
 
     test('cursor stays at the same position after the patch', () {
@@ -681,27 +649,18 @@ void main() {
       addTearDown(container.dispose);
 
       _controller(container)
+        ..go(const GesturesDestination(open: deleted))
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 3),
-          ),
-        )
-        ..go(
-          const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 5),
+            open: GestureLocation(device: mouse, editId: 5),
           ),
         )
         ..back(); // cursor now at 1
 
-      _controller(container).onGestureDeleted(mouse, 2);
+      _controller(container).onGestureDeleted(deleted);
 
       expect(_state(container).cursor, 1);
-      expect(
-        _state(container).current,
-        const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 2),
-        ), // 3→2
-      );
+      expect(_state(container).current, const GesturesDestination());
     });
 
     test(
@@ -716,7 +675,7 @@ void main() {
             const SettingsDestination(SettingsSection.deviceSettings),
           );
 
-        _controller(container).onGestureDeleted(mouse, 0);
+        _controller(container).onGestureDeleted(deleted);
 
         expect(_state(container).history[1], const HistoryDestination());
         expect(
@@ -726,7 +685,7 @@ void main() {
       },
     );
 
-    test('is a no-op when no history entry references that device+index', () {
+    test('is a no-op when no history entry references that gesture', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -734,12 +693,14 @@ void main() {
         container,
       ).go(
         const GesturesDestination(
-          open: GestureLocation(device: mouse, index: 1),
+          open: GestureLocation(device: mouse, editId: 1),
         ),
       );
       final before = _state(container).history.toList();
 
-      _controller(container).onGestureDeleted(keyboard, 1);
+      _controller(container).onGestureDeleted(
+        const GestureLocation(device: keyboard, editId: 1),
+      );
 
       expect(_state(container).history, before);
     });
@@ -755,7 +716,7 @@ void main() {
       _controller(container)
         ..go(
           const GesturesDestination(
-            open: GestureLocation(device: mouse, index: 0),
+            open: GestureLocation(device: mouse, editId: 0),
           ),
         )
         ..go(const SettingsDestination(SettingsSection.deviceSettings))

@@ -90,7 +90,31 @@ class FrostedHeaderFrame extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.background.withValues(alpha: 0.78),
           ),
-          child: child,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 20,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        colors.background,
+                        colors.background.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              child,
+            ],
+          ),
         ),
       ),
     );

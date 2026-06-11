@@ -54,8 +54,7 @@ class _ContextMenuTile extends HookWidget {
       onLongPress: onLongPress,
       behavior: HitTestBehavior.translucent,
       child: GestureListTile(
-        device: item.device,
-        index: item.configIndex,
+        location: item.location,
         newlyAddedMarkerId: newlyAddedMarkerId,
         isSelected: isSelected,
         isMultiSelectMode: isMultiSelectMode,

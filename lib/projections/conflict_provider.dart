@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/conflict/conflict_detector.dart';
-import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:meta/meta.dart';
@@ -26,11 +25,10 @@ class ConflictReport extends Equatable {
   @override
   List<Object?> get props => [all];
 
-  List<GestureConflict> forGesture(DeviceType device, int index) =>
-      _byGesture[(device: device, index: index)] ?? const [];
+  List<GestureConflict> forGesture(GestureRef location) =>
+      _byGesture[location] ?? const [];
 
-  bool hasConflict(DeviceType device, int index) =>
-      _byGesture.containsKey((device: device, index: index));
+  bool hasConflict(GestureRef location) => _byGesture.containsKey(location);
 
   static Map<GestureRef, List<GestureConflict>> _index(
     List<GestureConflict> conflicts,
@@ -57,7 +55,7 @@ class ConflictReportNotifier extends Notifier<ConflictReport> {
     // control the cadence instead of tracking the config one-for-one.
     ref
       ..onDispose(() => _timer?.cancel())
-      ..listen(configControllerProvider, (_, _) => _onConfigChanged());
+      ..listen(draftConfigProvider, (_, _) => _onConfigChanged());
     return _compute();
   }
 

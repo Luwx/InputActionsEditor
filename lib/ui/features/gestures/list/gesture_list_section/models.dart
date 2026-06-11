@@ -51,6 +51,14 @@ final class _GestureRowItem extends _FlatItem {
 
   bool get isFirstInGroup => localGroupIndex == 0;
 
+  /// Identity location of this row. Falls back to a negative key for the
+  /// impossible null editId so the row still has a unique, never-resolving
+  /// coordinate.
+  GestureLocation get location => GestureLocation(
+    device: device,
+    editId: editId ?? -1 - configIndex,
+  );
+
   @override
   List<Object?> get props => [
     device,

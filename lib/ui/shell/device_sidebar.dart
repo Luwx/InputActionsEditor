@@ -33,6 +33,7 @@ class DeviceSidebar extends HookConsumerWidget {
     final configController = ref.read(configControllerProvider.notifier);
     // Only rebuilds when discardability flips, not on every edit.
     final canDiscard = ref.watch(canDiscardChangesProvider);
+    final canSave = ref.watch(isDirtyProvider);
 
     void goToDevice(DeviceType? device) {
       final currentView = ref.read(currentViewProvider);
@@ -46,11 +47,7 @@ class DeviceSidebar extends HookConsumerWidget {
             ? null
             : firstGestureForFilter(config, device);
         if (first != null) {
-          context.goToGesturesSelectFirst(
-            filter: device,
-            device: first.device,
-            index: first.index,
-          );
+          context.goToGesturesSelectFirst(filter: device, location: first);
           return;
         }
       }
@@ -139,21 +136,28 @@ class DeviceSidebar extends HookConsumerWidget {
                                 .item(
                                   prefix: const Icon(FLucideIcons.save),
                                   title: Text(l10n.actionSave),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    await configController.save();
-                                    if (!rootContext.mounted) return;
-                                    showFToast(
-                                      context: rootContext,
-                                      title: Text(l10n.configSaveSuccess),
-                                      suffixBuilder: (context, entry) =>
-                                          FButton.icon(
-                                            onPress: entry.dismiss,
-                                            child: const Icon(FLucideIcons.x),
-                                          ),
-                                      duration: const Duration(seconds: 3),
-                                    );
-                                  },
+                                  enabled: canSave,
+                                  onPress: canSave
+                                      ? () async {
+                                          await controller.hide();
+                                          await configController.save();
+                                          if (!rootContext.mounted) return;
+                                          showFToast(
+                                            context: rootContext,
+                                            title: Text(l10n.configSaveSuccess),
+                                            suffixBuilder: (context, entry) =>
+                                                FButton.icon(
+                                                  onPress: entry.dismiss,
+                                                  child: const Icon(
+                                                    FLucideIcons.x,
+                                                  ),
+                                                ),
+                                            duration: const Duration(
+                                              seconds: 3,
+                                            ),
+                                          );
+                                        }
+                                      : null,
                                 ),
                                 .item(
                                   prefix: const Icon(FLucideIcons.save),

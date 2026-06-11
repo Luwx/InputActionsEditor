@@ -1,3 +1,5 @@
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureLocation;
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -40,7 +42,9 @@ List<GestureConflict> _detectForDevice(DeviceType device, List<Object> raw) {
   for (final (i, g) in raw.indexed) {
     final common = gestureCommon(g);
     if (common.enabled == false) continue; // user has turned it off
-    items.add(_G(i, g, common));
+    // Live configs are normalized (assignEditIds), so the negative fallback
+    // only keeps detached test fixtures addressable.
+    items.add(_G(common.editId ?? -1 - i, g, common));
   }
 
   final conflicts = <GestureConflict>[];
@@ -53,8 +57,8 @@ List<GestureConflict> _detectForDevice(DeviceType device, List<Object> raw) {
       if (result == null) continue;
       conflicts.add(
         GestureConflict(
-          a: (device: device, index: x.index),
-          b: (device: device, index: y.index),
+          a: GestureLocation(device: device, editId: x.editId),
+          b: GestureLocation(device: device, editId: y.editId),
           aLabel: gestureDisplayName(x.gesture),
           bLabel: gestureDisplayName(y.gesture),
           kind: result.$1,
@@ -440,7 +444,7 @@ enum _Kind {
 }
 
 class _G {
-  _G(this.index, this.gesture, this.common)
+  _G(this.editId, this.gesture, this.common)
     : kind = _kindOf(gesture),
       fingers = _fingersOf(gesture),
       speed = _speedOf(gesture),
@@ -451,7 +455,7 @@ class _G {
       // cached strings instead of rebuilding the condition key for every pair.
       conditionKey = _conditionKey(common.conditions);
 
-  final int index;
+  final int editId;
   final Object gesture;
   final TriggerCommon common;
   final _Kind kind;

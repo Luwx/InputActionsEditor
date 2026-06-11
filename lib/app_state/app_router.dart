@@ -52,7 +52,7 @@ class GestureRedirectTargetController extends Notifier<GestureLocation?> {
   GestureLocation? build() => null;
 
   @override
-  set state(GestureLocation? target) => state = target;
+  set state(GestureLocation? target) => super.state = target;
 
   void clear() => state = null;
 }
@@ -75,25 +75,15 @@ extension AppNavigation on BuildContext {
 
   /// Selects a gesture, adding a history entry so mouse back restores the
   /// previous selection.
-  void selectGesture(DeviceType device, int index) {
+  void selectGesture(GestureLocation location) {
     _container
         .read(navProvider.notifier)
-        .go(
-          GesturesDestination(
-            open: GestureLocation(device: device, index: index),
-            filter: _currentFilter,
-          ),
-        );
+        .go(GesturesDestination(open: location, filter: _currentFilter));
   }
 
-  void redirectToGesture(DeviceType device, int index) {
-    _container
-        .read(gestureRedirectTargetProvider.notifier)
-        .state = GestureLocation(
-      device: device,
-      index: index,
-    );
-    selectGesture(device, index);
+  void redirectToGesture(GestureLocation location) {
+    _container.read(gestureRedirectTargetProvider.notifier).state = location;
+    selectGesture(location);
   }
 
   /// Clears the open gesture without adding a history entry.
@@ -113,18 +103,12 @@ extension AppNavigation on BuildContext {
   }
 
   void goToGesturesSelectFirst({
-    required DeviceType device,
-    required int index,
+    required GestureLocation location,
     DeviceType? filter,
   }) {
     _container
         .read(navProvider.notifier)
-        .go(
-          GesturesDestination(
-            open: GestureLocation(device: device, index: index),
-            filter: filter,
-          ),
-        );
+        .go(GesturesDestination(open: location, filter: filter));
   }
 
   void goToHistory() =>

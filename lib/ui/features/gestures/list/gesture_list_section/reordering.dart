@@ -1,9 +1,9 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-/// Applies reorder results emitted by [ReorderableGroupableList] to the config,
-/// translating between item ids ([GestureLocation]) and config
-/// indices and keeping
-/// the gesture selection / multi-selection pointing at the moved rows.
+/// Applies reorder results emitted by [ReorderableGroupableList] to the
+/// config. Item ids, the reorder edit, and selection are all identity-keyed
+/// ([GestureLocation]), so the result passes through as-is and the selection
+/// keeps pointing at the moved rows by itself.
 final class _GestureListController {
   const _GestureListController(this.ref, this.context);
 
@@ -14,35 +14,11 @@ final class _GestureListController {
     DeviceType device,
     ReorderableItemsResult<GestureLocation, String> result,
   ) {
-    final newOrder = [for (final id in result.orderedItemIds) id.index];
-    final assignments = {
-      for (final id in result.movedItemIds) id.index: result.groupId,
-    };
-
-    ref
-        .read(gestureCommandsProvider)
-        .reorderGesturesAndGroups(device, newOrder, assignments);
-
-    final selection = ref.read(selectedGestureProvider);
-    if (selection != null && selection.device == device) {
-      final newIndex = newOrder.indexOf(selection.index);
-      if (newIndex >= 0) {
-        context.selectGesture(device, newIndex);
-      }
-    }
-
-    final multiSelect = ref.read(multiSelectControllerProvider);
-    if (multiSelect != null) {
-      ref.read(multiSelectControllerProvider.notifier).state = {
-        for (final key in multiSelect)
-          key.device == device
-              ? GestureLocation(
-                  device: key.device,
-                  index: newOrder.indexOf(key.index),
-                )
-              : key,
-      }.where((key) => key.index >= 0).toSet();
-    }
+    ref.read(gestureCommandsProvider).reorderGesturesAndGroups(
+      device,
+      result.orderedItemIds,
+      {for (final id in result.movedItemIds) id: result.groupId},
+    );
   }
 
   void applyGroupReorder(DeviceType device, int from, int to) {

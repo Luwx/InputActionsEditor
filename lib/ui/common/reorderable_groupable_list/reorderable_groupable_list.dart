@@ -4,7 +4,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/bounce_free_scroll_physics.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/shrink_compensated_sliver.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
 
 /// Horizontal inset applied to grouped rows (and aligned drop indicators) so
@@ -63,7 +65,24 @@ typedef ReorderableGroupableGroupBuilder<I, G> =
       BuildContext context,
       ReorderableGroupableGroup<I, G> group,
       Widget? dragHandle,
+      bool isPinned,
+      ReorderableHeaderScrollBuilder scrollBuilder,
     );
+
+/// Scroll metrics for a group header, recomputed each frame. `scrolledUnder` is
+/// 0..1, how far the header is behind the app header (a hand-off fade).
+/// `pinOffsetPx` is the signed px of the header top vs the pin line: positive
+/// below it, 0 pinned, negative once pushed behind.
+typedef ReorderableHeaderScroll = ({double scrolledUnder, double pinOffsetPx});
+
+/// Builds part of a group header that reacts to its scroll position. The list
+/// rebuilds [builder] each frame with a [ReorderableHeaderScroll]; pass a
+/// [child] that does not depend on the value so it is built once.
+typedef ReorderableHeaderScrollBuilder =
+    Widget Function(
+      ValueWidgetBuilder<ReorderableHeaderScroll> builder, {
+      Widget? child,
+    });
 
 typedef ReorderableGroupableItemOverlayBuilder<I, G> =
     Widget? Function(BuildContext context, ReorderableGroupableItem<I, G> item);
@@ -81,6 +100,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     required this.groupBuilder,
     required this.scrollController,
     required this.borderColor,
+    required this.groupHeaderExtent,
     required this.onItemsReordered,
     required this.onGroupReordered,
     this.reorderEnabled = true,
@@ -89,6 +109,9 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     this.itemDragLabelBuilder,
     this.groupDragLabelBuilder,
     this.showTrailingDropZone = true,
+    this.leadingSlivers = const [],
+    this.leadingPinnedExtent = 0,
+    this.emptyPlaceholder,
     super.key,
   });
 
@@ -97,6 +120,11 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   final ReorderableGroupableGroupBuilder<I, G> groupBuilder;
   final ScrollController scrollController;
   final Color borderColor;
+
+  /// Fixed pin extent for group headers. Pinned persistent headers require a
+  /// declared extent, so each group's [groupBuilder] output must render at this
+  /// height.
+  final double groupHeaderExtent;
   final bool reorderEnabled;
   final Set<I> selectedItemIds;
   final ReorderableGroupableItemOverlayBuilder<I, G>? itemOverlayBuilder;
@@ -107,6 +135,18 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   final bool showTrailingDropZone;
   final ReorderableGroupableItemsReorderedCallback<I, G> onItemsReordered;
   final ReorderableGroupableGroupReorderedCallback onGroupReordered;
+
+  /// Slivers placed before the list content (e.g. a pinned app header). This
+  /// widget owns the [CustomScrollView], so they are supplied here rather than
+  /// wrapped around it, letting each group be a direct sliver child.
+  final List<Widget> leadingSlivers;
+
+  /// Combined extent of the pinned [leadingSlivers] (the app header height),
+  /// used as the pin line a group header fades against as it scrolls behind it.
+  final double leadingPinnedExtent;
+
+  /// Shown (filling the remaining viewport) when [entries] is empty.
+  final Widget? emptyPlaceholder;
 
   @override
   State<ReorderableGroupableList<I, G>> createState() =>
@@ -127,6 +167,10 @@ class _ReorderableGroupableListState<I, G>
   int? _activePointer;
   int? _routedPointer;
   bool _isDragging = false;
+
+  // Stable per-group keys on the pinned header boxes, so the header scroll
+  // measurement can read a header's painted position frame by frame.
+  final Map<G, GlobalKey> _headerKeys = {};
 
   @override
   void initState() {
@@ -212,8 +256,11 @@ class _ReorderableGroupableListState<I, G>
   void _updateAutoScroll(Offset globalPosition) {
     if (!_isDragging || !widget.scrollController.hasClients) return;
 
-    final scrollable = Scrollable.maybeOf(context);
-    final box = scrollable?.context.findRenderObject() as RenderBox?;
+    // This widget now sits above the CustomScrollView it owns, so the viewport
+    // is reached through the scroll position rather than Scrollable.of.
+    final scrollableContext =
+        widget.scrollController.position.context.notificationContext;
+    final box = scrollableContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
 
     final local = box.globalToLocal(globalPosition);
@@ -326,61 +373,152 @@ class _ReorderableGroupableListState<I, G>
     if (move != null) widget.onGroupReordered(move.from, move.to);
   }
 
-  Key _entryKey(ReorderableGroupableListEntry<I, G> entry) => switch (entry) {
-    ReorderableGroupableGroup<I, G>(:final key) => key,
-    ReorderableGroupableItem<I, G>(:final key) => key,
-  };
-
+  // The flat [widget.entries] stays the source of truth; rendering splits it
+  // into one [SliverMainAxisGroup] per group so each header pins independently.
+  // Each group is a direct child of the [CustomScrollView], not wrapped in an
+  // outer group: that outer group's pinned-overflow correction jitters when a
+  // sibling animates its extent. This widget owns the scroll view because a
+  // widget can only contribute one sliver to an enclosing CustomScrollView.
   @override
   Widget build(BuildContext context) {
-    final childCount =
-        widget.entries.length +
-        (widget.reorderEnabled && widget.showTrailingDropZone ? 1 : 0);
+    final entries = widget.entries;
+    final emptyPlaceholder = widget.emptyPlaceholder;
+    final segments = _segmentEntries(entries);
 
+    return CustomScrollView(
+      controller: widget.scrollController,
+      // Wrap the ambient physics so a shrinking extent keeps the offset in
+      // bounds (idle and mid-fling), stopping a collapse from bouncing the
+      // viewport.
+      physics: BounceFreeScrollPhysics(
+        parent: ScrollConfiguration.of(context).getScrollPhysics(context),
+      ),
+      slivers: [
+        ...widget.leadingSlivers,
+        if (entries.isEmpty && emptyPlaceholder != null)
+          SliverFillRemaining(hasScrollBody: false, child: emptyPlaceholder)
+        else ...[
+          // Each group is a pinned header, its rows, and a trailing hairline
+          // that separates it from the next group (scrolling under the next
+          // pinned header). The app header draws no line of its own.
+          // [ShrinkCompensatedSliver] corrects the scroll offset during layout
+          // while a segment's rows collapse, so the shrink never pushes a
+          // pinned header (or the content on screen) upward. Keyed so a
+          // segment reorder is not mistaken for a shrink.
+          for (var s = 0; s < segments.length; s++)
+            switch (segments[s]) {
+              _GroupSegment<I, G>(:final group, :final items) =>
+                ShrinkCompensatedSliver(
+                  key: group.key,
+                  pinnedExtent: widget.groupHeaderExtent,
+                  sliver: SliverMainAxisGroup(
+                    slivers: [
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _GroupHeaderDelegate(
+                          extent: widget.groupHeaderExtent,
+                          builder: (context, isPinned) =>
+                              _buildGroupHeader(context, group, isPinned),
+                        ),
+                      ),
+                      _buildItemSliver(context, items),
+                      if (s < segments.length - 2) _scrollingSeparatorSliver(),
+                    ],
+                  ),
+                ),
+              _UngroupedSegment<I, G>(:final items) => ShrinkCompensatedSliver(
+                // An ungrouped segment is only created with at least one item.
+                key: items.first.item.key,
+                sliver: SliverMainAxisGroup(
+                  slivers: [_buildItemSliver(context, items)],
+                ),
+              ),
+            },
+          if (widget.reorderEnabled && widget.showTrailingDropZone)
+            SliverToBoxAdapter(
+              child: _TrailingDropZone<I, G>(
+                borderColor: widget.borderColor,
+                onItemsAccept: _moveItemsToEnd,
+                onGroupAccept: _moveGroupToEnd,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _scrollingSeparatorSliver() => SliverToBoxAdapter(
+    child: Container(height: 1, color: widget.borderColor),
+  );
+
+  // Splits the flat entries into ordered segments: a group header opens a group
+  // segment that collects the items carrying its id; the rest collect into
+  // ungrouped runs. Global indices are kept for per-row border decisions.
+  List<_ListSegment<I, G>> _segmentEntries(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+  ) {
+    final segments = <_ListSegment<I, G>>[];
+    _GroupSegment<I, G>? currentGroup;
+    _UngroupedSegment<I, G>? currentUngrouped;
+
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      switch (entry) {
+        case final ReorderableGroupableGroup<I, G> group:
+          currentUngrouped = null;
+          currentGroup = _GroupSegment<I, G>(group, []);
+          segments.add(currentGroup);
+        case final ReorderableGroupableItem<I, G> item:
+          final group = currentGroup;
+          if (group != null && item.groupId == group.group.id) {
+            group.items.add((index: index, item: item));
+          } else {
+            currentGroup = null;
+            var ungrouped = currentUngrouped;
+            if (ungrouped == null) {
+              ungrouped = _UngroupedSegment<I, G>([]);
+              segments.add(ungrouped);
+              currentUngrouped = ungrouped;
+            }
+            ungrouped.items.add((index: index, item: item));
+          }
+      }
+    }
+    return segments;
+  }
+
+  Widget _buildItemSliver(
+    BuildContext context,
+    List<_IndexedItem<I, G>> items,
+  ) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index >= widget.entries.length) {
-            return _TrailingDropZone<I, G>(
-              borderColor: widget.borderColor,
-              onItemsAccept: _moveItemsToEnd,
-              onGroupAccept: _moveGroupToEnd,
-            );
-          }
-
-          final entry = widget.entries[index];
-          final child = switch (entry) {
-            final ReorderableGroupableGroup<I, G> group => _buildGroup(
+        (context, localIndex) {
+          final entry = items[localIndex];
+          // Key the sliver's direct child by identity so rows reconcile across
+          // index shifts (e.g. a delete) rather than positionally.
+          return KeyedSubtree(
+            key: entry.item.key,
+            child: _buildItem(
               context,
-              group,
-              index,
+              entry.item,
+              entry.index,
             ),
-            final ReorderableGroupableItem<I, G> item => _buildItem(
-              context,
-              item,
-              index,
-            ),
-          };
-          // Surface the entry's identity key to the sliver's direct child so
-          // rows reconcile by identity across index shifts (e.g. a delete),
-          // rather than positionally.
-          return KeyedSubtree(key: _entryKey(entry), child: child);
-        },
-        childCount: childCount,
-        findChildIndexCallback: (key) {
-          final index = widget.entries.indexWhere(
-            (entry) => _entryKey(entry) == key,
           );
-          return index >= 0 ? index : null;
+        },
+        childCount: items.length,
+        findChildIndexCallback: (key) {
+          final localIndex = items.indexWhere((e) => e.item.key == key);
+          return localIndex >= 0 ? localIndex : null;
         },
       ),
     );
   }
 
-  Widget _buildGroup(
+  Widget _buildGroupHeader(
     BuildContext context,
     ReorderableGroupableGroup<I, G> group,
-    int index,
+    bool isPinned,
   ) {
     final handle = widget.reorderEnabled
         ? _GroupDragHandle<G>(
@@ -393,26 +531,52 @@ class _ReorderableGroupableListState<I, G>
             onPointerDown: _registerPointer,
           )
         : null;
-    final row = widget.groupBuilder(context, group, handle);
-    if (!widget.reorderEnabled) return row;
+    // Stable key on the header box so [_pinCollapsingHeader] and the scroll
+    // measurement can track its painted position. Backing is the host's job.
+    final headerKey = _headerKeys.putIfAbsent(group.id, GlobalKey.new);
+    // Measure against the header box, not the consumer's output, so a consumer
+    // animation cannot feed back into the measurement.
+    Widget scrollBuilder(
+      ValueWidgetBuilder<ReorderableHeaderScroll> builder, {
+      Widget? child,
+    }) => _HeaderScrollProgress(
+      scrollable: widget.scrollController,
+      leadingInset: widget.leadingPinnedExtent,
+      measureKey: headerKey,
+      builder: builder,
+      child: child,
+    );
+    final row = widget.groupBuilder(
+      context,
+      group,
+      handle,
+      isPinned,
+      scrollBuilder,
+    );
+    if (!widget.reorderEnabled) {
+      return KeyedSubtree(key: headerKey, child: row);
+    }
 
-    return DragTarget<_ItemDragData<I>>(
-      onWillAcceptWithDetails: (_) => true,
-      onAcceptWithDetails: (details) =>
-          _moveItemsIntoGroup(details.data.itemIds, group.id),
-      builder: (context, itemCandidates, _) {
-        return DragTarget<_GroupDragData<G>>(
-          onWillAcceptWithDetails: (details) =>
-              details.data.groupId != group.id,
-          onAcceptWithDetails: (details) =>
-              _moveGroupBeforeGroup(details.data.groupId, group.id),
-          builder: (context, groupCandidates, _) => _GroupDropState(
-            isItemDropActive: itemCandidates.isNotEmpty,
-            isGroupDropActive: groupCandidates.isNotEmpty,
-            child: row,
-          ),
-        );
-      },
+    return KeyedSubtree(
+      key: headerKey,
+      child: DragTarget<_ItemDragData<I>>(
+        onWillAcceptWithDetails: (_) => true,
+        onAcceptWithDetails: (details) =>
+            _moveItemsIntoGroup(details.data.itemIds, group.id),
+        builder: (context, itemCandidates, _) {
+          return DragTarget<_GroupDragData<G>>(
+            onWillAcceptWithDetails: (details) =>
+                details.data.groupId != group.id,
+            onAcceptWithDetails: (details) =>
+                _moveGroupBeforeGroup(details.data.groupId, group.id),
+            builder: (context, groupCandidates, _) => _GroupDropState(
+              isItemDropActive: itemCandidates.isNotEmpty,
+              isGroupDropActive: groupCandidates.isNotEmpty,
+              child: row,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -458,6 +622,7 @@ class _ReorderableGroupableListState<I, G>
           : const SizedBox.shrink(),
       child: child,
     );
+    final groupId = item.groupId;
     final visibleRow = _AnimatedGroupRowVisibility(
       visible: item.isVisible,
       child: row,
@@ -478,7 +643,6 @@ class _ReorderableGroupableListState<I, G>
       ),
     );
 
-    final groupId = item.groupId;
     if (!item.isLastInGroup || groupId == null) return dropTarget;
     final nextEntry = index + 1 < widget.entries.length
         ? widget.entries[index + 1]
@@ -501,6 +665,56 @@ class _ReorderableGroupableListState<I, G>
       ],
     );
   }
+}
+
+/// Fixed-extent pinned header delegate that passes the framework's
+/// `overlapsContent` flag (true while pinned) to its [builder] so the header
+/// can restyle itself.
+class _GroupHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _GroupHeaderDelegate({required this.extent, required this.builder});
+
+  final double extent;
+  final Widget Function(BuildContext context, bool isPinned) builder;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => SizedBox.expand(child: builder(context, overlapsContent));
+
+  @override
+  bool shouldRebuild(covariant _GroupHeaderDelegate oldDelegate) =>
+      extent != oldDelegate.extent || builder != oldDelegate.builder;
+}
+
+/// An item entry paired with its global index in the flat entries list, so
+/// per-row border/first/last decisions survive the split into per-group slivers.
+typedef _IndexedItem<I, G> = ({int index, ReorderableGroupableItem<I, G> item});
+
+/// A rendering segment of the flat entries: a [_GroupSegment] (pinned header +
+/// its rows) or an [_UngroupedSegment] (a run of items with no header).
+sealed class _ListSegment<I, G> {
+  const _ListSegment();
+}
+
+final class _GroupSegment<I, G> extends _ListSegment<I, G> {
+  _GroupSegment(this.group, this.items);
+
+  final ReorderableGroupableGroup<I, G> group;
+  final List<_IndexedItem<I, G>> items;
+}
+
+final class _UngroupedSegment<I, G> extends _ListSegment<I, G> {
+  _UngroupedSegment(this.items);
+
+  final List<_IndexedItem<I, G>> items;
 }
 
 class _ItemDragData<I> {
@@ -665,7 +879,8 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isFirstInGroup) Container(height: 1, color: borderColor),
+            // No line above the first grouped row; the pinned header's bottom
+            // separator sits here.
             Container(
               decoration: BoxDecoration(
                 border: Border(
@@ -710,6 +925,110 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Measures [measureKey] against the pin line each frame and rebuilds [builder]
+/// with the resulting [ReorderableHeaderScroll]. [measureKey] is the
+/// header box (a fixed reference) so consumer animations cannot feed back in.
+class _HeaderScrollProgress extends StatefulWidget {
+  const _HeaderScrollProgress({
+    required this.scrollable,
+    required this.leadingInset,
+    required this.measureKey,
+    required this.builder,
+    required this.child,
+  });
+
+  final ScrollController scrollable;
+  final double leadingInset;
+  final GlobalKey measureKey;
+  final ValueWidgetBuilder<ReorderableHeaderScroll> builder;
+  final Widget? child;
+
+  @override
+  State<_HeaderScrollProgress> createState() => _HeaderScrollProgressState();
+}
+
+class _HeaderScrollProgressState extends State<_HeaderScrollProgress> {
+  // Far below the pin line / not measurable yet: fully visible, no frost.
+  static const ReorderableHeaderScroll _unmeasured = (
+    scrolledUnder: 0.0,
+    pinOffsetPx: 1e6,
+  );
+
+  final ValueNotifier<ReorderableHeaderScroll> _scroll = ValueNotifier(
+    _unmeasured,
+  );
+  bool _recomputeScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollable.addListener(_scheduleRecompute);
+    _scheduleRecompute();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HeaderScrollProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scrollable != widget.scrollable) {
+      oldWidget.scrollable.removeListener(_scheduleRecompute);
+      widget.scrollable.addListener(_scheduleRecompute);
+    }
+    _scheduleRecompute();
+  }
+
+  @override
+  void dispose() {
+    widget.scrollable.removeListener(_scheduleRecompute);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  // Recompute after the frame settles (reading geometry during build lags a
+  // frame). If the value still moved, re-check next frame: an animation can
+  // reach its final position via a frame with no scroll notification (a silent
+  // end clamp), so settle until stable rather than trusting the last signal.
+  void _scheduleRecompute() {
+    if (_recomputeScheduled) return;
+    _recomputeScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recomputeScheduled = false;
+      if (!mounted) return;
+      final next = _measure();
+      if (next == _scroll.value) return;
+      _scroll.value = next;
+      _scheduleRecompute();
+    });
+  }
+
+  ReorderableHeaderScroll _measure() {
+    if (!widget.scrollable.hasClients) return _unmeasured;
+    final box = widget.measureKey.currentContext?.findRenderObject();
+    final viewport = widget.scrollable.position.context.notificationContext
+        ?.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return _unmeasured;
+    if (viewport is! RenderBox || !viewport.hasSize) return _unmeasured;
+    final height = box.size.height;
+    if (height <= 0) return _unmeasured;
+    final pinLine =
+        viewport.localToGlobal(Offset.zero).dy + widget.leadingInset;
+    final headerTop = box.localToGlobal(Offset.zero).dy;
+    final pinOffsetPx = headerTop - pinLine;
+    return (
+      scrolledUnder: (-pinOffsetPx / height).clamp(0.0, 1.0),
+      pinOffsetPx: pinOffsetPx,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<ReorderableHeaderScroll>(
+      valueListenable: _scroll,
+      builder: (context, value, child) => widget.builder(context, value, child),
+      child: widget.child,
     );
   }
 }

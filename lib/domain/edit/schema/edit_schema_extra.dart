@@ -291,9 +291,47 @@ final Lens<GlobalSettings> globalSettingsLens = Lens<GlobalSettings>(
 
 Gesture? gestureAt(Config? config, GestureLocation location) {
   if (config == null) return null;
+  for (final gesture in config.gesturesForDevice(location.device)) {
+    if (gesture.common.editId == location.editId) return gesture;
+  }
+  return null;
+}
+
+/// The position of [location]'s gesture inside its device list, or null when
+/// the gesture is absent. For the (positional) list edits and UI concerns that
+/// genuinely need an index; everything else should address by [location].
+int? gestureIndexOf(Config? config, GestureLocation location) {
+  if (config == null) return null;
   final gestures = config.gesturesForDevice(location.device);
-  if (location.index < 0 || location.index >= gestures.length) return null;
-  return gestures[location.index];
+  for (var i = 0; i < gestures.length; i++) {
+    if (gestures[i].common.editId == location.editId) return i;
+  }
+  return null;
+}
+
+/// The identity location of the gesture at [index] of [device]'s list, or null
+/// when out of range. The bridge from positional UI (list rows, reorder
+/// callbacks) into the identity-keyed edit coordinate.
+GestureLocation? gestureLocationAt(
+  Config? config,
+  DeviceType device,
+  int index,
+) {
+  if (config == null) return null;
+  final gestures = config.gesturesForDevice(device);
+  if (index < 0 || index >= gestures.length) return null;
+  final editId = gestures[index].common.editId;
+  if (editId == null) return null;
+  return GestureLocation(device: device, editId: editId);
+}
+
+/// The identity location of [gesture] within [device]'s list, or null when it
+/// carries no editId yet (configs are normalized via `assignEditIds` before
+/// they reach the UI, so this is null only for detached values).
+GestureLocation? gestureLocationOf(DeviceType device, Gesture gesture) {
+  final editId = gesture.common.editId;
+  if (editId == null) return null;
+  return GestureLocation(device: device, editId: editId);
 }
 
 TriggerAction? actionAt(Config? config, ActionLocation location) {

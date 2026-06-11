@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -35,7 +37,11 @@ void main() {
         .common
         .threshold;
 
-    const loc = GestureLocation(device: DeviceType.mouse, index: 0);
+    GestureLocation locAt(ProviderContainer c, int i) => gestureLocationAt(
+      c.read(configControllerProvider).requireValue.draft,
+      DeviceType.mouse,
+      i,
+    )!;
 
     const seed = Config(
       mouseGestures: [
@@ -44,10 +50,9 @@ void main() {
       ],
     );
 
-    UpdateGestureCommon setThreshold(int index, String value) =>
+    UpdateGestureCommon setThreshold(GestureLocation loc, String value) =>
         UpdateGestureCommon(
-          DeviceType.mouse,
-          index,
+          loc,
           (common) => common.copyWith(threshold: value),
         );
 
@@ -56,8 +61,9 @@ void main() {
       await c.read(configControllerProvider.future);
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceEnabled = false;
+      final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(0, '99'), scope: loc);
+      notifier.add(setThreshold(loc, '99'), scope: loc);
       expect(thresholdAt(c, 0), '99');
 
       notifier.undo(scope: loc);
@@ -72,9 +78,10 @@ void main() {
       await c.read(configControllerProvider.future);
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceEnabled = false;
-      const loc1 = GestureLocation(device: DeviceType.mouse, index: 1);
+      final loc = locAt(c, 0);
+      final loc1 = locAt(c, 1);
 
-      notifier.add(setThreshold(0, '99'), scope: loc);
+      notifier.add(setThreshold(loc, '99'), scope: loc);
       expect(notifier.canUndo(scope: loc), isTrue);
       expect(notifier.canUndo(scope: loc1), isFalse);
     });
@@ -86,12 +93,13 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceWindow = const Duration(milliseconds: 500)
         ..clock = () => t;
+      final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(0, 'a'), scope: loc);
+      notifier.add(setThreshold(loc, 'a'), scope: loc);
       t = t.add(const Duration(milliseconds: 100));
-      notifier.add(setThreshold(0, 'b'), scope: loc);
+      notifier.add(setThreshold(loc, 'b'), scope: loc);
       t = t.add(const Duration(milliseconds: 100));
-      notifier.add(setThreshold(0, 'c'), scope: loc);
+      notifier.add(setThreshold(loc, 'c'), scope: loc);
       expect(thresholdAt(c, 0), 'c');
 
       // One undo jumps the whole burst back to the pre-burst value.
@@ -111,10 +119,11 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceWindow = const Duration(milliseconds: 500)
         ..clock = () => t;
+      final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(0, 'a'), scope: loc);
+      notifier.add(setThreshold(loc, 'a'), scope: loc);
       t = t.add(const Duration(seconds: 1));
-      notifier.add(setThreshold(0, 'b'), scope: loc);
+      notifier.add(setThreshold(loc, 'b'), scope: loc);
 
       notifier.undo(scope: loc);
       expect(thresholdAt(c, 0), 'a');
@@ -131,7 +140,7 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceEnabled = false;
 
-      notifier.add(setThreshold(1, '99'));
+      notifier.add(setThreshold(locAt(c, 1), '99'));
       notifier.add(ReorderGesture(DeviceType.mouse, 1, 0));
       expect(thresholdAt(c, 0), '99');
 
@@ -147,9 +156,10 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier)
         ..coalesceEnabled = false;
 
+      final loc = locAt(c, 0);
       bool isDirty() => c.read(configControllerProvider).value!.isDirty;
       expect(isDirty(), isFalse);
-      notifier.add(setThreshold(0, '99'), scope: loc);
+      notifier.add(setThreshold(loc, '99'), scope: loc);
       expect(isDirty(), isTrue);
 
       notifier.undo(scope: loc);

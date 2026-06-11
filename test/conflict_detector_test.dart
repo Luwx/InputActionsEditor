@@ -237,6 +237,79 @@ void main() {
     });
   });
 
+  group('instant right+left press vs stroke button combinations', () {
+    PressGesture instantRightLeft({String? name}) => PressGesture(
+      common: common(
+        buttons: [MouseButtonValue.right, MouseButtonValue.left],
+      ).copyWith(name: name),
+      instant: true,
+    );
+
+    test(
+      'stroke with no buttons (wildcard) conflicts'
+      ' with instant right+left press',
+      () {
+        final config = Config(
+          mouseGestures: [
+            instantRightLeft(),
+            const StrokeGesture(common: TriggerCommon()),
+          ],
+        );
+        final conflicts = detectConflicts(config);
+        expect(conflicts, hasLength(1));
+        expect(conflicts.single.kind, ConflictKind.instantPress);
+      },
+    );
+
+    test(
+      'stroke with [left] button does not conflict'
+      ' with instant right+left press',
+      () {
+        final config = Config(
+          mouseGestures: [
+            instantRightLeft(),
+            StrokeGesture(common: common(buttons: [MouseButtonValue.left])),
+          ],
+        );
+        expect(detectConflicts(config), isEmpty);
+      },
+    );
+
+    test(
+      'stroke with [right] button does not conflict'
+      ' with instant right+left press',
+      () {
+        final config = Config(
+          mouseGestures: [
+            instantRightLeft(),
+            StrokeGesture(common: common(buttons: [MouseButtonValue.right])),
+          ],
+        );
+        expect(detectConflicts(config), isEmpty);
+      },
+    );
+
+    test(
+      'stroke with [left, right] buttons conflicts'
+      ' with instant right+left press',
+      () {
+        final config = Config(
+          mouseGestures: [
+            instantRightLeft(),
+            StrokeGesture(
+              common: common(
+                buttons: [MouseButtonValue.left, MouseButtonValue.right],
+              ),
+            ),
+          ],
+        );
+        final conflicts = detectConflicts(config);
+        expect(conflicts, hasLength(1));
+        expect(conflicts.single.kind, ConflictKind.instantPress);
+      },
+    );
+  });
+
   test('describeFrom references the other gesture', () {
     final config = Config(
       mouseGestures: [
@@ -253,11 +326,7 @@ void main() {
       ],
     );
     final conflict = detectConflicts(config).single;
-    final fromFirst = conflict.describeFrom((
-      device: DeviceType.mouse,
-      index: 0,
-    ));
+    final fromFirst = conflict.describeFrom(conflict.a);
     expect(fromFirst, contains('Second'));
-    expect(fromFirst, contains('#2'));
   });
 }

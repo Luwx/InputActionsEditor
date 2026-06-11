@@ -17,16 +17,16 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture
 
 class TouchpadGestureEditor extends StatelessWidget {
   const TouchpadGestureEditor({
-    required this.index,
+    required this.location,
     super.key,
   });
 
-  final int index;
+  final GestureLocation location;
 
   @override
   Widget build(BuildContext context) {
     return GestureEditorLayout(
-      location: GestureLocation(device: DeviceType.touchpad, index: index),
+      location: location,
       sections: const [
         FingerCountField(),
         _TouchpadTriggerSection(),

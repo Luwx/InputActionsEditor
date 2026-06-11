@@ -14,6 +14,8 @@ import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/settings_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show ActionLocation, GestureLocation, actionComponentField;
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureLocationAt;
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -81,6 +83,15 @@ List<String> _names(List<dynamic> gestures) => [
   for (final g in gestures) (g as Gesture).common.name!,
 ];
 
+/// Identity location of the gesture at [index] in a normalized config. The
+/// pure edit tests address gestures by identity, so fixtures pass through
+/// [assignEditIds] first.
+GestureLocation _at(Config c, DeviceType device, int index) =>
+    gestureLocationAt(c, device, index)!;
+
+/// A location no normalized gesture ever carries (ids are positive).
+const _missing = GestureLocation(device: DeviceType.mouse, editId: -99);
+
 // ---------------------------------------------------------------------------
 // Controller test double / helpers
 // ---------------------------------------------------------------------------
@@ -137,39 +148,47 @@ void main() {
       expect(c.touchscreenGestures.single.common.name, 'ts1');
     });
 
-    test('RemoveGesture deletes at index, ignores out of bounds', () {
-      const c = Config(mouseGestures: [_mouse1, _mouse2]);
+    test('RemoveGesture deletes by identity, ignores a missing gesture', () {
+      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
       expect(
-        _names(RemoveGesture(DeviceType.mouse, 0).apply(c).mouseGestures),
-        [
-          'm2',
-        ],
+        _names(
+          RemoveGesture(_at(c, DeviceType.mouse, 0)).apply(c).mouseGestures,
+        ),
+        ['m2'],
       );
-      expect(RemoveGesture(DeviceType.mouse, 5).apply(c), c);
+      expect(RemoveGesture(_missing).apply(c), c);
+    });
+
+    test('RemoveGesture follows the gesture across a reorder', () {
+      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final m1 = _at(c, DeviceType.mouse, 0);
+      final reordered = ReorderGesture(DeviceType.mouse, 0, 2).apply(c);
+      expect(
+        _names(RemoveGesture(m1).apply(reordered).mouseGestures),
+        ['m2'],
+      );
     });
 
     test('DuplicateGesture inserts a copy after the original', () {
-      const c = Config(mouseGestures: [_mouse1, _mouse2]);
-      final out = DuplicateGesture(DeviceType.mouse, 0).apply(c);
+      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final out = DuplicateGesture(_at(c, DeviceType.mouse, 0)).apply(c);
       expect(_names(out.mouseGestures), ['m1', 'm1', 'm2']);
     });
 
-    test('UpdateGesture transforms in place, ignores out of bounds', () {
-      const c = Config(keyboardGestures: [_kbd1, _kbd2]);
+    test('UpdateGesture transforms in place, ignores a missing gesture', () {
+      final c = assignEditIds(const Config(keyboardGestures: [_kbd1, _kbd2]));
       final out = UpdateGesture(
-        DeviceType.keyboard,
-        0,
+        _at(c, DeviceType.keyboard, 0),
         (g) => g.withCommon(_rename('updated')(g.common)),
       ).apply(c);
       expect(_names(out.keyboardGestures), ['updated', 'k2']);
-      expect(UpdateGesture(DeviceType.keyboard, 9, (g) => g).apply(c), c);
+      expect(UpdateGesture(_missing, (g) => g).apply(c), c);
     });
 
     test('UpdateGestureCommon patches the shared common', () {
-      const c = Config(touchpadGestures: [_tp1]);
+      final c = assignEditIds(const Config(touchpadGestures: [_tp1]));
       final out = UpdateGestureCommon(
-        DeviceType.touchpad,
-        0,
+        _at(c, DeviceType.touchpad, 0),
         (common) => common.copyWith(threshold: '5'),
       ).apply(c);
       expect(out.touchpadGestures.single.common.threshold, '5');
@@ -189,14 +208,8 @@ void main() {
     });
 
     test('only in-place updates are CoalescingEdits', () {
-      expect(
-        UpdateGesture(DeviceType.mouse, 0, (g) => g),
-        isA<CoalescingEdit>(),
-      );
-      expect(
-        UpdateGestureCommon(DeviceType.mouse, 0, (c) => c),
-        isA<CoalescingEdit>(),
-      );
+      expect(UpdateGesture(_missing, (g) => g), isA<CoalescingEdit>());
+      expect(UpdateGestureCommon(_missing, (c) => c), isA<CoalescingEdit>());
       expect(
         AddGesture(DeviceType.mouse, _mouse1),
         isNot(isA<CoalescingEdit>()),
@@ -206,18 +219,20 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('Action edits', () {
-    const loc = GestureLocation(device: DeviceType.mouse, index: 0);
-
     TriggerAction sleep(int ms) =>
         TriggerAction(action: Action.sleep(milliseconds: ms));
 
-    Config seed(List<int> ms) => Config(
-      mouseGestures: [
-        PressGesture(
-          common: TriggerCommon(actions: [for (final m in ms) sleep(m)]),
-        ),
-      ],
+    Config seed(List<int> ms) => assignEditIds(
+      Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(actions: [for (final m in ms) sleep(m)]),
+          ),
+        ],
+      ),
     );
+
+    GestureLocation locOf(Config c) => _at(c, DeviceType.mouse, 0);
 
     List<int> msOf(Config c) => [
       for (final a in c.mouseGestures[0].common.actions)
@@ -225,27 +240,30 @@ void main() {
     ];
 
     test('AddAction appends to the gesture action list', () {
-      expect(msOf(AddAction(loc, sleep(9)).apply(seed([1, 2]))), [1, 2, 9]);
+      final c = seed([1, 2]);
+      expect(msOf(AddAction(locOf(c), sleep(9)).apply(c)), [1, 2, 9]);
     });
 
     test('RemoveAction deletes at index, ignores out of bounds', () {
-      expect(msOf(RemoveAction(loc, 0).apply(seed([1, 2]))), [2]);
       final c = seed([1, 2]);
-      expect(RemoveAction(loc, 5).apply(c), c);
+      expect(msOf(RemoveAction(locOf(c), 0).apply(c)), [2]);
+      expect(RemoveAction(locOf(c), 5).apply(c), c);
     });
 
     test('DuplicateAction inserts a copy after the original', () {
-      expect(msOf(DuplicateAction(loc, 0).apply(seed([1, 2]))), [1, 1, 2]);
+      final c = seed([1, 2]);
+      expect(msOf(DuplicateAction(locOf(c), 0).apply(c)), [1, 1, 2]);
     });
 
     test('ReorderAction moves by plain list indices', () {
-      expect(msOf(ReorderAction(loc, 0, 1).apply(seed([1, 2, 3]))), [2, 1, 3]);
+      final c = seed([1, 2, 3]);
+      expect(msOf(ReorderAction(locOf(c), 0, 1).apply(c)), [2, 1, 3]);
     });
 
     test('edits no-op when the gesture is missing', () {
       const empty = Config();
-      expect(AddAction(loc, sleep(9)).apply(empty), empty);
-      expect(RemoveAction(loc, 0).apply(empty), empty);
+      expect(AddAction(_missing, sleep(9)).apply(empty), empty);
+      expect(RemoveAction(_missing, 0).apply(empty), empty);
     });
 
     // A subtype lens (`Action` -> `PlasmaShortcutAction`) must report itself
@@ -253,25 +271,28 @@ void main() {
     // letting the `as` cast throw. This keeps revert/discard/undo from crashing
     // a still-mounted plasma field after the action type was changed.
     test('subtype lens canGet narrows by union member', () {
-      const actionLoc = ActionLocation(gesture: loc, actionIndex: 0);
-      final componentLens = actionComponentField.lens(actionLoc);
+      Config withAction(Action action) => assignEditIds(
+        Config(
+          mouseGestures: [
+            PressGesture(
+              common: TriggerCommon(actions: [TriggerAction(action: action)]),
+            ),
+          ],
+        ),
+      );
 
-      Config withAction(Action action) => Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(actions: [TriggerAction(action: action)]),
-          ),
-        ],
+      Lens<String> lensFor(Config c) => actionComponentField.lens(
+        ActionLocation(gesture: locOf(c), actionIndex: 0),
       );
 
       final input = withAction(const Action.input());
-      expect(componentLens.canGet(input), isFalse);
+      expect(lensFor(input).canGet(input), isFalse);
 
       final plasma = withAction(
         const Action.plasmaShortcut(component: 'kwin', shortcut: 'Overview'),
       );
-      expect(componentLens.canGet(plasma), isTrue);
-      expect(componentLens.get(plasma), 'kwin');
+      expect(lensFor(plasma).canGet(plasma), isTrue);
+      expect(lensFor(plasma).get(plasma), 'kwin');
     });
   });
 
@@ -343,17 +364,37 @@ void main() {
     test('ReorderAndUpdateGroups reassigns several groupIds', () {
       final m1 = _mouse1.withCommon(_mouse1.common.copyWith(groupId: 'g1'));
       final m2 = _mouse2.withCommon(_mouse2.common.copyWith(groupId: 'g1'));
-      final c = Config(mouseGestures: [m1, m2]);
+      final c = assignEditIds(Config(mouseGestures: [m1, m2]));
+      final first = _at(c, DeviceType.mouse, 0);
+      final second = _at(c, DeviceType.mouse, 1);
       final out = ReorderAndUpdateGroups(
         DeviceType.mouse,
-        [1, 0],
-        {
-          1: 'g2',
-        },
+        [second, first],
+        {second: 'g2'},
       ).apply(c);
       expect(out.mouseGestures[0].common.name, 'm2');
       expect(out.mouseGestures[0].common.groupId, 'g2');
       expect(out.mouseGestures[1].common.groupId, 'g1');
+    });
+
+    test('ReorderAndUpdateGroups drops a stale order instead of applying it '
+        'partially', () {
+      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final first = _at(c, DeviceType.mouse, 0);
+      // Misses the second gesture entirely.
+      expect(
+        ReorderAndUpdateGroups(DeviceType.mouse, [first], const {}).apply(c),
+        c,
+      );
+      // References a gesture that no longer exists.
+      expect(
+        ReorderAndUpdateGroups(
+          DeviceType.mouse,
+          [first, _missing],
+          const {},
+        ).apply(c),
+        c,
+      );
     });
   });
 
@@ -520,7 +561,10 @@ void main() {
     test('a gesture edit marks only the gesture slice dirty', () async {
       final c = _makeContainer(seed);
       (await ready(c)).add(
-        UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')),
+        UpdateGestureCommon(
+          _at(_config(c), DeviceType.mouse, 0),
+          _rename('renamed'),
+        ),
       );
       expect(_session(c).gesturesDirty.isDirty, isTrue);
       expect(_session(c).settingsDirty.isDirty, isFalse);
@@ -537,7 +581,12 @@ void main() {
       final c = _makeContainer(seed);
       (await ready(c))
         ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
-        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
+        ..add(
+          UpdateGestureCommon(
+            _at(_config(c), DeviceType.mouse, 0),
+            _rename('renamed'),
+          ),
+        )
         ..discardSettings();
 
       expect(_config(c).mouseSpeed?.events, 4); // settings restored
@@ -550,7 +599,12 @@ void main() {
       final c = _makeContainer(seed);
       (await ready(c))
         ..add(SetLens<SpeedSettings?>(_mouseSpeedLens, _speed2))
-        ..add(UpdateGestureCommon(DeviceType.mouse, 0, _rename('renamed')))
+        ..add(
+          UpdateGestureCommon(
+            _at(_config(c), DeviceType.mouse, 0),
+            _rename('renamed'),
+          ),
+        )
         ..discardGestures();
 
       expect(_config(c).mouseGestures.single.common.name, 'm1'); // restored

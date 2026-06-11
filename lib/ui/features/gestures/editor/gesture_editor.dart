@@ -7,6 +7,8 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureAt, gestureIndexOf, gestureLocationAt;
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -88,14 +90,14 @@ class _GestureEditorView extends HookConsumerWidget {
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
       addActionVisible.value = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!scrollController.hasClients) return;
-        await scrollController.animateTo(
-          0,
-          duration: Durations.medium1,
-          curve: Easing.standard,
-        );
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) async {
+      //   if (!scrollController.hasClients) return;
+      //   await scrollController.animateTo(
+      //     0,
+      //     duration: Durations.medium1,
+      //     curve: Easing.standard,
+      //   );
+      // });
     });
 
     final l10n = context.l10n;
@@ -165,10 +167,22 @@ class _GestureEditorView extends HookConsumerWidget {
                     },
                     onDuplicate: () {
                       gestureEditor.duplicate();
-                      context.selectGesture(
-                        location.device,
-                        location.index + 1,
-                      );
+                      // The copy sits right after the original and only gets
+                      // its editId once the edit lands, so its identity
+                      // location is resolved from the updated draft.
+                      final draft = ref
+                          .read(configControllerProvider)
+                          .value
+                          ?.draft;
+                      final index = gestureIndexOf(draft, location);
+                      final copy = index == null
+                          ? null
+                          : gestureLocationAt(
+                              draft,
+                              location.device,
+                              index + 1,
+                            );
+                      if (copy != null) context.selectGesture(copy);
                     },
                     onCopyYaml: () async {
                       final gesture = ref
@@ -249,6 +263,9 @@ class _GestureEditorView extends HookConsumerWidget {
           ),
           _SaveIntent: CallbackAction<_SaveIntent>(
             onInvoke: (_) async {
+              final isDirty =
+                  ref.read(configControllerProvider).value?.isDirty ?? false;
+              if (!isDirty) return null;
               await ref.read(configControllerProvider.notifier).save();
               if (!context.mounted) return null;
               showFToast(
@@ -285,24 +302,24 @@ class _GestureEditorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final key = ValueKey('${location.device.name}:${location.index}');
+    final key = ValueKey('${location.device.name}:${location.editId}');
     return switch (location.device) {
-      DeviceType.mouse => MouseGestureEditor(key: key, index: location.index),
+      DeviceType.mouse => MouseGestureEditor(key: key, location: location),
       DeviceType.keyboard => KeyboardGestureEditor(
         key: key,
-        index: location.index,
+        location: location,
       ),
       DeviceType.pointer => PointerGestureEditor(
         key: key,
-        index: location.index,
+        location: location,
       ),
       DeviceType.touchpad => TouchpadGestureEditor(
         key: key,
-        index: location.index,
+        location: location,
       ),
       DeviceType.touchscreen => TouchscreenGestureEditor(
         key: key,
-        index: location.index,
+        location: location,
       ),
     };
   }
@@ -350,17 +367,8 @@ class _MultiSelectPanel extends ConsumerWidget {
   }
 
   void _delete(BuildContext context, WidgetRef ref) {
-    final byDevice = <DeviceType, List<int>>{};
-    for (final s in selected) {
-      byDevice.putIfAbsent(s.device, () => []).add(s.index);
-    }
     final listNotifier = ref.read(gestureCommandsProvider);
-    for (final entry in byDevice.entries) {
-      final indices = entry.value..sort();
-      for (final i in indices.reversed) {
-        listNotifier.removeGesture(entry.key, i);
-      }
-    }
+    selected.forEach(listNotifier.removeGesture);
     context.clearGestureSelection();
     ref.read(multiSelectControllerProvider.notifier).exit();
   }
@@ -373,9 +381,9 @@ class _MultiSelectPanel extends ConsumerWidget {
         var canEnable = false;
         var canDisable = false;
         for (final sel in selected) {
-          final gestures = config.gesturesForDevice(sel.device);
-          if (sel.index < 0 || sel.index >= gestures.length) continue;
-          final isEnabled = gestures[sel.index].common.enabled != false;
+          final gesture = gestureAt(config, sel);
+          if (gesture == null) continue;
+          final isEnabled = gesture.common.enabled != false;
           if (isEnabled) {
             canDisable = true;
           } else {

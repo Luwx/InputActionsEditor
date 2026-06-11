@@ -1,14 +1,19 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 
 part 'app_state.freezed.dart';
+
+/// Restart-stable snapshot of the open gesture. Selections are identity-keyed
+/// in memory (GestureLocation carries an editId), but editIds are
+/// process-local, so the persisted form stays positional and is resolved back
+/// into an identity location against the draft on the first config load.
+typedef StoredGestureSelection = ({DeviceType device, int index});
 
 @freezed
 abstract class AppState with _$AppState {
   const factory AppState({
     DeviceType? gestureFilter,
-    GestureLocation? selectedGesture,
+    StoredGestureSelection? selectedGesture,
     @Default(0.3) double gestureListWidth,
   }) = _AppState;
 
@@ -26,7 +31,7 @@ abstract class AppState with _$AppState {
         : null;
     final index = json['gesture_index'] as int?;
     final selectedGesture = device != null && index != null
-        ? GestureLocation(device: device, index: index)
+        ? (device: device, index: index)
         : null;
 
     return AppState(

@@ -143,10 +143,7 @@ _GestureListChoreography _useGestureListChoreography(
     final target = scrollTarget.value;
     if (target == null) return;
     final flatIndex = viewModel.flatItems.indexWhere(
-      (item) =>
-          item is _GestureRowItem &&
-          item.device == target.device &&
-          item.configIndex == target.index,
+      (item) => item is _GestureRowItem && item.location == target,
     );
     if (flatIndex < 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) => clearScrollTarget());
@@ -185,7 +182,7 @@ _GestureListChoreography _useGestureListChoreography(
     }
     clearQueuedAutoSelect();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.selectGesture(first.device, first.configIndex);
+      context.selectGesture(first.location);
     });
   }
 
