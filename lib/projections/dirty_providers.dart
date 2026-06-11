@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:input_actions_editor/domain/diff/config_slices.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
@@ -8,27 +7,25 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
-import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+
+// All providers here are single-hop selectors on the config controller; see
+// [selectSession] for why they must not be derived from one another. The
+// `DirtyMarkState` families and their `bool` shortcuts therefore project the
+// session independently instead of one watching the other.
 
 /// Dirty state of the settings slice (everything that is not gesture data).
 /// Drives the settings-wide Save/Discard control: `.isDirty` enables Save,
 /// `.canRevert` enables Discard. Reactive companion to
 /// `EditSession.settingsDirty`.
-final settingsDirtyStateProvider = Provider<DirtyMarkState>((ref) {
-  return settingsDirtyState(
-    ref.watch(draftConfigProvider),
-    ref.watch(savedConfigProvider),
-  );
-});
+final settingsDirtyStateProvider = Provider<DirtyMarkState>(
+  (ref) => selectSession(ref, (s) => s.settingsDirty),
+);
 
 /// Dirty state of the gesture slice. Mirror of [settingsDirtyStateProvider].
-final gesturesDirtyStateProvider = Provider<DirtyMarkState>((ref) {
-  return gesturesDirtyState(
-    ref.watch(draftConfigProvider),
-    ref.watch(savedConfigProvider),
-  );
-});
+final gesturesDirtyStateProvider = Provider<DirtyMarkState>(
+  (ref) => selectSession(ref, (s) => s.gesturesDirty),
+);
 
 /// Whether the draft has changes that can be reverted to a saved baseline.
 ///
@@ -48,126 +45,131 @@ final isDirtyProvider = Provider<bool>(
 );
 
 final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
-    Provider.family<DirtyMarkState, Lens<dynamic>>((ref, lens) {
-      final currentRead = _readLens(
-        ref.watch(draftConfigProvider),
-        lens,
-      );
-      final savedRead = _readLens(ref.watch(savedConfigProvider), lens);
-      return dirtyMarkState(
-        current: currentRead.value,
-        saved: savedRead.value,
-        hasSavedBacking: savedRead.exists,
-      );
-    });
+    Provider.family<DirtyMarkState, Lens<dynamic>>(
+      (ref, lens) => selectSession(ref, (s) => _lensDirtyState(s, lens)),
+    );
 
 final ProviderFamily<DirtyMarkState, RootConfigDirtyField>
 rootConfigDirtyStateProvider =
-    Provider.family<DirtyMarkState, RootConfigDirtyField>((ref, field) {
-      final current = comparableRootConfigFieldValue(
-        ref.watch(draftConfigProvider),
-        field,
-      );
-      final savedConfig = ref.watch(savedConfigProvider);
-      final saved = comparableRootConfigFieldValue(savedConfig, field);
-      return dirtyMarkState(
-        current: current,
-        saved: saved,
-        hasSavedBacking: rootConfigFieldHasSavedBacking(savedConfig, field),
-      );
-    });
+    Provider.family<DirtyMarkState, RootConfigDirtyField>(
+      (ref, field) =>
+          selectSession(ref, (s) => _rootConfigDirtyState(s, field)),
+    );
 
 final ProviderFamily<DirtyMarkState, GestureLocation>
-gestureDirtyStateProvider = Provider.family<DirtyMarkState, GestureLocation>((
-  ref,
-  location,
-) {
-  final current = comparableGesture(
-    gestureAt(ref.watch(draftConfigProvider), location),
-  );
-  final saved = comparableGesture(ref.watch(savedGestureProvider(location)));
-  return dirtyMarkState(
-    current: current,
-    saved: saved,
-    hasSavedBacking: saved != null,
-  );
-});
+gestureDirtyStateProvider = Provider.family<DirtyMarkState, GestureLocation>(
+  (ref, location) => selectSession(ref, (s) => _gestureDirtyState(s, location)),
+);
 
 final ProviderFamily<DirtyMarkState, GestureSectionLocation>
 gestureSectionDirtyStateProvider =
-    Provider.family<DirtyMarkState, GestureSectionLocation>((ref, location) {
-      final current = gestureAt(
-        ref.watch(draftConfigProvider),
-        location.gesture,
-      )?.common;
-
-      final savedGesture = ref.watch(savedGestureProvider(location.gesture));
-      final saved = savedGesture?.common;
-
-      return dirtyMarkState(
-        current: comparableGestureSectionValue(current, location.field),
-        saved: comparableGestureSectionValue(saved, location.field),
-        hasSavedBacking: savedGesture != null,
-      );
-    });
+    Provider.family<DirtyMarkState, GestureSectionLocation>(
+      (ref, location) =>
+          selectSession(ref, (s) => _gestureSectionDirtyState(s, location)),
+    );
 
 final ProviderFamily<DirtyMarkState, GestureLocation>
 gestureTriggerConfigDirtyStateProvider =
-    Provider.family<DirtyMarkState, GestureLocation>((ref, location) {
-      final currentGesture = gestureAt(
-        ref.watch(draftConfigProvider),
-        location,
-      );
-      final savedGesture = ref.watch(savedGestureProvider(location));
-      return dirtyMarkState(
-        current: [
-          comparableTriggerConfigValue(currentGesture?.common),
-          comparableGestureTypeValue(currentGesture),
-        ],
-        saved: [
-          comparableTriggerConfigValue(savedGesture?.common),
-          comparableGestureTypeValue(savedGesture),
-        ],
-        hasSavedBacking: savedGesture != null,
-      );
-    });
+    Provider.family<DirtyMarkState, GestureLocation>(
+      (ref, location) => selectSession(
+        ref,
+        (s) => _gestureTriggerConfigDirtyState(s, location),
+      ),
+    );
 
 final ProviderFamily<DirtyMarkState, ActionLocation> actionDirtyStateProvider =
-    Provider.family<DirtyMarkState, ActionLocation>((ref, location) {
-      final current = comparableTriggerActionValue(
-        actionAt(ref.watch(draftConfigProvider), location),
-      );
-      final saved = comparableTriggerActionValue(
-        ref.watch(savedActionProvider(location)),
-      );
-      return dirtyMarkState(
-        current: current,
-        saved: saved,
-        hasSavedBacking: saved != null,
-      );
-    });
+    Provider.family<DirtyMarkState, ActionLocation>(
+      (ref, location) =>
+          selectSession(ref, (s) => _actionDirtyState(s, location)),
+    );
 
 final ProviderFamily<bool, GestureLocation> gestureDirtyProvider =
-    Provider.family<bool, GestureLocation>((ref, location) {
-      return ref.watch(gestureDirtyStateProvider(location)).isDirty;
-    });
-
-final ProviderFamily<bool, GestureSectionLocation> gestureSectionDirtyProvider =
-    Provider.family<bool, GestureSectionLocation>((ref, location) {
-      return ref.watch(gestureSectionDirtyStateProvider(location)).isDirty;
-    });
-
-final ProviderFamily<bool, GestureLocation> gestureTriggerConfigDirtyProvider =
-    Provider.family<bool, GestureLocation>((ref, location) {
-      return ref
-          .watch(gestureTriggerConfigDirtyStateProvider(location))
-          .isDirty;
-    });
+    Provider.family<bool, GestureLocation>(
+      (ref, location) =>
+          selectSession(ref, (s) => _gestureDirtyState(s, location).isDirty),
+    );
 
 final ProviderFamily<bool, ActionLocation> actionDirtyProvider =
-    Provider.family<bool, ActionLocation>((ref, location) {
-      return ref.watch(actionDirtyStateProvider(location)).isDirty;
-    });
+    Provider.family<bool, ActionLocation>(
+      (ref, location) =>
+          selectSession(ref, (s) => _actionDirtyState(s, location).isDirty),
+    );
+
+DirtyMarkState _lensDirtyState(EditSession session, Lens<dynamic> lens) {
+  final currentRead = _readLens(session.draft, lens);
+  final savedRead = _readLens(session.saved, lens);
+  return dirtyMarkState(
+    current: currentRead.value,
+    saved: savedRead.value,
+    hasSavedBacking: savedRead.exists,
+  );
+}
+
+DirtyMarkState _rootConfigDirtyState(
+  EditSession session,
+  RootConfigDirtyField field,
+) {
+  return dirtyMarkState(
+    current: comparableRootConfigFieldValue(session.draft, field),
+    saved: comparableRootConfigFieldValue(session.saved, field),
+    hasSavedBacking: rootConfigFieldHasSavedBacking(session.saved, field),
+  );
+}
+
+DirtyMarkState _gestureDirtyState(
+  EditSession session,
+  GestureLocation location,
+) {
+  final saved = comparableGesture(gestureAt(session.saved, location));
+  return dirtyMarkState(
+    current: comparableGesture(gestureAt(session.draft, location)),
+    saved: saved,
+    hasSavedBacking: saved != null,
+  );
+}
+
+DirtyMarkState _gestureSectionDirtyState(
+  EditSession session,
+  GestureSectionLocation location,
+) {
+  final savedGesture = gestureAt(session.saved, location.gesture);
+  return dirtyMarkState(
+    current: comparableGestureSectionValue(
+      gestureAt(session.draft, location.gesture)?.common,
+      location.field,
+    ),
+    saved: comparableGestureSectionValue(savedGesture?.common, location.field),
+    hasSavedBacking: savedGesture != null,
+  );
+}
+
+DirtyMarkState _gestureTriggerConfigDirtyState(
+  EditSession session,
+  GestureLocation location,
+) {
+  final currentGesture = gestureAt(session.draft, location);
+  final savedGesture = gestureAt(session.saved, location);
+  return dirtyMarkState(
+    current: [
+      comparableTriggerConfigValue(currentGesture?.common),
+      comparableGestureTypeValue(currentGesture),
+    ],
+    saved: [
+      comparableTriggerConfigValue(savedGesture?.common),
+      comparableGestureTypeValue(savedGesture),
+    ],
+    hasSavedBacking: savedGesture != null,
+  );
+}
+
+DirtyMarkState _actionDirtyState(EditSession session, ActionLocation location) {
+  final saved = comparableTriggerActionValue(actionAt(session.saved, location));
+  return dirtyMarkState(
+    current: comparableTriggerActionValue(actionAt(session.draft, location)),
+    saved: saved,
+    hasSavedBacking: saved != null,
+  );
+}
 
 ({bool exists, Object? value}) _readLens(Config? config, Lens<dynamic> lens) {
   if (config == null) return (exists: false, value: null);

@@ -12,40 +12,45 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
+// All providers here are single-hop selectors on the config controller; see
+// [selectSession] for why they must not be derived from one another.
+
 final savedConfigProvider = Provider<Config?>(
-  (ref) =>
-      ref.watch(configControllerProvider.select((s) => s.requireValue.saved)),
+  (ref) => selectSession(ref, (s) => s.saved),
 );
 
 final ProviderFamily<Gesture?, GestureLocation> savedGestureProvider =
     Provider.family<Gesture?, GestureLocation>(
-      (ref, location) => gestureAt(ref.watch(savedConfigProvider), location),
+      (ref, location) =>
+          selectSession(ref, (s) => gestureAt(s.saved, location)),
     );
 
 final ProviderFamily<TriggerCommon?, GestureLocation>
 savedGestureCommonProvider = Provider.family<TriggerCommon?, GestureLocation>(
-  (ref, location) => ref.watch(savedGestureProvider(location))?.common,
+  (ref, location) =>
+      selectSession(ref, (s) => gestureAt(s.saved, location)?.common),
 );
 
 final ProviderFamily<TriggerAction?, ActionLocation> savedActionProvider =
     Provider.family<TriggerAction?, ActionLocation>(
-      (ref, location) => actionAt(ref.watch(savedConfigProvider), location),
+      (ref, location) => selectSession(ref, (s) => actionAt(s.saved, location)),
     );
 
-final savedGlobalSettingsProvider = Provider<GlobalSettings?>((ref) {
-  return ref.watch(savedConfigProvider)?.globalSettings;
-});
+final savedGlobalSettingsProvider = Provider<GlobalSettings?>(
+  (ref) => selectSession(ref, (s) => s.saved?.globalSettings),
+);
 
 final ProviderFamily<DeviceRuleProperties?, DeviceType>
 savedDevicePropertiesProvider =
     Provider.family<DeviceRuleProperties?, DeviceType>(
-      (ref, device) => defaultDeviceRule(
-        ref.watch(savedConfigProvider),
-        device,
-      )?.properties,
+      (ref, device) => selectSession(
+        ref,
+        (s) => defaultDeviceRule(s.saved, device)?.properties,
+      ),
     );
 
 final ProviderFamily<SpeedSettings?, DeviceType> savedSpeedSettingsProvider =
     Provider.family<SpeedSettings?, DeviceType>(
-      (ref, device) => ref.watch(savedConfigProvider)?.speedForDevice(device),
+      (ref, device) =>
+          selectSession(ref, (s) => s.saved?.speedForDevice(device)),
     );
