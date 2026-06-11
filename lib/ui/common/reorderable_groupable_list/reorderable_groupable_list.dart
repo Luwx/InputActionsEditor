@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/bounce_free_scroll_physics.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/marquee_overlay.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/shrink_compensated_sliver.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
@@ -112,6 +114,11 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     this.leadingSlivers = const [],
     this.leadingPinnedExtent = 0,
     this.emptyPlaceholder,
+    this.marqueeEnabled = false,
+    this.marqueeColor = const Color(0xFF3B82F6),
+    this.onMarqueeStart,
+    this.onMarqueeUpdate,
+    this.onMarqueeEnd,
     super.key,
   });
 
@@ -148,6 +155,26 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   /// Shown (filling the remaining viewport) when [entries] is empty.
   final Widget? emptyPlaceholder;
 
+  /// Enables rubber-band (marquee) selection: a primary-mouse drag starting on
+  /// empty list body draws a selection box that reports the item ids it covers.
+  /// Mouse drags do not scroll on desktop, so this never fights the viewport.
+  final bool marqueeEnabled;
+
+  /// Fill/outline tint of the marquee box.
+  final Color marqueeColor;
+
+  /// Called once when a marquee drag begins. [additive] is true when a modifier
+  /// (shift/ctrl/meta) is held, signalling the host to extend its existing
+  /// selection rather than replace it.
+  final void Function(bool additive)? onMarqueeStart;
+
+  /// Called as the box moves with the set of item ids currently inside it.
+  final void Function(Set<I> covered)? onMarqueeUpdate;
+
+  /// Called when the marquee ends. [canceled] is true if it was aborted (escape
+  /// or pointer cancel) and the host should restore its pre-marquee selection.
+  final void Function(Set<I> covered, {required bool canceled})? onMarqueeEnd;
+
   @override
   State<ReorderableGroupableList<I, G>> createState() =>
       _ReorderableGroupableListState<I, G>();
@@ -158,6 +185,13 @@ class _ReorderableGroupableListState<I, G>
   static const _autoScrollEdge = 64.0;
   static const _autoScrollMaxStep = 18.0;
   static const _autoScrollFrame = Duration(milliseconds: 16);
+
+  // The pointer must travel at least this far (roughly one row height) before a
+  // press becomes a marquee, so a click or small drag stays a row interaction.
+  static const _marqueeStartThreshold = 44.0;
+  // Pressing within this band of the right edge grabs the scrollbar, not a
+  // marquee.
+  static const _scrollbarEdge = 16.0;
 
   final _controller = ReorderableGroupableController<I, G>();
 
@@ -172,6 +206,33 @@ class _ReorderableGroupableListState<I, G>
   // measurement can read a header's painted position frame by frame.
   final Map<G, GlobalKey> _headerKeys = {};
 
+  // Per-item measurement keys and the last content-space rect we saw for each,
+  // so the marquee can hit-test rows that scrolled out of view after passing
+  // under the box.
+  final Map<I, GlobalKey> _itemMeasureKeys = {};
+  final Map<I, Rect> _itemContentRects = {};
+
+  // Box in viewport-local coordinates, fed to the overlay without rebuilding
+  // the list.
+  final ValueNotifier<Rect?> _marqueeRect = ValueNotifier(null);
+
+  // A press that may become a marquee once it passes the start slop.
+  bool _marqueePending = false;
+  bool _marqueeActive = false;
+  bool _marqueeAdditive = false;
+  int? _marqueeRoutedPointer;
+  Offset? _marqueeDownGlobal;
+  // Anchor in content space (viewport-local + scroll offset) so the box stays
+  // pinned to content while auto-scrolling.
+  Offset? _marqueeAnchorContent;
+  Offset? _marqueeLastGlobal;
+  // Last reported covered set. Moves that don't change which rows the box spans
+  // skip the (expensive) host rebuild — only the box visual updates per frame.
+  Set<I>? _lastCovered;
+
+  GlobalKey _measureKeyFor(I id) =>
+      _itemMeasureKeys.putIfAbsent(id, GlobalKey.new);
+
   @override
   void initState() {
     super.initState();
@@ -182,7 +243,9 @@ class _ReorderableGroupableListState<I, G>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _removePointerRoute();
+    _removeMarqueeRoute();
     _stopAutoScroll();
+    _marqueeRect.dispose();
     super.dispose();
   }
 
@@ -254,7 +317,10 @@ class _ReorderableGroupableListState<I, G>
   }
 
   void _updateAutoScroll(Offset globalPosition) {
-    if (!_isDragging || !widget.scrollController.hasClients) return;
+    if ((!_isDragging && !_marqueeActive) ||
+        !widget.scrollController.hasClients) {
+      return;
+    }
 
     // This widget now sits above the CustomScrollView it owns, so the viewport
     // is reached through the scroll position rather than Scrollable.of.
@@ -292,6 +358,10 @@ class _ReorderableGroupableListState<I, G>
       );
       if (next == position.pixels) return;
       widget.scrollController.jumpTo(next);
+      // The content moved under a stationary pointer, so the box (anchored in
+      // content space) and its covered set must be recomputed this frame.
+      final last = _marqueeLastGlobal;
+      if (_marqueeActive && last != null) _updateMarquee(last);
     });
   }
 
@@ -299,6 +369,210 @@ class _ReorderableGroupableListState<I, G>
     _autoScrollVelocity = 0;
     _autoScrollTimer?.cancel();
     _autoScrollTimer = null;
+  }
+
+  RenderBox? get _viewportBox {
+    if (!widget.scrollController.hasClients) return null;
+    final ctx = widget.scrollController.position.context.notificationContext;
+    final box = ctx?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box : null;
+  }
+
+  // A press lands here before the row's own gesture recognizers settle. Held as
+  // pending until the pointer travels past the start slop so a click still taps
+  // the row. Skips presses on a drag handle (which already claimed the pointer
+  // via [_registerPointer]), on the app header, or over the scrollbar gutter.
+  void _onMarqueePointerDown(PointerDownEvent event) {
+    if (!widget.marqueeEnabled || _marqueeActive || _marqueePending) return;
+    if (event.kind != PointerDeviceKind.mouse) return;
+    if (event.buttons != kPrimaryButton) return;
+    if (_routedPointer == event.pointer || _isDragging) return;
+    final box = _viewportBox;
+    if (box == null) return;
+    final local = box.globalToLocal(event.position);
+    if (local.dy < widget.leadingPinnedExtent) return;
+    if (local.dx > box.size.width - _scrollbarEdge) return;
+
+    _marqueePending = true;
+    _marqueeDownGlobal = event.position;
+    _marqueeAdditive = _hasSelectionModifier;
+    _activePointer = event.pointer;
+    _marqueeRoutedPointer = event.pointer;
+    GestureBinding.instance.pointerRouter.addRoute(
+      event.pointer,
+      _handleMarqueeRoute,
+    );
+  }
+
+  bool get _hasSelectionModifier {
+    final keys = HardwareKeyboard.instance.logicalKeysPressed;
+    return keys.contains(LogicalKeyboardKey.shiftLeft) ||
+        keys.contains(LogicalKeyboardKey.shiftRight) ||
+        keys.contains(LogicalKeyboardKey.controlLeft) ||
+        keys.contains(LogicalKeyboardKey.controlRight) ||
+        keys.contains(LogicalKeyboardKey.metaLeft) ||
+        keys.contains(LogicalKeyboardKey.metaRight);
+  }
+
+  void _handleMarqueeRoute(PointerEvent event) {
+    if (event is PointerMoveEvent) {
+      if (_marqueeActive) {
+        _updateMarquee(event.position);
+        return;
+      }
+      if (!_marqueePending) return;
+      // A reorder drag winning the arena cancels a pending marquee.
+      if (_isDragging) {
+        _cancelMarqueePending();
+        return;
+      }
+      final down = _marqueeDownGlobal;
+      if (down != null &&
+          (event.position - down).distance >= _marqueeStartThreshold) {
+        _activateMarquee();
+        _updateMarquee(event.position);
+      }
+    } else if (event is PointerUpEvent) {
+      if (_marqueeActive) {
+        _endMarquee(canceled: false);
+      } else {
+        _cancelMarqueePending();
+      }
+    } else if (event is PointerCancelEvent) {
+      if (_marqueeActive) {
+        _endMarquee(canceled: true);
+      } else {
+        _cancelMarqueePending();
+      }
+    }
+  }
+
+  void _activateMarquee() {
+    final box = _viewportBox;
+    final down = _marqueeDownGlobal;
+    if (box == null || down == null) {
+      _cancelMarqueePending();
+      return;
+    }
+    final pixels = widget.scrollController.position.pixels;
+    final local = box.globalToLocal(down);
+    _marqueeAnchorContent = Offset(local.dx, local.dy + pixels);
+    _marqueePending = false;
+    _marqueeActive = true;
+    _itemContentRects.clear();
+    _lastCovered = null;
+    widget.onMarqueeStart?.call(_marqueeAdditive);
+  }
+
+  void _updateMarquee(Offset globalPosition) {
+    final box = _viewportBox;
+    final anchor = _marqueeAnchorContent;
+    if (box == null || anchor == null) return;
+    _marqueeLastGlobal = globalPosition;
+    final pixels = widget.scrollController.position.pixels;
+    final local = box.globalToLocal(globalPosition);
+    final currentContent = Offset(local.dx, local.dy + pixels);
+    final contentRect = Rect.fromPoints(anchor, currentContent);
+
+    _measureItems(box, pixels);
+    final covered = <I>{
+      for (final entry in _itemContentRects.entries)
+        if (_overlaps(contentRect, entry.value)) entry.key,
+    };
+
+    // Translate back to viewport space for painting; the overlay's ClipRect
+    // trims any part that runs past the viewport edges. This updates every
+    // frame so the box tracks the pointer smoothly.
+    _marqueeRect.value = Rect.fromLTRB(
+      contentRect.left,
+      contentRect.top - pixels,
+      contentRect.right,
+      contentRect.bottom - pixels,
+    );
+
+    // The host rebuild (selection highlight) only fires when the spanned rows
+    // actually change, not on every sub-row pixel of movement.
+    if (_lastCovered == null || !setEquals(_lastCovered, covered)) {
+      _lastCovered = covered;
+      widget.onMarqueeUpdate?.call(covered);
+    }
+    _updateAutoScroll(globalPosition);
+  }
+
+  // Records the content-space rect of every mounted, interactive row. Rows that
+  // later scroll out keep their last rect, so the box still counts them.
+  void _measureItems(RenderBox viewport, double pixels) {
+    final viewportTop = viewport.localToGlobal(Offset.zero);
+    for (final entry in _itemMeasureKeys.entries) {
+      final ctx = entry.value.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) continue;
+      final topLeft = box.localToGlobal(Offset.zero);
+      _itemContentRects[entry.key] = Rect.fromLTWH(
+        topLeft.dx - viewportTop.dx,
+        topLeft.dy - viewportTop.dy + pixels,
+        box.size.width,
+        box.size.height,
+      );
+    }
+  }
+
+  // Inclusive overlap so a zero-width box (a straight vertical drag) still
+  // catches the full-width rows it runs through.
+  bool _overlaps(Rect a, Rect b) =>
+      a.left <= b.right &&
+      a.right >= b.left &&
+      a.top <= b.bottom &&
+      a.bottom >= b.top;
+
+  void _cancelMarqueePending() {
+    _marqueePending = false;
+    _marqueeDownGlobal = null;
+    _activePointer = null;
+    _removeMarqueeRoute();
+  }
+
+  void _endMarquee({required bool canceled}) {
+    final box = _viewportBox;
+    final anchor = _marqueeAnchorContent;
+    var covered = <I>{};
+    if (box != null && anchor != null && _marqueeLastGlobal != null) {
+      final pixels = widget.scrollController.position.pixels;
+      final local = box.globalToLocal(_marqueeLastGlobal!);
+      final contentRect = Rect.fromPoints(
+        anchor,
+        Offset(local.dx, local.dy + pixels),
+      );
+      covered = {
+        for (final entry in _itemContentRects.entries)
+          if (_overlaps(contentRect, entry.value)) entry.key,
+      };
+    }
+
+    _stopAutoScroll();
+    _removeMarqueeRoute();
+    _marqueeActive = false;
+    _marqueePending = false;
+    _activePointer = null;
+    _marqueeAnchorContent = null;
+    _marqueeDownGlobal = null;
+    _marqueeLastGlobal = null;
+    _lastCovered = null;
+    _itemContentRects.clear();
+    // Drop the box so the overlay plays its pop-out animation.
+    _marqueeRect.value = null;
+    widget.onMarqueeEnd?.call(covered, canceled: canceled);
+  }
+
+  void _removeMarqueeRoute() {
+    final pointer = _marqueeRoutedPointer;
+    if (pointer == null) return;
+    _marqueeRoutedPointer = null;
+    GestureBinding.instance.pointerRouter.removeRoute(
+      pointer,
+      _handleMarqueeRoute,
+    );
   }
 
   void _moveItemsBeforeItem(List<I> itemIds, I targetItemId) {
@@ -385,7 +659,9 @@ class _ReorderableGroupableListState<I, G>
     final emptyPlaceholder = widget.emptyPlaceholder;
     final segments = _segmentEntries(entries);
 
-    return CustomScrollView(
+    if (widget.marqueeEnabled) _pruneMeasureKeys(entries);
+
+    final scrollView = CustomScrollView(
       controller: widget.scrollController,
       // Wrap the ambient physics so a shrinking extent keeps the offset in
       // bounds (idle and mid-fling), stopping a collapse from bouncing the
@@ -445,6 +721,40 @@ class _ReorderableGroupableListState<I, G>
         ],
       ],
     );
+
+    if (!widget.marqueeEnabled) return scrollView;
+
+    return Listener(
+      // Translucent so a press on empty viewport area (below the last row,
+      // where no sliver is hit) still reaches the marquee without blocking it.
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onMarqueePointerDown,
+      child: Stack(
+        children: [
+          scrollView,
+          MarqueeSelectionOverlay(
+            rect: _marqueeRect,
+            color: widget.marqueeColor,
+            topInset: widget.leadingPinnedExtent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Forget keys/rects for ids no longer in the list so the maps don't grow
+  // without bound. Rows merely scrolled out of view stay in [entries], so their
+  // cached rect survives for the duration of a marquee.
+  void _pruneMeasureKeys(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+  ) {
+    final liveIds = <I>{
+      for (final entry in entries)
+        if (entry is ReorderableGroupableItem<I, G> && entry.interactive)
+          entry.id,
+    };
+    _itemMeasureKeys.removeWhere((id, _) => !liveIds.contains(id));
+    _itemContentRects.removeWhere((id, _) => !liveIds.contains(id));
   }
 
   Widget _scrollingSeparatorSliver() => SliverToBoxAdapter(
@@ -495,15 +805,21 @@ class _ReorderableGroupableListState<I, G>
       delegate: SliverChildBuilderDelegate(
         (context, localIndex) {
           final entry = items[localIndex];
+          var row = _buildItem(context, entry.item, entry.index);
+          // Tag interactive rows with a stable measurement key so the marquee
+          // can read their painted bounds. Ghosts (non-interactive) are skipped
+          // so they never count toward a selection.
+          if (widget.marqueeEnabled && entry.item.interactive) {
+            row = KeyedSubtree(
+              key: _measureKeyFor(entry.item.id),
+              child: row,
+            );
+          }
           // Key the sliver's direct child by identity so rows reconcile across
           // index shifts (e.g. a delete) rather than positionally.
           return KeyedSubtree(
             key: entry.item.key,
-            child: _buildItem(
-              context,
-              entry.item,
-              entry.index,
-            ),
+            child: row,
           );
         },
         childCount: items.length,

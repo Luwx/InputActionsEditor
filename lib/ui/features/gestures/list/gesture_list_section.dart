@@ -65,6 +65,9 @@ class GestureListSection extends HookConsumerWidget {
     useEffect(() => scrollController.dispose, const []);
     final choreo = _useGestureListChoreography(ref, context, scrollController);
     final transitions = _useGestureTransitions(ref, context);
+    // Selection captured when a marquee drag starts; covered rows are unioned
+    // onto it (additive) or it stays empty (replace).
+    final marqueeBase = useRef(<GestureLocation>{});
 
     void handleGestureAdded(
       DeviceType device,
@@ -272,6 +275,36 @@ class GestureListSection extends HookConsumerWidget {
                       .toSet() ??
                   const {},
               showTrailingDropZone: viewModel.deviceFilter != null,
+              marqueeEnabled: true,
+              marqueeColor: colors.primary,
+              onMarqueeStart: (additive) {
+                // Snapshot the base but don't enter multi-select yet: entering
+                // is a heavy rebuild, so defer it until a row is actually
+                // covered (keeps a drag starting on empty space cheap).
+                marqueeBase.value = additive
+                    ? {...?multiSelect}
+                    : <GestureLocation>{};
+              },
+              onMarqueeUpdate: (covered) {
+                final next = {...marqueeBase.value, ...covered};
+                if (next.isEmpty) {
+                  if (multiSelectNotifier.state != null) {
+                    multiSelectNotifier.exit();
+                  }
+                } else {
+                  multiSelectNotifier.state = next;
+                }
+              },
+              onMarqueeEnd: (covered, {required canceled}) {
+                final next = canceled
+                    ? marqueeBase.value
+                    : {...marqueeBase.value, ...covered};
+                if (next.isEmpty) {
+                  multiSelectNotifier.exit();
+                } else {
+                  multiSelectNotifier.state = next;
+                }
+              },
               itemDragLabelBuilder: (_, count) =>
                   count == 1 ? 'Move gesture' : 'Move $count gestures',
               groupDragLabelBuilder: (group) =>
