@@ -214,7 +214,7 @@ class _PinnedHeaderBacking extends StatelessWidget {
     final resolvedTint = Color.alphaBlend(
       tint,
       colors.background,
-    ).withAlpha(180);
+    ).withAlpha(100);
 
     final bgColor = Color.lerp(tint, resolvedTint, frostT);
     final decorated = DecoratedBox(
