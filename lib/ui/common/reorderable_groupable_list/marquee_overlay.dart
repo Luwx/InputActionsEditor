@@ -4,11 +4,16 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+enum MarqueeSweepCorner {
+  topLeft,
+  topRight,
+  bottomRight,
+  bottomLeft,
+}
+
 /// Visual layer for the rubber-band (marquee) selection box. It paints a faint
 /// primary-tinted fill with a primary outline while [rect] is non-null, fades
-/// in on appear, and plays a staggered "balloon pop" on disappear: the fill
-/// clears first, then the outline is eaten away by two transparent fronts that
-/// expand from the middle of the top and bottom edges out to the corners.
+/// in on appear, and plays a clockwise sweeping wipe on disappear.
 ///
 /// Lives above the scroll viewport and ignores pointers, input is owned by the
 /// list. Driven by a [ValueListenable] so updating the box never rebuilds the
@@ -16,6 +21,7 @@ import 'package:flutter/material.dart';
 class MarqueeSelectionOverlay extends StatefulWidget {
   const MarqueeSelectionOverlay({
     required this.rect,
+    required this.sweepCorner,
     required this.color,
     this.topInset = 0,
     super.key,
@@ -25,6 +31,7 @@ class MarqueeSelectionOverlay extends StatefulWidget {
   /// active. The transition to null triggers the pop-out animation over the
   /// last painted rect.
   final ValueListenable<Rect?> rect;
+  final ValueListenable<MarqueeSweepCorner> sweepCorner;
   final Color color;
 
   /// Height of the pinned leading header the box must stay beneath; the overlay
@@ -40,22 +47,25 @@ class _MarqueeSelectionOverlayState extends State<MarqueeSelectionOverlay>
     with TickerProviderStateMixin {
   late final AnimationController _appear = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 160),
+    duration: const Duration(milliseconds: 100),
   );
   late final AnimationController _exit = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 420),
+    duration: const Duration(milliseconds: 300),
   );
 
   // The rect kept on screen. Tracks the listenable while active and is held
   // through the pop-out animation after the listenable goes null.
   Rect? _painted;
+  MarqueeSweepCorner _paintedCorner = MarqueeSweepCorner.bottomLeft;
 
   @override
   void initState() {
     super.initState();
     widget.rect.addListener(_onRectChanged);
+    widget.sweepCorner.addListener(_onSweepCornerChanged);
     _painted = widget.rect.value;
+    _paintedCorner = widget.sweepCorner.value;
   }
 
   @override
@@ -65,21 +75,35 @@ class _MarqueeSelectionOverlayState extends State<MarqueeSelectionOverlay>
       oldWidget.rect.removeListener(_onRectChanged);
       widget.rect.addListener(_onRectChanged);
     }
+    if (oldWidget.sweepCorner != widget.sweepCorner) {
+      oldWidget.sweepCorner.removeListener(_onSweepCornerChanged);
+      widget.sweepCorner.addListener(_onSweepCornerChanged);
+      _paintedCorner = widget.sweepCorner.value;
+    }
   }
 
   @override
   void dispose() {
     widget.rect.removeListener(_onRectChanged);
+    widget.sweepCorner.removeListener(_onSweepCornerChanged);
     _appear.dispose();
     _exit.dispose();
     super.dispose();
+  }
+
+  void _onSweepCornerChanged() {
+    if (_painted == null) return;
+    setState(() => _paintedCorner = widget.sweepCorner.value);
   }
 
   void _onRectChanged() {
     final next = widget.rect.value;
     if (next != null) {
       final appearing = _painted == null;
-      setState(() => _painted = next);
+      setState(() {
+        _painted = next;
+        _paintedCorner = widget.sweepCorner.value;
+      });
       if (appearing) {
         _exit
           ..stop()
@@ -114,6 +138,8 @@ class _MarqueeSelectionOverlayState extends State<MarqueeSelectionOverlay>
                   rect: rect,
                   appear: _appear.value,
                   exit: _exit.value,
+                  exitDuration: _exit.duration ?? Duration.zero,
+                  sweepCorner: _paintedCorner,
                   color: widget.color,
                 ),
               ),
@@ -143,38 +169,30 @@ class _MarqueePainter extends CustomPainter {
     required this.rect,
     required this.appear,
     required this.exit,
+    required this.exitDuration,
+    required this.sweepCorner,
     required this.color,
   });
 
   final Rect rect;
   final double appear;
   final double exit;
+  final Duration exitDuration;
+  final MarqueeSweepCorner sweepCorner;
   final Color color;
 
-  // The fill clears over the first slice of the exit so the outline pop reads
-  // on its own.
-  static const _fillClearFraction = 0.35;
   static const _cornerRadius = Radius.circular(5);
+  static const _fillExitFraction = 0.1;
+  static const _outlineFadeDuration = Duration(milliseconds: 200);
 
   @override
   void paint(Canvas canvas, Size size) {
     final appearT = Curves.easeOut.transform(appear);
-    final exitT = Curves.easeIn.transform(exit);
+    final rrect = RRect.fromRectAndRadius(rect, _cornerRadius);
 
-    // The balloon swells slightly as it pops.
-    final scale = 1 + 0.06 * exitT;
-    final scaled = Rect.fromCenter(
-      center: rect.center,
-      width: rect.width * scale,
-      height: rect.height * scale,
-    );
-    final rrect = RRect.fromRectAndRadius(scaled, _cornerRadius);
-
-    canvas.saveLayer(scaled.inflate(48), Paint());
-
-    final fillProgress = (exit / _fillClearFraction).clamp(0.0, 1.0);
-    final fillFade = 1 - Curves.easeIn.transform(fillProgress);
-    final fillAlpha = 0.07 * appearT * fillFade;
+    final fillExit = (exit / _fillExitFraction).clamp(0.0, 1.0);
+    final fillAlpha =
+        0.07 * appearT * (1 - Curves.easeOutCubic.transform(fillExit));
     if (fillAlpha > 0) {
       canvas.drawRRect(
         rrect,
@@ -182,39 +200,155 @@ class _MarqueePainter extends CustomPainter {
       );
     }
 
-    canvas.drawRRect(
-      rrect,
-      Paint()
+    _drawTrimmedOutline(
+      canvas,
+      rect,
+      removedFraction: _outlineRemovedFraction,
+      paint: Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
-        ..color = color.withValues(alpha: appearT),
+        ..strokeCap = StrokeCap.butt
+        ..strokeJoin = StrokeJoin.round
+        ..color = color.withValues(alpha: appearT * _outlineExitFade),
     );
+  }
 
-    if (exit > 0) {
-      // Two transparent fronts grow from the midpoints of the top and bottom
-      // edges and erase the outline outward to the corners (BlendMode.dstOut),
-      // so the box dissolves from its middle like a popping bubble.
-      final topMid = Offset(scaled.center.dx, scaled.top);
-      final bottomMid = Offset(scaled.center.dx, scaled.bottom);
-      // Reach from a midpoint to the farthest corner.
-      final maxRadius = Offset(scaled.width / 2, scaled.height).distance + 6;
-      final radius = math.max(exitT * maxRadius, 0.01);
-      for (final center in [topMid, bottomMid]) {
-        final shader = const RadialGradient(
-          colors: [Colors.white, Colors.white, Colors.transparent],
-          stops: [0.0, 0.55, 1.0],
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
-        canvas.drawCircle(
-          center,
-          radius,
-          Paint()
-            ..blendMode = BlendMode.dstOut
-            ..shader = shader,
-        );
-      }
+  double get _outlineRemovedFraction => Easing.standard.transform(exit);
+
+  double get _outlineFadeFraction {
+    final exitMilliseconds = exitDuration.inMilliseconds;
+    if (exitMilliseconds <= 0) return 0;
+    return (_outlineFadeDuration.inMilliseconds / exitMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
+  double get _outlineExitFade {
+    final fadeFraction = _outlineFadeFraction;
+    if (fadeFraction <= 0) return 1;
+    final fadeStart = 1 - fadeFraction;
+    if (exit <= fadeStart) return 1;
+
+    final fadeT = ((exit - fadeStart) / fadeFraction).clamp(0.0, 1.0);
+    return 1 - Curves.easeOut.transform(fadeT);
+  }
+
+  void _drawTrimmedOutline(
+    Canvas canvas,
+    Rect bounds, {
+    required double removedFraction,
+    required Paint paint,
+  }) {
+    final outline = _clockwiseOutline(bounds, sweepCorner);
+    final metrics = outline.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+
+    final totalLength = metrics.fold<double>(
+      0,
+      (sum, metric) => sum + metric.length,
+    );
+    final removed = (totalLength * removedFraction).clamp(0.0, totalLength);
+    if (removed >= totalLength) {
+      return;
     }
 
-    canvas.restore();
+    var skipped = 0.0;
+    final remaining = Path();
+    for (final metric in metrics) {
+      final metricStart = skipped;
+      final metricEnd = skipped + metric.length;
+      skipped = metricEnd;
+      if (removed >= metricEnd) continue;
+
+      final metricRemoved = removed - metricStart;
+      final start = metricRemoved > 0 ? metricRemoved : 0.0;
+      remaining.addPath(metric.extractPath(start, metric.length), Offset.zero);
+    }
+
+    canvas.drawPath(remaining, paint);
+  }
+
+  Path _clockwiseOutline(Rect bounds, MarqueeSweepCorner startCorner) {
+    final radius = math.min(
+      _cornerRadius.x,
+      math.min(bounds.width, bounds.height) / 2,
+    );
+    final topLeftArc = Rect.fromLTWH(
+      bounds.left,
+      bounds.top,
+      radius * 2,
+      radius * 2,
+    );
+    final topRightArc = Rect.fromLTWH(
+      bounds.right - radius * 2,
+      bounds.top,
+      radius * 2,
+      radius * 2,
+    );
+    final bottomRightArc = Rect.fromLTWH(
+      bounds.right - radius * 2,
+      bounds.bottom - radius * 2,
+      radius * 2,
+      radius * 2,
+    );
+    final bottomLeftArc = Rect.fromLTWH(
+      bounds.left,
+      bounds.bottom - radius * 2,
+      radius * 2,
+      radius * 2,
+    );
+
+    return switch (startCorner) {
+      MarqueeSweepCorner.bottomLeft =>
+        Path()
+          ..moveTo(bounds.left + radius, bounds.bottom)
+          ..arcTo(bottomLeftArc, math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.left, bounds.top + radius)
+          ..arcTo(topLeftArc, math.pi, math.pi / 2, false)
+          ..lineTo(bounds.right - radius, bounds.top)
+          ..arcTo(topRightArc, -math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.right, bounds.bottom - radius)
+          ..arcTo(bottomRightArc, 0, math.pi / 2, false)
+          ..lineTo(bounds.left + radius, bounds.bottom)
+          ..close(),
+      MarqueeSweepCorner.topLeft =>
+        Path()
+          ..moveTo(bounds.left, bounds.top + radius)
+          ..arcTo(topLeftArc, math.pi, math.pi / 2, false)
+          ..lineTo(bounds.right - radius, bounds.top)
+          ..arcTo(topRightArc, -math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.right, bounds.bottom - radius)
+          ..arcTo(bottomRightArc, 0, math.pi / 2, false)
+          ..lineTo(bounds.left + radius, bounds.bottom)
+          ..arcTo(bottomLeftArc, math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.left, bounds.top + radius)
+          ..close(),
+      MarqueeSweepCorner.topRight =>
+        Path()
+          ..moveTo(bounds.right - radius, bounds.top)
+          ..arcTo(topRightArc, -math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.right, bounds.bottom - radius)
+          ..arcTo(bottomRightArc, 0, math.pi / 2, false)
+          ..lineTo(bounds.left + radius, bounds.bottom)
+          ..arcTo(bottomLeftArc, math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.left, bounds.top + radius)
+          ..arcTo(topLeftArc, math.pi, math.pi / 2, false)
+          ..lineTo(bounds.right - radius, bounds.top)
+          ..close(),
+      MarqueeSweepCorner.bottomRight =>
+        Path()
+          ..moveTo(bounds.right, bounds.bottom - radius)
+          ..arcTo(bottomRightArc, 0, math.pi / 2, false)
+          ..lineTo(bounds.left + radius, bounds.bottom)
+          ..arcTo(bottomLeftArc, math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.left, bounds.top + radius)
+          ..arcTo(topLeftArc, math.pi, math.pi / 2, false)
+          ..lineTo(bounds.right - radius, bounds.top)
+          ..arcTo(topRightArc, -math.pi / 2, math.pi / 2, false)
+          ..lineTo(bounds.right, bounds.bottom - radius)
+          ..close(),
+    };
   }
 
   @override
@@ -222,5 +356,7 @@ class _MarqueePainter extends CustomPainter {
       old.rect != rect ||
       old.appear != appear ||
       old.exit != exit ||
+      old.exitDuration != exitDuration ||
+      old.sweepCorner != sweepCorner ||
       old.color != color;
 }
