@@ -20,7 +20,6 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 /// Undo/redo scope key for bulk-edit fan-out writes.
 const Object bulkEditScope = #bulkEditScope;
 
-
 /// `id` is intentionally excluded from bulk editing, it must stay unique per
 /// gesture. Everything else in [TriggerAdvancedField] is a shared-value field.
 const Set<TriggerAdvancedField> _excludedFromBulk = {TriggerAdvancedField.id};

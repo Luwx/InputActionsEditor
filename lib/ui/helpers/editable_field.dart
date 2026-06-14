@@ -54,8 +54,7 @@ class SchemaEditableField<T> {
 
   bool get isDirty => dirty.isDirty;
 
-  TextEditingValue get textEditingValue =>
-      TextEditingValue(text: adapter.format(value));
+  String get text => adapter.format(value);
 
   void onTextChanged(TextEditingValue value) {
     switch (adapter.parse(value.text)) {

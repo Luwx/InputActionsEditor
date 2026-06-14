@@ -25,6 +25,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
@@ -187,6 +188,17 @@ class _InputEntryEditor extends HookWidget {
 
     final mode = inferInputEntryMode(entry);
 
+    void replaceTokens(List<String> tokens) {
+      onChanged(entry.copyWith(tokens: tokens));
+    }
+
+    void replaceSingleToken(String token) => replaceTokens([token]);
+
+    final keyboardText = useSyncedTextController(
+      keyboardTextValue(entry.tokens),
+      (value) => replaceSingleToken('text: ${value.text}'),
+    );
+
     final tokenKey = entry.tokens.join(', ');
     useEffect(() {
       if (KeySequenceParser.toTokens(
@@ -216,12 +228,6 @@ class _InputEntryEditor extends HookWidget {
         }
       };
     }, const []);
-
-    void replaceTokens(List<String> tokens) {
-      onChanged(entry.copyWith(tokens: tokens));
-    }
-
-    void replaceSingleToken(String token) => replaceTokens([token]);
 
     void changeMode(InputEntryMode? m) {
       if (m == null || m == mode) return;
@@ -436,10 +442,7 @@ class _InputEntryEditor extends HookWidget {
       InputEntryMode.keyboardTimeline => buildKeyboardTimelineEditor(),
       InputEntryMode.mouseTimeline => buildMouseTimelineEditor(),
       InputEntryMode.keyboardText => FTextField(
-        control: FTextFieldControl.managed(
-          initial: TextEditingValue(text: keyboardTextValue(entry.tokens)),
-          onChange: (value) => replaceSingleToken('text: ${value.text}'),
-        ),
+        control: FTextFieldControl.managed(controller: keyboardText),
         label: Text(context.l10n.inputTextToTypeLabel),
         maxLines: null,
         hint: 'Hello world',

@@ -18,7 +18,7 @@ class ValueStringTextField extends HookWidget {
     super.key,
   });
 
-  final TextEditingValue value;
+  final String value;
   final ValueChanged<TextEditingValue> onChanged;
   final Set<String> knownVariables;
   final Widget label;
@@ -27,21 +27,21 @@ class ValueStringTextField extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = useTextEditingController(text: value.text);
+    final controller = useTextEditingController(text: value);
 
     useEffect(() {
-      if (controller.text != value.text) {
+      if (controller.text != value) {
         controller.value = TextEditingValue(
-          text: value.text,
-          selection: _clampSelection(controller.selection, value.text.length),
+          text: value,
+          selection: _clampSelection(controller.selection, value.length),
         );
       }
       return null;
-    }, [value.text]);
+    }, [value]);
 
     useEffect(() {
       void listener() {
-        if (controller.text == value.text) return;
+        if (controller.text == value) return;
         onChanged(controller.value);
       }
 

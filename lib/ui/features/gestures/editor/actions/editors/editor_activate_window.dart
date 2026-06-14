@@ -29,7 +29,7 @@ class EditorActivateWindow extends ConsumerWidget {
       children: [
         Expanded(
           child: ValueStringTextField(
-            value: schemaField.textEditingValue,
+            value: schemaField.text,
             onChanged: schemaField.onTextChanged,
             knownVariables: knownWindowIdVariables,
             label: UnsavedLabel(

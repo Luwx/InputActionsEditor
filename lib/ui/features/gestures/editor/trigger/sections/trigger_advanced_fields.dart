@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
@@ -9,9 +9,10 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class TriggerAdvancedFields extends ConsumerWidget {
+class TriggerAdvancedFields extends HookConsumerWidget {
   const TriggerAdvancedFields({
     super.key,
     this.fields = TriggerAdvancedField.values,
@@ -62,6 +63,18 @@ class TriggerAdvancedFields extends ConsumerWidget {
       context,
       gestureResumeTimeoutField,
     );
+    final idController = useSyncedTextController(
+      idField.text,
+      idField.onTextChanged,
+    );
+    final thresholdController = useSyncedTextController(
+      thresholdField.text,
+      thresholdField.onTextChanged,
+    );
+    final resumeTimeoutController = useSyncedTextController(
+      resumeTimeoutField.text,
+      resumeTimeoutField.onTextChanged,
+    );
     final acceleratedField = ref.gestureSchemaField(
       context,
       gestureAcceleratedField,
@@ -109,8 +122,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                     ),
                   ),
                   control: FTextFieldControl.managed(
-                    initial: idField.textEditingValue,
-                    onChange: idField.onTextChanged,
+                    controller: idController,
                   ),
                   hint: l10n.triggerFieldIdHint,
                 ),
@@ -130,8 +142,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                     ),
                   ),
                   control: FTextFieldControl.managed(
-                    initial: thresholdField.textEditingValue,
-                    onChange: thresholdField.onTextChanged,
+                    controller: thresholdController,
                   ),
                   hint: l10n.triggerFieldThresholdHint,
                 ),
@@ -149,8 +160,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   keyboardType: TextInputType.number,
                   control: FTextFieldControl.managed(
-                    initial: resumeTimeoutField.textEditingValue,
-                    onChange: resumeTimeoutField.onTextChanged,
+                    controller: resumeTimeoutController,
                   ),
                   hint: l10n.triggerFieldResumeTimeoutHint,
                 ),

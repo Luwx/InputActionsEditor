@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/services/kglobalaccel_service.dart';
@@ -15,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/k
         kGlobalAccelShortcutsProvider,
         shortcutFilterProvider;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 bool _isApp(KGlobalAccelComponent c) {
@@ -26,24 +28,25 @@ bool _isApp(KGlobalAccelComponent c) {
       n.startsWith('io_');
 }
 
-class EditorPlasmaShortcut extends ConsumerStatefulWidget {
+class EditorPlasmaShortcut extends HookConsumerWidget {
   const EditorPlasmaShortcut({super.key});
 
   @override
-  ConsumerState<EditorPlasmaShortcut> createState() =>
-      _EditorPlasmaShortcutState();
-}
-
-class _EditorPlasmaShortcutState extends ConsumerState<EditorPlasmaShortcut> {
-  bool _manualEntry = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manualEntry = useState(false);
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final componentField = ref.actionSchemaField(context, actionComponentField);
     final shortcutField = ref.actionSchemaField(context, actionShortcutField);
+    final componentController = useSyncedTextController(
+      componentField.text,
+      componentField.onTextChanged,
+    );
+    final shortcutController = useSyncedTextController(
+      shortcutField.text,
+      shortcutField.onTextChanged,
+    );
 
     final currentComponent = componentField.value;
     final currentShortcut = shortcutField.value;
@@ -92,9 +95,9 @@ class _EditorPlasmaShortcutState extends ConsumerState<EditorPlasmaShortcut> {
     final manualLink = MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => setState(() => _manualEntry = !_manualEntry),
+        onTap: () => manualEntry.value = !manualEntry.value,
         child: Text(
-          _manualEntry
+          manualEntry.value
               ? l10n.plasmaShortcutPickerUsePicker
               : l10n.plasmaShortcutPickerManualEntry,
           style: typography.sm.copyWith(color: colors.primary),
@@ -102,14 +105,13 @@ class _EditorPlasmaShortcutState extends ConsumerState<EditorPlasmaShortcut> {
       ),
     );
 
-    if (_manualEntry) {
+    if (manualEntry.value) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FTextField(
             control: FTextFieldControl.managed(
-              initial: componentField.textEditingValue,
-              onChange: componentField.onTextChanged,
+              controller: componentController,
             ),
             label: UnsavedLabel(
               state: componentField.dirty,
@@ -124,8 +126,7 @@ class _EditorPlasmaShortcutState extends ConsumerState<EditorPlasmaShortcut> {
           const SizedBox(height: 6),
           FTextField(
             control: FTextFieldControl.managed(
-              initial: shortcutField.textEditingValue,
-              onChange: shortcutField.onTextChanged,
+              controller: shortcutController,
             ),
             label: UnsavedLabel(
               state: shortcutField.dirty,

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Editor for [ActionKind.sleep]: the pause duration in milliseconds.
-class EditorSleep extends ConsumerWidget {
+class EditorSleep extends HookConsumerWidget {
   const EditorSleep({super.key});
 
   @override
@@ -19,14 +20,15 @@ class EditorSleep extends ConsumerWidget {
       actionDurationLens,
       fallbackValue: () => 0,
     );
+    final controller = useSyncedTextController(
+      field.value.toString(),
+      (value) {
+        final parsed = int.tryParse(value.text);
+        if (parsed != null) field.onChanged(parsed);
+      },
+    );
     return FTextField(
-      control: FTextFieldControl.managed(
-        initial: TextEditingValue(text: field.value.toString()),
-        onChange: (value) {
-          final parsed = int.tryParse(value.text);
-          if (parsed != null) field.onChanged(parsed);
-        },
-      ),
+      control: FTextFieldControl.managed(controller: controller),
       label: UnsavedLabel(
         state: field.dirty,
         onRevert: field.onRevert,
