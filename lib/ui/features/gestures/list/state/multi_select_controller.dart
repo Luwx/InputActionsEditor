@@ -9,6 +9,12 @@ class MultiSelectController extends Notifier<Set<GestureLocation>?> {
     state = {initial};
   }
 
+  /// Enters select mode with an explicit set (e.g. every gesture in a group).
+  void enterAll(Iterable<GestureLocation> items) {
+    final next = items.toSet();
+    state = next.isEmpty ? null : next;
+  }
+
   void toggle(GestureLocation item) {
     final current = state;
     if (current == null) return;

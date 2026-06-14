@@ -41,11 +41,13 @@ class MouseButtonsField extends ConsumerWidget {
       buttonsField.dirty,
       exactOrderField.dirty,
     ]);
+    final mixed = buttonsField.mixed || exactOrderField.mixed;
 
     final l10n = context.l10n;
     return _Section(
       title: l10n.mouseButtonsSectionTitle,
       dirtyState: dirtyState,
+      mixed: mixed,
       onRevert: dirtyState.canRevert
           ? () {
               buttonsField.onRevert?.call();
@@ -189,6 +191,7 @@ class _Section extends StatelessWidget {
     this.dirtyState,
     this.titleTooltip,
     this.onRevert,
+    this.mixed = false,
   });
 
   final String title;
@@ -196,6 +199,7 @@ class _Section extends StatelessWidget {
   final DirtyMarkState? dirtyState;
   final String? titleTooltip;
   final VoidCallback? onRevert;
+  final bool mixed;
 
   @override
   Widget build(BuildContext context) {
@@ -209,6 +213,7 @@ class _Section extends StatelessWidget {
           UnsavedLabel(
             state: dirtyState,
             onRevert: onRevert,
+            mixed: mixed,
             child: LabelWithTooltip(
               label: title,
               tooltip: titleTooltip,
@@ -219,6 +224,7 @@ class _Section extends StatelessWidget {
           UnsavedLabel(
             state: dirtyState,
             onRevert: onRevert,
+            mixed: mixed,
             child: Text(title, style: titleStyle),
           ),
         const SizedBox(height: 8),

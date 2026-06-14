@@ -17,6 +17,7 @@ class _GroupHeaderRow extends HookWidget {
     required this.onToggleCollapse,
     required this.onRename,
     required this.onToggleEnabled,
+    required this.onBulkEdit,
     required this.onBreakdown,
     required this.onDelete,
     required this.onAddGesture,
@@ -37,6 +38,7 @@ class _GroupHeaderRow extends HookWidget {
   final VoidCallback onToggleCollapse;
   final VoidCallback onRename;
   final VoidCallback onToggleEnabled;
+  final VoidCallback onBulkEdit;
   final VoidCallback onBreakdown;
   final VoidCallback onDelete;
   final VoidCallback onAddGesture;
@@ -60,6 +62,10 @@ class _GroupHeaderRow extends HookWidget {
           onToggleEnabled: () {
             menuController.remove();
             onToggleEnabled();
+          },
+          onBulkEdit: () {
+            menuController.remove();
+            onBulkEdit();
           },
           onBreakdown: () {
             menuController.remove();
@@ -247,6 +253,7 @@ class _GroupContextMenu extends StatelessWidget {
     required this.onDismiss,
     required this.onRename,
     required this.onToggleEnabled,
+    required this.onBulkEdit,
     required this.onBreakdown,
     required this.onDelete,
   });
@@ -256,6 +263,7 @@ class _GroupContextMenu extends StatelessWidget {
   final VoidCallback onDismiss;
   final VoidCallback onRename;
   final VoidCallback onToggleEnabled;
+  final VoidCallback onBulkEdit;
   final VoidCallback onBreakdown;
   final VoidCallback onDelete;
 
@@ -320,6 +328,11 @@ class _GroupContextMenu extends StatelessWidget {
                           : context.l10n.gestureMenuEnable,
                     ),
                     onPress: onToggleEnabled,
+                  ),
+                  FItem(
+                    prefix: const Icon(FLucideIcons.sliders),
+                    title: Text(context.l10n.bulkEdit),
+                    onPress: onBulkEdit,
                   ),
                   FItem(
                     prefix: const Icon(FLucideIcons.folderOpen),

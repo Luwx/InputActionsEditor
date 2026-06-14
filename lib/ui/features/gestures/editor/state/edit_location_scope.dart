@@ -1,4 +1,5 @@
 import 'package:edit_schema_generator/edit_schema_generator.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
@@ -13,14 +14,19 @@ class EditLocationScope extends InheritedWidget {
     required super.child,
     this.gesture,
     this.action,
+    this.bulk,
     super.key,
   }) : assert(
-         gesture != null || action != null,
-         'EditLocationScope requires a gesture or action location.',
+         gesture != null || action != null || bulk != null,
+         'EditLocationScope requires a gesture, action, or bulk target.',
        );
 
   final GestureLocation? gesture;
   final ActionLocation? action;
+
+  /// When set, scoped field reads/writes apply across this whole selection (the
+  /// bulk-edit page). Resolved before the single-location targets.
+  final Set<GestureLocation>? bulk;
 
   static EditLocationScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<EditLocationScope>();
@@ -48,7 +54,9 @@ class EditLocationScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(EditLocationScope oldWidget) =>
-      gesture != oldWidget.gesture || action != oldWidget.action;
+      gesture != oldWidget.gesture ||
+      action != oldWidget.action ||
+      !setEquals(bulk, oldWidget.bulk);
 }
 
 extension EditLocationContext on BuildContext {
@@ -63,6 +71,10 @@ extension ScopedFieldAccess on WidgetRef {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
   }) {
+    final bulk = EditLocationScope.maybeOf(context)?.bulk;
+    if (bulk != null) {
+      return bulkField<T>(bulk, lensFor, fallbackValue: fallbackValue);
+    }
     final location = context.gestureLocation;
     return this.field<T>(
       lensFor(location),
@@ -94,6 +106,10 @@ extension ScopedFieldAccess on WidgetRef {
     GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field, {
     DirtyMarkState? dirty,
   }) {
+    final bulk = EditLocationScope.maybeOf(context)?.bulk;
+    if (bulk != null) {
+      return bulkSchemaField<TRoot, T>(bulk, field);
+    }
     final location = context.gestureLocation;
     return schemaField(
       field,

@@ -215,6 +215,9 @@ class _ReorderableGroupableListState<I, G>
   // Box in viewport-local coordinates, fed to the overlay without rebuilding
   // the list.
   final ValueNotifier<Rect?> _marqueeRect = ValueNotifier(null);
+  final ValueNotifier<MarqueeSweepCorner> _marqueeSweepCorner = ValueNotifier(
+    MarqueeSweepCorner.bottomLeft,
+  );
 
   // A press that may become a marquee once it passes the start slop.
   bool _marqueePending = false;
@@ -246,6 +249,7 @@ class _ReorderableGroupableListState<I, G>
     _removeMarqueeRoute();
     _stopAutoScroll();
     _marqueeRect.dispose();
+    _marqueeSweepCorner.dispose();
     super.dispose();
   }
 
@@ -473,6 +477,7 @@ class _ReorderableGroupableListState<I, G>
     final local = box.globalToLocal(globalPosition);
     final currentContent = Offset(local.dx, local.dy + pixels);
     final contentRect = Rect.fromPoints(anchor, currentContent);
+    _marqueeSweepCorner.value = _sweepCornerForDrag(anchor, currentContent);
 
     _measureItems(box, pixels);
     final covered = <I>{
@@ -525,6 +530,17 @@ class _ReorderableGroupableListState<I, G>
       a.right >= b.left &&
       a.top <= b.bottom &&
       a.bottom >= b.top;
+
+  MarqueeSweepCorner _sweepCornerForDrag(Offset anchor, Offset current) {
+    final movedRight = current.dx >= anchor.dx;
+    final movedDown = current.dy >= anchor.dy;
+    return switch ((movedRight, movedDown)) {
+      (true, true) => MarqueeSweepCorner.bottomRight,
+      (true, false) => MarqueeSweepCorner.topRight,
+      (false, true) => MarqueeSweepCorner.bottomLeft,
+      (false, false) => MarqueeSweepCorner.topLeft,
+    };
+  }
 
   void _cancelMarqueePending() {
     _marqueePending = false;
@@ -734,6 +750,7 @@ class _ReorderableGroupableListState<I, G>
           scrollView,
           MarqueeSelectionOverlay(
             rect: _marqueeRect,
+            sweepCorner: _marqueeSweepCorner,
             color: widget.marqueeColor,
             topInset: widget.leadingPinnedExtent,
           ),

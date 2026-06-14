@@ -14,6 +14,14 @@
   "actionDuplicate": "Duplicate",
   "actionEnable": "Enable",
   "actionDisable": "Disable",
+  "bulkEdit": "Bulk edit",
+  "@bulkEdit": {
+    "description": "Button that opens the bulk editor for the multi-selected gestures."
+  },
+  "bulkEditTitle": "Bulk edit",
+  "@bulkEditTitle": {
+    "description": "Title of the bulk-edit page header."
+  },
   "actionReset": "reset",
   "actionAddRule": "Add Rule",
   "actionClose": "Close",
@@ -674,8 +682,8 @@
   "actionFunctionLabel": "Function",
   "actionFunctionHint": "() => initialDirection = \"l\"",
   "groupMenuRename": "Rename",
-  "groupMenuBreakdown": "Breakdown",
-  "groupMenuDeleteWithGestures": "Delete with gestures",
+  "groupMenuBreakdown": "Ungroup",
+  "groupMenuDeleteWithGestures": "Delete",
   "strokeRowTitle": "Stroke {n}",
   "@strokeRowTitle": {
     "placeholders": {

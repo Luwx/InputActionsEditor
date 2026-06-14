@@ -51,6 +51,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDisable => 'Disable';
 
   @override
+  String get bulkEdit => 'Bulk edit';
+
+  @override
+  String get bulkEditTitle => 'Bulk edit';
+
+  @override
   String get actionReset => 'reset';
 
   @override
@@ -1955,10 +1961,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupMenuRename => 'Rename';
 
   @override
-  String get groupMenuBreakdown => 'Breakdown';
+  String get groupMenuBreakdown => 'Ungroup';
 
   @override
-  String get groupMenuDeleteWithGestures => 'Delete with gestures';
+  String get groupMenuDeleteWithGestures => 'Delete';
 
   @override
   String strokeRowTitle(int n) {

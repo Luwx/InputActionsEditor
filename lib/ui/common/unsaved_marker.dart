@@ -91,6 +91,7 @@ class UnsavedLabel extends StatelessWidget {
     this.isDirty,
     this.state,
     this.onRevert,
+    this.mixed = false,
     this.revertLabel = 'Restore saved value',
     super.key,
   }) : assert(
@@ -102,6 +103,10 @@ class UnsavedLabel extends StatelessWidget {
   final bool? isDirty;
   final DirtyMarkState? state;
   final VoidCallback? onRevert;
+
+  /// When true (bulk editing across a selection that disagrees on this value),
+  /// a "Mixed" badge is shown instead of the unsaved marker.
+  final bool mixed;
   final String revertLabel;
 
   DirtyMarkState get _state =>
@@ -115,6 +120,14 @@ class UnsavedLabel extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         child,
+        const Padding(
+          padding: EdgeInsets.only(left: 6),
+          child: MixedBadge(),
+        ).appearToggle(
+          visible: mixed,
+          duration: Durations.medium1,
+          axis: Axis.horizontal,
+        ),
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: UnsavedMarker(
@@ -128,6 +141,32 @@ class UnsavedLabel extends StatelessWidget {
           axis: Axis.horizontal,
         ),
       ],
+    );
+  }
+}
+
+class MixedBadge extends StatelessWidget {
+  const MixedBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: colors.muted,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: colors.border),
+      ),
+      child: Text(
+        'Mixed',
+        style: typography.xs.copyWith(
+          color: colors.mutedForeground,
+          fontWeight: FontWeight.w600,
+          height: 1,
+        ),
+      ),
     );
   }
 }

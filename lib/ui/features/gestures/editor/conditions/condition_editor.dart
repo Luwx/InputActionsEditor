@@ -23,6 +23,7 @@ class ConditionEditor extends StatelessWidget {
     this.isDirty = false,
     this.dirtyState,
     this.onRevert,
+    this.mixed = false,
     this.expandable = true,
     this.heroTag,
     this.heroEnabled = true,
@@ -47,6 +48,7 @@ class ConditionEditor extends StatelessWidget {
     this.isDirty = false,
     this.dirtyState,
     this.onRevert,
+    this.mixed = false,
     this.expandable = true,
     this.heroTag,
     this.heroEnabled = true,
@@ -69,6 +71,10 @@ class ConditionEditor extends StatelessWidget {
   final bool isDirty;
   final DirtyMarkState? dirtyState;
   final VoidCallback? onRevert;
+
+  /// When true, shows a "Mixed" badge next to the section title (bulk editing a
+  /// selection that disagrees on this condition).
+  final bool mixed;
 
   /// When true the section header shows an expand button.
   final bool expandable;
@@ -216,6 +222,7 @@ class ConditionEditor extends StatelessWidget {
                   state: dirtyState,
                   isDirty: dirtyState == null ? isDirty : null,
                   onRevert: onRevert,
+                  mixed: mixed,
                   child: LabelWithTooltip(
                     label: title,
                     tooltip: titleTooltip,
@@ -229,6 +236,7 @@ class ConditionEditor extends StatelessWidget {
                   state: dirtyState,
                   isDirty: dirtyState == null ? isDirty : null,
                   onRevert: onRevert,
+                  mixed: mixed,
                   child: Text(
                     title,
                     style: typography.sm.copyWith(fontWeight: FontWeight.w600),

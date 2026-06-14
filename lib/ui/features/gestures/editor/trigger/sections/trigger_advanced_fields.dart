@@ -102,6 +102,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: idField.dirty,
                     onRevert: idField.onRevert,
+                    mixed: idField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldIdLabel,
                       tooltipContent: const TriggerIdTooltip(),
@@ -118,6 +119,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: thresholdField.dirty,
                     onRevert: thresholdField.onRevert,
+                    mixed: thresholdField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldThresholdLabel,
                       tooltipContent: const TriggerThresholdTooltip(),
@@ -138,6 +140,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: resumeTimeoutField.dirty,
                     onRevert: resumeTimeoutField.onRevert,
+                    mixed: resumeTimeoutField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldResumeTimeoutLabel,
                       tooltipContent: const TriggerResumeTimeoutTooltip(),
@@ -168,6 +171,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: acceleratedField.dirty,
                     onRevert: acceleratedField.onRevert,
+                    mixed: acceleratedField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldAcceleratedLabel,
                       tooltipContent: const TriggerAcceleratedTooltip(),
@@ -181,6 +185,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: blockEventsField.dirty,
                     onRevert: blockEventsField.onRevert,
+                    mixed: blockEventsField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldBlockEventsLabel,
                       tooltipContent: const TriggerBlockEventsTooltip(),
@@ -195,6 +200,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: clearModifiersField.dirty,
                     onRevert: clearModifiersField.onRevert,
+                    mixed: clearModifiersField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldClearModifiersLabel,
                       tooltipContent: const TriggerClearModifiersTooltip(),
@@ -209,6 +215,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
                   label: UnsavedLabel(
                     state: setLastTriggerField.dirty,
                     onRevert: setLastTriggerField.onRevert,
+                    mixed: setLastTriggerField.mixed,
                     child: LabelWithTooltip(
                       label: l10n.triggerFieldSetLastTriggerLabel,
                       tooltipContent: const TriggerSetLastTriggerTooltip(),
@@ -227,6 +234,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
             bodyBackgroundColor: conditionsBodyBackgroundColor,
             dirtyState: conditionsField.dirty,
             onRevert: conditionsField.onRevert,
+            mixed: conditionsField.mixed,
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.endConditions)) ...[
@@ -238,6 +246,7 @@ class TriggerAdvancedFields extends ConsumerWidget {
             condition: endConditionsField.value,
             bodyBackgroundColor: conditionsBodyBackgroundColor,
             onConditionChanged: endConditionsField.onChanged,
+            mixed: endConditionsField.mixed,
           ),
         ],
       ],

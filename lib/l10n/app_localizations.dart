@@ -178,6 +178,18 @@ abstract class AppLocalizations {
   /// **'Disable'**
   String get actionDisable;
 
+  /// Button that opens the bulk editor for the multi-selected gestures.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk edit'**
+  String get bulkEdit;
+
+  /// Title of the bulk-edit page header.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk edit'**
+  String get bulkEditTitle;
+
   /// No description provided for @actionReset.
   ///
   /// In en, this message translates to:
@@ -3523,13 +3535,13 @@ abstract class AppLocalizations {
   /// No description provided for @groupMenuBreakdown.
   ///
   /// In en, this message translates to:
-  /// **'Breakdown'**
+  /// **'Ungroup'**
   String get groupMenuBreakdown;
 
   /// No description provided for @groupMenuDeleteWithGestures.
   ///
   /// In en, this message translates to:
-  /// **'Delete with gestures'**
+  /// **'Delete'**
   String get groupMenuDeleteWithGestures;
 
   /// No description provided for @strokeRowTitle.

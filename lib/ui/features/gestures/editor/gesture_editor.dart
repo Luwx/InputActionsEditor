@@ -1,5 +1,6 @@
 import 'dart:async' show unawaited;
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -17,6 +18,8 @@ import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/keyboard_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/mouse_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/pointer_gesture_editor.dart';
@@ -36,9 +39,33 @@ class GestureDetailSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(multiSelectControllerProvider, (prev, next) {
+      if (next == null) ref.read(bulkEditActiveProvider.notifier).close();
+    });
+
     final multiSelect = ref.watch(multiSelectControllerProvider);
     if (multiSelect != null) {
-      return _MultiSelectPanel(selected: multiSelect);
+      final bulkActive = ref.watch(bulkEditActiveProvider);
+      final showBulk = bulkActive && multiSelect.isNotEmpty;
+      return PageTransitionSwitcher(
+        reverse: !showBulk,
+        transitionBuilder: (child, primary, secondary) => SharedAxisTransition(
+          animation: primary,
+          secondaryAnimation: secondary,
+          transitionType: SharedAxisTransitionType.horizontal,
+          fillColor: Colors.transparent,
+          child: child,
+        ),
+        child: showBulk
+            ? BulkEditView(
+                key: const ValueKey('bulk-edit'),
+                selected: multiSelect,
+              )
+            : _MultiSelectPanel(
+                key: const ValueKey('multi-select-panel'),
+                selected: multiSelect,
+              ),
+      );
     }
 
     final location = ref.watch(selectedGestureProvider);
@@ -354,7 +381,7 @@ class _SaveIntent extends Intent {
 }
 
 class _MultiSelectPanel extends ConsumerWidget {
-  const _MultiSelectPanel({required this.selected});
+  const _MultiSelectPanel({required this.selected, super.key});
 
   final Set<GestureLocation> selected;
 
@@ -395,13 +422,20 @@ class _MultiSelectPanel extends ConsumerWidget {
     );
 
     final typography = context.theme.typography;
+    final l10n = context.l10n;
+
+    // One unified toggle: while any selected gesture is enabled, the button
+    // disables the whole selection; only when they're all disabled does it
+    // switch to enabling.
+    final canToggle = canEnable || canDisable;
+    final enableAll = !canDisable;
 
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            context.l10n.multiSelectCount(selected.length),
+            l10n.multiSelectCount(selected.length),
             style: typography.lg.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
@@ -410,41 +444,29 @@ class _MultiSelectPanel extends ConsumerWidget {
             children: [
               FButton(
                 variant: .outline,
-                onPress: canEnable ? () => _enable(ref) : null,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(FLucideIcons.eye),
-                    const SizedBox(width: 6),
-                    Text(context.l10n.actionEnable),
-                  ],
-                ),
+                onPress: ref.read(bulkEditActiveProvider.notifier).open,
+                prefix: const Icon(FLucideIcons.sliders),
+                child: Text(l10n.bulkEdit),
               ),
               const SizedBox(width: 12),
               FButton(
                 variant: .outline,
-                onPress: canDisable ? () => _disable(ref) : null,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(FLucideIcons.eyeOff),
-                    const SizedBox(width: 6),
-                    Text(context.l10n.actionDisable),
-                  ],
+                onPress: canToggle
+                    ? () => enableAll ? _enable(ref) : _disable(ref)
+                    : null,
+                prefix: Icon(
+                  enableAll ? FLucideIcons.eye : FLucideIcons.eyeOff,
+                ),
+                child: Text(
+                  enableAll ? l10n.actionEnable : l10n.actionDisable,
                 ),
               ),
               const SizedBox(width: 12),
               FButton(
                 variant: .destructive,
                 onPress: () => _delete(context, ref),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(FLucideIcons.trash),
-                    const SizedBox(width: 6),
-                    Text(context.l10n.actionDelete),
-                  ],
-                ),
+                prefix: const Icon(FLucideIcons.trash),
+                child: Text(l10n.actionDelete),
               ),
             ],
           ),
