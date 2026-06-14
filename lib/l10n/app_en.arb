@@ -295,6 +295,16 @@
   "actionMetaFunctionSubtitle": "Run a JavaScript function",
   "actionMetaRawLabel": "Raw YAML",
   "actionMetaRawSubtitle": "Hand-authored unsupported action config",
+  "actionMetaOneLabel": "First match",
+  "actionMetaOneSubtitle": "Run one action depending on conditions",
+  "actionMetaOneSummary": "{count, plural, =0{no cases} =1{1 case} other{{count} cases}}",
+  "@actionMetaOneSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "actionSummaryNoCommand": "No command",
   "actionSummaryNotConfigured": "Not configured",
   "actionSummaryEmpty": "Empty",
@@ -657,6 +667,31 @@
   "dialogUnsavedChangesBody": "You have unsaved changes. Apply them or discard before leaving.",
   "actionApply": "Apply",
   "addAction": "Add Action",
+  "branchHeader_firstMatch": "First match",
+  "branchHeader_switchOn": "Switch on",
+  "branchHeader_caseCount": "{count, plural, =0{No cases yet} =1{1 case} other{{count} cases}}",
+  "@branchHeader_caseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "branchAddCase": "Add case",
+  "branchAddDefault": "Add default",
+  "branchCase_anyValue": "any value",
+  "branchCase_deadWarning": "Never runs: a default above always matches",
+  "branchCase_conditionTitle": "Runs when",
+  "branchAddCaseFor": "Add {discriminator}",
+  "@branchAddCaseFor": {
+    "placeholders": {
+      "discriminator": {
+        "type": "String"
+      }
+    }
+  },
+  "branchCase_when": "when",
+  "branchCase_otherwise": "otherwise",
   "dialogAddActionTitle": "Add action",
   "actionIntervalHint": "+, -, or number",
   "actionLimitHint": "0 = unlimited",

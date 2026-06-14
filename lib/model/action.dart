@@ -48,6 +48,12 @@ sealed class Action with _$Action {
 
   const factory Action.sleep({required int milliseconds}) = SleepAction;
 
+  /// First-match dispatcher — the daemon's `one:`. Exactly one of [cases] runs:
+  /// the first whose conditions match. A case with null conditions is the
+  /// unconditional default ("otherwise"), conventionally placed last.
+  const factory Action.one({@Default([]) List<TriggerAction> cases}) =
+      OneAction;
+
   /// A JavaScript function executed by the daemon for its side effects (the
   /// return value is ignored). [expression] is the raw `() => ...` source.
   const factory Action.function({required String expression}) = FunctionAction;

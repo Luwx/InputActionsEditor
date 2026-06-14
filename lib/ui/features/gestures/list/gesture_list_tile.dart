@@ -306,6 +306,9 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
     FunctionAction(:final expression) =>
       expression.trim().isEmpty ? 'function' : expression.trim(),
+    OneAction(:final cases) => l10n.actionMetaOneSummary(
+      cases.where((c) => c.conditions != null).length,
+    ),
     RawAction() => 'raw yaml',
   };
 }

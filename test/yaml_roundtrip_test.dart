@@ -176,6 +176,40 @@ void main() {
       expect(decoded.globalSettings, config.globalSettings);
     });
 
+    test('a one: (first-match) action survives encode + decode', () {
+      const config = Config(
+        mouseGestures: [
+          SwipeGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(
+                  action: OneAction(
+                    cases: [
+                      TriggerAction(
+                        action: CommandAction(command: 'a'),
+                        conditions: VariableCondition(
+                          variable: 'window_class',
+                          operator: '==',
+                          value: 'konsole',
+                        ),
+                      ),
+                      // Unconditional default ("otherwise").
+                      TriggerAction(action: CommandAction(command: 'b')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            mode: SwipeDirectionMode(direction: SwipeDirection.up),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(config, '');
+      expect(encoded, contains('one:'));
+      expect(decodeConfig(encoded).mouseGestures, config.mouseGestures);
+    });
+
     test('empty config encodes and decodes back to empty', () {
       final decoded = decodeConfig(encodeConfig(const Config(), ''));
       expect(decoded.totalGestureCount, 0);

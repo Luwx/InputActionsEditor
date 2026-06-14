@@ -704,7 +704,7 @@ mouse:
       );
     });
 
-    test('unmodelled action (one:) becomes a RawAction', () {
+    test('one: parses into a OneAction with its cases', () {
       final c = decodeConfig('''
 touchpad:
   gestures:
@@ -718,8 +718,10 @@ touchpad:
             - plasma_shortcut: kwin,Window Minimize
 ''');
       final a = c.touchpadGestures.single.common.actions.single.action;
-      expect(a, isA<RawAction>());
-      expect((a as RawAction).raw, contains('plasma_shortcut'));
+      expect(a, isA<OneAction>());
+      final cases = (a as OneAction).cases;
+      expect(cases.length, 2);
+      expect(cases.first.action, isA<PlasmaShortcutAction>());
     });
 
     test('per-action conditions parse', () {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -51,6 +52,7 @@ enum _ActionKind {
   replaceText,
   sleep,
   function,
+  one,
   raw;
 
   Action buildDefault() => switch (this) {
@@ -73,6 +75,19 @@ enum _ActionKind {
     ),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
     _ActionKind.function => const FunctionAction(expression: '() => '),
+    _ActionKind.one => const OneAction(
+      cases: [
+        TriggerAction(
+          action: CommandAction(command: ''),
+          conditions: VariableCondition(
+            variable: 'window_class',
+            operator: '==',
+            value: '',
+          ),
+        ),
+        TriggerAction(action: CommandAction(command: '')),
+      ],
+    ),
     _ActionKind.raw => const RawAction(raw: ''),
   };
 }

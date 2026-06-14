@@ -53,6 +53,11 @@ ActionMetaInfo actionMeta(Action action, AppLocalizations l10n) =>
         subtitle: l10n.actionMetaFunctionSubtitle,
         icon: FLucideIcons.braces,
       ),
+      OneAction() => ActionMetaInfo(
+        label: l10n.actionMetaOneLabel,
+        subtitle: l10n.actionMetaOneSubtitle,
+        icon: FLucideIcons.gitFork,
+      ),
       RawAction() => ActionMetaInfo(
         label: l10n.actionMetaRawLabel,
         subtitle: l10n.actionMetaRawSubtitle,

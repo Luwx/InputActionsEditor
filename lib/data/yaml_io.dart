@@ -468,6 +468,9 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   },
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
   FunctionAction(:final expression) => {'function': expression},
+  OneAction(:final cases) => {
+    'one': cases.map(triggerActionToMap).toList(),
+  },
   RawAction(:final raw) => {'__raw': raw},
 };
 

@@ -657,6 +657,9 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey('sleep')) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
   }
+  if (m.containsKey('one')) {
+    return OneAction(cases: _parseActions(m['one']));
+  }
   if (m.containsKey('function')) {
     return FunctionAction(expression: m['function'].toString());
   }

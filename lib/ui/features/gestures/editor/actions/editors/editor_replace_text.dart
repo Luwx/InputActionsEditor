@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -14,16 +14,15 @@ class EditorReplaceText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final location = context.actionLocation;
-    final vm = ref.watch(actionEditorProvider(location));
-    final action = vm.action?.action;
-    final rules = action is ReplaceTextAction
-        ? action.rules
-        : const <TextSubstitutionRule>[];
-    final notifier = ref.read(actionEditorProvider(location).notifier);
+    final rulesField = ref.actionField(
+      context,
+      actionRulesLens,
+      fallbackValue: () => const <TextSubstitutionRule>[],
+    );
+    final rules = rulesField.value;
 
     void replaceRules(List<TextSubstitutionRule> next) {
-      notifier.replaceTextRules(next);
+      rulesField.onChanged(next);
     }
 
     void addRule() {

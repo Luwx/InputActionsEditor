@@ -5,9 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
@@ -47,15 +47,14 @@ class ActionTriggerFields extends HookConsumerWidget {
     final visibleFields = fields.toSet();
     if (visibleFields.isEmpty) return const SizedBox.shrink();
 
-    final actionLocation = context.actionLocation;
-    final (:showInterval, :showThreshold) = ref.watch(
-      actionEditorProvider(actionLocation).select(
-        (vm) => (
-          showInterval: vm.showInterval,
-          showThreshold: vm.showThreshold,
-        ),
-      ),
+    final address = context.actionAddress;
+    // `on` drives which timing fields are relevant; read it through the
+    // address so this works for both top-level actions and branch cases.
+    final on = ref.watch(
+      draftConfigProvider.select((config) => address.read(config)?.on),
     );
+    final showInterval = on == TriggerOn.update || on == TriggerOn.tick;
+    final showThreshold = on != null && on != TriggerOn.begin;
     final triggerOnField = ref.actionField(
       context,
       actionTriggerOnLens,
@@ -203,7 +202,7 @@ class ActionTriggerFields extends HookConsumerWidget {
           const SizedBox(height: 16),
           ConditionEditor.generic(
             title: context.l10n.actionConditionsTitle,
-            heroTag: actionLocation,
+            heroTag: address.heroTag,
             dirtyState: conditionsField.dirty,
             onRevert: conditionsField.onRevert,
             titleTooltipContent: const ActionConditionsTooltip(),

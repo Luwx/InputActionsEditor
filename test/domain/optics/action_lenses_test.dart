@@ -3,8 +3,9 @@ import 'package:input_actions_editor/domain/edit/edit_ids.dart'
     show assignEditIds;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureLocationAt;
+    show branchCasesLens, gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -117,6 +118,72 @@ void main() {
         comparableTriggerCommonTriggerConfigValue(commonOf(restored)),
         comparableTriggerCommonTriggerConfigValue(commonOf(config)),
       );
+    });
+  });
+
+  group('branch (one:) case lenses', () {
+    final config = assignEditIds(
+      const Config(
+        mouseGestures: [
+          PressGesture(
+            common: TriggerCommon(
+              actions: [
+                TriggerAction(
+                  action: OneAction(
+                    cases: [
+                      TriggerAction(
+                        action: CommandAction(command: 'konsole-cmd'),
+                        conditions: VariableCondition(
+                          variable: 'window_class',
+                          operator: '==',
+                          value: 'konsole',
+                        ),
+                      ),
+                      TriggerAction(action: CommandAction(command: 'default')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    final action = ActionLocation(
+      gesture: gestureLocationAt(config, DeviceType.mouse, 0)!,
+      actionIndex: 0,
+    );
+    BranchCaseLocation caseAt(int i) => BranchCaseLocation(
+      action: action.gesture,
+      actionIndex: 0,
+      caseIndex: i,
+    );
+
+    test('branchCasesLens reads the whole case list', () {
+      expect(branchCasesLens(action).get(config).length, 2);
+    });
+
+    test('branchCaseCommandLens reads and writes a nested case command', () {
+      final lens = branchCaseCommandLens(caseAt(0));
+      final updated = lens.set(config, 'edited');
+
+      expect(lens.get(config), 'konsole-cmd');
+      expect(lens.get(updated), 'edited');
+      // Sibling case and the branch structure are untouched.
+      expect(branchCaseCommandLens(caseAt(1)).get(updated), 'default');
+      expect(branchCasesLens(action).get(updated).length, 2);
+    });
+
+    test('branchCaseConditionsLens reads a nested case condition', () {
+      expect(
+        branchCaseConditionsLens(caseAt(0)).get(config),
+        const VariableCondition(
+          variable: 'window_class',
+          operator: '==',
+          value: 'konsole',
+        ),
+      );
+      expect(branchCaseConditionsLens(caseAt(1)).get(config), isNull);
     });
   });
 }

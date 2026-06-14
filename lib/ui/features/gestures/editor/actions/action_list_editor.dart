@@ -14,6 +14,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_function.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_one.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_plasma_shortcut.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_raw.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_replace_text.dart';
@@ -468,6 +469,7 @@ class _ExpandedEditor extends HookConsumerWidget {
             ActionKind.replaceText => const EditorReplaceText(),
             ActionKind.sleep => const EditorSleep(),
             ActionKind.function => const EditorFunction(),
+            ActionKind.one => const EditorOne(),
             ActionKind.raw => const EditorRaw(),
             ActionKind.missing => const SizedBox.shrink(),
           },

@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show ActionLocation, GestureLocation, comparableTriggerActionValue;
+    show
+        ActionLocation,
+        BranchCaseLocation,
+        GestureLocation,
+        comparableTriggerActionValue;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -94,6 +98,28 @@ final ProviderFamily<bool, ActionLocation> actionDirtyProvider =
       (ref, location) =>
           selectSession(ref, (s) => _actionDirtyState(s, location).isDirty),
     );
+
+final ProviderFamily<bool, BranchCaseLocation> branchCaseDirtyProvider =
+    Provider.family<bool, BranchCaseLocation>(
+      (ref, location) =>
+          selectSession(ref, (s) => _branchCaseDirtyState(s, location).isDirty),
+    );
+
+DirtyMarkState _branchCaseDirtyState(
+  EditSession session,
+  BranchCaseLocation location,
+) {
+  final saved = comparableTriggerActionValue(
+    branchCaseAt(session.saved, location),
+  );
+  return dirtyMarkState(
+    current: comparableTriggerActionValue(
+      branchCaseAt(session.draft, location),
+    ),
+    saved: saved,
+    hasSavedBacking: saved != null,
+  );
+}
 
 DirtyMarkState _lensDirtyState(EditSession session, Lens<dynamic> lens) {
   final currentRead = _readLens(session.draft, lens);

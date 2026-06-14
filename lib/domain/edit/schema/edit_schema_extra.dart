@@ -139,6 +139,41 @@ final _gestureActionsPart = LensPart<Gesture, List<TriggerAction>>(
 Lens<List<TriggerAction>> gestureActionsLens(GestureLocation location) =>
     gestureLens(location).then(_gestureActionsPart);
 
+/// Whole-list lens for the cases of a `one:` ([OneAction]) branch at
+/// [location]. Reads `[]` when the addressed action isn't a [OneAction] or the
+/// index is out of range; writes by replacing that action with a new
+/// [OneAction] carrying the given cases (a no-op when the target isn't a
+/// branch). Mirrors [gestureActionsLens] for the nested case list — the
+/// per-case field lenses (`branchCase*Lens`) are generated.
+Lens<List<TriggerAction>> branchCasesLens(
+  ActionLocation location,
+) => Lens<List<TriggerAction>>(
+  get: (config) {
+    final actions = gestureActionsLens(location.gesture).get(config);
+    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
+      return const [];
+    }
+    final action = actions[location.actionIndex].action;
+    return action is OneAction ? action.cases : const [];
+  },
+  set: (config, cases) {
+    final actions = gestureActionsLens(location.gesture).get(config);
+    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
+      return config;
+    }
+    final current = actions[location.actionIndex];
+    if (current.action is! OneAction) return config;
+    final next = List<TriggerAction>.of(actions);
+    next[location.actionIndex] = current.copyWith(
+      action: OneAction(cases: cases),
+    );
+    return gestureActionsLens(location.gesture).set(config, next);
+  },
+  name:
+      'gesture[${location.gesture}].action'
+      '[${location.actionIndex}].cases',
+);
+
 Lens<DeviceRuleProperties> defaultDevicePropertiesLens(DeviceType device) =>
     Lens<DeviceRuleProperties>(
       get: (config) =>
@@ -342,4 +377,17 @@ TriggerAction? actionAt(Config? config, ActionLocation location) {
     return null;
   }
   return common.actions[location.actionIndex];
+}
+
+/// The [TriggerAction] for a single case of a `one:` branch, or null when the
+/// addressed action isn't a [OneAction] or any index is out of range.
+TriggerAction? branchCaseAt(Config? config, BranchCaseLocation location) {
+  if (config == null) return null;
+  final parent = ActionLocation(
+    gesture: location.action,
+    actionIndex: location.actionIndex,
+  );
+  final cases = branchCasesLens(parent).get(config);
+  if (location.caseIndex < 0 || location.caseIndex >= cases.length) return null;
+  return cases[location.caseIndex];
 }

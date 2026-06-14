@@ -1480,6 +1480,24 @@ abstract class AppLocalizations {
   /// **'Hand-authored unsupported action config'**
   String get actionMetaRawSubtitle;
 
+  /// No description provided for @actionMetaOneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First match'**
+  String get actionMetaOneLabel;
+
+  /// No description provided for @actionMetaOneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run one action depending on conditions'**
+  String get actionMetaOneSubtitle;
+
+  /// No description provided for @actionMetaOneSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{no cases} =1{1 case} other{{count} cases}}'**
+  String actionMetaOneSummary(int count);
+
   /// No description provided for @actionSummaryNoCommand.
   ///
   /// In en, this message translates to:
@@ -3381,6 +3399,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Action'**
   String get addAction;
+
+  /// No description provided for @branchHeader_firstMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'First match'**
+  String get branchHeader_firstMatch;
+
+  /// No description provided for @branchHeader_switchOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch on'**
+  String get branchHeader_switchOn;
+
+  /// No description provided for @branchHeader_caseCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No cases yet} =1{1 case} other{{count} cases}}'**
+  String branchHeader_caseCount(int count);
+
+  /// No description provided for @branchAddCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Add case'**
+  String get branchAddCase;
+
+  /// No description provided for @branchAddDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Add default'**
+  String get branchAddDefault;
+
+  /// No description provided for @branchCase_anyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'any value'**
+  String get branchCase_anyValue;
+
+  /// No description provided for @branchCase_deadWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Never runs: a default above always matches'**
+  String get branchCase_deadWarning;
+
+  /// No description provided for @branchCase_conditionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs when'**
+  String get branchCase_conditionTitle;
+
+  /// No description provided for @branchAddCaseFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {discriminator}'**
+  String branchAddCaseFor(String discriminator);
+
+  /// No description provided for @branchCase_when.
+  ///
+  /// In en, this message translates to:
+  /// **'when'**
+  String get branchCase_when;
+
+  /// No description provided for @branchCase_otherwise.
+  ///
+  /// In en, this message translates to:
+  /// **'otherwise'**
+  String get branchCase_otherwise;
 
   /// No description provided for @dialogAddActionTitle.
   ///

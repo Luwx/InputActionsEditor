@@ -57,6 +57,70 @@ final TreeNode<SwipeMode> swipeModeNode = subtree<SwipeMode>(
   ],
 );
 
+// Non-recursive TriggerAction subtree used for the cases inside a `one:`
+// branch. Mirrors [actionNode] but excludes the OneAction case, which both
+// avoids schema recursion and enforces the one-level nesting cap (no branch
+// inside a branch). The `branchCase` scope on the list keeps the generated lens
+// names distinct from the top-level `action*` family.
+final TreeNode<TriggerAction> branchCaseNode = subtree<TriggerAction>(
+  fields: [
+    sealed(
+      TriggerActionMeta.action,
+      cases: [
+        valueCase<CommandAction>(
+          'command',
+          fields: [
+            prop(CommandActionMeta.command),
+            prop(
+              CommandActionMeta.wait,
+              compare: projected<CommandAction, bool?>((v) => v?.effectiveWait),
+            ),
+          ],
+        ),
+        valueCase<PlasmaShortcutAction>(
+          'plasma',
+          fields: [
+            prop(PlasmaShortcutActionMeta.component),
+            prop(PlasmaShortcutActionMeta.shortcut),
+          ],
+        ),
+        valueCase<ActivateWindowAction>(
+          'activateWindow',
+          fields: [prop(ActivateWindowActionMeta.windowId)],
+        ),
+        valueCase<ReplaceTextAction>(
+          'replaceText',
+          fields: [prop(ReplaceTextActionMeta.rules)],
+        ),
+        valueCase<SleepAction>(
+          'sleep',
+          fields: [prop('duration', property: SleepActionMeta.milliseconds)],
+        ),
+        valueCase<FunctionAction>(
+          'function',
+          fields: [prop(FunctionActionMeta.expression)],
+        ),
+        valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
+        valueCase<InputAction>(
+          'input',
+          fields: [prop('inputEntries', property: InputActionMeta.entries)],
+        ),
+      ],
+    ),
+    prop('triggerOn', property: TriggerActionMeta.on),
+    prop(TriggerActionMeta.interval, adapter: nullableText()),
+    prop(TriggerActionMeta.threshold, adapter: nullableText()),
+    prop(TriggerActionMeta.limit, adapter: nullableInt()),
+    prop(
+      TriggerActionMeta.enabled,
+      compare: projected<TriggerAction, bool?>((v) => v?.effectiveEnabled),
+    ),
+    prop(TriggerActionMeta.conflicting),
+    prop(TriggerActionMeta.conditions),
+    prop(TriggerActionMeta.id, adapter: nullableText()),
+  ],
+);
+
 final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
   fields: [
     sealed(
@@ -98,6 +162,19 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           fields: [prop(FunctionActionMeta.expression)],
         ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
+        valueCase<OneAction>(
+          'one',
+          fields: [
+            list(
+              OneActionMeta.cases,
+              of: branchCaseNode,
+              scope: 'branchCase',
+              location: 'BranchCaseLocation',
+              parentField: 'action',
+              indexField: 'caseIndex',
+            ),
+          ],
+        ),
         valueCase<InputAction>(
           'input',
           fields: [prop('inputEntries', property: InputActionMeta.entries)],

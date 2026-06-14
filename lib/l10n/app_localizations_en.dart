@@ -745,6 +745,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaRawSubtitle => 'Hand-authored unsupported action config';
 
   @override
+  String get actionMetaOneLabel => 'First match';
+
+  @override
+  String get actionMetaOneSubtitle => 'Run one action depending on conditions';
+
+  @override
+  String actionMetaOneSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cases',
+      one: '1 case',
+      zero: 'no cases',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get actionSummaryNoCommand => 'No command';
 
   @override
@@ -1880,6 +1898,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addAction => 'Add Action';
+
+  @override
+  String get branchHeader_firstMatch => 'First match';
+
+  @override
+  String get branchHeader_switchOn => 'Switch on';
+
+  @override
+  String branchHeader_caseCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cases',
+      one: '1 case',
+      zero: 'No cases yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get branchAddCase => 'Add case';
+
+  @override
+  String get branchAddDefault => 'Add default';
+
+  @override
+  String get branchCase_anyValue => 'any value';
+
+  @override
+  String get branchCase_deadWarning =>
+      'Never runs: a default above always matches';
+
+  @override
+  String get branchCase_conditionTitle => 'Runs when';
+
+  @override
+  String branchAddCaseFor(String discriminator) {
+    return 'Add $discriminator';
+  }
+
+  @override
+  String get branchCase_when => 'when';
+
+  @override
+  String get branchCase_otherwise => 'otherwise';
 
   @override
   String get dialogAddActionTitle => 'Add action';

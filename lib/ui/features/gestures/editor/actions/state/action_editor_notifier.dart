@@ -76,6 +76,7 @@ enum ActionKind {
   replaceText,
   sleep,
   function,
+  one,
   raw,
   missing,
 }
@@ -172,42 +173,6 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
       hasNonDefaultTriggerOptions: actionHasNonDefaultTriggerOptions(action),
     );
   }
-
-  void replaceInputEntries(List<InputEntry> entries) {
-    ref
-        .read(configControllerProvider.notifier)
-        .add(
-          SetLens<List<InputEntry>>(
-            actionInputEntriesLens(location),
-            entries,
-            label: 'Edit input entries',
-          ),
-          scope: location.gesture,
-        );
-  }
-
-  void replaceTextRules(List<TextSubstitutionRule> rules) {
-    final config = ref.read(draftConfigProvider);
-    final actions = gestureActionsLens(location.gesture).get(config);
-    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
-      return;
-    }
-    final current = actions[location.actionIndex];
-    ref
-        .read(configControllerProvider.notifier)
-        .add(
-          SetLens<List<TriggerAction>>(
-            gestureActionsLens(location.gesture),
-            [
-              ...actions.take(location.actionIndex),
-              current.copyWith(action: ReplaceTextAction(rules: rules)),
-              ...actions.skip(location.actionIndex + 1),
-            ],
-            label: 'Edit replace text rules',
-          ),
-          scope: location.gesture,
-        );
-  }
 }
 
 ActionKind _kindOf(Action? action) => switch (action) {
@@ -218,6 +183,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   ReplaceTextAction() => ActionKind.replaceText,
   SleepAction() => ActionKind.sleep,
   FunctionAction() => ActionKind.function,
+  OneAction() => ActionKind.one,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,
 };
