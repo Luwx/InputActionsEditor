@@ -84,6 +84,7 @@ class _GestureListHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (isMultiSelectMode) const SizedBox(height: 8),
           Divider(
             height: 1,
             color: colors.border,
