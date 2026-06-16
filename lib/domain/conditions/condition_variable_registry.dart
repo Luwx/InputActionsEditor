@@ -310,15 +310,7 @@ const List<ConditionOperator> enumConditionOperators = [
   .oneOf,
 ];
 
-const List<ConditionOperator> timeConditionOperators = [
-  .equals,
-  .notEquals,
-  .greaterThan,
-  .greaterOrEqual,
-  .lessThan,
-  .lessOrEqual,
-  .between,
-];
+const List<ConditionOperator> timeConditionOperators = pointConditionOperators;
 
 const Map<ConditionValueType, List<ConditionOperator>>
 knownConditionOperatorsByType = {

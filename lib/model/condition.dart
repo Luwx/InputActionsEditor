@@ -38,15 +38,10 @@ extension ConditionVariableRefX on ConditionVariableRef {
 @freezed
 sealed class ConditionValue with _$ConditionValue {
   const factory ConditionValue.text(String value) = TextConditionValue;
-
   const factory ConditionValue.number(double value) = NumberConditionValue;
-
   const factory ConditionValue.boolean(bool value) = BoolConditionValue;
-
   const factory ConditionValue.flags(List<String> values) = FlagsConditionValue;
-
   const factory ConditionValue.point(double x, double y) = PointConditionValue;
-
   const factory ConditionValue.list(List<String> values) = ListConditionValue;
 
   const factory ConditionValue.range({

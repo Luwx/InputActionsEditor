@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -28,7 +29,11 @@ class WindowService with WindowListener {
     final shouldClose = await onCloseRequested?.call() ?? true;
     if (shouldClose) {
       _destroying = true;
-      await windowManager.destroy();
+      // Don't call windowManager.destroy(): on Linux/GTK3 it re-enters
+      // gtk_window_close() while the Flutter GL surface is still live, which
+      // intermittently segfaults inside GTK. Saving/discarding has already
+      // completed in onCloseRequested, so exit the process directly.
+      exit(0);
     }
   }
 }
