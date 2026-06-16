@@ -1,10 +1,11 @@
 import 'package:flutter/widgets.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 
 class TypeIconBadge extends StatelessWidget {
   const TypeIconBadge({required this.type, super.key});
 
-  final VarType type;
+  final ConditionValueType type;
 
   @override
   Widget build(BuildContext context) {

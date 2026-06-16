@@ -1,3 +1,4 @@
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 
@@ -25,14 +26,14 @@ String formatConditionValueLabel(
   VariableCondition condition,
   VariableInfo? info,
 ) {
-  final value = condition.value;
+  final value = conditionValueToText(condition.value);
   if (value.isEmpty || value == '[]') {
     return '--';
   }
 
-  if (condition.operator == 'between') {
+  if (condition.operator == ConditionOperator.between) {
     final (from, to) = splitBetweenValue(value);
-    if (info?.type == VarType.point) {
+    if (info?.type == ConditionValueType.point) {
       return '${formatPointLabel(from)} — ${formatPointLabel(to)}';
     }
     if (to.isNotEmpty) {
@@ -40,12 +41,12 @@ String formatConditionValueLabel(
     }
   }
 
-  if (condition.operator == 'one_of') {
+  if (condition.operator == ConditionOperator.oneOf) {
     final items = parseListValue(value);
     return items.isEmpty ? '--' : items.join(', ');
   }
 
-  if (info?.type == VarType.point) return formatPointLabel(value);
+  if (info?.type == ConditionValueType.point) return formatPointLabel(value);
 
   return value;
 }

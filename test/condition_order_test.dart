@@ -8,14 +8,14 @@ void main() {
       'moves groups after non-group siblings and preserves relative order',
       () {
         const leafA = VariableCondition(
-          variable: 'window_class',
-          operator: '==',
-          value: 'firefox',
+          variable: ConditionVariableRef.custom('window_class'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('firefox'),
         );
         const leafB = VariableCondition(
-          variable: 'fingers',
-          operator: '==',
-          value: '3',
+          variable: ConditionVariableRef.custom('fingers'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('3'),
         );
         const raw = RawCondition(raw: r'$window_title contains docs');
         const nestedA = ConditionGroup(children: [leafA]);
@@ -35,14 +35,14 @@ void main() {
 
     test('normalizes nested groups recursively', () {
       const leafA = VariableCondition(
-        variable: 'window_class',
-        operator: '==',
-        value: 'firefox',
+        variable: ConditionVariableRef.custom('window_class'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('firefox'),
       );
       const leafB = VariableCondition(
-        variable: 'fingers',
-        operator: '==',
-        value: '3',
+        variable: ConditionVariableRef.custom('fingers'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('3'),
       );
       const inner = ConditionGroup(
         children: [
@@ -68,14 +68,14 @@ void main() {
   group('conditionToYaml', () {
     test('writes groups after non-group siblings recursively', () {
       const leafA = VariableCondition(
-        variable: 'window_class',
-        operator: '==',
-        value: 'firefox',
+        variable: ConditionVariableRef.custom('window_class'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('firefox'),
       );
       const leafB = VariableCondition(
-        variable: 'fingers',
-        operator: '==',
-        value: '3',
+        variable: ConditionVariableRef.custom('fingers'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('3'),
       );
       const condition = ConditionGroup(
         children: [

@@ -108,9 +108,9 @@ class ConditionEditor extends StatelessWidget {
     if (!context.mounted || picked == null) return;
 
     final newCondition = VariableCondition(
-      variable: picked.name,
-      operator: picked.type.defaultOperator,
-      value: picked.type.defaultValue,
+      variable: ConditionVariableRef.known(picked.name),
+      operator: picked.defaultOperator,
+      value: picked.defaultValue,
     );
     final current = _effectiveCondition;
     final Condition next;

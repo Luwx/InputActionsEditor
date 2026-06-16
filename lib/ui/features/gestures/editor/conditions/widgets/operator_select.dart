@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/condition_labels.dart';
@@ -12,9 +14,9 @@ class OperatorSelect extends StatelessWidget {
     super.key,
   });
 
-  final List<String> operators;
-  final String current;
-  final void Function(String) onChanged;
+  final List<ConditionOperator> operators;
+  final ConditionOperator current;
+  final void Function(ConditionOperator) onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +49,8 @@ class OperatorSelect extends StatelessWidget {
       ]),
     );
 
-    return FSelect<String>.rich(
-      format: (op) => operatorLabel(op, context.l10n),
+    return FSelect<ConditionOperator>.rich(
+      format: (op) => operatorLabel(conditionOperatorToken(op), context.l10n),
       textAlign: TextAlign.center,
       autofocus: true,
       prefixBuilder: (_, style, variants) => Padding(
@@ -58,7 +60,7 @@ class OperatorSelect extends StatelessWidget {
           size: 14,
         ),
       ),
-      control: FSelectControl<String>.lifted(
+      control: FSelectControl<ConditionOperator>.lifted(
         value: current,
         onChange: (value) {
           if (value != null) onChanged(value);
@@ -71,10 +73,10 @@ class OperatorSelect extends StatelessWidget {
       style: style,
       children: [
         for (final operator in operators)
-          FSelectItem<String>.item(
+          FSelectItem<ConditionOperator>.item(
             value: operator,
             title: Text(
-              operatorLabel(operator, context.l10n),
+              operatorLabel(conditionOperatorToken(operator), context.l10n),
               overflow: TextOverflow.ellipsis,
             ),
             prefix: Icon(

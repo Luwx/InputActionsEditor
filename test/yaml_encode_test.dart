@@ -141,9 +141,9 @@ void main() {
                 accelerated: true,
               ).copyWith(
                 conditions: const VariableCondition(
-                  variable: 'mouse',
-                  operator: '==',
-                  value: 'true',
+                  variable: ConditionVariableRef.custom('mouse'),
+                  operator: ConditionOperator.equals,
+                  value: ConditionValue.boolean(true),
                 ),
                 actions: const [
                   TriggerAction(action: CommandAction(command: 'echo hi')),
@@ -410,9 +410,11 @@ mouse:
         const TriggerAction(
           on: TriggerOn.tick,
           conditions: VariableCondition(
-            variable: 'finger_1_position_percentage_x',
-            operator: '<=',
-            value: '0.05',
+            variable: ConditionVariableRef.custom(
+              'finger_1_position_percentage_x',
+            ),
+            operator: ConditionOperator.lessOrEqual,
+            value: ConditionValue.number(0.05),
           ),
           action: CommandAction(command: 'echo edge'),
         ),
@@ -544,9 +546,9 @@ mouse:
       expect(
         conditionToYaml(
           const VariableCondition(
-            variable: 'fingers',
-            operator: '==',
-            value: '3',
+            variable: ConditionVariableRef.custom('fingers'),
+            operator: ConditionOperator.equals,
+            value: ConditionValue.text('3'),
           ),
         ),
         r'$fingers == 3',
@@ -557,9 +559,9 @@ mouse:
       expect(
         conditionToYaml(
           const VariableCondition(
-            variable: 'window_maximized',
-            operator: '==',
-            value: 'true',
+            variable: ConditionVariableRef.custom('window_maximized'),
+            operator: ConditionOperator.equals,
+            value: ConditionValue.boolean(true),
             negate: true,
           ),
         ),
@@ -587,7 +589,11 @@ mouse:
         conditionToYaml(
           const ConditionGroup(
             children: [
-              VariableCondition(variable: 'a', operator: '==', value: '1'),
+              VariableCondition(
+                variable: ConditionVariableRef.custom('a'),
+                operator: ConditionOperator.equals,
+                value: ConditionValue.text('1'),
+              ),
             ],
           ),
         ),
@@ -601,8 +607,16 @@ mouse:
           const ConditionGroup(
             mode: ConditionGroupMode.any,
             children: [
-              VariableCondition(variable: 'a', operator: '==', value: '1'),
-              VariableCondition(variable: 'b', operator: '==', value: '2'),
+              VariableCondition(
+                variable: ConditionVariableRef.custom('a'),
+                operator: ConditionOperator.equals,
+                value: ConditionValue.text('1'),
+              ),
+              VariableCondition(
+                variable: ConditionVariableRef.custom('b'),
+                operator: ConditionOperator.equals,
+                value: ConditionValue.text('2'),
+              ),
             ],
           ),
         ),
@@ -613,12 +627,24 @@ mouse:
     });
 
     test('groups are reordered after non-group siblings', () {
-      const leaf = VariableCondition(variable: 'a', operator: '==', value: '1');
+      const leaf = VariableCondition(
+        variable: ConditionVariableRef.custom('a'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('1'),
+      );
       const group = ConditionGroup(
         mode: ConditionGroupMode.any,
         children: [
-          VariableCondition(variable: 'b', operator: '==', value: '2'),
-          VariableCondition(variable: 'c', operator: '==', value: '3'),
+          VariableCondition(
+            variable: ConditionVariableRef.custom('b'),
+            operator: ConditionOperator.equals,
+            value: ConditionValue.text('2'),
+          ),
+          VariableCondition(
+            variable: ConditionVariableRef.custom('c'),
+            operator: ConditionOperator.equals,
+            value: ConditionValue.text('3'),
+          ),
         ],
       );
       expect(
@@ -641,9 +667,9 @@ mouse:
         deviceRuleToMap(
           const DeviceRule(
             conditions: VariableCondition(
-              variable: 'mouse',
-              operator: '==',
-              value: 'true',
+              variable: ConditionVariableRef.custom('mouse'),
+              operator: ConditionOperator.equals,
+              value: ConditionValue.boolean(true),
             ),
             properties: DeviceRuleProperties(grab: true, clickTimeout: 50),
           ),

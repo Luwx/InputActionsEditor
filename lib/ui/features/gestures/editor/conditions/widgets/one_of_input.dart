@@ -3,7 +3,6 @@ import 'package:flutter/material.dart'
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_value_utils.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/removable_chip.dart';
 
 class OneOfInput extends HookWidget {
@@ -15,8 +14,8 @@ class OneOfInput extends HookWidget {
     super.key,
   });
 
-  final String value;
-  final void Function(String) onChanged;
+  final List<String> value;
+  final void Function(List<String>) onChanged;
   final List<String>? enumValues;
   final bool autofocus;
 
@@ -29,16 +28,15 @@ class OneOfInput extends HookWidget {
     void add(String v) {
       final trimmed = v.trim();
       if (trimmed.isEmpty) return;
-      final items = parseListValue(value);
-      if (!items.contains(trimmed)) {
-        onChanged(serializeListValue([...items, trimmed]));
+      if (!value.contains(trimmed)) {
+        onChanged([...value, trimmed]);
       }
       addController.clear();
     }
 
     final ev = enumValues;
     if (ev != null) {
-      final selected = Set<String>.from(parseListValue(value));
+      final selected = Set<String>.from(value);
       return Wrap(
         spacing: 4,
         runSpacing: 4,
@@ -52,7 +50,7 @@ class OneOfInput extends HookWidget {
                 } else {
                   next.add(v);
                 }
-                onChanged(serializeListValue(next.toList()));
+                onChanged(next.toList());
               },
               child: FBadge(
                 variant: selected.contains(v) ? .primary : .outline,
@@ -63,7 +61,6 @@ class OneOfInput extends HookWidget {
       );
     }
 
-    final items = parseListValue(value);
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: colors.border),
@@ -75,19 +72,19 @@ class OneOfInput extends HookWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (items.isNotEmpty) ...[
+            if (value.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.all(6),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
                   children: [
-                    for (final item in items)
+                    for (final item in value)
                       RemovableChip(
                         label: item,
                         onRemove: () {
-                          final next = List<String>.from(items)..remove(item);
-                          onChanged(serializeListValue(next));
+                          final next = List<String>.from(value)..remove(item);
+                          onChanged(next);
                         },
                       ),
                   ],

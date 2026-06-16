@@ -7,6 +7,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cata
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/between_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/bool_toggle.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/flags_input.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/number_value_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/one_of_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
@@ -31,7 +32,7 @@ class ValueInput extends ConsumerWidget {
 
   final VariableCondition condition;
   final VariableInfo? info;
-  final void Function(String) onChanged;
+  final void Function(ConditionValue) onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,56 +41,87 @@ class ValueInput extends ConsumerWidget {
     final kwinSupported = ref.watch(kwinSupportedProvider).value ?? false;
 
     final type = info?.type;
-    final operator = condition.operator;
+    final value = condition.value;
+    final variable = condition.variable.name;
 
-    if (operator == 'between') {
-      if (type == VarType.point) {
+    if (condition.operator == ConditionOperator.between) {
+      if (type == ConditionValueType.point) {
         return PointBetweenInput(
-          value: condition.value,
-          onChanged: onChanged,
+          value: _pointRangeValue(value),
+          onChanged: (from, to) => onChanged(
+            ConditionValue.range(
+              from: ConditionValue.point(from.$1, from.$2),
+              to: ConditionValue.point(to.$1, to.$2),
+            ),
+          ),
         );
       }
+      if (type == ConditionValueType.number ||
+          type == ConditionValueType.time) {
+        final (:from, :to) = _numberRangeValue(value);
+        return NumberBetweenInput(
+          from: from,
+          to: to,
+          onChanged: (from, to) => onChanged(
+            ConditionValue.range(
+              from: ConditionValue.number(from),
+              to: ConditionValue.number(to),
+            ),
+          ),
+          hint: type == ConditionValueType.time ? 'ms' : 'n',
+        );
+      }
+      final (:from, :to) = _rangeTextValue(value);
       return BetweenInput(
-        value: condition.value,
-        onChanged: onChanged,
-        hint: type == VarType.time ? 'ms' : 'n',
+        from: from,
+        to: to,
+        onChanged: (from, to) => onChanged(
+          ConditionValue.range(
+            from: ConditionValue.text(from),
+            to: ConditionValue.text(to),
+          ),
+        ),
+        hint: 'n',
       );
     }
 
-    if (operator == 'one_of') {
+    if (condition.operator == ConditionOperator.oneOf) {
       return OneOfInput(
-        value: condition.value,
-        onChanged: onChanged,
-        enumValues: type == VarType.enum_ ? info?.enumValues : null,
+        value: value.stringList,
+        onChanged: (value) => onChanged(ConditionValue.list(value)),
+        enumValues: type == ConditionValueType.enum_ ? info?.enumValues : null,
       );
     }
 
-    if (type == VarType.bool_) {
+    if (type == ConditionValueType.bool_) {
       return BoolToggle(
-        value: condition.value == 'true',
-        onChanged: (value) => onChanged(value ? 'true' : 'false'),
+        value: value.boolOrFalse,
+        onChanged: (value) => onChanged(ConditionValue.boolean(value)),
       );
     }
 
-    if (type == VarType.flags && info?.flagValues != null) {
-      if (operator == 'contains' || operator == '==' || operator == '!=') {
+    if (type == ConditionValueType.flags && info?.flagValues != null) {
+      if (condition.operator == ConditionOperator.contains ||
+          condition.operator == ConditionOperator.equals ||
+          condition.operator == ConditionOperator.notEquals) {
         return FlagsInput(
           flagValues: info!.flagValues!,
-          value: condition.value,
-          onChanged: onChanged,
+          value: value.stringList.toSet(),
+          onChanged: (value) => onChanged(ConditionValue.flags(value.toList())),
         );
       }
     }
 
-    if (type == VarType.enum_ && info?.enumValues != null) {
+    if (type == ConditionValueType.enum_ && info?.enumValues != null) {
       final enumValues = info!.enumValues!;
       final enumIcons = info!.enumIcons;
-      final current = enumValues.contains(condition.value)
-          ? condition.value
+      final textValue = value.textOrEmpty;
+      final current = enumValues.contains(textValue)
+          ? textValue
           : enumValues.first;
       if (enumIcons != null) {
         return FSelect<String>.rich(
-          key: ValueKey(condition.variable),
+          key: ValueKey(variable),
           canRequestFocus: false,
           format: (v) => v,
           prefixBuilder: (_, style, variants) => Padding(
@@ -99,7 +131,7 @@ class ValueInput extends ConsumerWidget {
           control: FSelectControl<String>.lifted(
             value: current,
             onChange: (value) {
-              if (value != null) onChanged(value);
+              if (value != null) onChanged(ConditionValue.text(value));
             },
           ),
           contentConstraints: const FPortalConstraints(
@@ -117,13 +149,13 @@ class ValueInput extends ConsumerWidget {
         );
       }
       return FSelect<String>(
-        key: ValueKey(condition.variable),
+        key: ValueKey(variable),
         canRequestFocus: false,
         items: {for (final value in enumValues) value: value},
         control: FSelectControl<String>.lifted(
           value: current,
           onChange: (value) {
-            if (value != null) onChanged(value);
+            if (value != null) onChanged(ConditionValue.text(value));
           },
         ),
         contentConstraints: const FPortalConstraints(
@@ -133,10 +165,18 @@ class ValueInput extends ConsumerWidget {
       );
     }
 
-    if (type == VarType.point) {
+    if (type == ConditionValueType.point) {
       return PointInput(
-        value: condition.value,
-        onChanged: onChanged,
+        value: value.pointOrNull,
+        onChanged: (x, y) => onChanged(ConditionValue.point(x, y)),
+      );
+    }
+
+    if (type == ConditionValueType.number || type == ConditionValueType.time) {
+      return NumberValueInput(
+        value: value.numberOrZero,
+        onChanged: (value) => onChanged(ConditionValue.number(value)),
+        hint: type == ConditionValueType.time ? 'ms' : 'value',
       );
     }
 
@@ -148,15 +188,46 @@ class ValueInput extends ConsumerWidget {
         final props = await ref
             .read(kwinWindowServiceProvider)
             .queryWindowInfo();
-        if (props != null) onChanged(e(props));
+        if (props != null) {
+          onChanged(ConditionValue.text(e(props)));
+        }
       };
     }
 
     return TextValueInput(
-      value: condition.value,
-      onChanged: onChanged,
-      hint: type == VarType.time ? 'ms' : 'value',
+      value: value.textOrEmpty,
+      onChanged: (value) => onChanged(ConditionValue.text(value)),
+      hint: 'value',
       onDetect: onDetect,
     );
   }
 }
+
+({String from, String to}) _rangeTextValue(ConditionValue value) =>
+    switch (value) {
+      RangeConditionValue(:final from, :final to) => (
+        from: from.textOrEmpty,
+        to: to.textOrEmpty,
+      ),
+      _ => (from: '', to: ''),
+    };
+
+({double? from, double? to}) _numberRangeValue(ConditionValue value) =>
+    switch (value) {
+      RangeConditionValue(
+        from: NumberConditionValue(value: final from),
+        to: NumberConditionValue(value: final to),
+      ) =>
+        (from: from, to: to),
+      _ => (from: null, to: null),
+    };
+
+({(double, double)? from, (double, double)? to}) _pointRangeValue(
+  ConditionValue value,
+) => switch (value) {
+  RangeConditionValue(:final from, :final to) => (
+    from: from.pointOrNull,
+    to: to.pointOrNull,
+  ),
+  _ => (from: null, to: null),
+};

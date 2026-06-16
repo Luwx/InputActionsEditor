@@ -3,6 +3,7 @@ import 'package:flutter/material.dart'
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -238,7 +239,7 @@ class _VariableItem extends StatelessWidget {
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type});
 
-  final VarType type;
+  final ConditionValueType type;
 
   @override
   Widget build(BuildContext context) {

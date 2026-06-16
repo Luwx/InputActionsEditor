@@ -1,41 +1,70 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_value_utils.dart';
+
+/// Numeric range editor. Owns the string<->double conversion so callers work
+/// purely with typed endpoints and never parse text themselves.
+class NumberBetweenInput extends StatelessWidget {
+  const NumberBetweenInput({
+    required this.from,
+    required this.to,
+    required this.onChanged,
+    required this.hint,
+    super.key,
+  });
+
+  final double? from;
+  final double? to;
+  final void Function(double from, double to) onChanged;
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return BetweenInput(
+      from: from == null ? '' : _formatNumber(from!),
+      to: to == null ? '' : _formatNumber(to!),
+      onChanged: (f, t) => onChanged(
+        double.tryParse(f.trim()) ?? 0,
+        double.tryParse(t.trim()) ?? 0,
+      ),
+      hint: hint,
+    );
+  }
+}
 
 class BetweenInput extends HookWidget {
   const BetweenInput({
-    required this.value,
+    required this.from,
+    required this.to,
     required this.onChanged,
     required this.hint,
     this.autofocus = false,
     super.key,
   });
 
-  final String value;
-  final void Function(String) onChanged;
+  final String from;
+  final String to;
+  final void Function(String from, String to) onChanged;
   final String hint;
   final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
-    final (initFrom, initTo) = splitBetweenValue(value);
-    final fromController = useTextEditingController(text: initFrom);
-    final toController = useTextEditingController(text: initTo);
+    final fromController = useTextEditingController(text: from);
+    final toController = useTextEditingController(text: to);
 
     // Sync controllers when the external value changes (didUpdateWidget).
-    final prevValue = usePrevious(value);
-    if (prevValue != null && prevValue != value) {
-      final serialized = '${fromController.text}|${toController.text}';
-      if (value != serialized) {
-        final (newFrom, newTo) = splitBetweenValue(value);
-        fromController.text = newFrom;
-        toController.text = newTo;
-      }
+    final prevFrom = usePrevious(from);
+    final prevTo = usePrevious(to);
+    if (prevFrom != null && prevFrom != from && from != fromController.text) {
+      fromController.text = from;
+    }
+    if (prevTo != null && prevTo != to && to != toController.text) {
+      toController.text = to;
     }
 
-    void emit() => onChanged('${fromController.text};${toController.text}');
+    void emit() => onChanged(fromController.text, toController.text);
 
     return Row(
       children: [
@@ -74,4 +103,9 @@ class BetweenInput extends HookWidget {
       ],
     );
   }
+}
+
+String _formatNumber(double value) {
+  final text = value.toString();
+  return text.endsWith('.0') ? text.substring(0, text.length - 2) : text;
 }

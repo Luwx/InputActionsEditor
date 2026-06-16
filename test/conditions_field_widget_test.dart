@@ -3,12 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show gestureConditionsLens;
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureAt, gestureLocationAt;
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
 /// Resolves config synchronously to AsyncData, these widgets read config
 /// (via `requireValue`) and are rendered without the root load gate.
@@ -16,6 +27,31 @@ class _LoadedConfig extends ConfigController {
   @override
   Future<EditSession> build() =>
       SynchronousFuture(const EditSession(draft: Config(), saved: Config()));
+}
+
+class _PointConditionConfig extends ConfigController {
+  static const condition = VariableCondition(
+    variable: ConditionVariableRef.custom('pointer_position_screen_percentage'),
+    operator: ConditionOperator.equals,
+    value: ConditionValue.point(0.33, 0.02),
+  );
+
+  static const config = Config(
+    mouseGestures: [
+      PressGesture(common: TriggerCommon(conditions: condition)),
+    ],
+  );
+
+  @override
+  Future<EditSession> build() {
+    final draft = assignEditIds(config);
+    return SynchronousFuture(
+      EditSession(
+        draft: draft,
+        saved: preserveEditIds(from: draft, to: config),
+      ),
+    );
+  }
 }
 
 Widget _host({
@@ -32,8 +68,8 @@ Widget _host({
       supportedLocales: AppLocalizations.supportedLocales,
       home: FTheme(
         data: FThemes.zinc.dark.desktop,
-        child: Scaffold(
-          body: SizedBox(
+        child: FScaffold(
+          child: SizedBox(
             width: 900,
             child: SingleChildScrollView(
               child: ConditionEditor.generic(
@@ -48,16 +84,92 @@ Widget _host({
   );
 }
 
+Widget _pointDirtyHost() {
+  return ProviderScope(
+    overrides: [
+      kwinSupportedProvider.overrideWith((ref) => false),
+      configControllerProvider.overrideWith(_PointConditionConfig.new),
+    ],
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: FTheme(
+        data: FThemes.zinc.dark.desktop,
+        child: const FScaffold(
+          child: SizedBox(
+            width: 900,
+            child: SingleChildScrollView(child: _PointDirtyEditor()),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _textValueInputHost() {
+  return MaterialApp(
+    home: FTheme(
+      data: FThemes.zinc.dark.desktop,
+      child: Scaffold(
+        body: SizedBox(
+          width: 320,
+          child: TextValueInput(
+            value: 'firefox',
+            onChanged: (_) {},
+            hint: 'value',
+            onDetect: () async {},
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _PointDirtyEditor extends ConsumerWidget {
+  const _PointDirtyEditor();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(configControllerProvider).requireValue;
+    final location = gestureLocationAt(
+      session.draft,
+      DeviceType.mouse,
+      0,
+    )!;
+    final condition = gestureAt(session.draft, location)?.common.conditions;
+
+    return ConditionEditor.generic(
+      condition: condition,
+      onConditionChanged: (next) {
+        ref
+            .read(configControllerProvider.notifier)
+            .add(
+              SetLens(gestureConditionsLens(location), next),
+              scope: location,
+            );
+      },
+      dirtyState: ref.watch(
+        gestureSectionDirtyStateProvider(
+          GestureSectionLocation(
+            gesture: location,
+            field: GestureSectionDirtyField.triggerConditions,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 void main() {
   const leafA = VariableCondition(
-    variable: 'window_class',
-    operator: '==',
-    value: 'firefox',
+    variable: ConditionVariableRef.custom('window_class'),
+    operator: ConditionOperator.equals,
+    value: ConditionValue.text('firefox'),
   );
   const leafB = VariableCondition(
-    variable: 'fingers',
-    operator: '==',
-    value: '3',
+    variable: ConditionVariableRef.custom('fingers'),
+    operator: ConditionOperator.equals,
+    value: ConditionValue.text('3'),
   );
 
   testWidgets('renders a nested group tree without errors', (tester) async {
@@ -284,5 +396,56 @@ void main() {
         ],
       ),
     );
+  });
+
+  testWidgets('point value marker clears after changing back to saved value', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_pointDirtyHost());
+    await tester.pumpAndSettle();
+
+    expect(find.text('*'), findsNothing);
+
+    await tester.tap(find.text('0.33, 0.02'));
+    await tester.pumpAndSettle();
+
+    final yField = find.byType(EditableText).last;
+    await tester.enterText(yField, '0.03');
+    await tester.pumpAndSettle();
+
+    expect(find.text('*'), findsOneWidget);
+
+    await tester.enterText(yField, '0.02');
+    await tester.pumpAndSettle();
+
+    expect(find.text('*'), findsNothing);
+
+    // The popover holds two spinboxes; the X field is the middle EditableText
+    // (index 0 is the operator FSelect's field, index 2 is the Y spinbox).
+    final xField = find.byType(EditableText).at(1);
+    await tester.enterText(xField, '0.34');
+    await tester.pumpAndSettle();
+
+    expect(find.text('*'), findsOneWidget);
+
+    await tester.enterText(xField, '0.33');
+    await tester.pumpAndSettle();
+
+    expect(find.text('*'), findsNothing);
+  });
+
+  testWidgets('text value detect popover closes on submit', (tester) async {
+    await tester.pumpWidget(_textValueInputHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('firefox'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detect'), findsOneWidget);
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detect'), findsNothing);
   });
 }

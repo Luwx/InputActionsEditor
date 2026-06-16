@@ -12,6 +12,7 @@
 // the former flat schema forest.
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -172,9 +173,9 @@ Config _setDefaultDeviceProperties(
       ...config.deviceRules,
       DeviceRule(
         conditions: VariableCondition(
-          variable: conditionVar,
-          operator: '==',
-          value: 'true',
+          variable: ConditionVariableRef.custom(conditionVar),
+          operator: ConditionOperator.equals,
+          value: const ConditionValue.boolean(true),
         ),
         properties: properties,
       ),
@@ -193,9 +194,9 @@ int? _defaultDeviceRuleIndex(Config config, DeviceType device) {
   for (var i = 0; i < config.deviceRules.length; i++) {
     final conditions = config.deviceRules[i].conditions;
     if (conditions is VariableCondition &&
-        conditions.variable == conditionVar &&
-        conditions.operator == '==' &&
-        conditions.value == 'true' &&
+        conditionVariableName(conditions.variable) == conditionVar &&
+        conditions.operator == ConditionOperator.equals &&
+        conditions.value == const ConditionValue.boolean(true) &&
         !conditions.negate) {
       return i;
     }
@@ -217,9 +218,9 @@ DeviceRule? defaultDeviceRule(Config? config, DeviceType device) {
   for (final rule in config?.deviceRules ?? const <DeviceRule>[]) {
     final conditions = rule.conditions;
     if (conditions is VariableCondition &&
-        conditions.variable == conditionVar &&
-        conditions.operator == '==' &&
-        conditions.value == 'true' &&
+        conditionVariableName(conditions.variable) == conditionVar &&
+        conditions.operator == ConditionOperator.equals &&
+        conditions.value == const ConditionValue.boolean(true) &&
         !conditions.negate) {
       return rule;
     }

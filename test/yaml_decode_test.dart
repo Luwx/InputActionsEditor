@@ -279,9 +279,9 @@ mouse:
       expect(
         c.mouseGestures.single.common.conditions,
         const VariableCondition(
-          variable: 'keyboard_modifiers',
-          operator: '==',
-          value: 'meta',
+          variable: ConditionVariableRef.known('keyboard_modifiers'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.flags(['meta']),
         ),
       );
     });
@@ -296,9 +296,9 @@ mouse:
       expect(
         c.mouseGestures.single.common.conditions,
         const VariableCondition(
-          variable: 'window_fullscreen',
-          operator: '==',
-          value: 'true',
+          variable: ConditionVariableRef.known('window_fullscreen'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.boolean(true),
         ),
       );
     });
@@ -315,9 +315,9 @@ mouse:
       expect(
         c.mouseGestures.single.common.conditions,
         const VariableCondition(
-          variable: 'window_maximized',
-          operator: '==',
-          value: 'true',
+          variable: ConditionVariableRef.known('window_maximized'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.boolean(true),
           negate: true,
         ),
       );
@@ -332,8 +332,17 @@ mouse:
 ''');
       final cond =
           c.mouseGestures.single.common.conditions! as VariableCondition;
-      expect(cond.operator, 'between');
-      expect(cond.value, '0.2,0.2;0.8,0.8');
+      expect(
+        cond.operator,
+        ConditionOperator.between,
+      );
+      expect(
+        cond.value,
+        const ConditionValue.range(
+          from: ConditionValue.text('0.2,0.2'),
+          to: ConditionValue.text('0.8,0.8'),
+        ),
+      );
     });
 
     test('non-variable string becomes a RawCondition', () {
@@ -375,8 +384,16 @@ mouse:
       final cond = c.mouseGestures.single.common.conditions! as ConditionGroup;
       expect(cond.mode, ConditionGroupMode.all);
       expect(cond.children, const [
-        VariableCondition(variable: 'a', operator: '==', value: '1'),
-        VariableCondition(variable: 'b', operator: '==', value: '2'),
+        VariableCondition(
+          variable: ConditionVariableRef.custom('a'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('1'),
+        ),
+        VariableCondition(
+          variable: ConditionVariableRef.custom('b'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('2'),
+        ),
       ]);
     });
 
@@ -390,7 +407,11 @@ mouse:
 ''');
       final cond = c.mouseGestures.single.common.conditions! as ConditionGroup;
       expect(cond.children, const [
-        VariableCondition(variable: 'a', operator: '==', value: '1'),
+        VariableCondition(
+          variable: ConditionVariableRef.custom('a'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('1'),
+        ),
       ]);
     });
 
@@ -939,9 +960,9 @@ mouse:
       expect(
         c.mouseGestures[0].common.conditions,
         const VariableCondition(
-          variable: 'keyboard_modifiers',
-          operator: '==',
-          value: 'meta',
+          variable: ConditionVariableRef.known('keyboard_modifiers'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.flags(['meta']),
         ),
       );
       // Second child's own condition is merged under the group condition.

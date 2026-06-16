@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
@@ -232,7 +233,9 @@ class _DeviceRuleCard extends ConsumerWidget {
   String _conditionLabel(Condition? c, AppLocalizations l10n) {
     if (c == null) return l10n.deviceRuleNoConditions;
     if (c is VariableCondition) {
-      return '${c.negate ? '!' : ''}\$${c.variable} ${c.operator} ${c.value}';
+      final value = conditionValueToText(c.value);
+      return '${c.negate ? '!' : ''}\$${conditionVariableName(c.variable)} '
+          '${conditionOperatorToken(c.operator)} $value';
     }
     if (c is ConditionGroup) {
       return '${c.mode.name} (${c.children.length} conditions)';

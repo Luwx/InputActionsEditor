@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -729,7 +730,8 @@ dynamic conditionToYaml(Condition c) => switch (c) {
     :final operator,
     :final value,
   ) =>
-    '${negate ? "!" : ""}\$$variable $operator $value',
+    '${negate ? "!" : ""}\$${conditionVariableName(variable)} '
+        '${conditionOperatorToken(operator)} ${conditionValueToText(value)}',
   ConditionGroup(:final children)
       when normalizeConditionChildren(children).length == 1 =>
     conditionToYaml(

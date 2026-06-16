@@ -75,9 +75,9 @@ void main() {
             common: TriggerCommon(
               name: 'Swipe',
               conditions: VariableCondition(
-                variable: 'keyboard_modifiers',
-                operator: '==',
-                value: 'meta',
+                variable: ConditionVariableRef.known('keyboard_modifiers'),
+                operator: ConditionOperator.equals,
+                value: ConditionValue.flags(['meta']),
               ),
               actions: [
                 TriggerAction(
@@ -146,9 +146,9 @@ void main() {
         deviceRules: [
           DeviceRule(
             conditions: VariableCondition(
-              variable: 'mouse',
-              operator: '==',
-              value: 'true',
+              variable: ConditionVariableRef.known('mouse'),
+              operator: ConditionOperator.equals,
+              value: ConditionValue.boolean(true),
             ),
             properties: DeviceRuleProperties(grab: true, clickTimeout: 50),
           ),

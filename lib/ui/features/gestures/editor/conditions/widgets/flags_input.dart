@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_value_utils.dart';
 
 class FlagsInput extends StatelessWidget {
   const FlagsInput({
@@ -11,13 +10,11 @@ class FlagsInput extends StatelessWidget {
   });
 
   final List<String> flagValues;
-  final String value;
-  final void Function(String) onChanged;
+  final Set<String> value;
+  final void Function(Set<String>) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final selected = parseFlagsValue(value);
-
     return Wrap(
       spacing: 4,
       runSpacing: 2,
@@ -25,16 +22,16 @@ class FlagsInput extends StatelessWidget {
         for (final flag in flagValues)
           GestureDetector(
             onTap: () {
-              final next = Set<String>.from(selected);
+              final next = Set<String>.from(value);
               if (next.contains(flag)) {
                 next.remove(flag);
               } else {
                 next.add(flag);
               }
-              onChanged(serializeFlagsValue(next));
+              onChanged(next);
             },
             child: FBadge(
-              variant: selected.contains(flag) ? .primary : .outline,
+              variant: value.contains(flag) ? .primary : .outline,
               child: Text(flag),
             ),
           ),

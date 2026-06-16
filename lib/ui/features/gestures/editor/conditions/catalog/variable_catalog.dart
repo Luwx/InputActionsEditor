@@ -1,91 +1,81 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
+import 'package:input_actions_editor/model/condition.dart';
 
-enum VarType { string, number, bool_, flags, point, enum_, time }
-
-extension VarTypeExt on VarType {
+extension ConditionValueTypeUiExt on ConditionValueType {
   IconData get icon => switch (this) {
-    VarType.string => FLucideIcons.type,
-    VarType.number => FLucideIcons.hash,
-    VarType.bool_ => FLucideIcons.toggleLeft,
-    VarType.flags => FLucideIcons.flag,
-    VarType.point => FLucideIcons.crosshair,
-    VarType.enum_ => FLucideIcons.tag,
-    VarType.time => FLucideIcons.clock,
+    ConditionValueType.string => FLucideIcons.type,
+    ConditionValueType.number => FLucideIcons.hash,
+    ConditionValueType.bool_ => FLucideIcons.toggleLeft,
+    ConditionValueType.flags => FLucideIcons.flag,
+    ConditionValueType.point => FLucideIcons.crosshair,
+    ConditionValueType.enum_ => FLucideIcons.tag,
+    ConditionValueType.time => FLucideIcons.clock,
   };
 
   Color get bgColor => switch (this) {
-    VarType.string => const Color(0xFF152B4A),
-    VarType.number => const Color(0xFF163A22),
-    VarType.bool_ => const Color(0xFF3D2A0E),
-    VarType.flags => const Color(0xFF251540),
-    VarType.point => const Color(0xFF0E2A3D),
-    VarType.enum_ => const Color(0xFF2A2210),
-    VarType.time => const Color(0xFF0E3030),
+    ConditionValueType.string => const Color(0xFF152B4A),
+    ConditionValueType.number => const Color(0xFF163A22),
+    ConditionValueType.bool_ => const Color(0xFF3D2A0E),
+    ConditionValueType.flags => const Color(0xFF251540),
+    ConditionValueType.point => const Color(0xFF0E2A3D),
+    ConditionValueType.enum_ => const Color(0xFF2A2210),
+    ConditionValueType.time => const Color(0xFF0E3030),
   };
 
   Color get fgColor => switch (this) {
-    VarType.string => const Color(0xFF60A5FA),
-    VarType.number => const Color(0xFF4ADE80),
-    VarType.bool_ => const Color(0xFFFBBF24),
-    VarType.flags => const Color(0xFFA78BFA),
-    VarType.point => const Color(0xFF38BDF8),
-    VarType.enum_ => const Color(0xFFD97706),
-    VarType.time => const Color(0xFF2DD4BF),
-  };
-
-  List<String> get operators => switch (this) {
-    VarType.string => ['==', '!=', 'contains', 'matches', 'one_of'],
-    VarType.number => ['==', '!=', '>', '>=', '<', '<=', 'between', 'one_of'],
-    VarType.bool_ => ['==', '!='],
-    VarType.flags => ['==', '!=', 'contains', 'one_of'],
-    VarType.point => ['==', '!=', '>', '>=', '<', '<=', 'between'],
-    VarType.enum_ => ['==', '!=', 'one_of'],
-    VarType.time => ['==', '!=', '>', '>=', '<', '<=', 'between'],
-  };
-
-  String get defaultOperator => operators.first;
-
-  String get defaultValue => switch (this) {
-    VarType.bool_ => 'true',
-    VarType.flags => '[]',
-    _ => '',
+    ConditionValueType.string => const Color(0xFF60A5FA),
+    ConditionValueType.number => const Color(0xFF4ADE80),
+    ConditionValueType.bool_ => const Color(0xFFFBBF24),
+    ConditionValueType.flags => const Color(0xFFA78BFA),
+    ConditionValueType.point => const Color(0xFF38BDF8),
+    ConditionValueType.enum_ => const Color(0xFFD97706),
+    ConditionValueType.time => const Color(0xFF2DD4BF),
   };
 }
 
-const Map<String, IconData> operatorIcons = {
-  '==': FLucideIcons.equal,
-  '!=': FLucideIcons.equalNot,
-  '>': FLucideIcons.chevronRight,
-  '>=': FLucideIcons.chevronsRight,
-  '<': FLucideIcons.chevronLeft,
-  '<=': FLucideIcons.chevronsLeft,
-  'between': FLucideIcons.betweenHorizontalStart,
-  'contains': FLucideIcons.scan,
-  'matches': FLucideIcons.regex,
-  'one_of': FLucideIcons.list,
+const Map<ConditionOperator, IconData> operatorIcons = {
+  ConditionOperator.equals: FLucideIcons.equal,
+  ConditionOperator.notEquals: FLucideIcons.equalNot,
+  ConditionOperator.greaterThan: FLucideIcons.chevronRight,
+  ConditionOperator.greaterOrEqual: FLucideIcons.chevronsRight,
+  ConditionOperator.lessThan: FLucideIcons.chevronLeft,
+  ConditionOperator.lessOrEqual: FLucideIcons.chevronsLeft,
+  ConditionOperator.between: FLucideIcons.betweenHorizontalStart,
+  ConditionOperator.contains: FLucideIcons.scan,
+  ConditionOperator.matches: FLucideIcons.regex,
+  ConditionOperator.oneOf: FLucideIcons.list,
 };
 
 class VariableInfo {
   const VariableInfo({
-    required this.name,
+    required this.variable,
     required this.label,
     required this.pickerName,
-    required this.type,
     required this.description,
     this.flagValues,
     this.enumValues,
     this.enumIcons,
   });
 
-  final String name;
+  final ConditionVariableId variable;
   final String label;
   final String pickerName;
-  final VarType type;
   final String description;
   final List<String>? flagValues;
   final List<String>? enumValues;
   final Map<String, IconData>? enumIcons;
+
+  String get name => variable.configName;
+
+  ConditionValueType get type => variable.valueType;
+
+  List<ConditionOperator> get operators => variable.operators;
+
+  ConditionOperator get defaultOperator => variable.defaultOperator;
+
+  ConditionValue get defaultValue => variable.defaultValue;
 }
 
 const _cursorShapeIcons = <String, IconData>{
@@ -137,66 +127,57 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.appWindow,
     variables: [
       VariableInfo(
-        name: 'window_title',
+        variable: ConditionVariableId.windowTitle,
         label: 'Active window - title',
         pickerName: 'Title',
-        type: VarType.string,
         description: 'Title bar text, e.g. contains YouTube',
       ),
       VariableInfo(
-        name: 'window_class',
+        variable: ConditionVariableId.windowClass,
         label: 'Active window - app class',
         pickerName: 'Class',
-        type: VarType.string,
         description: 'App class, e.g. == firefox or == konsole',
       ),
       VariableInfo(
-        name: 'window_name',
+        variable: ConditionVariableId.windowName,
         label: 'Active window - name',
         pickerName: 'Name',
-        type: VarType.string,
         description: 'App resource name, e.g. == Navigator',
       ),
       VariableInfo(
-        name: 'window_id',
+        variable: ConditionVariableId.windowId,
         label: 'Active window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description: 'Unique window ID, use to detect focused window',
       ),
       VariableInfo(
-        name: 'initial_window_id',
+        variable: ConditionVariableId.initialWindowId,
         label: 'Initial active window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Active window ID captured when the trigger activates',
       ),
       VariableInfo(
-        name: 'previous_window_id',
+        variable: ConditionVariableId.previousWindowId,
         label: 'Previous active window - ID',
         pickerName: 'Previous ID',
-        type: VarType.string,
         description: 'Window ID replaced by the last activate window action',
       ),
       VariableInfo(
-        name: 'window_pid',
+        variable: ConditionVariableId.windowPid,
         label: 'Active window - process ID',
         pickerName: 'Process ID',
-        type: VarType.number,
         description: 'Process ID, useful for kill-on-gesture patterns',
       ),
       VariableInfo(
-        name: 'window_fullscreen',
+        variable: ConditionVariableId.windowFullscreen,
         label: 'Active window is fullscreen',
         pickerName: 'Is Fullscreen',
-        type: VarType.bool_,
         description: 'True when fullscreen, e.g. == false to skip gesture',
       ),
       VariableInfo(
-        name: 'window_maximized',
+        variable: ConditionVariableId.windowMaximized,
         label: 'Active window is maximized',
         pickerName: 'Is Maximized',
-        type: VarType.bool_,
         description: 'True when maximized, e.g. == false for floating windows',
       ),
     ],
@@ -206,60 +187,52 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.mousePointer,
     variables: [
       VariableInfo(
-        name: 'window_under_pointer_title',
+        variable: ConditionVariableId.windowUnderPointerTitle,
         label: 'Pointer window - title',
         pickerName: 'Title',
-        type: VarType.string,
         description: 'Title of hovered window, e.g. contains Firefox',
       ),
       VariableInfo(
-        name: 'window_under_pointer_class',
+        variable: ConditionVariableId.windowUnderPointerClass,
         label: 'Pointer window - app class',
         pickerName: 'Class',
-        type: VarType.string,
         description: 'App class under cursor, e.g. == code or konsole',
       ),
       VariableInfo(
-        name: 'window_under_pointer_name',
+        variable: ConditionVariableId.windowUnderPointerName,
         label: 'Pointer window - name',
         pickerName: 'Name',
-        type: VarType.string,
         description: 'Resource name under cursor, e.g. == Navigator',
       ),
       VariableInfo(
-        name: 'window_under_pointer_id',
+        variable: ConditionVariableId.windowUnderPointerId,
         label: 'Pointer window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description:
             'ID of hovered window, use to check it matches active window',
       ),
       VariableInfo(
-        name: 'initial_window_under_pointer_id',
+        variable: ConditionVariableId.initialWindowUnderPointerId,
         label: 'Initial pointer window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Pointer window ID captured when the trigger activates',
       ),
       VariableInfo(
-        name: 'window_under_pointer_pid',
+        variable: ConditionVariableId.windowUnderPointerPid,
         label: 'Pointer window - process ID',
         pickerName: 'Process ID',
-        type: VarType.number,
         description: 'Process ID of hovered window',
       ),
       VariableInfo(
-        name: 'window_under_pointer_fullscreen',
+        variable: ConditionVariableId.windowUnderPointerFullscreen,
         label: 'Pointer window is fullscreen',
         pickerName: 'Is Fullscreen',
-        type: VarType.bool_,
         description: 'True when hovered window is fullscreen',
       ),
       VariableInfo(
-        name: 'window_under_pointer_maximized',
+        variable: ConditionVariableId.windowUnderPointerMaximized,
         label: 'Pointer window is maximized',
         pickerName: 'Is Maximized',
-        type: VarType.bool_,
         description: 'True when hovered window is maximized',
       ),
     ],
@@ -269,60 +242,52 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.hand,
     variables: [
       VariableInfo(
-        name: 'window_under_fingers_title',
+        variable: ConditionVariableId.windowUnderFingersTitle,
         label: 'Fingers window - title',
         pickerName: 'Title',
-        type: VarType.string,
         description: 'Title of touched window, e.g. contains Terminal',
       ),
       VariableInfo(
-        name: 'window_under_fingers_class',
+        variable: ConditionVariableId.windowUnderFingersClass,
         label: 'Fingers window - app class',
         pickerName: 'Class',
-        type: VarType.string,
         description: 'App class under fingers, e.g. == konsole or chrome',
       ),
       VariableInfo(
-        name: 'window_under_fingers_name',
+        variable: ConditionVariableId.windowUnderFingersName,
         label: 'Fingers window - name',
         pickerName: 'Name',
-        type: VarType.string,
         description: 'Resource name under fingers, e.g. == Navigator',
       ),
       VariableInfo(
-        name: 'window_under_fingers_id',
+        variable: ConditionVariableId.windowUnderFingersId,
         label: 'Fingers window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description:
             'ID of touched window, use to check it matches active window',
       ),
       VariableInfo(
-        name: 'initial_window_under_fingers_id',
+        variable: ConditionVariableId.initialWindowUnderFingersId,
         label: 'Initial fingers window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Fingers window ID captured when the trigger activates',
       ),
       VariableInfo(
-        name: 'window_under_fingers_pid',
+        variable: ConditionVariableId.windowUnderFingersPid,
         label: 'Fingers window - process ID',
         pickerName: 'Process ID',
-        type: VarType.number,
         description: 'Process ID of touched window',
       ),
       VariableInfo(
-        name: 'window_under_fingers_fullscreen',
+        variable: ConditionVariableId.windowUnderFingersFullscreen,
         label: 'Fingers window is fullscreen',
         pickerName: 'Is Fullscreen',
-        type: VarType.bool_,
         description: 'True when touched window is fullscreen',
       ),
       VariableInfo(
-        name: 'window_under_fingers_maximized',
+        variable: ConditionVariableId.windowUnderFingersMaximized,
         label: 'Fingers window is maximized',
         pickerName: 'Is Maximized',
-        type: VarType.bool_,
         description: 'True when touched window is maximized',
       ),
     ],
@@ -332,45 +297,39 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.mouse,
     variables: [
       VariableInfo(
-        name: 'pointer_position_screen_percentage',
+        variable: ConditionVariableId.pointerPositionScreenPercentage,
         label: 'Pointer position (screen %)',
         pickerName: 'Screen position %',
-        type: VarType.point,
         description: 'Cursor XY on screen (0 to 1), useful for edge zones',
       ),
       VariableInfo(
-        name: 'pointer_position_screen_percentage_x',
+        variable: ConditionVariableId.pointerPositionScreenPercentageX,
         label: 'Pointer position X (screen %)',
         pickerName: 'Screen position X %',
-        type: VarType.number,
         description: 'Cursor X on screen, e.g. >= 0.95 for right edge',
       ),
       VariableInfo(
-        name: 'pointer_position_screen_percentage_y',
+        variable: ConditionVariableId.pointerPositionScreenPercentageY,
         label: 'Pointer position Y (screen %)',
         pickerName: 'Screen position Y %',
-        type: VarType.number,
         description: 'Cursor Y on screen, e.g. <= 0.05 for top edge',
       ),
       VariableInfo(
-        name: 'pointer_position_window_percentage',
+        variable: ConditionVariableId.pointerPositionWindowPercentage,
         label: 'Pointer position (window %)',
         pickerName: 'Window position %',
-        type: VarType.point,
         description: 'Cursor XY within hovered window (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'pointer_position_window_percentage_x',
+        variable: ConditionVariableId.pointerPositionWindowPercentageX,
         label: 'Pointer position X (window %)',
         pickerName: 'Window position X %',
-        type: VarType.number,
         description: 'Cursor X in window, 0 is left edge, 1 is right edge',
       ),
       VariableInfo(
-        name: 'pointer_position_window_percentage_y',
+        variable: ConditionVariableId.pointerPositionWindowPercentageY,
         label: 'Pointer position Y (window %)',
         pickerName: 'Window position Y %',
-        type: VarType.number,
         description: 'Cursor Y in window, e.g. <= 0.05 for title bar area',
       ),
     ],
@@ -380,108 +339,93 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.touchpad,
     variables: [
       VariableInfo(
-        name: 'finger_1_position_percentage',
+        variable: ConditionVariableId.finger1PositionPercentage,
         label: 'Finger 1 position %',
         pickerName: 'Finger 1 %',
-        type: VarType.point,
         description: 'Finger 1 current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'finger_1_position_percentage_x',
+        variable: ConditionVariableId.finger1PositionPercentageX,
         label: 'Finger 1 position X %',
         pickerName: 'Finger 1 X %',
-        type: VarType.number,
         description: 'Finger 1 current X, e.g. >= 0.9 for right zone',
       ),
       VariableInfo(
-        name: 'finger_1_position_percentage_y',
+        variable: ConditionVariableId.finger1PositionPercentageY,
         label: 'Finger 1 position Y %',
         pickerName: 'Finger 1 Y %',
-        type: VarType.number,
         description: 'Finger 1 current Y, e.g. >= 0.9 for bottom zone',
       ),
       VariableInfo(
-        name: 'finger_2_position_percentage',
+        variable: ConditionVariableId.finger2PositionPercentage,
         label: 'Finger 2 position %',
         pickerName: 'Finger 2 %',
-        type: VarType.point,
         description: 'Finger 2 current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'finger_2_position_percentage_x',
+        variable: ConditionVariableId.finger2PositionPercentageX,
         label: 'Finger 2 position X %',
         pickerName: 'Finger 2 X %',
-        type: VarType.number,
         description: 'Finger 2 current X, e.g. >= 0.9 for right zone',
       ),
       VariableInfo(
-        name: 'finger_2_position_percentage_y',
+        variable: ConditionVariableId.finger2PositionPercentageY,
         label: 'Finger 2 position Y %',
         pickerName: 'Finger 2 Y %',
-        type: VarType.number,
         description: 'Finger 2 current Y, e.g. >= 0.9 for bottom zone',
       ),
       VariableInfo(
-        name: 'finger_3_position_percentage',
+        variable: ConditionVariableId.finger3PositionPercentage,
         label: 'Finger 3 position %',
         pickerName: 'Finger 3 %',
-        type: VarType.point,
         description: 'Finger 3 current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'finger_3_position_percentage_x',
+        variable: ConditionVariableId.finger3PositionPercentageX,
         label: 'Finger 3 position X %',
         pickerName: 'Finger 3 X %',
-        type: VarType.number,
         description: 'Finger 3 current X, e.g. >= 0.9 for right zone',
       ),
       VariableInfo(
-        name: 'finger_3_position_percentage_y',
+        variable: ConditionVariableId.finger3PositionPercentageY,
         label: 'Finger 3 position Y %',
         pickerName: 'Finger 3 Y %',
-        type: VarType.number,
         description: 'Finger 3 current Y, e.g. >= 0.9 for bottom zone',
       ),
       VariableInfo(
-        name: 'finger_4_position_percentage',
+        variable: ConditionVariableId.finger4PositionPercentage,
         label: 'Finger 4 position %',
         pickerName: 'Finger 4 %',
-        type: VarType.point,
         description: 'Finger 4 current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'finger_4_position_percentage_x',
+        variable: ConditionVariableId.finger4PositionPercentageX,
         label: 'Finger 4 position X %',
         pickerName: 'Finger 4 X %',
-        type: VarType.number,
         description: 'Finger 4 current X, e.g. >= 0.9 for right zone',
       ),
       VariableInfo(
-        name: 'finger_4_position_percentage_y',
+        variable: ConditionVariableId.finger4PositionPercentageY,
         label: 'Finger 4 position Y %',
         pickerName: 'Finger 4 Y %',
-        type: VarType.number,
         description: 'Finger 4 current Y, e.g. >= 0.9 for bottom zone',
       ),
       VariableInfo(
-        name: 'finger_5_position_percentage',
+        variable: ConditionVariableId.finger5PositionPercentage,
         label: 'Finger 5 position %',
         pickerName: 'Finger 5 %',
-        type: VarType.point,
         description: 'Finger 5 current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'finger_5_position_percentage_x',
+        variable: ConditionVariableId.finger5PositionPercentageX,
         label: 'Finger 5 position X %',
         pickerName: 'Finger 5 X %',
-        type: VarType.number,
         description: 'Finger 5 current X, e.g. >= 0.9 for right zone',
       ),
       VariableInfo(
-        name: 'finger_5_position_percentage_y',
+        variable: ConditionVariableId.finger5PositionPercentageY,
         label: 'Finger 5 position Y %',
         pickerName: 'Finger 5 Y %',
-        type: VarType.number,
         description: 'Finger 5 current Y, e.g. >= 0.9 for bottom zone',
       ),
     ],
@@ -491,113 +435,98 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.scan,
     variables: [
       VariableInfo(
-        name: 'finger_1_initial_position_percentage',
+        variable: ConditionVariableId.finger1InitialPositionPercentage,
         label: 'Finger 1 initial position %',
         pickerName: 'Finger 1 %',
-        type: VarType.point,
         description:
             'Finger 1 start XY, prefer over position for edge triggers',
       ),
       VariableInfo(
-        name: 'finger_1_initial_position_percentage_x',
+        variable: ConditionVariableId.finger1InitialPositionPercentageX,
         label: 'Finger 1 initial position X %',
         pickerName: 'Finger 1 X %',
-        type: VarType.number,
         description: 'Finger 1 start X, e.g. <= 0.1 for left edge',
       ),
       VariableInfo(
-        name: 'finger_1_initial_position_percentage_y',
+        variable: ConditionVariableId.finger1InitialPositionPercentageY,
         label: 'Finger 1 initial position Y %',
         pickerName: 'Finger 1 Y %',
-        type: VarType.number,
         description: 'Finger 1 start Y, e.g. <= 0.1 for top edge',
       ),
       VariableInfo(
-        name: 'finger_2_initial_position_percentage',
+        variable: ConditionVariableId.finger2InitialPositionPercentage,
         label: 'Finger 2 initial position %',
         pickerName: 'Finger 2 %',
-        type: VarType.point,
         description:
             'Finger 2 start XY, prefer over position for edge triggers',
       ),
       VariableInfo(
-        name: 'finger_2_initial_position_percentage_x',
+        variable: ConditionVariableId.finger2InitialPositionPercentageX,
         label: 'Finger 2 initial position X %',
         pickerName: 'Finger 2 X %',
-        type: VarType.number,
         description: 'Finger 2 start X, e.g. <= 0.1 for left edge',
       ),
       VariableInfo(
-        name: 'finger_2_initial_position_percentage_y',
+        variable: ConditionVariableId.finger2InitialPositionPercentageY,
         label: 'Finger 2 initial position Y %',
         pickerName: 'Finger 2 Y %',
-        type: VarType.number,
         description: 'Finger 2 start Y, e.g. <= 0.1 for top edge',
       ),
       VariableInfo(
-        name: 'finger_3_initial_position_percentage',
+        variable: ConditionVariableId.finger3InitialPositionPercentage,
         label: 'Finger 3 initial position %',
         pickerName: 'Finger 3 %',
-        type: VarType.point,
         description:
             'Finger 3 start XY, prefer over position for edge triggers',
       ),
       VariableInfo(
-        name: 'finger_3_initial_position_percentage_x',
+        variable: ConditionVariableId.finger3InitialPositionPercentageX,
         label: 'Finger 3 initial position X %',
         pickerName: 'Finger 3 X %',
-        type: VarType.number,
         description: 'Finger 3 start X, e.g. <= 0.1 for left edge',
       ),
       VariableInfo(
-        name: 'finger_3_initial_position_percentage_y',
+        variable: ConditionVariableId.finger3InitialPositionPercentageY,
         label: 'Finger 3 initial position Y %',
         pickerName: 'Finger 3 Y %',
-        type: VarType.number,
         description: 'Finger 3 start Y, e.g. <= 0.1 for top edge',
       ),
       VariableInfo(
-        name: 'finger_4_initial_position_percentage',
+        variable: ConditionVariableId.finger4InitialPositionPercentage,
         label: 'Finger 4 initial position %',
         pickerName: 'Finger 4 %',
-        type: VarType.point,
         description:
             'Finger 4 start XY, prefer over position for edge triggers',
       ),
       VariableInfo(
-        name: 'finger_4_initial_position_percentage_x',
+        variable: ConditionVariableId.finger4InitialPositionPercentageX,
         label: 'Finger 4 initial position X %',
         pickerName: 'Finger 4 X %',
-        type: VarType.number,
         description: 'Finger 4 start X, e.g. <= 0.1 for left edge',
       ),
       VariableInfo(
-        name: 'finger_4_initial_position_percentage_y',
+        variable: ConditionVariableId.finger4InitialPositionPercentageY,
         label: 'Finger 4 initial position Y %',
         pickerName: 'Finger 4 Y %',
-        type: VarType.number,
         description: 'Finger 4 start Y, e.g. <= 0.1 for top edge',
       ),
       VariableInfo(
-        name: 'finger_5_initial_position_percentage',
+        variable: ConditionVariableId.finger5InitialPositionPercentage,
         label: 'Finger 5 initial position %',
         pickerName: 'Finger 5 %',
-        type: VarType.point,
         description:
             'Finger 5 start XY, prefer over position for edge triggers',
       ),
       VariableInfo(
-        name: 'finger_5_initial_position_percentage_x',
+        variable: ConditionVariableId.finger5InitialPositionPercentageX,
         label: 'Finger 5 initial position X %',
         pickerName: 'Finger 5 X %',
-        type: VarType.number,
         description: 'Finger 5 start X, e.g. <= 0.1 for left edge',
       ),
       VariableInfo(
-        name: 'finger_5_initial_position_percentage_y',
+        variable: ConditionVariableId.finger5InitialPositionPercentageY,
         label: 'Finger 5 initial position Y %',
         pickerName: 'Finger 5 Y %',
-        type: VarType.number,
         description: 'Finger 5 start Y, e.g. <= 0.1 for top edge',
       ),
     ],
@@ -607,38 +536,33 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.activity,
     variables: [
       VariableInfo(
-        name: 'finger_1_pressure',
+        variable: ConditionVariableId.finger1Pressure,
         label: 'Finger 1 pressure',
         pickerName: 'Finger 1',
-        type: VarType.number,
         description: 'Pressure applied by finger 1 (0 to 1)',
       ),
       VariableInfo(
-        name: 'finger_2_pressure',
+        variable: ConditionVariableId.finger2Pressure,
         label: 'Finger 2 pressure',
         pickerName: 'Finger 2',
-        type: VarType.number,
         description: 'Pressure applied by finger 2 (0 to 1)',
       ),
       VariableInfo(
-        name: 'finger_3_pressure',
+        variable: ConditionVariableId.finger3Pressure,
         label: 'Finger 3 pressure',
         pickerName: 'Finger 3',
-        type: VarType.number,
         description: 'Pressure applied by finger 3 (0 to 1)',
       ),
       VariableInfo(
-        name: 'finger_4_pressure',
+        variable: ConditionVariableId.finger4Pressure,
         label: 'Finger 4 pressure',
         pickerName: 'Finger 4',
-        type: VarType.number,
         description: 'Pressure applied by finger 4 (0 to 1)',
       ),
       VariableInfo(
-        name: 'finger_5_pressure',
+        variable: ConditionVariableId.finger5Pressure,
         label: 'Finger 5 pressure',
         pickerName: 'Finger 5',
-        type: VarType.number,
         description: 'Pressure applied by finger 5 (0 to 1)',
       ),
     ],
@@ -648,52 +572,45 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.pointer,
     variables: [
       VariableInfo(
-        name: 'thumb_present',
+        variable: ConditionVariableId.thumbPresent,
         label: 'Thumb present',
         pickerName: 'Present',
-        type: VarType.bool_,
         description: 'True when thumb is on device, e.g. == false to ignore',
       ),
       VariableInfo(
-        name: 'thumb_position_percentage',
+        variable: ConditionVariableId.thumbPositionPercentage,
         label: 'Thumb position %',
         pickerName: 'Position %',
-        type: VarType.point,
         description: 'Thumb current XY on device (0 to 1 per axis)',
       ),
       VariableInfo(
-        name: 'thumb_position_percentage_x',
+        variable: ConditionVariableId.thumbPositionPercentageX,
         label: 'Thumb position X %',
         pickerName: 'Position X %',
-        type: VarType.number,
         description: 'Thumb current X, e.g. <= 0.2 for left side',
       ),
       VariableInfo(
-        name: 'thumb_position_percentage_y',
+        variable: ConditionVariableId.thumbPositionPercentageY,
         label: 'Thumb position Y %',
         pickerName: 'Position Y %',
-        type: VarType.number,
         description: 'Thumb current Y, e.g. >= 0.8 for bottom side',
       ),
       VariableInfo(
-        name: 'thumb_initial_position_percentage',
+        variable: ConditionVariableId.thumbInitialPositionPercentage,
         label: 'Thumb initial position %',
         pickerName: 'Initial position %',
-        type: VarType.point,
         description: 'Thumb start XY, useful for zone-based triggers',
       ),
       VariableInfo(
-        name: 'thumb_initial_position_percentage_x',
+        variable: ConditionVariableId.thumbInitialPositionPercentageX,
         label: 'Thumb initial position X %',
         pickerName: 'Initial position X %',
-        type: VarType.number,
         description: 'Thumb start X, e.g. <= 0.1 for left corner',
       ),
       VariableInfo(
-        name: 'thumb_initial_position_percentage_y',
+        variable: ConditionVariableId.thumbInitialPositionPercentageY,
         label: 'Thumb initial position Y %',
         pickerName: 'Initial position Y %',
-        type: VarType.number,
         description: 'Thumb start Y, e.g. >= 0.9 for bottom corner',
       ),
     ],
@@ -703,26 +620,23 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.keyboard,
     variables: [
       VariableInfo(
-        name: 'fingers',
+        variable: ConditionVariableId.fingers,
         label: 'Number of fingers',
         pickerName: 'Fingers',
-        type: VarType.number,
         description:
             'Finger count on device, e.g. == 3 for three-finger gestures',
       ),
       VariableInfo(
-        name: 'keyboard_modifiers',
+        variable: ConditionVariableId.keyboardModifiers,
         label: 'Held modifier keys',
         pickerName: 'Keyboard modifiers',
-        type: VarType.flags,
         flagValues: ['alt', 'ctrl', 'meta', 'shift'],
         description: 'Held modifier keys, e.g. contains ctrl',
       ),
       VariableInfo(
-        name: 'cursor_shape',
+        variable: ConditionVariableId.cursorShape,
         label: 'Cursor shape',
         pickerName: 'Cursor shape',
-        type: VarType.enum_,
         enumIcons: _cursorShapeIcons,
         enumValues: [
           'alias',
@@ -765,33 +679,29 @@ const List<VariableGroup> kVariableGroups = [
     icon: FLucideIcons.cpu,
     variables: [
       VariableInfo(
-        name: 'screen_name',
+        variable: ConditionVariableId.screenName,
         label: 'Screen name',
         pickerName: 'Screen name',
-        type: VarType.string,
         description: 'Current screen name, e.g. == HDMI-A-1',
       ),
       VariableInfo(
-        name: 'plasma_overview_active',
+        variable: ConditionVariableId.plasmaOverviewActive,
         label: 'Plasma overview active',
         pickerName: 'Plasma overview active',
-        type: VarType.bool_,
         description:
             'True while Plasma overview is open, e.g. == false to block',
       ),
       VariableInfo(
-        name: 'last_trigger_id',
+        variable: ConditionVariableId.lastTriggerId,
         label: 'Last trigger ID',
         pickerName: 'Last trigger ID',
-        type: VarType.string,
         description:
             'ID of last fired trigger, e.g. == my-id for chaining actions',
       ),
       VariableInfo(
-        name: 'time_since_last_trigger',
+        variable: ConditionVariableId.timeSinceLastTrigger,
         label: 'Time since last trigger',
         pickerName: 'Time since last trigger',
-        type: VarType.time,
         description:
             'Milliseconds since last trigger, e.g. <= 500 for double-tap',
       ),
@@ -814,24 +724,21 @@ const List<VariableGroup> kWindowIdVariableGroups = [
     icon: FLucideIcons.appWindow,
     variables: [
       VariableInfo(
-        name: 'window_id',
+        variable: ConditionVariableId.windowId,
         label: 'Active window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description: 'Current active window ID',
       ),
       VariableInfo(
-        name: 'initial_window_id',
+        variable: ConditionVariableId.initialWindowId,
         label: 'Initial active window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Active window ID captured when the trigger activates',
       ),
       VariableInfo(
-        name: 'previous_window_id',
+        variable: ConditionVariableId.previousWindowId,
         label: 'Previous active window - ID',
         pickerName: 'Previous ID',
-        type: VarType.string,
         description: 'Window ID replaced by the last activate window action',
       ),
     ],
@@ -841,17 +748,15 @@ const List<VariableGroup> kWindowIdVariableGroups = [
     icon: FLucideIcons.mousePointer,
     variables: [
       VariableInfo(
-        name: 'window_under_pointer_id',
+        variable: ConditionVariableId.windowUnderPointerId,
         label: 'Pointer window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description: 'Current window ID under the pointer',
       ),
       VariableInfo(
-        name: 'initial_window_under_pointer_id',
+        variable: ConditionVariableId.initialWindowUnderPointerId,
         label: 'Initial pointer window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Pointer window ID captured when the trigger activates',
       ),
     ],
@@ -861,17 +766,15 @@ const List<VariableGroup> kWindowIdVariableGroups = [
     icon: FLucideIcons.hand,
     variables: [
       VariableInfo(
-        name: 'window_under_fingers_id',
+        variable: ConditionVariableId.windowUnderFingersId,
         label: 'Fingers window - ID',
         pickerName: 'ID',
-        type: VarType.string,
         description: 'Current window ID under touch contacts',
       ),
       VariableInfo(
-        name: 'initial_window_under_fingers_id',
+        variable: ConditionVariableId.initialWindowUnderFingersId,
         label: 'Initial fingers window - ID',
         pickerName: 'Initial ID',
-        type: VarType.string,
         description: 'Fingers window ID captured when the trigger activates',
       ),
     ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
+import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
@@ -146,16 +148,7 @@ TreeTableGroup _groupNode(
       groups: groups,
       onSetMode: (mode) => onChanged(group.copyWith(mode: mode)),
       onAddCondition: (picked) => onChanged(
-        group.copyWith(
-          children: [
-            ...group.children,
-            VariableCondition(
-              variable: picked.name,
-              operator: picked.type.defaultOperator,
-              value: picked.type.defaultValue,
-            ),
-          ],
-        ),
+        group.copyWith(children: [...group.children, _conditionFor(picked)]),
       ),
       onAddGroup: () => onChanged(
         group.copyWith(children: [...group.children, const ConditionGroup()]),
@@ -191,8 +184,11 @@ TreeTableLeaf _leafNode(
 }) {
   final colors = context.theme.colors;
   final typography = context.theme.typography;
-  final info = findVariable(condition.variable);
-  final operators = info?.type.operators ?? ['==', '!='];
+  final variableName = conditionVariableName(condition.variable);
+  final info = findVariable(variableName);
+  final operators =
+      info?.operators ??
+      const [ConditionOperator.equals, ConditionOperator.notEquals];
   final currentOperator = operators.contains(condition.operator)
       ? condition.operator
       : operators.first;
@@ -214,8 +210,7 @@ TreeTableLeaf _leafNode(
             child: Builder(
               builder: (context) {
                 final variableLabel =
-                    info?.localizedLabel(context.l10n) ??
-                    '\$${condition.variable}';
+                    info?.localizedLabel(context.l10n) ?? '\$$variableName';
                 return FItem(
                   style: .delta(
                     backgroundColor: .delta([.base(Colors.transparent)]),
@@ -253,15 +248,15 @@ TreeTableLeaf _leafNode(
                   onPress: () async {
                     final picked = await showVariablePicker(
                       context,
-                      currentVariable: condition.variable,
+                      currentVariable: variableName,
                       groups: groups,
                     );
                     if (!context.mounted || picked == null) return;
                     onChanged(
                       VariableCondition(
-                        variable: picked.name,
-                        operator: picked.type.defaultOperator,
-                        value: picked.type.defaultValue,
+                        variable: ConditionVariableRef.known(picked.name),
+                        operator: picked.defaultOperator,
+                        value: picked.defaultValue,
                         negate: condition.negate,
                       ),
                     );
@@ -273,19 +268,29 @@ TreeTableLeaf _leafNode(
         ],
       ),
       OperatorSelect(
-        key: ValueKey(condition.variable),
+        key: ValueKey(variableName),
         operators: operators,
         current: currentOperator,
-        onChanged: (operator) =>
-            onChanged(condition.copyWith(operator: operator)),
+        onChanged: (operator) => onChanged(
+          condition.copyWith(
+            operator: operator,
+            value: coerceConditionValue(
+              condition.value,
+              type: info?.type,
+              operator: operator,
+            ),
+          ),
+        ),
       ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: ValueInput(
-          key: ValueKey(condition.variable),
+          key: ValueKey(variableName),
           condition: condition,
           info: info,
-          onChanged: (value) => onChanged(condition.copyWith(value: value)),
+          onChanged: (value) => onChanged(
+            condition.copyWith(value: value),
+          ),
         ),
       ),
     ],
@@ -295,6 +300,14 @@ TreeTableLeaf _leafNode(
       onPress: onDelete,
       child: Icon(FLucideIcons.trash2, color: colors.mutedForeground),
     ),
+  );
+}
+
+VariableCondition _conditionFor(VariableInfo picked) {
+  return VariableCondition(
+    variable: ConditionVariableRef.known(picked.name),
+    operator: picked.defaultOperator,
+    value: picked.defaultValue,
   );
 }
 

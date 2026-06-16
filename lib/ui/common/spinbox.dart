@@ -6,6 +6,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 
+/// Formats [v] with at most [decimalPlaces] fraction digits, dropping trailing
+/// zeros (and a bare trailing dot) so e.g. `0.3300` shows as `0.33` and
+/// `0.3330` as `0.333`, while `0.3333` keeps its precision.
+String _formatSpinValue(double v, int decimalPlaces) {
+  var text = v.toStringAsFixed(decimalPlaces);
+  if (text.contains('.')) {
+    text = text
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+  return text;
+}
+
 class FSpinBox extends HookWidget {
   const FSpinBox({
     required this.value,
@@ -38,7 +51,7 @@ class FSpinBox extends HookWidget {
     return maxLength > minLength ? maxLength : minLength;
   }
 
-  String _fmt(double v) => v.toStringAsFixed(decimalPlaces);
+  String _fmt(double v) => _formatSpinValue(v, decimalPlaces);
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +106,7 @@ class FSpinBox extends HookWidget {
         final curDp = decimalPlacesRef.value;
         final curValue = valueRef.value;
         final notify = onChangedRef.value;
-        String localFmt(double v) => v.toStringAsFixed(curDp);
+        String localFmt(double v) => _formatSpinValue(v, curDp);
 
         final parsed = double.tryParse(controller.text);
         if (parsed == null) {

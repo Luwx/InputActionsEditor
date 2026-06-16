@@ -7,6 +7,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
     show gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -56,6 +57,65 @@ void main() {
               ),
             ),
           ),
+          DirtyMarkState.clean,
+        );
+      },
+    );
+
+    test(
+      'point condition section is clean when only decimal spelling differs',
+      () async {
+        const savedConfig = Config(
+          mouseGestures: [
+            PressGesture(
+              common: TriggerCommon(
+                conditions: VariableCondition(
+                  variable: ConditionVariableRef.custom(
+                    'pointer_position_screen_percentage',
+                  ),
+                  operator: ConditionOperator.equals,
+                  value: ConditionValue.point(0.2, 0.2),
+                ),
+              ),
+            ),
+          ],
+        );
+        const currentConfig = Config(
+          mouseGestures: [
+            PressGesture(
+              common: TriggerCommon(
+                conditions: VariableCondition(
+                  variable: ConditionVariableRef.custom(
+                    'pointer_position_screen_percentage',
+                  ),
+                  operator: ConditionOperator.equals,
+                  value: ConditionValue.point(0.2, 0.2),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        final container = _containerWith(
+          current: currentConfig,
+          saved: savedConfig,
+        );
+        addTearDown(container.dispose);
+        await container.read(configControllerProvider.future);
+
+        expect(
+          container.read(
+            gestureSectionDirtyStateProvider(
+              GestureSectionLocation(
+                gesture: _mouse0(container),
+                field: GestureSectionDirtyField.triggerConditions,
+              ),
+            ),
+          ),
+          DirtyMarkState.clean,
+        );
+        expect(
+          container.read(gestureDirtyStateProvider(_mouse0(container))),
           DirtyMarkState.clean,
         );
       },

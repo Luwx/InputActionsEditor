@@ -141,6 +141,7 @@ class _TextValueChip extends HookWidget {
         onChanged: onChanged,
         onDetect: handleDetect,
         detecting: detecting.value,
+        onSubmit: () => unawaited(controller.hide()),
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
@@ -173,6 +174,7 @@ class _TextValuePopover extends HookWidget {
     required this.onChanged,
     required this.onDetect,
     required this.detecting,
+    required this.onSubmit,
   });
 
   final String value;
@@ -180,6 +182,7 @@ class _TextValuePopover extends HookWidget {
   final void Function(String) onChanged;
   final Future<void> Function() onDetect;
   final bool detecting;
+  final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +216,7 @@ class _TextValuePopover extends HookWidget {
             autofocus: true,
             maxLines: null,
             textInputAction: TextInputAction.done,
+            onSubmit: (_) => onSubmit(),
             inputFormatters: [
               FilteringTextInputFormatter.deny(RegExp(r'\n')),
             ],

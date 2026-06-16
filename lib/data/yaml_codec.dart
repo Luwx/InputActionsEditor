@@ -1,3 +1,5 @@
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
+import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -446,9 +448,9 @@ Condition _parseStringCondition(String raw) {
   final firstSpace = body.indexOf(' ');
   if (firstSpace == -1) {
     return VariableCondition(
-      variable: body,
-      operator: '==',
-      value: 'true',
+      variable: parseConditionVariableRef(body),
+      operator: ConditionOperator.equals,
+      value: const ConditionValue.boolean(true),
       negate: negate,
     );
   }
@@ -456,10 +458,18 @@ Condition _parseStringCondition(String raw) {
   final rest = body.substring(firstSpace + 1);
   final secondSpace = rest.indexOf(' ');
   if (secondSpace == -1) return RawCondition(raw: raw);
+  final operator = parseConditionOperator(rest.substring(0, secondSpace));
+  if (operator == null) return RawCondition(raw: raw);
   return VariableCondition(
-    variable: variable,
-    operator: rest.substring(0, secondSpace),
-    value: rest.substring(secondSpace + 1),
+    variable: parseConditionVariableRef(variable),
+    operator: operator,
+    value: parseConditionValue(
+      rest.substring(secondSpace + 1),
+      type:
+          knownConditionVariable(variable)?.valueType ??
+          ConditionValueType.string,
+      operator: operator,
+    ),
     negate: negate,
   );
 }

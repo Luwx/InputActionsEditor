@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_value_utils.dart';
 
 class PointInput extends HookWidget {
   const PointInput({
@@ -13,25 +12,24 @@ class PointInput extends HookWidget {
     super.key,
   });
 
-  final String value;
-  final void Function(String) onChanged;
+  final (double, double)? value;
+  final void Function(double x, double y) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final point = parsePoint(value);
-    final x = point?.$1 ?? 0.0;
-    final y = point?.$2 ?? 0.0;
+    final x = value?.$1 ?? 0.0;
+    final y = value?.$2 ?? 0.0;
 
     return _PointChipFrame(
-      label: formatPointLabel(value),
+      label: value == null ? '--' : _formatPoint(value!),
       child: _PointPopoverChip(
-        point: point,
+        point: value,
         fallbackX: x,
         fallbackY: y,
         onOpen: () {
-          if (value.isEmpty) onChanged(serializePoint(x, y));
+          if (value == null) onChanged(x, y);
         },
-        onChanged: (nx, ny) => onChanged(serializePoint(nx, ny)),
+        onChanged: onChanged,
       ),
     );
   }
@@ -44,14 +42,13 @@ class PointBetweenInput extends StatelessWidget {
     super.key,
   });
 
-  final String value;
-  final void Function(String) onChanged;
+  final ({(double, double)? from, (double, double)? to}) value;
+  final void Function((double, double) from, (double, double) to) onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final (fromStr, toStr) = splitBetweenValue(value);
-    final from = parsePoint(fromStr);
-    final to = parsePoint(toStr);
+    final from = value.from;
+    final to = value.to;
     final fromX = from?.$1 ?? 0.0;
     final fromY = from?.$2 ?? 0.0;
     final toX = to?.$1 ?? 0.0;
@@ -59,10 +56,11 @@ class PointBetweenInput extends StatelessWidget {
 
     final btnLabel = from == null && to == null
         ? '--'
-        : '${formatPointLabel(fromStr)}-${formatPointLabel(toStr)}';
+        : '${from == null ? '--' : _formatPoint(from)}-'
+              '${to == null ? '--' : _formatPoint(to)}';
 
     void emit(double nx1, double ny1, double nx2, double ny2) =>
-        onChanged('${serializePoint(nx1, ny1)};${serializePoint(nx2, ny2)}');
+        onChanged((nx1, ny1), (nx2, ny2));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -229,8 +227,8 @@ class _PointXYRow extends StatelessWidget {
           min: 0,
           max: 1,
           step: 0.01,
-          width: 84,
-          decimalPlaces: 2,
+          width: 100,
+          decimalPlaces: 4,
         ),
         const SizedBox(width: 12),
         FSpinBox(
@@ -240,8 +238,8 @@ class _PointXYRow extends StatelessWidget {
           min: 0,
           max: 1,
           step: 0.01,
-          width: 84,
-          decimalPlaces: 2,
+          width: 100,
+          decimalPlaces: 4,
         ),
       ],
     );
@@ -293,7 +291,13 @@ class _CoordinateChip extends StatelessWidget {
 }
 
 String _formatCoord(double value) {
-  return value.toStringAsFixed(2);
+  var text = value.toStringAsFixed(4);
+  if (text.contains('.')) {
+    text = text
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+  return text;
 }
 
 String _formatPoint((double, double) point) =>

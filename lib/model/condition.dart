@@ -4,12 +4,100 @@ part 'condition.freezed.dart';
 
 enum ConditionGroupMode { all, any, none }
 
+enum ConditionOperator {
+  equals,
+  notEquals,
+  greaterThan,
+  greaterOrEqual,
+  lessThan,
+  lessOrEqual,
+  between,
+  contains,
+  matches,
+  oneOf,
+}
+
+enum ConditionValueType { string, number, bool_, flags, point, enum_, time }
+
+@freezed
+sealed class ConditionVariableRef with _$ConditionVariableRef {
+  const factory ConditionVariableRef.known(String name) =
+      KnownConditionVariable;
+
+  const factory ConditionVariableRef.custom(String name) =
+      CustomConditionVariable;
+}
+
+extension ConditionVariableRefX on ConditionVariableRef {
+  String get name => switch (this) {
+    KnownConditionVariable(:final name) => name,
+    CustomConditionVariable(:final name) => name,
+  };
+}
+
+@freezed
+sealed class ConditionValue with _$ConditionValue {
+  const factory ConditionValue.text(String value) = TextConditionValue;
+
+  const factory ConditionValue.number(double value) = NumberConditionValue;
+
+  const factory ConditionValue.boolean(bool value) = BoolConditionValue;
+
+  const factory ConditionValue.flags(List<String> values) = FlagsConditionValue;
+
+  const factory ConditionValue.point(double x, double y) = PointConditionValue;
+
+  const factory ConditionValue.list(List<String> values) = ListConditionValue;
+
+  const factory ConditionValue.range({
+    required ConditionValue from,
+    required ConditionValue to,
+  }) = RangeConditionValue;
+
+  const factory ConditionValue.raw(String value) = RawConditionValue;
+}
+
+/// Lenient readers for the leaf payload of a [ConditionValue].
+extension ConditionValuePayload on ConditionValue {
+  String get textOrEmpty => switch (this) {
+    TextConditionValue(:final value) => value,
+    RawConditionValue(:final value) => value,
+    _ => '',
+  };
+
+  double get numberOrZero => switch (this) {
+    NumberConditionValue(:final value) => value,
+    _ => 0,
+  };
+
+  bool get boolOrFalse => switch (this) {
+    BoolConditionValue(:final value) => value,
+    _ => false,
+  };
+
+  /// Flag/list payloads, with a single non-empty text value promoted to a
+  /// one-element list (used when migrating a scalar into a list shape).
+  List<String> get stringList => switch (this) {
+    ListConditionValue(:final values) => values,
+    FlagsConditionValue(:final values) => values,
+    TextConditionValue(:final value) when value.trim().isNotEmpty => [
+      value.trim(),
+    ],
+    _ => const [],
+  };
+
+  (double, double)? get pointOrNull => switch (this) {
+    PointConditionValue(:final x, :final y) => (x, y),
+    _ => null,
+  };
+}
+
 @freezed
 sealed class Condition with _$Condition {
   const factory Condition.variable({
-    required String variable,
-    required String operator,
-    required String value,
+    required ConditionVariableRef variable,
+    required ConditionOperator operator,
+    required ConditionValue value,
     @Default(false) bool negate,
   }) = VariableCondition;
 

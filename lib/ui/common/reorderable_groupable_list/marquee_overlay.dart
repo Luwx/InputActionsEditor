@@ -45,14 +45,8 @@ class MarqueeSelectionOverlay extends StatefulWidget {
 
 class _MarqueeSelectionOverlayState extends State<MarqueeSelectionOverlay>
     with TickerProviderStateMixin {
-  late final AnimationController _appear = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 100),
-  );
-  late final AnimationController _exit = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 300),
-  );
+  late final AnimationController _appear;
+  late final AnimationController _exit;
 
   // The rect kept on screen. Tracks the listenable while active and is held
   // through the pop-out animation after the listenable goes null.
@@ -62,6 +56,14 @@ class _MarqueeSelectionOverlayState extends State<MarqueeSelectionOverlay>
   @override
   void initState() {
     super.initState();
+    _appear = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _exit = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     widget.rect.addListener(_onRectChanged);
     widget.sweepCorner.addListener(_onSweepCornerChanged);
     _painted = widget.rect.value;

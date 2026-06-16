@@ -1,3 +1,4 @@
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
 import 'package:input_actions_editor/model/condition.dart';
@@ -123,7 +124,8 @@ String _conditionKey(Condition? c) {
       :final value,
       :final negate,
     ):
-      return '${negate ? '!' : ''}\$$variable $operator $value';
+      return '${negate ? '!' : ''}\$${conditionVariableName(variable)} '
+          '${conditionOperatorToken(operator)} ${conditionValueToText(value)}';
     case ConditionGroup(:final mode, :final children):
       final parts = children.map(_conditionKey).toList()..sort();
       return '${mode.name}(${parts.join(',')})';

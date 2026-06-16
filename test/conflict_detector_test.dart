@@ -109,9 +109,9 @@ void main() {
 
     test('differing conditions disambiguate otherwise-identical gestures', () {
       const meta = VariableCondition(
-        variable: 'keyboard_modifiers',
-        operator: '==',
-        value: 'meta',
+        variable: ConditionVariableRef.custom('keyboard_modifiers'),
+        operator: ConditionOperator.equals,
+        value: ConditionValue.text('meta'),
       );
       final config = Config(
         mouseGestures: [
