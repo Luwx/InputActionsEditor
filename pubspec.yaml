@@ -3,7 +3,7 @@ description: "Input Actions configurator for managing shortcuts and input bindin
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.5.1+11
+version: 0.5.2+12
 
 environment:
   sdk: ^3.11.5
@@ -36,10 +36,10 @@ dependencies:
   scroll_animator: ^0.3.0
   show_fps: ^1.1.0
   shared_preferences: ^2.3.3
-  kwin_blur:
+  background_blur_linux:
     git:
       url: https://github.com/Luwx/klutter
-      path: kwin_blur
+      path: background_blur_linux
   kde_color_scheme:
     git:
       url: https://github.com/Luwx/klutter

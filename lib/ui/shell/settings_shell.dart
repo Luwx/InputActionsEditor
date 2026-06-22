@@ -1,3 +1,4 @@
+import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,6 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/ui/features/settings/settings_list_section.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
-import 'package:kwin_blur/kwin_blur.dart';
 
 /// Settings shell: settings sidebar + content area.
 ///

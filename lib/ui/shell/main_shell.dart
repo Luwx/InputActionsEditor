@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -17,7 +18,6 @@ import 'package:input_actions_editor/ui/features/history/state/recognition_histo
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
-import 'package:kwin_blur/kwin_blur.dart';
 
 /// Persistent app shell: device sidebar + content area.
 class MainShell extends HookConsumerWidget {
