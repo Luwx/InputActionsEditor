@@ -115,6 +115,7 @@ class _TextValueChip extends HookWidget {
         await onDetect();
       } finally {
         detecting.value = false;
+        isOpen.value = false;
       }
     }
 
