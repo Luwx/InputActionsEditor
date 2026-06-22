@@ -11,10 +11,13 @@ env:
 
 jobs:
   release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
 
     permissions:
       contents: write
+
+    env:
+      COPR_API_TOKEN: ${{ secrets.COPR_API_TOKEN }}
 
     steps:
       - name: Checkout
@@ -30,9 +33,10 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            qt6-base-dev
+            clang cmake ninja-build pkg-config build-essential \
+            libgtk-3-dev liblzma-dev \
+            qt6-base-dev extra-cmake-modules \
+            libkf6iconthemes-dev libkf6service-dev
 
       - name: Install packaging tools
         run: |
@@ -50,6 +54,13 @@ jobs:
 
       - name: Build
         run: flutter build linux --release
+
+      - name: Verify KDE helpers were built
+        run: |
+          BUNDLE=build/linux/x64/release/bundle
+          test -x "$BUNDLE/kde_icon_lookup" || { echo "kde_icon_lookup missing"; exit 1; }
+          test -x "$BUNDLE/kde_key_lookup" || { echo "kde_key_lookup missing"; exit 1; }
+          echo "KDE helpers built successfully."
 
       - name: Stage FHS layout
         run: |
@@ -150,3 +161,27 @@ jobs:
             packaging/*.AppImage
             packaging/*.tar.gz
           generate_release_notes: true
+
+      - name: Publish to Fedora COPR
+        if: ${{ env.COPR_API_TOKEN != '' }}
+        env:
+          COPR_PROJECT: ${{ vars.COPR_PROJECT || 'input-actions-editor' }}
+        run: |
+          export VERSION=${GITHUB_REF_NAME#v}
+
+          # Write the COPR API token (paste the whole config block from
+          # https://copr.fedorainfracloud.org/api/ into the COPR_API_TOKEN secret).
+          mkdir -p ~/.config
+          printf '%s\n' "$COPR_API_TOKEN" > ~/.config/copr
+          chmod 600 ~/.config/copr
+
+          # COPR client + rpmbuild
+          sudo apt-get install -y --no-install-recommends pipx rpm
+          pipx install copr-cli
+          export PATH="$HOME/.local/bin:$PATH"
+
+          # Build the SRPM from the staged bundle (changelog comes from CHANGELOG.md)
+          # and submit it as a COPR build.
+          scripts/package-copr.sh
+          SRPM=$(ls packaging/input-actions-editor-${VERSION}-*.src.rpm | tail -1)
+          copr-cli build "$COPR_PROJECT" "$SRPM"

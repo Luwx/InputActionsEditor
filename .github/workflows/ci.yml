@@ -2,11 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout
@@ -22,9 +22,10 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            qt6-base-dev
+            clang cmake ninja-build pkg-config build-essential \
+            libgtk-3-dev liblzma-dev \
+            qt6-base-dev extra-cmake-modules \
+            libkf6iconthemes-dev libkf6service-dev
 
       - name: Flutter pub get
         run: flutter pub get
@@ -37,3 +38,10 @@ jobs:
 
       - name: Build
         run: flutter build linux --release
+
+      - name: Verify KDE helpers were built
+        run: |
+          BUNDLE=build/linux/x64/release/bundle
+          test -x "$BUNDLE/kde_icon_lookup" || { echo "kde_icon_lookup missing"; exit 1; }
+          test -x "$BUNDLE/kde_key_lookup" || { echo "kde_key_lookup missing"; exit 1; }
+          echo "KDE helpers built successfully."

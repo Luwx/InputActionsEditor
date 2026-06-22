@@ -34,8 +34,21 @@ migrate_working_dir/
 /build/
 /coverage/
 /docs/
-/scripts/
-/packaging/
+
+# Packaging: keep the spec, scripts and AppDir metadata tracked, but ignore
+# the large build artifacts and staged trees they produce.
+/packaging/stage/
+/packaging/AppDir/
+/packaging/*.rpm
+/packaging/*.src.rpm
+/packaging/*.deb
+/packaging/*.tar.gz
+/packaging/*.AppImage
+
+# Local-only dev fixtures (large stress configs and generator)
+/scripts/config.yaml
+/scripts/stress_config.yaml
+/scripts/stress_gen.py
 
 # Generated Dart files in lib
 /lib/**/*.g.dart
