@@ -29,8 +29,12 @@ class _ContextMenuTile extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller = useFPopoverController();
+    useListenable(controller);
     return FContextMenu(
-      secondaryPress: !isMultiSelectMode,
+      control: FPopoverControl.managed(controller: controller),
+      builder: dismissibleContextMenuBuilder,
+      secondaryPress: !isMultiSelectMode && !controller.isShown,
       longPress: false,
       menu: _gestureContextMenuItems(
         context,

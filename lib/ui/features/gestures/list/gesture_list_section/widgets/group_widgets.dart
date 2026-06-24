@@ -49,6 +49,8 @@ class _GroupHeaderRow extends HookWidget {
     final typography = context.theme.typography;
     final isDisabled = !group.enabled;
     final isHovered = useState(false);
+    final menuController = useFPopoverController();
+    useListenable(menuController);
 
     // The disabled dimming wraps only the content, or no blur
     final content = Opacity(
@@ -130,6 +132,9 @@ class _GroupHeaderRow extends HookWidget {
     );
 
     return FContextMenu(
+      control: FPopoverControl.managed(controller: menuController),
+      builder: dismissibleContextMenuBuilder,
+      secondaryPress: !menuController.isShown,
       menu: _groupContextMenuItems(
         context,
         group: group,

@@ -3,10 +3,12 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
@@ -272,8 +274,13 @@ class _RowHeader extends HookConsumerWidget {
     if (action == null) return const SizedBox.shrink();
     final meta = actionMeta(action.action, l10n);
     final chips = actionMetaChips(action, l10n);
+    final menuController = useFPopoverController();
+    useListenable(menuController);
 
     return FContextMenu(
+      control: FPopoverControl.managed(controller: menuController),
+      builder: dismissibleContextMenuBuilder,
+      secondaryPress: !menuController.isShown,
       longPress: false,
       menu: _actionContextMenuItems(
         context,
