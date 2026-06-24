@@ -3,7 +3,7 @@ description: "Input Actions configurator for managing shortcuts and input bindin
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.5.2+13
+version: 0.5.2+14
 
 environment:
   sdk: ^3.11.5

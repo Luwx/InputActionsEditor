@@ -34,6 +34,15 @@ class GestureCommands {
     _config.add(DuplicateGesture(location));
   }
 
+  void renameGesture(GestureLocation location, String name) {
+    _config.add(
+      UpdateGestureCommon(
+        location,
+        (common) => common.copyWith(name: name.isEmpty ? null : name),
+      ),
+    );
+  }
+
   void removeGesture(GestureLocation location) {
     _config.add(RemoveGesture(location));
   }

@@ -10,6 +10,7 @@ class _ContextMenuTile extends HookWidget {
     required this.groupDisabled,
     required this.onTap,
     required this.onLongPress,
+    required this.onRename,
     required this.onDuplicate,
     required this.onDelete,
   });
@@ -22,6 +23,7 @@ class _ContextMenuTile extends HookWidget {
   final bool groupDisabled;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final VoidCallback onRename;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
@@ -32,6 +34,7 @@ class _ContextMenuTile extends HookWidget {
       longPress: false,
       menu: _gestureContextMenuItems(
         context,
+        onRename: onRename,
         onDuplicate: onDuplicate,
         onDelete: onDelete,
       ),
@@ -54,6 +57,7 @@ class _ContextMenuTile extends HookWidget {
 
 List<FItemGroupMixin> _gestureContextMenuItems(
   BuildContext context, {
+  required VoidCallback onRename,
   required VoidCallback onDuplicate,
   required VoidCallback onDelete,
 }) {
@@ -61,6 +65,11 @@ List<FItemGroupMixin> _gestureContextMenuItems(
   return [
     FItemGroup(
       children: [
+        FItem(
+          prefix: const Icon(FLucideIcons.pencil),
+          title: Text(l10n.groupMenuRename),
+          onPress: onRename,
+        ),
         FItem(
           prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.gestureMenuDuplicate),

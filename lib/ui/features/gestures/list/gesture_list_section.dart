@@ -471,6 +471,24 @@ class GestureListSection extends HookConsumerWidget {
                       multiSelectNotifier.enter(selectionKey);
                     }
                   },
+                  onRename: () {
+                    final gesture = gestureAt(
+                      ref.read(draftConfigProvider),
+                      selectionKey,
+                    );
+                    if (gesture == null) return;
+                    unawaited(
+                      _showRenameDialog(
+                        context,
+                        title: context.l10n.renameDialogTitle,
+                        initial: gesture.common.name ?? '',
+                        onConfirm: (name) => listNotifier.renameGesture(
+                          selectionKey,
+                          name.trim(),
+                        ),
+                      ),
+                    );
+                  },
                   onDuplicate: () =>
                       listNotifier.duplicateGesture(selectionKey),
                   onDelete: () => transitions.requestDelete(
