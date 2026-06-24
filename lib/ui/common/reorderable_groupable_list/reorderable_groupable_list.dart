@@ -957,6 +957,7 @@ class _ReorderableGroupableListState<I, G>
     );
     final groupId = item.groupId;
     final visibleRow = _AnimatedGroupRowVisibility(
+      key: item.key,
       visible: item.isVisible,
       child: row,
     );
@@ -1370,6 +1371,7 @@ class _AnimatedGroupRowVisibility extends StatelessWidget {
   const _AnimatedGroupRowVisibility({
     required this.visible,
     required this.child,
+    super.key,
   });
 
   final bool visible;
@@ -1531,7 +1533,7 @@ class _BoundaryDropHalf<I> extends StatelessWidget {
         // only grows (animated) once an item drag is in progress.
         return AnimatedContainer(
           duration: Durations.short2,
-          height: active ? 16 : 0,
+          height: active ? 8 : 0,
           padding: EdgeInsets.only(left: indent),
           alignment: Alignment.center,
           child: AnimatedContainer(
