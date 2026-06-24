@@ -273,47 +273,49 @@ class _RowHeader extends HookConsumerWidget {
     final meta = actionMeta(action.action, l10n);
     final chips = actionMetaChips(action, l10n);
 
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Listener(
-            onPointerDown: (e) => onDragPointerChanged(e.pointer),
-            onPointerUp: (_) => onDragPointerChanged(null),
-            onPointerCancel: (_) => onDragPointerChanged(null),
-            child: ReorderableDragStartListener(
-              index: index,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.grab,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 8,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Listener(
+              onPointerDown: (e) => onDragPointerChanged(e.pointer),
+              onPointerUp: (_) => onDragPointerChanged(null),
+              onPointerCancel: (_) => onDragPointerChanged(null),
+              child: ReorderableDragStartListener(
+                index: index,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.grab,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 8,
+                        ),
+                        child: Icon(
+                          FLucideIcons.gripVertical,
+                          size: 14,
+                          color: colors.mutedForeground.withValues(
+                            alpha: 0.45,
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        FLucideIcons.gripVertical,
-                        size: 14,
-                        color: colors.mutedForeground.withValues(alpha: 0.45),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${index + 1}',
+                        style: context.theme.typography.body.xs,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${index + 1}',
-                      style: context.theme.typography.body.xs,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onToggle,
+            const SizedBox(width: 4),
+            Expanded(
               child: Opacity(
                 opacity: action.enabled == false ? 0.5 : 1,
                 child: Row(
@@ -368,25 +370,25 @@ class _RowHeader extends HookConsumerWidget {
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          FButton.icon(
-            variant: .ghost,
-            onPress: onToggle,
-            child: Icon(
-              expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+            const SizedBox(width: 8),
+            FButton.icon(
+              variant: .ghost,
+              onPress: onToggle,
+              child: Icon(
+                expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+              ),
             ),
-          ),
-          FButton.icon(
-            variant: .ghost,
-            onPress: onDelete,
-            child: const Icon(FLucideIcons.trash),
-          ),
-          FCheckbox(
-            value: action.enabled != false,
-            onChange: onEnabledChanged,
-          ),
-        ],
+            FButton.icon(
+              variant: .ghost,
+              onPress: onDelete,
+              child: const Icon(FLucideIcons.trash),
+            ),
+            FCheckbox(
+              value: action.enabled != false,
+              onChange: onEnabledChanged,
+            ),
+          ],
+        ),
       ),
     );
   }
