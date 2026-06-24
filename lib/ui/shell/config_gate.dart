@@ -1,4 +1,5 @@
-import 'package:flutter/widgets.dart';
+import 'package:animations/animations.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -12,19 +13,40 @@ class ConfigGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ref
+    final state = ref
         .watch(configControllerProvider)
         .when(
           skipLoadingOnReload: true,
-          data: (_) => child,
-          loading: () => const Center(child: FCircularProgress.loader()),
-          error: (error, _) => _ConfigLoadError(error: error),
+          data: (_) => KeyedSubtree(
+            key: const ValueKey('config-gate-data'),
+            child: child,
+          ),
+          loading: () => const Center(
+            key: ValueKey('config-gate-loading'),
+            child: FCircularProgress.loader(),
+          ),
+          error: (error, _) => _ConfigLoadError(
+            key: const ValueKey('config-gate-error'),
+            error: error,
+          ),
         );
+
+    return PageTransitionSwitcher(
+      transitionBuilder: (child, animation, secondaryAnimation) =>
+          SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.scaled,
+            fillColor: Colors.transparent,
+            child: child,
+          ),
+      child: state,
+    );
   }
 }
 
 class _ConfigLoadError extends ConsumerWidget {
-  const _ConfigLoadError({required this.error});
+  const _ConfigLoadError({required this.error, super.key});
 
   final Object error;
 
