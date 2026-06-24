@@ -273,125 +273,167 @@ class _RowHeader extends HookConsumerWidget {
     final meta = actionMeta(action.action, l10n);
     final chips = actionMetaChips(action, l10n);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onToggle,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Listener(
-              onPointerDown: (e) => onDragPointerChanged(e.pointer),
-              onPointerUp: (_) => onDragPointerChanged(null),
-              onPointerCancel: (_) => onDragPointerChanged(null),
-              child: ReorderableDragStartListener(
-                index: index,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.grab,
+    return FContextMenu(
+      longPress: false,
+      menu: _actionContextMenuItems(
+        context,
+        enabled: action.enabled != false,
+        onDuplicate: onDuplicate,
+        onToggleEnabled: () => onEnabledChanged(action.enabled == false),
+        onDelete: onDelete,
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Listener(
+                onPointerDown: (e) => onDragPointerChanged(e.pointer),
+                onPointerUp: (_) => onDragPointerChanged(null),
+                onPointerCancel: (_) => onDragPointerChanged(null),
+                child: ReorderableDragStartListener(
+                  index: index,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 8,
+                          ),
+                          child: Icon(
+                            FLucideIcons.gripVertical,
+                            size: 14,
+                            color: colors.mutedForeground.withValues(
+                              alpha: 0.45,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${index + 1}',
+                          style: context.theme.typography.body.xs,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Opacity(
+                  opacity: action.enabled == false ? 0.5 : 1,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 8,
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: colors.secondary,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          FLucideIcons.gripVertical,
-                          size: 14,
-                          color: colors.mutedForeground.withValues(
-                            alpha: 0.45,
+                          meta.icon,
+                          size: 17,
+                          color: colors.secondaryForeground,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      UnsavedLabel(
+                        isDirty: isDirty,
+                        child: Text(
+                          actionRowTitle(action.action, l10n),
+                          style: typography.body.sm.copyWith(
+                            fontWeight: FontWeight.w700,
+                            decoration: action.enabled == false
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            decorationColor: colors.foreground.withValues(
+                              alpha: action.enabled == false ? 1 : 0.5,
+                            ),
+                            decorationThickness: 2,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${index + 1}',
-                        style: context.theme.typography.body.xs,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          actionValueSummary(action.action, l10n),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.body.sm.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
                       ),
+                      if (chips.isNotEmpty) ...[
+                        const SizedBox(width: 14),
+                        _MetaChips(chips: chips),
+                      ],
                     ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Opacity(
-                opacity: action.enabled == false ? 0.5 : 1,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: colors.secondary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        meta.icon,
-                        size: 17,
-                        color: colors.secondaryForeground,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    UnsavedLabel(
-                      isDirty: isDirty,
-                      child: Text(
-                        actionRowTitle(action.action, l10n),
-                        style: typography.body.sm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          decoration: action.enabled == false
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          decorationColor: colors.foreground.withValues(
-                            alpha: action.enabled == false ? 1 : 0.5,
-                          ),
-                          decorationThickness: 2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        actionValueSummary(action.action, l10n),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.body.sm.copyWith(
-                          color: colors.mutedForeground,
-                        ),
-                      ),
-                    ),
-                    if (chips.isNotEmpty) ...[
-                      const SizedBox(width: 14),
-                      _MetaChips(chips: chips),
-                    ],
-                  ],
+              const SizedBox(width: 8),
+              FButton.icon(
+                variant: .ghost,
+                onPress: onToggle,
+                child: Icon(
+                  expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            FButton.icon(
-              variant: .ghost,
-              onPress: onToggle,
-              child: Icon(
-                expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+              FButton.icon(
+                variant: .ghost,
+                onPress: onDelete,
+                child: const Icon(FLucideIcons.trash),
               ),
-            ),
-            FButton.icon(
-              variant: .ghost,
-              onPress: onDelete,
-              child: const Icon(FLucideIcons.trash),
-            ),
-            FCheckbox(
-              value: action.enabled != false,
-              onChange: onEnabledChanged,
-            ),
-          ],
+              FCheckbox(
+                value: action.enabled != false,
+                onChange: onEnabledChanged,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+List<FItemGroupMixin> _actionContextMenuItems(
+  BuildContext context, {
+  required bool enabled,
+  required VoidCallback onDuplicate,
+  required VoidCallback onToggleEnabled,
+  required VoidCallback onDelete,
+}) {
+  final l10n = context.l10n;
+  return [
+    FItemGroup(
+      children: [
+        FItem(
+          prefix: const Icon(FLucideIcons.copy),
+          title: Text(l10n.actionDuplicate),
+          onPress: onDuplicate,
+        ),
+        FItem(
+          prefix: Icon(enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
+          title: Text(enabled ? l10n.actionDisable : l10n.actionEnable),
+          onPress: onToggleEnabled,
+        ),
+        FItem(
+          variant: FItemVariant.destructive,
+          prefix: const Icon(FLucideIcons.trash2),
+          title: Text(l10n.actionDelete),
+          onPress: onDelete,
+        ),
+      ],
+    ),
+  ];
 }
 
 class _MetaChips extends StatelessWidget {
