@@ -45,40 +45,6 @@ class _GroupHeaderRow extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final menuController = useMemoized(ContextMenuController.new);
-    useEffect(() => menuController.remove, const []);
-
-    void onSecondaryTapUp(TapUpDetails details) {
-      menuController.show(
-        context: context,
-        contextMenuBuilder: (_) => _GroupContextMenu(
-          position: details.globalPosition,
-          group: group,
-          onDismiss: menuController.remove,
-          onRename: () {
-            menuController.remove();
-            onRename();
-          },
-          onToggleEnabled: () {
-            menuController.remove();
-            onToggleEnabled();
-          },
-          onBulkEdit: () {
-            menuController.remove();
-            onBulkEdit();
-          },
-          onBreakdown: () {
-            menuController.remove();
-            onBreakdown();
-          },
-          onDelete: () {
-            menuController.remove();
-            onDelete();
-          },
-        ),
-      );
-    }
-
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isDisabled = !group.enabled;
@@ -163,13 +129,19 @@ class _GroupHeaderRow extends HookWidget {
       ),
     );
 
-    return GestureDetector(
-      onSecondaryTapUp: onSecondaryTapUp,
-      behavior: HitTestBehavior.translucent,
-      // Fixed height so it fills the pinned header slot exactly (the list pins
-      // headers at GestureListSection._groupHeaderExtent).
+    return FContextMenu(
+      menu: _groupContextMenuItems(
+        context,
+        group: group,
+        onRename: onRename,
+        onToggleEnabled: onToggleEnabled,
+        onBulkEdit: onBulkEdit,
+        onBreakdown: onBreakdown,
+        onDelete: onDelete,
+      ),
       child: SizedBox(
         height: GestureListSection._groupHeaderExtent,
+        // Fixed height so it fills the pinned header slot exactly.
         child: MouseRegion(
           onEnter: (_) => isHovered.value = true,
           onExit: (_) => isHovered.value = false,
@@ -248,111 +220,47 @@ class _PinnedHeaderBacking extends StatelessWidget {
   }
 }
 
-class _GroupContextMenu extends StatelessWidget {
-  const _GroupContextMenu({
-    required this.position,
-    required this.group,
-    required this.onDismiss,
-    required this.onRename,
-    required this.onToggleEnabled,
-    required this.onBulkEdit,
-    required this.onBreakdown,
-    required this.onDelete,
-  });
-
-  final Offset position;
-  final GestureGroup group;
-  final VoidCallback onDismiss;
-  final VoidCallback onRename;
-  final VoidCallback onToggleEnabled;
-  final VoidCallback onBulkEdit;
-  final VoidCallback onBreakdown;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-    final style = context.theme.style;
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: onDismiss,
-            onSecondaryTap: onDismiss,
-            behavior: HitTestBehavior.opaque,
-          ),
+List<FItemGroupMixin> _groupContextMenuItems(
+  BuildContext context, {
+  required GestureGroup group,
+  required VoidCallback onRename,
+  required VoidCallback onToggleEnabled,
+  required VoidCallback onBulkEdit,
+  required VoidCallback onBreakdown,
+  required VoidCallback onDelete,
+}) => [
+  FItemGroup(
+    children: [
+      FItem(
+        prefix: const Icon(FLucideIcons.pencil),
+        title: Text(context.l10n.groupMenuRename),
+        onPress: onRename,
+      ),
+      FItem(
+        prefix: Icon(group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
+        title: Text(
+          group.enabled
+              ? context.l10n.gestureMenuDisable
+              : context.l10n.gestureMenuEnable,
         ),
-        Positioned(
-          left: position.dx,
-          top: position.dy,
-          child: Focus(
-            autofocus: true,
-            onKeyEvent: (_, event) {
-              if (event is KeyDownEvent &&
-                  event.logicalKey == LogicalKeyboardKey.escape) {
-                onDismiss();
-                return KeyEventResult.handled;
-              }
-              return KeyEventResult.ignored;
-            },
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 180, maxWidth: 260),
-              child: FItemGroup(
-                style: .delta(
-                  decoration: DecorationDelta.value(
-                    ShapeDecoration(
-                      color: colors.card,
-                      shape: RoundedSuperellipseBorder(
-                        side: BorderSide(
-                          color: colors.border,
-                          width: style.borderWidth,
-                        ),
-                        borderRadius: style.borderRadius.md,
-                      ),
-                      shadows: style.shadow,
-                    ),
-                  ),
-                ),
-                children: [
-                  FItem(
-                    prefix: const Icon(FLucideIcons.pencil),
-                    title: Text(context.l10n.groupMenuRename),
-                    onPress: onRename,
-                  ),
-                  FItem(
-                    prefix: Icon(
-                      group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye,
-                    ),
-                    title: Text(
-                      group.enabled
-                          ? context.l10n.gestureMenuDisable
-                          : context.l10n.gestureMenuEnable,
-                    ),
-                    onPress: onToggleEnabled,
-                  ),
-                  FItem(
-                    prefix: const Icon(FLucideIcons.sliders),
-                    title: Text(context.l10n.bulkEdit),
-                    onPress: onBulkEdit,
-                  ),
-                  FItem(
-                    prefix: const Icon(FLucideIcons.folderOpen),
-                    title: Text(context.l10n.groupMenuBreakdown),
-                    onPress: onBreakdown,
-                  ),
-                  FItem(
-                    variant: FItemVariant.destructive,
-                    prefix: const Icon(FLucideIcons.trash2),
-                    title: Text(context.l10n.groupMenuDeleteWithGestures),
-                    onPress: onDelete,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+        onPress: onToggleEnabled,
+      ),
+      FItem(
+        prefix: const Icon(FLucideIcons.sliders),
+        title: Text(context.l10n.bulkEdit),
+        onPress: onBulkEdit,
+      ),
+      FItem(
+        prefix: const Icon(FLucideIcons.folderOpen),
+        title: Text(context.l10n.groupMenuBreakdown),
+        onPress: onBreakdown,
+      ),
+      FItem(
+        variant: FItemVariant.destructive,
+        prefix: const Icon(FLucideIcons.trash2),
+        title: Text(context.l10n.groupMenuDeleteWithGestures),
+        onPress: onDelete,
+      ),
+    ],
+  ),
+];
