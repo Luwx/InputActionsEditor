@@ -172,7 +172,7 @@ void main() {
     test('DuplicateGesture inserts a copy after the original', () {
       final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
       final out = DuplicateGesture(_at(c, DeviceType.mouse, 0)).apply(c);
-      expect(_names(out.mouseGestures), ['m1', 'm1', 'm2']);
+      expect(_names(out.mouseGestures), ['m1', 'm1-copy', 'm2']);
     });
 
     test('UpdateGesture transforms in place, ignores a missing gesture', () {

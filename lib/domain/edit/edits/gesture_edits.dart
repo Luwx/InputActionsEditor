@@ -82,9 +82,13 @@ final class DuplicateGesture extends ConfigEdit {
     final index = _indexOf(config, location);
     if (index < 0) return config;
     final list = _gestures(config, location.device);
+    final source = list[index];
+    final copy = source.withCommon(
+      source.common.copyWith(name: '${source.common.name ?? ''}-copy'),
+    );
     return config.withGesturesForDevice(
       location.device,
-      [...list]..insert(index + 1, list[index]),
+      [...list]..insert(index + 1, copy),
     );
   }
 
