@@ -87,14 +87,14 @@ class DeviceRulesEditor extends ConsumerWidget {
                   children: [
                     Text(
                       l10n.deviceRulesEmpty,
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       l10n.deviceRulesEmptyDescription,
                       textAlign: TextAlign.center,
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         color: colors.mutedForeground,
                       ),
                     ),
@@ -182,7 +182,7 @@ class _DeviceRuleCard extends ConsumerWidget {
               children: [
                 Text(
                   l10n.deviceRuleHeader(index + 1),
-                  style: typography.sm.copyWith(
+                  style: typography.body.sm.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.mutedForeground,
                   ),
@@ -191,7 +191,7 @@ class _DeviceRuleCard extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     condLabel,
-                    style: typography.sm,
+                    style: typography.body.sm,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -92,7 +92,7 @@ class ConditionFunctionTooltip extends StatelessWidget {
                 _monoSpan('() => expression', colors, t),
               ],
             ),
-            style: t.xs.copyWith(color: colors.mutedForeground),
+            style: t.body.xs.copyWith(color: colors.mutedForeground),
           ),
         ],
       ),
@@ -152,7 +152,7 @@ class ActionFunctionTooltip extends StatelessWidget {
                 _monoSpan('() => expression', colors, t),
               ],
             ),
-            style: t.xs.copyWith(color: colors.mutedForeground),
+            style: t.body.xs.copyWith(color: colors.mutedForeground),
           ),
         ],
       ),
@@ -224,7 +224,7 @@ class ActionActivateWindowTooltip extends StatelessWidget {
                       ),
                     ],
                   ),
-                  style: t.xs.copyWith(color: colors.mutedForeground),
+                  style: t.body.xs.copyWith(color: colors.mutedForeground),
                 ),
               ),
             ],
@@ -361,8 +361,8 @@ class ActionTriggerOnTooltip extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
-    final mono = t.xs.copyWith(fontFamily: 'monospace');
-    final muted = t.xs.copyWith(color: colors.mutedForeground);
+    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
+    final muted = t.body.xs.copyWith(color: colors.mutedForeground);
     final codeBg = colors.muted.withValues(alpha: 0.5);
     return TooltipShell(
       child: Column(
@@ -438,8 +438,8 @@ class ActionIntervalTooltip extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
-    final mono = t.xs.copyWith(fontFamily: 'monospace');
-    final muted = t.xs.copyWith(color: colors.mutedForeground);
+    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
+    final muted = t.body.xs.copyWith(color: colors.mutedForeground);
     final codeBg = colors.muted.withValues(alpha: 0.5);
     return TooltipShell(
       child: Column(
@@ -506,8 +506,8 @@ class ActionThresholdTooltip extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
-    final mono = t.xs.copyWith(fontFamily: 'monospace');
-    final muted = t.xs.copyWith(color: colors.mutedForeground);
+    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
+    final muted = t.body.xs.copyWith(color: colors.mutedForeground);
     final codeBg = colors.muted.withValues(alpha: 0.5);
     return TooltipShell(
       child: Column(

@@ -56,7 +56,9 @@ class DeviceConfigEditor extends ConsumerWidget {
               child: Center(
                 child: Text(
                   l10n.devicePropertiesNoPointer,
-                  style: typography.sm.copyWith(color: colors.mutedForeground),
+                  style: typography.body.sm.copyWith(
+                    color: colors.mutedForeground,
+                  ),
                 ),
               ),
             )
@@ -385,7 +387,7 @@ class _NullableBoolToggle extends StatelessWidget {
             onTap: () => onChanged(null),
             child: Text(
               l10n.fieldResetButton,
-              style: typography.xs.copyWith(color: colors.mutedForeground),
+              style: typography.body.xs.copyWith(color: colors.mutedForeground),
             ),
           ),
         FSwitch(

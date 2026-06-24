@@ -124,7 +124,7 @@ class _KindCardState extends State<_KindCard> {
               const SizedBox(height: 10),
               Text(
                 meta.label,
-                style: typography.sm.copyWith(
+                style: typography.body.sm.copyWith(
                   fontWeight: FontWeight.w500,
                   color: colors.secondaryForeground,
                 ),
@@ -132,7 +132,7 @@ class _KindCardState extends State<_KindCard> {
               const SizedBox(height: 4),
               Text(
                 meta.subtitle,
-                style: typography.xs.copyWith(
+                style: typography.body.xs.copyWith(
                   color: colors.mutedForeground,
                 ),
                 textAlign: TextAlign.center,

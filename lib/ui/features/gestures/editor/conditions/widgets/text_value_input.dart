@@ -159,7 +159,7 @@ class _TextValueChip extends HookWidget {
         ),
         child: Text(
           displayText,
-          style: typography.sm.copyWith(color: textColor),
+          style: typography.body.sm.copyWith(color: textColor),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

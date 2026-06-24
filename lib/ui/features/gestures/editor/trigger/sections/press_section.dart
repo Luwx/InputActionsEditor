@@ -22,7 +22,7 @@ class PressSection extends ConsumerWidget {
       children: [
         Text(
           l10n.sectionPress,
-          style: context.theme.typography.sm.copyWith(
+          style: context.theme.typography.body.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),

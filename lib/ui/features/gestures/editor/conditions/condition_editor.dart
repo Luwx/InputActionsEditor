@@ -227,7 +227,7 @@ class ConditionEditor extends StatelessWidget {
                     label: title,
                     tooltip: titleTooltip,
                     tooltipContent: titleTooltipContent,
-                    textStyle: typography.sm.copyWith(
+                    textStyle: typography.body.sm.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -239,7 +239,9 @@ class ConditionEditor extends StatelessWidget {
                   mixed: mixed,
                   child: Text(
                     title,
-                    style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+                    style: typography.body.sm.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
           tooltip: titleTooltip,
@@ -302,7 +304,7 @@ class ConditionEditor extends StatelessWidget {
           child: Text(
             'No conditions set. Add a condition or '
             'group to specify when this gesture should trigger.',
-            style: typography.sm.copyWith(color: colors.mutedForeground),
+            style: typography.body.sm.copyWith(color: colors.mutedForeground),
           ),
         ),
         _ => _buildTable(context, condition),

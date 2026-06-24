@@ -38,7 +38,7 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.theme.typography;
-    final titleStyle = typography.sm.copyWith(fontWeight: FontWeight.w600);
+    final titleStyle = typography.body.sm.copyWith(fontWeight: FontWeight.w600);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [

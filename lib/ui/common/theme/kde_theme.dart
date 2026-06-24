@@ -19,22 +19,39 @@ FThemeData buildKdeThemeData(KdeColorScheme kde) {
   // whatever ForegroundNormal the scheme provides (e.g. MonochromeTint's
   // muted 171,168,182 would render as zinc's pure white).
   final fg = colors.foreground;
-  final typography = base.typography.copyWith(
-    xs3: base.typography.xs3.copyWith(color: fg),
-    xs2: base.typography.xs2.copyWith(color: fg),
-    xs: base.typography.xs.copyWith(color: fg),
-    sm: base.typography.sm.copyWith(color: fg),
-    md: base.typography.md.copyWith(color: fg),
-    lg: base.typography.lg.copyWith(color: fg),
-    xl: base.typography.xl.copyWith(color: fg),
-    xl2: base.typography.xl2.copyWith(color: fg),
-    xl3: base.typography.xl3.copyWith(color: fg),
-    xl4: base.typography.xl4.copyWith(color: fg),
-    xl5: base.typography.xl5.copyWith(color: fg),
-    xl6: base.typography.xl6.copyWith(color: fg),
-    xl7: base.typography.xl7.copyWith(color: fg),
-    xl8: base.typography.xl8.copyWith(color: fg),
+  final body = base.typography.body.copyWith(
+    xs3: base.typography.body.xs3.copyWith(color: fg),
+    xs2: base.typography.body.xs2.copyWith(color: fg),
+    xs: base.typography.body.xs.copyWith(color: fg),
+    sm: base.typography.body.sm.copyWith(color: fg),
+    md: base.typography.body.md.copyWith(color: fg),
+    lg: base.typography.body.lg.copyWith(color: fg),
+    xl: base.typography.body.xl.copyWith(color: fg),
+    xl2: base.typography.body.xl2.copyWith(color: fg),
+    xl3: base.typography.body.xl3.copyWith(color: fg),
+    xl4: base.typography.body.xl4.copyWith(color: fg),
+    xl5: base.typography.body.xl5.copyWith(color: fg),
+    xl6: base.typography.body.xl6.copyWith(color: fg),
+    xl7: base.typography.body.xl7.copyWith(color: fg),
+    xl8: base.typography.body.xl8.copyWith(color: fg),
   );
+  final display = base.typography.display.copyWith(
+    xs3: base.typography.display.xs3.copyWith(color: fg),
+    xs2: base.typography.display.xs2.copyWith(color: fg),
+    xs: base.typography.display.xs.copyWith(color: fg),
+    sm: base.typography.display.sm.copyWith(color: fg),
+    md: base.typography.display.md.copyWith(color: fg),
+    lg: base.typography.display.lg.copyWith(color: fg),
+    xl: base.typography.display.xl.copyWith(color: fg),
+    xl2: base.typography.display.xl2.copyWith(color: fg),
+    xl3: base.typography.display.xl3.copyWith(color: fg),
+    xl4: base.typography.display.xl4.copyWith(color: fg),
+    xl5: base.typography.display.xl5.copyWith(color: fg),
+    xl6: base.typography.display.xl6.copyWith(color: fg),
+    xl7: base.typography.display.xl7.copyWith(color: fg),
+    xl8: base.typography.display.xl8.copyWith(color: fg),
+  );
+  final typography = base.typography.copyWith(body: body, display: display);
 
   return FThemeData(
     colors: colors,
@@ -55,7 +72,7 @@ FThemeData buildKdeThemeData(KdeColorScheme kde) {
       ),
       sizes: base.style.sizes,
       // Icons use the KDE foreground color.
-      iconStyle: IconThemeData(color: fg, size: typography.lg.fontSize),
+      iconStyle: IconThemeData(color: fg, size: typography.body.lg.fontSize),
       tappableStyle: base.style.tappableStyle,
       borderRadius: base.style.borderRadius,
       borderWidth: base.style.borderWidth,

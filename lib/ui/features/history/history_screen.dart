@@ -40,12 +40,12 @@ class HistoryScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               context.l10n.historyEmpty,
-              style: typography.sm.copyWith(color: colors.mutedForeground),
+              style: typography.body.sm.copyWith(color: colors.mutedForeground),
             ),
             const SizedBox(height: 4),
             Text(
               context.l10n.historyEmptyHint,
-              style: typography.xs.copyWith(color: colors.mutedForeground),
+              style: typography.body.xs.copyWith(color: colors.mutedForeground),
             ),
           ],
         ),
@@ -63,7 +63,7 @@ class HistoryScreen extends ConsumerWidget {
             children: [
               Text(
                 'Recognition History',
-                style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+                style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
               ),
               const Spacer(),
               FButton(
@@ -196,7 +196,7 @@ class _EventTile extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       event.triggerType ?? 'unknown',
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         fontWeight: FontWeight.w600,
                         color: event.matched
                             ? colors.foreground
@@ -216,14 +216,16 @@ class _EventTile extends StatelessWidget {
                         ),
                         child: Text(
                           matchedId,
-                          style: typography.xs.copyWith(color: colors.primary),
+                          style: typography.body.xs.copyWith(
+                            color: colors.primary,
+                          ),
                         ),
                       ),
                     ],
                     const Spacer(),
                     Text(
                       _formatTime(event.timestamp),
-                      style: typography.xs.copyWith(
+                      style: typography.body.xs.copyWith(
                         color: colors.mutedForeground,
                       ),
                     ),
@@ -345,7 +347,7 @@ class _HistoryChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: typography.xs.copyWith(color: colors.mutedForeground),
+        style: typography.body.xs.copyWith(color: colors.mutedForeground),
       ),
     );
   }
@@ -396,7 +398,7 @@ class _InfoLine extends StatelessWidget {
 
     return Text(
       parts.join(' · '),
-      style: typography.xs.copyWith(color: colors.mutedForeground),
+      style: typography.body.xs.copyWith(color: colors.mutedForeground),
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -431,7 +433,7 @@ class _CandidateLine extends StatelessWidget {
 
     return Text(
       'candidates: $top$suffix',
-      style: typography.xs.copyWith(color: colors.mutedForeground),
+      style: typography.body.xs.copyWith(color: colors.mutedForeground),
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -460,7 +462,7 @@ class _MatchedGestureDetail extends StatelessWidget {
 
     return Text(
       parts.join(' · '),
-      style: typography.xs.copyWith(color: colors.mutedForeground),
+      style: typography.body.xs.copyWith(color: colors.mutedForeground),
       overflow: TextOverflow.ellipsis,
     );
   }

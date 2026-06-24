@@ -278,7 +278,7 @@ class _EmergencyCombinationSection extends HookWidget {
         onRevert: onRevert,
         child: Text(
           context.l10n.effectSettingsEmergencyComboTitle,
-          style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+          style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       borderRadius: 8,
@@ -327,7 +327,7 @@ class _EmergencyCombinationSection extends HookWidget {
                     ),
                     child: Text(
                       key,
-                      style: typography.xs.copyWith(
+                      style: typography.body.xs.copyWith(
                         fontFamily: 'monospace',
                       ),
                     ),

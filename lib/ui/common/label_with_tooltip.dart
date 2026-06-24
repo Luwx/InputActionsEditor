@@ -37,7 +37,7 @@ class LabelWithTooltip extends StatelessWidget {
               tooltipContent ??
               Text(
                 tooltip!,
-                style: context.theme.typography.xs,
+                style: context.theme.typography.body.xs,
               ),
           child: Icon(
             FLucideIcons.circleQuestionMark,

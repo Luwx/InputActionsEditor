@@ -54,7 +54,7 @@ Future<void> _showTypePicker(
               context.l10n.addGestureSelectTemplate(
                 gestureDeviceNoun(device, context.l10n),
               ),
-              style: context.theme.typography.sm.copyWith(
+              style: context.theme.typography.body.sm.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -237,7 +237,7 @@ class _AddGestureDialogContentState extends State<_AddGestureDialogContent> {
       children: [
         Text(
           l10n.addGestureChooseDevice,
-          style: context.theme.typography.sm.copyWith(
+          style: context.theme.typography.body.sm.copyWith(
             color: context.theme.colors.mutedForeground,
           ),
         ),
@@ -255,7 +255,7 @@ class _AddGestureDialogContentState extends State<_AddGestureDialogContent> {
       children: [
         Text(
           l10n.addGestureSelectTemplate(gestureDeviceNoun(device, l10n)),
-          style: context.theme.typography.sm.copyWith(
+          style: context.theme.typography.body.sm.copyWith(
             color: context.theme.colors.mutedForeground,
           ),
         ),

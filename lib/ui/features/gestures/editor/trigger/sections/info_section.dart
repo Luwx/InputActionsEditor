@@ -22,12 +22,12 @@ class InfoSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+          style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         Text(
           description,
-          style: typography.xs.copyWith(color: colors.mutedForeground),
+          style: typography.body.xs.copyWith(color: colors.mutedForeground),
         ),
       ],
     );

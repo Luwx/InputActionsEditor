@@ -381,7 +381,7 @@ class _TreeTableState extends State<TreeTable> {
   }
 
   Widget _buildHeader(_ResolvedLayout layout, FColors colors) {
-    final style = context.theme.typography.xs.copyWith(
+    final style = context.theme.typography.body.xs.copyWith(
       color: colors.mutedForeground,
       fontWeight: FontWeight.w600,
       letterSpacing: 0.6,

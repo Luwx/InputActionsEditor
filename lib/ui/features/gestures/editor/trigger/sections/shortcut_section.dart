@@ -63,7 +63,7 @@ class ShortcutSection extends ConsumerWidget {
         LabelWithTooltip(
           label: context.l10n.sectionModifierLabel,
           tooltip: context.l10n.sectionModifierTooltip,
-          textStyle: context.theme.typography.sm.copyWith(
+          textStyle: context.theme.typography.body.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -242,13 +242,13 @@ class _ShortcutPreview extends StatelessWidget {
             ),
             child: Text(
               _display(key),
-              style: typography.xs.copyWith(fontWeight: FontWeight.w500),
+              style: typography.body.xs.copyWith(fontWeight: FontWeight.w500),
             ),
           ),
           if (i < sorted.length - 1)
             Text(
               '+',
-              style: typography.xs.copyWith(
+              style: typography.body.xs.copyWith(
                 color: colors.mutedForeground,
               ),
             ),

@@ -181,8 +181,8 @@ class TriggerThresholdTooltip extends StatelessWidget {
     final colors = context.theme.colors;
     final t = context.theme.typography;
     final codeBg = colors.muted.withValues(alpha: 0.5);
-    final mono = t.xs.copyWith(fontFamily: 'monospace');
-    final muted = t.xs.copyWith(color: colors.mutedForeground);
+    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
+    final muted = t.body.xs.copyWith(color: colors.mutedForeground);
     return TooltipShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

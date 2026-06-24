@@ -66,7 +66,7 @@ class ValueStringTextField extends HookWidget {
             controller: controller,
             specialTextSpanBuilder: ValueStringSpanBuilder(
               style: ValueStringSpanStyle(
-                baseStyle: typography.sm.copyWith(fontFamily: 'monospace'),
+                baseStyle: typography.body.sm.copyWith(fontFamily: 'monospace'),
                 knownVariableBackground: const Color(
                   0xFF14532D,
                 ).withValues(alpha: 0.20),
@@ -79,7 +79,7 @@ class ValueStringTextField extends HookWidget {
               ),
               knownVariables: knownVariables,
             ),
-            style: typography.sm.copyWith(fontFamily: 'monospace'),
+            style: typography.body.sm.copyWith(fontFamily: 'monospace'),
             decoration: InputDecoration(
               hintText: hintText,
               helperText: showHelper

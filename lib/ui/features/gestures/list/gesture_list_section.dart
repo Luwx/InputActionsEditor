@@ -265,7 +265,7 @@ class GestureListSection extends HookConsumerWidget {
             emptyPlaceholder: Center(
               child: Text(
                 'No gestures yet.',
-                style: typography.sm.copyWith(
+                style: typography.body.sm.copyWith(
                   color: colors.mutedForeground,
                 ),
               ),
@@ -522,7 +522,7 @@ class _ConflictTileIcon extends ConsumerWidget {
     final tooltipText = 'Conflicts with: $names';
 
     return AppTooltip(
-      tipBuilder: (context, _) => Text(tooltipText, style: typography.xs),
+      tipBuilder: (context, _) => Text(tooltipText, style: typography.body.xs),
       child: const Padding(
         padding: EdgeInsets.symmetric(horizontal: 4),
         child: Icon(

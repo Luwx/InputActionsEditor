@@ -49,14 +49,14 @@ class FunctionConditionInput extends HookWidget {
         minLines: 1,
         maxLines: 6,
         keyboardType: TextInputType.multiline,
-        style: typography.sm.copyWith(
+        style: typography.body.sm.copyWith(
           fontFamily: 'monospace',
           color: colors.foreground,
         ),
         cursorColor: colors.primary,
         decoration: InputDecoration(
           hintText: context.l10n.conditionFunctionHint,
-          hintStyle: typography.sm.copyWith(
+          hintStyle: typography.body.sm.copyWith(
             fontFamily: 'monospace',
             color: colors.mutedForeground,
           ),

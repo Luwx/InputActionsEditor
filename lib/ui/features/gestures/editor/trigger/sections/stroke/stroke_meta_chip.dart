@@ -18,7 +18,7 @@ class StrokeMetaChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: context.theme.typography.xs.copyWith(
+        style: context.theme.typography.body.xs.copyWith(
           color: colors.mutedForeground,
         ),
       ),

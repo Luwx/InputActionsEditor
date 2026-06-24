@@ -100,7 +100,7 @@ class EditorPlasmaShortcut extends HookConsumerWidget {
           manualEntry.value
               ? l10n.plasmaShortcutPickerUsePicker
               : l10n.plasmaShortcutPickerManualEntry,
-          style: typography.sm.copyWith(color: colors.primary),
+          style: typography.body.sm.copyWith(color: colors.primary),
         ),
       ),
     );
@@ -161,7 +161,7 @@ class EditorPlasmaShortcut extends HookConsumerWidget {
       child: LabelWithTooltip(
         label: l10n.plasmaShortcutPickerCombinedLabel,
         tooltip: l10n.plasmaShortcutPickerCombinedTooltip,
-        textStyle: context.theme.typography.sm.copyWith(
+        textStyle: context.theme.typography.body.sm.copyWith(
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -274,7 +274,9 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.plasmaShortcutPickerCombinedLabel,
-                  style: typography.md.copyWith(fontWeight: FontWeight.w600),
+                  style: typography.body.md.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 FButton.icon(
@@ -323,7 +325,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
                                 context
                                     .l10n
                                     .plasmaShortcutPickerSelectComponent,
-                                style: typography.sm.copyWith(
+                                style: typography.body.sm.copyWith(
                                   color: colors.mutedForeground,
                                 ),
                               ),
@@ -463,7 +465,7 @@ class _ShortcutList extends ConsumerWidget {
                 ? Center(
                     child: Text(
                       context.l10n.plasmaShortcutPickerNoResults,
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         color: colors.mutedForeground,
                       ),
                     ),

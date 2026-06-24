@@ -362,7 +362,7 @@ class _GestureSelectPrompt extends StatelessWidget {
     return Center(
       child: Text(
         context.l10n.gestureSelectPrompt,
-        style: typography.sm.copyWith(color: colors.mutedForeground),
+        style: typography.body.sm.copyWith(color: colors.mutedForeground),
       ),
     );
   }
@@ -436,7 +436,7 @@ class _MultiSelectPanel extends ConsumerWidget {
         children: [
           Text(
             l10n.multiSelectCount(selected.length),
-            style: typography.lg.copyWith(fontWeight: FontWeight.w600),
+            style: typography.body.lg.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
           Row(

@@ -104,7 +104,7 @@ class PointBetweenInput extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 5),
                       child: Text(
                         '-',
-                        style: context.theme.typography.sm.copyWith(
+                        style: context.theme.typography.body.sm.copyWith(
                           color: context.theme.colors.mutedForeground,
                           fontWeight: FontWeight.w700,
                         ),
@@ -264,7 +264,7 @@ class _CoordinateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.theme.typography;
-    final fontSize = typography.xs.fontSize;
+    final fontSize = typography.body.xs.fontSize;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
@@ -277,7 +277,7 @@ class _CoordinateChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           value,
-          style: typography.sm.copyWith(
+          style: typography.body.sm.copyWith(
             color: textColor,
             fontSize: fontSize == null ? 12 : fontSize.clamp(0, 12),
             fontFeatures: const [FontFeature.tabularFigures()],

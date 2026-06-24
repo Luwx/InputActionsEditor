@@ -43,7 +43,7 @@ class SettingsListSection extends ConsumerWidget {
           ),
           Text(
             l10n.navSettings,
-            style: context.theme.typography.xl.copyWith(
+            style: context.theme.typography.body.xl.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),

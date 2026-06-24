@@ -70,7 +70,7 @@ Widget buildConditionsFieldHeroFlight({
   return FTheme(
     data: theme,
     child: DefaultTextStyle(
-      style: theme.typography.md.copyWith(color: theme.colors.foreground),
+      style: theme.typography.body.md.copyWith(color: theme.colors.foreground),
       child: Material(color: Colors.transparent, child: hero.child),
     ),
   );
@@ -166,7 +166,7 @@ class _ConditionsExpandModal extends StatelessWidget {
                     child: ScaleTransition(
                       scale: scale,
                       child: DefaultTextStyle(
-                        style: typography.md.copyWith(
+                        style: typography.body.md.copyWith(
                           color: colors.foreground,
                         ),
                         child: Material(

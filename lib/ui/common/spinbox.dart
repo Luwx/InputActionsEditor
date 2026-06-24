@@ -268,7 +268,7 @@ class FSpinBox extends HookWidget {
                     padding: const EdgeInsets.only(right: 3),
                     child: Text(
                       unit!,
-                      style: context.theme.typography.sm.copyWith(
+                      style: context.theme.typography.body.sm.copyWith(
                         color: context.theme.colors.mutedForeground,
                       ),
                     ),

@@ -157,8 +157,8 @@ class GrowingFrostedHeaderDelegate extends SliverPersistentHeaderDelegate {
         ? 1.0
         : (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
     final titleStyle = TextStyle.lerp(
-      typography.xl2.copyWith(fontWeight: FontWeight.w600),
-      typography.md.copyWith(fontWeight: FontWeight.w600),
+      typography.body.xl2.copyWith(fontWeight: FontWeight.w600),
+      typography.body.md.copyWith(fontWeight: FontWeight.w600),
       t,
     );
     final verticalPadding = 16.0 - (6.0 * t);
@@ -203,7 +203,7 @@ class GrowingFrostedHeaderDelegate extends SliverPersistentHeaderDelegate {
                             if (subtitle != null)
                               Text(
                                 subtitle!,
-                                style: typography.xs.copyWith(
+                                style: typography.body.xs.copyWith(
                                   color: colors.mutedForeground,
                                 ),
                                 maxLines: 1,

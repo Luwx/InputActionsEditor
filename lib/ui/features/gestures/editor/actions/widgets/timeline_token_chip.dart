@@ -36,7 +36,7 @@ class TimelineTokenChip extends StatelessWidget {
         children: [
           Text(
             visual.label,
-            style: context.theme.typography.xs.copyWith(
+            style: context.theme.typography.body.xs.copyWith(
               color: visual.foreground,
               fontFamily: 'monospace',
               fontWeight: FontWeight.w500,

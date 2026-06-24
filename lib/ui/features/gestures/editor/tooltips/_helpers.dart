@@ -17,7 +17,7 @@ class _SectionLabel extends StatelessWidget {
         Icon(icon, size: 10, color: colors.mutedForeground),
         Text(
           label.toUpperCase(),
-          style: t.xs.copyWith(
+          style: t.body.xs.copyWith(
             fontWeight: FontWeight.w700,
             color: colors.mutedForeground,
             fontSize: 9.5,
@@ -50,12 +50,12 @@ class _ExRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(code, style: t.xs.copyWith(fontFamily: 'monospace')),
+          Text(code, style: t.body.xs.copyWith(fontFamily: 'monospace')),
           Padding(
             padding: const EdgeInsets.only(left: 8, top: 2),
             child: Text(
               '↳  $annotation',
-              style: t.xs.copyWith(color: colors.mutedForeground),
+              style: t.body.xs.copyWith(color: colors.mutedForeground),
             ),
           ),
         ],
@@ -97,11 +97,11 @@ class _OutcomeRow extends StatelessWidget {
               children: [
                 TextSpan(
                   text: '$label  ',
-                  style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                  style: t.body.xs.copyWith(fontWeight: FontWeight.w600),
                 ),
                 TextSpan(
                   text: description,
-                  style: t.xs.copyWith(color: colors.mutedForeground),
+                  style: t.body.xs.copyWith(color: colors.mutedForeground),
                 ),
               ],
             ),
@@ -127,10 +127,13 @@ class _Bullet extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 2),
-          child: Text('•', style: t.xs.copyWith(color: colors.mutedForeground)),
+          child: Text(
+            '•',
+            style: t.body.xs.copyWith(color: colors.mutedForeground),
+          ),
         ),
         const SizedBox(width: 6),
-        Flexible(child: Text(text, style: t.xs)),
+        Flexible(child: Text(text, style: t.body.xs)),
       ],
     );
   }
@@ -156,7 +159,7 @@ class _IconBullet extends StatelessWidget {
           padding: const EdgeInsets.only(top: 2),
           child: Icon(icon, size: 11, color: iconColor),
         ),
-        Flexible(child: Text(text, style: t.xs)),
+        Flexible(child: Text(text, style: t.body.xs)),
       ],
     );
   }
@@ -188,7 +191,7 @@ class _Note extends StatelessWidget {
         Flexible(
           child: Text(
             text,
-            style: t.xs.copyWith(color: colors.mutedForeground),
+            style: t.body.xs.copyWith(color: colors.mutedForeground),
           ),
         ),
       ],
@@ -254,7 +257,7 @@ class _LifecycleRow extends StatelessWidget {
             ),
             child: Text(
               context.l10n.fieldDefaultHint,
-              style: t!.xs.copyWith(
+              style: t!.body.xs.copyWith(
                 fontSize: 9,
                 color: colors!.primary,
                 fontWeight: FontWeight.w600,
@@ -285,7 +288,10 @@ class _KeyChordRow extends StatelessWidget {
       spacing: 3,
       children: keys.map((k) {
         if (k == '+') {
-          return Text('+', style: t.xs.copyWith(color: colors.mutedForeground));
+          return Text(
+            '+',
+            style: t.body.xs.copyWith(color: colors.mutedForeground),
+          );
         }
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -296,7 +302,7 @@ class _KeyChordRow extends StatelessWidget {
           ),
           child: Text(
             k,
-            style: t.xs.copyWith(
+            style: t.body.xs.copyWith(
               fontFamily: 'monospace',
               color: colors.secondaryForeground,
             ),
@@ -328,7 +334,7 @@ InlineSpan _tokenSpan(
       ),
       child: Text(
         text,
-        style: t.xs.copyWith(fontFamily: 'monospace', color: fg),
+        style: t.body.xs.copyWith(fontFamily: 'monospace', color: fg),
       ),
     ),
   );
@@ -343,7 +349,7 @@ Widget _pressChip(String text, FColors colors, FTypography t) {
     ),
     child: Text(
       text,
-      style: t.xs.copyWith(fontFamily: 'monospace', color: colors.primary),
+      style: t.body.xs.copyWith(fontFamily: 'monospace', color: colors.primary),
     ),
   );
 }
@@ -357,7 +363,7 @@ Widget _releaseChip(String text, FColors colors, FTypography t) {
     ),
     child: Text(
       text,
-      style: t.xs.copyWith(
+      style: t.body.xs.copyWith(
         fontFamily: 'monospace',
         color: colors.destructive,
       ),
@@ -377,7 +383,7 @@ InlineSpan _chipSpan(String text, FColors colors, FTypography t) {
       ),
       child: Text(
         text,
-        style: t.xs.copyWith(fontFamily: 'monospace', fontSize: 10),
+        style: t.body.xs.copyWith(fontFamily: 'monospace', fontSize: 10),
       ),
     ),
   );
@@ -395,7 +401,7 @@ InlineSpan _monoSpan(String text, FColors colors, FTypography t) {
       ),
       child: Text(
         text,
-        style: t.xs.copyWith(fontFamily: 'monospace'),
+        style: t.body.xs.copyWith(fontFamily: 'monospace'),
       ),
     ),
   );
@@ -413,7 +419,7 @@ InlineSpan _errorMonoSpan(String text, FColors colors, FTypography t) {
       ),
       child: Text(
         text,
-        style: t.xs.copyWith(
+        style: t.body.xs.copyWith(
           fontFamily: 'monospace',
           color: colors.destructive,
         ),

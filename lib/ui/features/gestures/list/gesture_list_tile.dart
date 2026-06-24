@@ -147,7 +147,7 @@ class GestureListTile extends ConsumerWidget {
                         child: Flexible(
                           child: Text(
                             nameText,
-                            style: typography.sm.copyWith(
+                            style: typography.body.sm.copyWith(
                               fontWeight: FontWeight.w600,
                               color: Color.lerp(
                                 colors.primary,
@@ -166,7 +166,7 @@ class GestureListTile extends ConsumerWidget {
                         const SizedBox(height: 2),
                         Text(
                           summaryText,
-                          style: typography.xs.copyWith(
+                          style: typography.body.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -187,7 +187,7 @@ class GestureListTile extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 firstAction,
-                                style: typography.xs.copyWith(
+                                style: typography.body.xs.copyWith(
                                   color: colors.mutedForeground,
                                 ),
                                 overflow: TextOverflow.ellipsis,

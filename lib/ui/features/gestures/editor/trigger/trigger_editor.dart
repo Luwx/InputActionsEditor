@@ -49,7 +49,7 @@ class TriggerEditor extends HookConsumerWidget {
             onRevert: onRevert,
             child: Text(
               context.l10n.triggerConfigTitle,
-              style: context.theme.typography.sm.copyWith(
+              style: context.theme.typography.body.sm.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -145,7 +145,7 @@ class _TriggerConflictBadge extends StatelessWidget {
           children: [
             Text(
               context.l10n.conflictsTitle,
-              style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+              style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             for (final conflict in conflicts)
@@ -179,7 +179,7 @@ class _TriggerConflictBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               context.l10n.conflictCount(conflicts.length),
-              style: typography.xs.copyWith(
+              style: typography.body.xs.copyWith(
                 fontWeight: FontWeight.w600,
                 color: kGestureWarningColor,
               ),
@@ -223,7 +223,7 @@ class _TriggerConflictRow extends StatelessWidget {
             Expanded(
               child: Text(
                 text,
-                style: context.theme.typography.xs.copyWith(
+                style: context.theme.typography.body.xs.copyWith(
                   color: colors.foreground,
                 ),
               ),

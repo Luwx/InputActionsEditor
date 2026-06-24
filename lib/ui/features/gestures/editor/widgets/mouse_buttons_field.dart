@@ -203,7 +203,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleStyle = context.theme.typography.sm.copyWith(
+    final titleStyle = context.theme.typography.body.sm.copyWith(
       fontWeight: FontWeight.w600,
     );
     return Column(

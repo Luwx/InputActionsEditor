@@ -27,7 +27,7 @@ class RemovableChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: typography.xs.copyWith(color: colors.foreground),
+            style: typography.body.xs.copyWith(color: colors.foreground),
           ),
           const SizedBox(width: 4),
           GestureDetector(

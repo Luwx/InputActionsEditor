@@ -79,14 +79,14 @@ class DeviceSidebar extends HookConsumerWidget {
                           children: <Widget>[
                             Text(
                               'Input Actions',
-                              style: context.theme.typography.lg.copyWith(
+                              style: context.theme.typography.body.lg.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Editor',
-                              style: context.theme.typography.xs.copyWith(
+                              style: context.theme.typography.body.xs.copyWith(
                                 color: context.theme.colors.mutedForeground,
                                 fontWeight: FontWeight.w400,
                                 letterSpacing: 1.8,

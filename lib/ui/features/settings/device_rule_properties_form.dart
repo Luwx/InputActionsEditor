@@ -98,7 +98,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
       children: [
         Text(
           'Properties',
-          style: typography.sm.copyWith(fontWeight: FontWeight.w500),
+          style: typography.body.sm.copyWith(fontWeight: FontWeight.w500),
         ),
         Wrap(
           spacing: 8,
@@ -200,7 +200,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
           Text(
             'No properties set. Add conditions'
             ' and properties to configure device behavior.',
-            style: typography.xs.copyWith(color: colors.mutedForeground),
+            style: typography.body.xs.copyWith(color: colors.mutedForeground),
           ),
       ],
     );
@@ -256,7 +256,7 @@ class _BoolChip extends StatelessWidget {
           children: [
             Text(
               label,
-              style: typography.xs.copyWith(
+              style: typography.body.xs.copyWith(
                 fontFamily: 'monospace',
                 color: isSet ? colors.primary : colors.mutedForeground,
               ),
@@ -264,7 +264,7 @@ class _BoolChip extends StatelessWidget {
             if (isSet)
               Text(
                 ': ${value! ? 'true' : 'false'}',
-                style: typography.xs.copyWith(
+                style: typography.body.xs.copyWith(
                   fontFamily: 'monospace',
                   color: colors.foreground,
                 ),
@@ -377,7 +377,7 @@ class _NumberChip extends HookWidget {
           children: [
             Text(
               label,
-              style: typography.xs.copyWith(
+              style: typography.body.xs.copyWith(
                 fontFamily: 'monospace',
                 color: isSet ? colors.primary : colors.mutedForeground,
               ),
@@ -385,7 +385,7 @@ class _NumberChip extends HookWidget {
             if (isSet)
               Text(
                 ': ${_fmt(value)}',
-                style: typography.xs.copyWith(
+                style: typography.body.xs.copyWith(
                   fontFamily: 'monospace',
                   color: colors.foreground,
                 ),

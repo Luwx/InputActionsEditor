@@ -22,7 +22,7 @@ class RawFallback extends StatelessWidget {
       ),
       child: Text(
         raw,
-        style: typography.xs.copyWith(
+        style: typography.body.xs.copyWith(
           color: colors.mutedForeground,
           fontFamily: 'monospace',
         ),

@@ -36,7 +36,7 @@ class FingerCountField extends ConsumerWidget {
         LabelWithTooltip(
           label: context.l10n.sectionFingersLabel,
           tooltip: context.l10n.sectionFingersTooltip,
-          textStyle: typography.sm.copyWith(fontWeight: FontWeight.w600),
+          textStyle: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         Row(

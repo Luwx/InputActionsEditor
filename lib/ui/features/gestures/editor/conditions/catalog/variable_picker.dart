@@ -133,11 +133,11 @@ class _SearchBar extends StatelessWidget {
             child: TextField(
               autofocus: true,
               onChanged: onChanged,
-              style: typography.sm.copyWith(color: colors.foreground),
+              style: typography.body.sm.copyWith(color: colors.foreground),
               cursorColor: colors.primary,
               decoration: InputDecoration(
                 hintText: 'Search variables...',
-                hintStyle: typography.sm.copyWith(
+                hintStyle: typography.body.sm.copyWith(
                   color: colors.mutedForeground,
                 ),
                 border: InputBorder.none,
@@ -176,7 +176,7 @@ class _GroupHeader extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             group.localizedName(context.l10n).toUpperCase(),
-            style: typography.xs.copyWith(
+            style: typography.body.xs.copyWith(
               color: colors.mutedForeground,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.8,
@@ -226,7 +226,7 @@ class _VariableItem extends StatelessWidget {
         ),
         subtitle: Text(
           info.description,
-          style: typography.xs.copyWith(color: colors.mutedForeground),
+          style: typography.body.xs.copyWith(color: colors.mutedForeground),
         ),
         onPress: onTap,
         selected: isSelected,
@@ -255,7 +255,7 @@ class _TypeBadge extends StatelessWidget {
       child: Text(
         type.badge(context.l10n),
         textAlign: TextAlign.center,
-        style: typography.xs.copyWith(
+        style: typography.body.xs.copyWith(
           color: type.fgColor,
           fontWeight: FontWeight.w700,
           fontFamily: 'monospace',

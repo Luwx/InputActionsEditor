@@ -105,14 +105,14 @@ class OneOfInput extends HookWidget {
                     child: TextField(
                       controller: addController,
                       autofocus: autofocus,
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         color: colors.foreground,
                       ),
                       cursorColor: colors.primary,
                       onSubmitted: add,
                       decoration: InputDecoration(
                         hintText: 'Add value...',
-                        hintStyle: typography.sm.copyWith(
+                        hintStyle: typography.body.sm.copyWith(
                           color: colors.mutedForeground,
                         ),
                         border: InputBorder.none,

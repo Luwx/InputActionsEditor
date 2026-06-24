@@ -8,7 +8,7 @@ class KeySequenceTooltip extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
-    final mono = t.xs.copyWith(fontFamily: 'monospace');
+    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
     return TooltipShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +54,7 @@ class KeySequenceTooltip extends StatelessWidget {
               ),
               Text(
                 l10n.tooltip_keySequence_chordDesc,
-                style: t.xs.copyWith(color: colors.mutedForeground),
+                style: t.body.xs.copyWith(color: colors.mutedForeground),
               ),
             ],
           ),
@@ -105,7 +105,10 @@ class KeySequenceTooltip extends StatelessWidget {
                     spacing: 4,
                     children: [
                       _pressChip('+', colors, t),
-                      Text(l10n.tooltip_keySequence_pressLabel, style: t.xs),
+                      Text(
+                        l10n.tooltip_keySequence_pressLabel,
+                        style: t.body.xs,
+                      ),
                     ],
                   ),
                   Row(
@@ -113,14 +116,17 @@ class KeySequenceTooltip extends StatelessWidget {
                     spacing: 4,
                     children: [
                       _releaseChip('-', colors, t),
-                      Text(l10n.tooltip_keySequence_releaseLabel, style: t.xs),
+                      Text(
+                        l10n.tooltip_keySequence_releaseLabel,
+                        style: t.body.xs,
+                      ),
                     ],
                   ),
                 ],
               ),
               Text(
                 l10n.tooltip_keySequence_tokenDesc,
-                style: t.xs.copyWith(color: colors.mutedForeground),
+                style: t.body.xs.copyWith(color: colors.mutedForeground),
               ),
             ],
           ),
@@ -162,7 +168,7 @@ class ButtonSequenceTooltip extends StatelessWidget {
                       _tokenSpan('+left', colors, t, press: true),
                       TextSpan(
                         text: ',  ',
-                        style: t.xs.copyWith(fontFamily: 'monospace'),
+                        style: t.body.xs.copyWith(fontFamily: 'monospace'),
                       ),
                       _tokenSpan('-left', colors, t, press: false),
                     ],
@@ -174,17 +180,17 @@ class ButtonSequenceTooltip extends StatelessWidget {
                       _tokenSpan('+right', colors, t, press: true),
                       TextSpan(
                         text: ',  ',
-                        style: t.xs.copyWith(fontFamily: 'monospace'),
+                        style: t.body.xs.copyWith(fontFamily: 'monospace'),
                       ),
                       _tokenSpan('+left', colors, t, press: true),
                       TextSpan(
                         text: ',  ',
-                        style: t.xs.copyWith(fontFamily: 'monospace'),
+                        style: t.body.xs.copyWith(fontFamily: 'monospace'),
                       ),
                       _tokenSpan('-left', colors, t, press: false),
                       TextSpan(
                         text: ',  ',
-                        style: t.xs.copyWith(fontFamily: 'monospace'),
+                        style: t.body.xs.copyWith(fontFamily: 'monospace'),
                       ),
                       _tokenSpan('-right', colors, t, press: false),
                     ],
@@ -201,7 +207,7 @@ class ButtonSequenceTooltip extends StatelessWidget {
                         _pressChip('+', colors, t),
                         Text(
                           l10n.tooltip_buttonSequence_pressLabel,
-                          style: t.xs,
+                          style: t.body.xs,
                         ),
                       ],
                     ),
@@ -212,7 +218,7 @@ class ButtonSequenceTooltip extends StatelessWidget {
                         _releaseChip('-', colors, t),
                         Text(
                           l10n.tooltip_buttonSequence_releaseLabel,
-                          style: t.xs,
+                          style: t.body.xs,
                         ),
                       ],
                     ),
@@ -238,7 +244,7 @@ class ConvertToShortcutTooltip extends StatelessWidget {
     final t = context.theme.typography;
     final codeBg = colors.muted.withValues(alpha: 0.45);
     const sep = TextSpan(text: ' ');
-    final arrow = TextSpan(text: '  →  ', style: t.xs);
+    final arrow = TextSpan(text: '  →  ', style: t.body.xs);
 
     return TooltipShell(
       child: Column(
@@ -259,13 +265,13 @@ class ConvertToShortcutTooltip extends StatelessWidget {
                   Icon(FLucideIcons.check, size: 11, color: colors.primary),
                   Text(
                     l10n.tooltip_recordingConvertShortcut_enabledLabel,
-                    style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                    style: t.body.xs.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               Text(
                 l10n.tooltip_recordingConvertShortcut_enabledDesc,
-                style: t.xs.copyWith(color: colors.mutedForeground),
+                style: t.body.xs.copyWith(color: colors.mutedForeground),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -328,13 +334,13 @@ class ConvertToShortcutTooltip extends StatelessWidget {
                   Icon(FLucideIcons.x, size: 11, color: colors.destructive),
                   Text(
                     l10n.tooltip_recordingConvertShortcut_disabledLabel,
-                    style: t.xs.copyWith(fontWeight: FontWeight.w600),
+                    style: t.body.xs.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               Text(
                 l10n.tooltip_recordingConvertShortcut_disabledDesc,
-                style: t.xs.copyWith(color: colors.mutedForeground),
+                style: t.body.xs.copyWith(color: colors.mutedForeground),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -358,7 +364,9 @@ class ConvertToShortcutTooltip extends StatelessWidget {
                       sep,
                       TextSpan(
                         text: '···',
-                        style: t.xs.copyWith(color: colors.mutedForeground),
+                        style: t.body.xs.copyWith(
+                          color: colors.mutedForeground,
+                        ),
                       ),
                     ],
                   ),

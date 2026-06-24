@@ -61,7 +61,7 @@ class KeySequenceTextField extends HookWidget {
 
   static KeySequenceSpanStyle _buildSpanStyle(BuildContext context) {
     final colors = context.theme.colors;
-    final base = context.theme.typography.sm;
+    final base = context.theme.typography.body.sm;
     return KeySequenceSpanStyle(
       baseStyle: base,
       pressBackground: colors.primary.withValues(alpha: 0.18),
@@ -107,7 +107,7 @@ class KeySequenceTextField extends HookWidget {
           final painter = TextPainter(
             text: TextSpan(
               text: effectiveController.text,
-              style: context.theme.typography.sm,
+              style: context.theme.typography.body.sm,
             ),
             textDirection: TextDirection.ltr,
             maxLines: 1,
@@ -134,7 +134,7 @@ class KeySequenceTextField extends HookWidget {
                 specialTextSpanBuilder: KeySequenceSpanBuilder(
                   style: spanStyle,
                 ),
-                style: context.theme.typography.sm,
+                style: context.theme.typography.body.sm,
                 decoration: InputDecoration(
                   hintText:
                       hintText ?? 'e.g.  ctrl+c   or   +ctrl, +c, -c, -ctrl',

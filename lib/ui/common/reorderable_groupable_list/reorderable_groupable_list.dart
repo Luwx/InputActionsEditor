@@ -1178,7 +1178,7 @@ class _DragHandleFeedback extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Text(label, style: typography.xs),
+          child: Text(label, style: typography.body.xs),
         ),
       ),
     );

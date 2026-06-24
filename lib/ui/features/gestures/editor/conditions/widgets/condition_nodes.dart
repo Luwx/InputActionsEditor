@@ -233,13 +233,13 @@ TreeTableLeaf _leafNode(
                     tipBuilder: (context, controller) => Text(
                       '$variableLabel\n'
                       '${context.l10n.conditionVariableSelectorOpenHint}',
-                      style: context.theme.typography.xs.copyWith(
+                      style: context.theme.typography.body.xs.copyWith(
                         color: context.theme.colors.mutedForeground,
                       ),
                     ),
                     child: Text(
                       variableLabel,
-                      style: typography.sm.copyWith(
+                      style: typography.body.sm.copyWith(
                         color: colors.foreground,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -343,7 +343,9 @@ TreeTableLeaf _functionNode(
                 padding: const EdgeInsets.only(right: 10),
                 child: Text(
                   context.l10n.conditionFunctionLabel,
-                  style: typography.sm.copyWith(color: colors.mutedForeground),
+                  style: typography.body.sm.copyWith(
+                    color: colors.mutedForeground,
+                  ),
                 ),
               ),
             ),
@@ -390,7 +392,7 @@ TreeTableLeaf _rawNode(
             final typography = context.theme.typography;
             return Text(
               raw.raw,
-              style: typography.xs.copyWith(
+              style: typography.body.xs.copyWith(
                 color: colors.mutedForeground,
                 fontFamily: 'monospace',
               ),
@@ -439,7 +441,7 @@ class _GroupHeaderContent extends StatelessWidget {
         Expanded(
           child: Text(
             'of $childCount ${childCount == 1 ? 'rule' : 'rules'}',
-            style: typography.xs.copyWith(color: colors.mutedForeground),
+            style: typography.body.xs.copyWith(color: colors.mutedForeground),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -473,7 +475,7 @@ class _NegateButton extends StatelessWidget {
     return AppTooltip(
       tipBuilder: (context, controller) => Text(
         negate ? 'Negate condition' : 'Un-negate condition',
-        style: context.theme.typography.xs,
+        style: context.theme.typography.body.xs,
       ),
       child: FButton(
         variant: .ghost,

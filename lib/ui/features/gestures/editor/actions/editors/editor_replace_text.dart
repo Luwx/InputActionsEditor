@@ -87,7 +87,7 @@ class EditorReplaceText extends ConsumerWidget {
         const SizedBox(height: 6),
         Text(
           l10n.actionReplaceTextRulesHelp,
-          style: context.theme.typography.xs.copyWith(
+          style: context.theme.typography.body.xs.copyWith(
             color: context.theme.colors.mutedForeground,
           ),
         ),
@@ -212,7 +212,7 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
                                 child: Text(
                                   '${index + 1}',
                                   textAlign: TextAlign.center,
-                                  style: context.theme.typography.xs,
+                                  style: context.theme.typography.body.xs,
                                 ),
                               ),
                             ],

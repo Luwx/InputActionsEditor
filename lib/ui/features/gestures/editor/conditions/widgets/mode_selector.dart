@@ -52,9 +52,9 @@ class ModeSelector extends StatelessWidget {
               value: value,
               title: Text(
                 _format(value),
-                style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+                style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text(_subtitle(value), style: typography.xs),
+              subtitle: Text(_subtitle(value), style: typography.body.xs),
               prefix: Icon(_icon(value), size: 14),
             ),
         ],

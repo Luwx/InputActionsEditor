@@ -45,7 +45,7 @@ class _ConfigLoadError extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               context.l10n.configLoadFailedTitle,
-              style: context.theme.typography.lg.copyWith(
+              style: context.theme.typography.body.lg.copyWith(
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -53,7 +53,7 @@ class _ConfigLoadError extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               '$error',
-              style: context.theme.typography.xs.copyWith(
+              style: context.theme.typography.body.xs.copyWith(
                 color: colors.mutedForeground,
               ),
               textAlign: TextAlign.center,

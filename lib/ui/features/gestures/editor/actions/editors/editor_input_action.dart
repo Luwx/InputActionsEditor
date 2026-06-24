@@ -91,7 +91,7 @@ class EditorInputAction extends HookConsumerWidget {
               onRevert: entriesField.onRevert,
               child: Text(
                 context.l10n.inputDevicesLabel,
-                style: context.theme.typography.sm.copyWith(
+                style: context.theme.typography.body.sm.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -316,7 +316,7 @@ class _InputEntryEditor extends HookWidget {
           AppTooltip(
             tipBuilder: (context, _) => Text(
               context.l10n.inputKeySequenceRecordTip,
-              style: context.theme.typography.xs.copyWith(
+              style: context.theme.typography.body.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -356,7 +356,7 @@ class _InputEntryEditor extends HookWidget {
           AppTooltip(
             tipBuilder: (context, _) => Text(
               context.l10n.inputKeySequenceBrowseTip,
-              style: context.theme.typography.xs.copyWith(
+              style: context.theme.typography.body.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -404,7 +404,7 @@ class _InputEntryEditor extends HookWidget {
           AppTooltip(
             tipBuilder: (context, _) => Text(
               context.l10n.inputButtonSequenceRecordTip,
-              style: context.theme.typography.xs.copyWith(
+              style: context.theme.typography.body.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -602,7 +602,7 @@ Widget _buildKeyboardRecordStart(
     children: [
       Text(
         l10n.inputKeySequenceRecordTitle,
-        style: context.theme.typography.sm.copyWith(
+        style: context.theme.typography.body.sm.copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -650,7 +650,7 @@ class _KeyboardRecordingView extends HookWidget {
             const SizedBox(width: 6),
             Text(
               context.l10n.inputKeySequenceRecordingTitle,
-              style: context.theme.typography.sm.copyWith(
+              style: context.theme.typography.body.sm.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -662,7 +662,7 @@ class _KeyboardRecordingView extends HookWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               context.l10n.inputKeySequenceRecordPrompt,
-              style: context.theme.typography.sm.copyWith(
+              style: context.theme.typography.body.sm.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -685,7 +685,10 @@ class _KeyboardRecordingView extends HookWidget {
                         horizontal: 8,
                         vertical: 4,
                       ),
-                      child: Text(token, style: context.theme.typography.xs),
+                      child: Text(
+                        token,
+                        style: context.theme.typography.body.xs,
+                      ),
                     ),
                   ),
               ],
@@ -782,7 +785,7 @@ class _KeyBrowserPopover extends HookWidget {
                 ? Center(
                     child: Text(
                       context.l10n.inputKeyBrowseEmpty,
-                      style: t.xs.copyWith(color: colors.mutedForeground),
+                      style: t.body.xs.copyWith(color: colors.mutedForeground),
                     ),
                   )
                 : ListView.builder(
@@ -831,13 +834,13 @@ class _KeyResultTile extends HookWidget {
             children: [
               Text(
                 entry.label,
-                style: t.sm.copyWith(fontWeight: FontWeight.w500),
+                style: t.body.sm.copyWith(fontWeight: FontWeight.w500),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   entry.scancode,
-                  style: t.xs.copyWith(
+                  style: t.body.xs.copyWith(
                     color: colors.mutedForeground,
                     fontFamily: 'monospace',
                   ),
@@ -868,7 +871,7 @@ Widget _buildMouseRecordPopover(
     children: [
       Text(
         context.l10n.inputButtonSequenceRecordTitle,
-        style: context.theme.typography.sm.copyWith(
+        style: context.theme.typography.body.sm.copyWith(
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -890,7 +893,7 @@ Widget _buildMouseRecordPopover(
               ? Center(
                   child: Text(
                     context.l10n.inputButtonSequenceRecordPrompt,
-                    style: context.theme.typography.sm.copyWith(
+                    style: context.theme.typography.body.sm.copyWith(
                       color: colors.mutedForeground,
                     ),
                   ),
@@ -921,9 +924,10 @@ Widget _buildMouseRecordPopover(
                               ),
                               child: Text(
                                 vis.label,
-                                style: context.theme.typography.xs.copyWith(
-                                  color: vis.foreground,
-                                ),
+                                style: context.theme.typography.body.xs
+                                    .copyWith(
+                                      color: vis.foreground,
+                                    ),
                               ),
                             ),
                           );

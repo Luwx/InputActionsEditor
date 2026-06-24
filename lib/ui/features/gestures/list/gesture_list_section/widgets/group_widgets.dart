@@ -118,7 +118,7 @@ class _GroupHeaderRow extends HookWidget {
                 Expanded(
                   child: Text(
                     group.name,
-                    style: typography.sm.copyWith(
+                    style: typography.body.sm.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDisabled
                           ? colors.mutedForeground
@@ -148,7 +148,9 @@ class _GroupHeaderRow extends HookWidget {
                 const SizedBox(width: 2),
                 Text(
                   '$gestureCount',
-                  style: typography.xs.copyWith(color: colors.mutedForeground),
+                  style: typography.body.xs.copyWith(
+                    color: colors.mutedForeground,
+                  ),
                 ),
                 if (reorderHandle != null) ...[
                   const SizedBox(width: 8),

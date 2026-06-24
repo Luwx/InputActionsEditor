@@ -46,13 +46,13 @@ class SectionCard extends StatelessWidget {
         else if (title != null)
           Text(
             title!,
-            style: typography.sm.copyWith(fontWeight: FontWeight.w600),
+            style: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
           ),
         if ((title != null || titleWidget != null) && subtitle != null)
           const SizedBox(height: 4),
         if (subtitle != null)
           DefaultTextStyle.merge(
-            style: typography.xs.copyWith(
+            style: typography.body.xs.copyWith(
               color: colors.mutedForeground,
             ),
             child: subtitle!,

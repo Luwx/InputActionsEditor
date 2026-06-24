@@ -11,7 +11,7 @@ class TooltipShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: context.theme.typography.xs,
+      style: context.theme.typography.body.xs,
       child: child,
     );
   }
@@ -36,7 +36,7 @@ class CodeBlock extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: typography.xs.copyWith(fontFamily: 'monospace'),
+        style: typography.body.xs.copyWith(fontFamily: 'monospace'),
       ),
     );
   }
@@ -58,7 +58,7 @@ InlineSpan inlineCode(String text, BuildContext context) {
       ),
       child: Text(
         text,
-        style: typography.xs.copyWith(fontFamily: 'monospace'),
+        style: typography.body.xs.copyWith(fontFamily: 'monospace'),
       ),
     ),
   );

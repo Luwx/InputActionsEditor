@@ -69,7 +69,7 @@ class SwipeModeSelector extends HookWidget {
       children: [
         Text(
           'Swipe',
-          style: context.theme.typography.sm.copyWith(
+          style: context.theme.typography.body.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -168,7 +168,7 @@ class _SwipeModeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
-    final titleStyle = context.theme.typography.sm.copyWith(
+    final titleStyle = context.theme.typography.body.sm.copyWith(
       fontWeight: FontWeight.w600,
       color: selected ? colors.foreground : colors.mutedForeground,
     );

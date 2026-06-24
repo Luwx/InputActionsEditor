@@ -71,7 +71,7 @@ class StrokesField extends HookConsumerWidget {
         LabelWithTooltip(
           label: context.l10n.strokesLabel,
           tooltip: context.l10n.strokesTooltip,
-          textStyle: context.theme.typography.sm.copyWith(
+          textStyle: context.theme.typography.body.sm.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -79,7 +79,7 @@ class StrokesField extends HookConsumerWidget {
         if (strokes.isEmpty) ...[
           Text(
             context.l10n.strokesEmpty,
-            style: context.theme.typography.xs.copyWith(
+            style: context.theme.typography.body.xs.copyWith(
               color: context.theme.colors.mutedForeground,
             ),
           ),
@@ -188,11 +188,11 @@ class _StrokeInstructions extends StatelessWidget {
 
     if (steps.isEmpty) return const SizedBox.shrink();
 
-    final baseStyle = context.theme.typography.xs.copyWith(
+    final baseStyle = context.theme.typography.body.xs.copyWith(
       color: context.theme.colors.mutedForeground,
     );
     final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.w800);
-    final headerStyle = context.theme.typography.xs.copyWith(
+    final headerStyle = context.theme.typography.body.xs.copyWith(
       fontWeight: FontWeight.w600,
     );
 

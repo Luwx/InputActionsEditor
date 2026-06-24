@@ -56,14 +56,14 @@ class UnsavedMarker extends StatelessWidget {
           children: [
             Text(
               'Unsaved change',
-              style: context.theme.typography.sm.copyWith(
+              style: context.theme.typography.body.sm.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Restore the last saved value for this setting.',
-              style: context.theme.typography.xs.copyWith(
+              style: context.theme.typography.body.xs.copyWith(
                 color: context.theme.colors.mutedForeground,
               ),
             ),
@@ -161,7 +161,7 @@ class MixedBadge extends StatelessWidget {
       ),
       child: Text(
         'Mixed',
-        style: typography.xs.copyWith(
+        style: typography.body.xs.copyWith(
           color: colors.mutedForeground,
           fontWeight: FontWeight.w600,
           height: 1,

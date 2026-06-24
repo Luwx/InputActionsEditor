@@ -67,7 +67,7 @@ class ActionListEditor extends HookConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               context.l10n.actionsEmpty,
-              style: typography.sm.copyWith(color: colors.mutedForeground),
+              style: typography.body.sm.copyWith(color: colors.mutedForeground),
             ),
           )
         else
@@ -222,7 +222,7 @@ class _ActionsHeader extends ConsumerWidget {
                     .revert(),
           child: Text(
             context.l10n.actionsTitle,
-            style: context.theme.typography.sm.copyWith(
+            style: context.theme.typography.body.sm.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -302,7 +302,7 @@ class _RowHeader extends HookConsumerWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${index + 1}',
-                      style: context.theme.typography.xs,
+                      style: context.theme.typography.body.xs,
                     ),
                   ],
                 ),
@@ -337,7 +337,7 @@ class _RowHeader extends HookConsumerWidget {
                       isDirty: isDirty,
                       child: Text(
                         actionRowTitle(action.action, l10n),
-                        style: typography.sm.copyWith(
+                        style: typography.body.sm.copyWith(
                           fontWeight: FontWeight.w700,
                           decoration: action.enabled == false
                               ? TextDecoration.lineThrough
@@ -355,7 +355,7 @@ class _RowHeader extends HookConsumerWidget {
                         actionValueSummary(action.action, l10n),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: typography.sm.copyWith(
+                        style: typography.body.sm.copyWith(
                           color: colors.mutedForeground,
                         ),
                       ),
@@ -412,13 +412,13 @@ class _MetaChips extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '${chip.label}: ',
-                    style: typography.xs.copyWith(
+                    style: typography.body.xs.copyWith(
                       color: colors.mutedForeground,
                     ),
                   ),
                   TextSpan(
                     text: chip.value,
-                    style: typography.xs.copyWith(
+                    style: typography.body.xs.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colors.foreground,
                     ),

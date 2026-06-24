@@ -83,7 +83,7 @@ class StrokeRow extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         l10n.strokeRowTitle(index + 1),
-                        style: typography.sm.copyWith(
+                        style: typography.body.sm.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -92,14 +92,14 @@ class StrokeRow extends StatelessWidget {
                       if (data != null)
                         Text(
                           l10n.strokeRowPoints(data.pointCount),
-                          style: typography.xs.copyWith(
+                          style: typography.body.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
                         )
                       else
                         Text(
                           l10n.strokeRowInvalidData,
-                          style: typography.xs.copyWith(
+                          style: typography.body.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
                         ),

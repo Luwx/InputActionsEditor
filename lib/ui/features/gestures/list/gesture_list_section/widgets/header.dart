@@ -41,7 +41,7 @@ class _GestureListHeader extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       title,
-                      style: typography.md.copyWith(
+                      style: typography.body.md.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -50,7 +50,7 @@ class _GestureListHeader extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Text(
                           countLabel!,
-                          style: typography.xs.copyWith(
+                          style: typography.body.xs.copyWith(
                             color: colors.mutedForeground,
                           ),
                         ),
