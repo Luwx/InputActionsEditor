@@ -137,6 +137,7 @@ class _GroupHeaderRow extends HookWidget {
       secondaryPress: !menuController.isShown,
       menu: _groupContextMenuItems(
         context,
+        controller: menuController,
         group: group,
         onRename: onRename,
         onToggleEnabled: onToggleEnabled,
@@ -227,6 +228,7 @@ class _PinnedHeaderBacking extends StatelessWidget {
 
 List<FItemGroupMixin> _groupContextMenuItems(
   BuildContext context, {
+  required FPopoverController controller,
   required GestureGroup group,
   required VoidCallback onRename,
   required VoidCallback onToggleEnabled,
@@ -239,7 +241,7 @@ List<FItemGroupMixin> _groupContextMenuItems(
       FItem(
         prefix: const Icon(FLucideIcons.pencil),
         title: Text(context.l10n.groupMenuRename),
-        onPress: onRename,
+        onPress: dismissThen(controller, onRename),
       ),
       FItem(
         prefix: Icon(group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
@@ -248,23 +250,23 @@ List<FItemGroupMixin> _groupContextMenuItems(
               ? context.l10n.gestureMenuDisable
               : context.l10n.gestureMenuEnable,
         ),
-        onPress: onToggleEnabled,
+        onPress: dismissThen(controller, onToggleEnabled),
       ),
       FItem(
         prefix: const Icon(FLucideIcons.sliders),
         title: Text(context.l10n.bulkEdit),
-        onPress: onBulkEdit,
+        onPress: dismissThen(controller, onBulkEdit),
       ),
       FItem(
         prefix: const Icon(FLucideIcons.folderOpen),
         title: Text(context.l10n.groupMenuBreakdown),
-        onPress: onBreakdown,
+        onPress: dismissThen(controller, onBreakdown),
       ),
       FItem(
         variant: FItemVariant.destructive,
         prefix: const Icon(FLucideIcons.trash2),
         title: Text(context.l10n.groupMenuDeleteWithGestures),
-        onPress: onDelete,
+        onPress: dismissThen(controller, onDelete),
       ),
     ],
   ),

@@ -284,6 +284,7 @@ class _RowHeader extends HookConsumerWidget {
       longPress: false,
       menu: _actionContextMenuItems(
         context,
+        controller: menuController,
         enabled: action.enabled != false,
         onDuplicate: onDuplicate,
         onToggleEnabled: () => onEnabledChanged(action.enabled == false),
@@ -413,6 +414,7 @@ class _RowHeader extends HookConsumerWidget {
 
 List<FItemGroupMixin> _actionContextMenuItems(
   BuildContext context, {
+  required FPopoverController controller,
   required bool enabled,
   required VoidCallback onDuplicate,
   required VoidCallback onToggleEnabled,
@@ -425,18 +427,18 @@ List<FItemGroupMixin> _actionContextMenuItems(
         FItem(
           prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.actionDuplicate),
-          onPress: onDuplicate,
+          onPress: dismissThen(controller, onDuplicate),
         ),
         FItem(
           prefix: Icon(enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
           title: Text(enabled ? l10n.actionDisable : l10n.actionEnable),
-          onPress: onToggleEnabled,
+          onPress: dismissThen(controller, onToggleEnabled),
         ),
         FItem(
           variant: FItemVariant.destructive,
           prefix: const Icon(FLucideIcons.trash2),
           title: Text(l10n.actionDelete),
-          onPress: onDelete,
+          onPress: dismissThen(controller, onDelete),
         ),
       ],
     ),

@@ -204,10 +204,12 @@ _ActionListChoreography _useActionListChoreography(
   void duplicate(int index) {
     final current = actionsFromDraft();
     if (index < 0 || index >= current.length) return;
+    final newIndex = index + 1;
     final next = <int>{};
     for (final e in expanded.value) {
       next.add(e > index ? e + 1 : e);
     }
+    next.add(newIndex);
     expanded.value = next;
     final nextPinnedTriggerOptions = {
       for (final entry in pinnedTriggerOptions.value.entries)
@@ -218,8 +220,22 @@ _ActionListChoreography _useActionListChoreography(
       nextPinnedTriggerOptions[index + 1] = sourceFields;
     }
     pinnedTriggerOptions.value = nextPinnedTriggerOptions;
-    anchor.clear();
+    anchor.begin(newIndex);
     ref.read(actionListEditorProvider(location).notifier).duplicate(index);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = anchor.anchorKey.currentContext;
+      if (ctx != null) {
+        unawaited(
+          Scrollable.ensureVisible(
+            ctx,
+            alignment: 1,
+            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            duration: Durations.short4,
+            curve: Easing.emphasizedDecelerate,
+          ),
+        );
+      }
+    });
   }
 
   void add(Action action) {

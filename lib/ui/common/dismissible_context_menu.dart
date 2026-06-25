@@ -10,6 +10,14 @@ extension DismissibleContextMenuController on FPopoverController {
   bool get isShown => status.isForwardOrCompleted;
 }
 
+/// Hides the menu, then runs [action]. Wrap menu item `onPress` callbacks with
+/// this since Forui does not auto-dismiss on item press.
+VoidCallback dismissThen(FPopoverController controller, VoidCallback action) =>
+    () {
+      unawaited(controller.hide());
+      action();
+    };
+
 /// [FContextMenu.builder] that closes the menu on Esc and on a second
 /// right-click. The owning menu must use a managed [control] with [controller]
 /// and set `secondaryPress: !controller.isShown` (rebuilt via

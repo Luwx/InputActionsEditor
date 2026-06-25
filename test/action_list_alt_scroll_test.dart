@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 
 const ValueKey<String> _viewportKey = ValueKey('action-list-viewport');
 const ValueKey<String> _targetRowFooterKey = ValueKey('action-footer-4');
+const ValueKey<String> _duplicatedRowFooterKey = ValueKey('action-footer-5');
 
 Finder get _lastRowChevron => find.byIcon(FLucideIcons.chevronDown).last;
 Finder _rowChevron(int index) =>
@@ -300,6 +302,45 @@ void main() {
         tester,
         find.text('Action Conditions'),
         'The accordion footer should remain visible after opening.',
+      );
+    },
+  );
+
+  testWidgets(
+    'duplicating an action scrolls the duplicate into view',
+    (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _ActionsEditorHost(
+          controller: controller,
+          bottomSpacerHeight: 50,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(_rowChevron(4));
+      await tester.pumpAndSettle();
+
+      controller.jumpTo(
+        (controller.offset - 20).clamp(
+          0.0,
+          controller.position.maxScrollExtent,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(_rowChevron(4), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Duplicate'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      _expectVisibleInViewport(
+        tester,
+        find.byKey(_duplicatedRowFooterKey),
+        'The duplicated action footer should scroll into view.',
       );
     },
   );
