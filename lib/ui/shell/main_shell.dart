@@ -14,6 +14,7 @@ import 'package:input_actions_editor/services/window_service.dart'
     show windowServiceProvider;
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
@@ -27,6 +28,7 @@ class MainShell extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(0, 'mainShell build');
     // use the current mounted BuildContext.
     final contextRef = useRef(context)..value = context;
 

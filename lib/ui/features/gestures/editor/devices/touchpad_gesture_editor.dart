@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
@@ -25,6 +26,7 @@ class TouchpadGestureEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    printBuild(4, 'touchpadGestureEditor build');
     return GestureEditorLayout(
       location: location,
       sections: const [

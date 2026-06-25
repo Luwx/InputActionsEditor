@@ -15,6 +15,7 @@ import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
@@ -41,6 +42,7 @@ class GestureDetailSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(1, 'gestureDetailSection build');
     ref.listen(multiSelectControllerProvider, (prev, next) {
       if (next == null) ref.read(bulkEditActiveProvider.notifier).close();
     });
@@ -86,6 +88,7 @@ class _GestureEditorView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(2, 'gestureEditorView build');
     final scrollController = useMemoized(
       () => AnimatedScrollController(
         animationFactory: const ChromiumEaseInOut(),
@@ -398,6 +401,7 @@ class _GestureEditorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    printBuild(3, 'gestureEditorBody build');
     final key = ValueKey('${location.device.name}:${location.editId}');
     return switch (location.device) {
       DeviceType.mouse => MouseGestureEditor(key: key, location: location),

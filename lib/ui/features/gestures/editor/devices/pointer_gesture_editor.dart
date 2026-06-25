@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 
@@ -13,6 +14,7 @@ class PointerGestureEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    printBuild(4, 'pointerGestureEditor build');
     return GestureEditorLayout(
       location: location,
       sections: const [

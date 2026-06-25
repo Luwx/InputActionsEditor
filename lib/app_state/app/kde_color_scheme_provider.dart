@@ -10,8 +10,16 @@ final kdeColorSchemeInitialProvider = Provider<KdeColorScheme?>((ref) => null);
 final kdeColorSchemeProvider = StreamProvider<KdeColorScheme>((ref) async* {
   final watcher = KdeColorSchemeWatcher();
   ref.onDispose(watcher.dispose);
-  yield watcher.current;
+  yield ref.read(kdeColorSchemeInitialProvider) ?? watcher.current;
   await for (final scheme in watcher.stream) {
     yield scheme;
   }
+});
+
+/// The effective KDE scheme: the live watcher value, falling back to the
+/// synchronous initial and then [KdeColorScheme.fallback].
+final resolvedKdeColorSchemeProvider = Provider<KdeColorScheme>((ref) {
+  return ref.watch(kdeColorSchemeProvider).value ??
+      ref.watch(kdeColorSchemeInitialProvider) ??
+      KdeColorScheme.fallback;
 });

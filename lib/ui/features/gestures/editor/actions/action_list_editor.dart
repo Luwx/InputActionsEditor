@@ -13,6 +13,7 @@ import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_function.dart';
@@ -36,6 +37,7 @@ class ActionListEditor extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(5, 'actionListEditor build');
     final gestureLocation = context.gestureLocation;
     final scope = AddActionScope.maybeOf(context);
     final choreo = _useActionListChoreography(ref, context, gestureLocation);
@@ -133,6 +135,7 @@ class _ActionRow extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(6, 'actionRow build');
     final isHeaderHovered = useValueNotifier(false);
     final color = useListenableSelector(isHeaderHovered, () {
       return isHeaderHovered.value || expanded
@@ -320,6 +323,7 @@ class _RowHeader extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(7, 'rowHeader build');
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
@@ -554,6 +558,7 @@ class _ExpandedEditor extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(7, 'expandedEditor build');
     final actionLocation = context.actionLocation;
     final kind = ref.watch(
       actionEditorProvider(actionLocation).select((vm) => vm.kind),

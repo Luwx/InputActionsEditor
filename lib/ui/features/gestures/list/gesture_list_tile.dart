@@ -16,6 +16,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
@@ -52,6 +53,7 @@ class GestureListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(1, 'gestureListTile build');
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final gesture =

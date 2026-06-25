@@ -14,6 +14,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
+import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
@@ -42,6 +43,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(localSettingsProvider).themeMode;
     final delegate = ref.watch(appRouterDelegateProvider);
+    printBuild(0, 'app build');
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -59,26 +61,29 @@ class App extends ConsumerWidget {
       themeMode: themeMode,
       routerDelegate: delegate,
       backButtonDispatcher: RootBackButtonDispatcher(),
-      builder: (context, child) => Listener(
-        onPointerDown: (e) async {
-          // While an in-app recorder is capturing input, let the back / forward
-          // mouse buttons be recorded instead of navigating the app.
-          if (ref.read(isInputRecordingProvider)) return;
-          if (e.buttons & kBackMouseButton != 0) {
-            final navigator = ref
-                .read(appRouterDelegateProvider)
-                .navigatorKey
-                .currentState;
-            final didPop = await navigator?.maybePop() ?? false;
-            if (!didPop && context.mounted) {
-              await _handleMouseBack(context, ref);
+      builder: (context, child) {
+        printBuild(1, 'materialApp builder');
+        return Listener(
+          onPointerDown: (e) async {
+            // While an in-app recorder is capturing input, let the back / forward
+            // mouse buttons be recorded instead of navigating the app.
+            if (ref.read(isInputRecordingProvider)) return;
+            if (e.buttons & kBackMouseButton != 0) {
+              final navigator = ref
+                  .read(appRouterDelegateProvider)
+                  .navigatorKey
+                  .currentState;
+              final didPop = await navigator?.maybePop() ?? false;
+              if (!didPop && context.mounted) {
+                await _handleMouseBack(context, ref);
+              }
+            } else if (e.buttons & kForwardMouseButton != 0) {
+              ref.read(navProvider.notifier).forward();
             }
-          } else if (e.buttons & kForwardMouseButton != 0) {
-            ref.read(navProvider.notifier).forward();
-          }
-        },
-        child: _ThemedShell(child: child!),
-      ),
+          },
+          child: _ThemedShell(child: child!),
+        );
+      },
     );
   }
 }
@@ -169,15 +174,13 @@ class _ThemedShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    printBuild(2, 'themedShell build');
     final settings = ref.watch(localSettingsProvider);
     final brightness = Theme.of(context).brightness;
 
     final FThemeData themeData;
     if (settings.colorTheme == FColorTheme.kde && _kdeAvailable) {
-      final kde =
-          ref.watch(kdeColorSchemeProvider).value ??
-          ref.watch(kdeColorSchemeInitialProvider) ??
-          KdeColorScheme.fallback;
+      final kde = ref.watch(resolvedKdeColorSchemeProvider);
       themeData = _withAppChromeStyle(
         buildKdeThemeData(kde),
         transparentSidebar: settings.transparentSidebar,
@@ -210,6 +213,7 @@ class _AppChromeBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    printBuild(3, 'appChromeBackground build');
     if (!transparentSidebar) {
       return ColoredBox(color: color, child: child);
     }
