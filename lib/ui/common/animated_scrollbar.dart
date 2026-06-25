@@ -59,6 +59,9 @@ class _AnimatedScrollbar extends HookWidget {
   static const _hoverDuration = Duration(milliseconds: 120);
   static const Duration _showDuration = Durations.long1;
   static const _hideDuration = Duration(seconds: 2);
+  // Wider than the painted thumb: RawScrollbar's mouse hit area equals its
+  // painted thickness, so the region below drives the scroll itself to give a
+  // generous grab zone while the bar still renders thin.
   static const _hitExtent = 16.0;
 
   static Duration _animationDuration(
@@ -167,20 +170,35 @@ class _AnimatedScrollbar extends HookWidget {
       child: Stack(
         fit: StackFit.passthrough,
         children: [
-          AnimatedBuilder(
-            animation: animController,
-            builder: (context, child) => RawScrollbar(
-              controller: controller,
-              thumbVisibility: true,
-              thickness: thicknessAnim.value.value,
-              radius: Radius.zero,
-              trackVisibility: true,
-              thumbColor: thumbColorAnim.value.value,
-              trackColor: trackColorAnim.value.value,
-              trackBorderColor: trackBorderColorAnim.value.value,
-              child: child!,
+          // Invisible but interactive: a transparent thumb is still hit-tested
+          // (interaction is gated by opacity, pinned to 1 via thumbVisibility,
+          // not colour). Sized to _hitExtent so the grab zone is wider than the
+          // painted bar, while RawScrollbar still owns drag/track-click/etc.
+          RawScrollbar(
+            controller: controller,
+            thumbVisibility: true,
+            interactive: true,
+            thickness: _hitExtent,
+            thumbColor: Colors.transparent,
+            trackColor: Colors.transparent,
+            trackBorderColor: Colors.transparent,
+            child: AnimatedBuilder(
+              animation: animController,
+              builder: (context, child) => RawScrollbar(
+                controller: controller,
+                // Paint only; the bar above owns interaction in a wider zone.
+                interactive: false,
+                thumbVisibility: true,
+                thickness: thicknessAnim.value.value,
+                radius: Radius.zero,
+                trackVisibility: true,
+                thumbColor: thumbColorAnim.value.value,
+                trackColor: trackColorAnim.value.value,
+                trackBorderColor: trackBorderColorAnim.value.value,
+                child: child!,
+              ),
+              child: child,
             ),
-            child: child,
           ),
           Positioned.fill(
             child: IgnorePointer(
@@ -210,6 +228,11 @@ class _AnimatedScrollbar extends HookWidget {
 Color _scrollbarColor(Color foreground, double alpha) =>
     foreground.withValues(alpha: alpha);
 
+/// Signals hover/press over a zone wider than the painted thumb.
+///
+/// Actual scrolling is handled by the invisible, full-width RawScrollbar
+/// underneath; this overlay only reports state to drive the bar's animation, so
+/// it is translucent and lets pointer events fall through to that scrollbar.
 class _ScrollbarInteractionRegion extends StatelessWidget {
   const _ScrollbarInteractionRegion({
     required this.isVertical,
