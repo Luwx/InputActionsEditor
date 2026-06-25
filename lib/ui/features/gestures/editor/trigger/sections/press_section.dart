@@ -15,7 +15,7 @@ class PressSection extends ConsumerWidget {
     final instantField = ref.gestureField(
       context,
       pressInstantLens,
-      fallbackValue: () => null,
+      fallbackValue: () => false,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,8 +32,8 @@ class PressSection extends ConsumerWidget {
             label: l10n.pressInstantLabel,
             tooltip: l10n.pressInstantTooltip,
           ),
-          value: instantField.value ?? false,
-          onChange: (v) => instantField.onChanged(v ? true : null),
+          value: instantField.value,
+          onChange: instantField.onChanged,
         ),
         const SizedBox(height: 4),
       ],

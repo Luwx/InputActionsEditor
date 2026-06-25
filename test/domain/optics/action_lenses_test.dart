@@ -39,15 +39,37 @@ void main() {
       expect(lens.get(updated), 'new');
     });
 
-    test('actionWaitLens edits the raw nullable wait field', () {
+    test('actionWaitLens collapses unset and false onto the default', () {
       final lens = actionWaitLens(location);
+      bool? rawWait(Config c) {
+        final action = c.mouseGestures.first.common.actions.first.action;
+        return (action as CommandAction).wait;
+      }
+
+      expect(lens.get(config), isFalse);
+      expect(rawWait(lens.set(config, false)), isNull);
 
       final updated = lens.set(config, true);
-      final cleared = lens.set(updated, null);
-
-      expect(lens.get(config), isNull);
       expect(lens.get(updated), isTrue);
-      expect(lens.get(cleared), isNull);
+      expect(rawWait(updated), isTrue);
+    });
+
+    test('actionTriggerOnLens collapses unset and end onto the default', () {
+      final lens = actionTriggerOnLens(location);
+      TriggerOn? rawOn(Config c) =>
+          c.mouseGestures.first.common.actions.first.on;
+
+      // Unset reads as end and writing end keeps the key out of the config.
+      expect(lens.get(config), TriggerOn.end);
+      expect(rawOn(lens.set(config, TriggerOn.end)), isNull);
+
+      // A real value round-trips and writes through to the raw field.
+      final updated = lens.set(config, TriggerOn.begin);
+      expect(lens.get(updated), TriggerOn.begin);
+      expect(rawOn(updated), TriggerOn.begin);
+
+      // Returning to the default clears it back to unset.
+      expect(rawOn(lens.set(updated, TriggerOn.end)), isNull);
     });
   });
 

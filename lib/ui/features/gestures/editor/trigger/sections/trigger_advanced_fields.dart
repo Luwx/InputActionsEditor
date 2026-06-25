@@ -176,8 +176,8 @@ class TriggerAdvancedFields extends HookConsumerWidget {
             children: [
               if (visibleFields.contains(TriggerAdvancedField.accelerated))
                 FCheckbox(
-                  value: acceleratedField.value ?? false,
-                  onChange: (v) => acceleratedField.onChanged(v ? true : null),
+                  value: acceleratedField.value,
+                  onChange: acceleratedField.onChanged,
                   label: UnsavedLabel(
                     state: acceleratedField.dirty,
                     onRevert: acceleratedField.onRevert,
@@ -190,8 +190,8 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                 ),
               if (visibleFields.contains(TriggerAdvancedField.blockEvents))
                 FCheckbox(
-                  value: blockEventsField.value ?? true,
-                  onChange: (v) => blockEventsField.onChanged(v ? null : false),
+                  value: blockEventsField.value,
+                  onChange: blockEventsField.onChanged,
                   label: UnsavedLabel(
                     state: blockEventsField.dirty,
                     onRevert: blockEventsField.onRevert,
@@ -204,9 +204,8 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                 ),
               if (visibleFields.contains(TriggerAdvancedField.clearModifiers))
                 FCheckbox(
-                  value: clearModifiersField.value ?? false,
-                  onChange: (v) =>
-                      clearModifiersField.onChanged(v ? true : null),
+                  value: clearModifiersField.value,
+                  onChange: clearModifiersField.onChanged,
                   label: UnsavedLabel(
                     state: clearModifiersField.dirty,
                     onRevert: clearModifiersField.onRevert,
@@ -219,9 +218,8 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                 ),
               if (visibleFields.contains(TriggerAdvancedField.setLastTrigger))
                 FCheckbox(
-                  value: setLastTriggerField.value ?? true,
-                  onChange: (v) =>
-                      setLastTriggerField.onChanged(v ? null : false),
+                  value: setLastTriggerField.value,
+                  onChange: setLastTriggerField.onChanged,
                   label: UnsavedLabel(
                     state: setLastTriggerField.dirty,
                     onRevert: setLastTriggerField.onRevert,

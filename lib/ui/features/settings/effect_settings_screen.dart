@@ -7,7 +7,6 @@ import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
     show RootConfigDirtyField, globalSettingsLens;
-import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
@@ -121,9 +120,8 @@ class EffectSettingsScreen extends ConsumerWidget {
                           context.l10n.effectSettingsAutoReloadSubtitle,
                         ),
                         suffix: FSwitch(
-                          value: gs.effectiveAutoreload,
-                          onChange: (v) =>
-                              autoreloadField.onChanged(v ? null : v),
+                          value: autoreloadField.value,
+                          onChange: autoreloadField.onChanged,
                         ),
                       ),
                       FTile(
@@ -138,9 +136,8 @@ class EffectSettingsScreen extends ConsumerWidget {
                           context.l10n.effectSettingsExternalVarAccessSubtitle,
                         ),
                         suffix: FSwitch(
-                          value: gs.effectiveExternalVariableAccess,
-                          onChange: (v) => externalVariableAccessField
-                              .onChanged(v ? null : v),
+                          value: externalVariableAccessField.value,
+                          onChange: externalVariableAccessField.onChanged,
                         ),
                       ),
                     ],
@@ -185,9 +182,8 @@ class EffectSettingsScreen extends ConsumerWidget {
                           context.l10n.effectSettingsConfigErrorSubtitle,
                         ),
                         suffix: FSwitch(
-                          value: gs.effectiveNotificationsConfigError,
-                          onChange: (v) => notificationsConfigErrorField
-                              .onChanged(v ? null : v),
+                          value: notificationsConfigErrorField.value,
+                          onChange: notificationsConfigErrorField.onChanged,
                         ),
                       ),
                     ],

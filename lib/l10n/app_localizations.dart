@@ -1324,6 +1324,12 @@ abstract class AppLocalizations {
   /// **'Trigger on'**
   String get actionTriggerOnLabel;
 
+  /// No description provided for @actionTriggerOnDefaultOption.
+  ///
+  /// In en, this message translates to:
+  /// **'end (default)'**
+  String get actionTriggerOnDefaultOption;
+
   /// No description provided for @actionIntervalLabel.
   ///
   /// In en, this message translates to:

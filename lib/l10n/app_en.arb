@@ -269,6 +269,7 @@
   "actionsTitle": "Actions",
   "actionsEmpty": "No actions configured yet.",
   "actionTriggerOnLabel": "Trigger on",
+  "actionTriggerOnDefaultOption": "end (default)",
   "actionIntervalLabel": "Interval",
   "actionThresholdLabel": "Threshold",
   "actionLimitLabel": "Limit",

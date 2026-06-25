@@ -666,6 +666,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionTriggerOnLabel => 'Trigger on';
 
   @override
+  String get actionTriggerOnDefaultOption => 'end (default)';
+
+  @override
   String get actionIntervalLabel => 'Interval';
 
   @override

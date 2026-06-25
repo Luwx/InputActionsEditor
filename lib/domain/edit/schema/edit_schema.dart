@@ -33,10 +33,7 @@ part 'edit_schema.g.dart';
 final TreeNode<MotionCommon> motionNode = subtree<MotionCommon>(
   fields: [
     prop(MotionCommonMeta.speed),
-    prop(
-      MotionCommonMeta.lockPointer,
-      compare: projected<MotionCommon, bool?>((v) => v?.effectiveLockPointer),
-    ),
+    prop(MotionCommonMeta.lockPointer, defaultsTo: false),
   ],
 );
 
@@ -66,12 +63,7 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           'command',
           fields: [
             prop(CommandActionMeta.command),
-            prop(
-              CommandActionMeta.wait,
-              compare: projected<CommandAction, bool?>(
-                (v) => v?.effectiveWait,
-              ),
-            ),
+            prop(CommandActionMeta.wait, defaultsTo: false),
           ],
         ),
         valueCase<PlasmaShortcutAction>(
@@ -104,14 +96,16 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
         ),
       ],
     ),
-    prop('triggerOn', property: TriggerActionMeta.on),
+    // Absent `on:` collapses onto its daemon default, `end`.
+    prop(
+      'triggerOn',
+      property: TriggerActionMeta.on,
+      defaultsTo: TriggerOn.end,
+    ),
     prop(TriggerActionMeta.interval, adapter: nullableText()),
     prop(TriggerActionMeta.threshold, adapter: nullableText()),
     prop(TriggerActionMeta.limit, adapter: nullableInt()),
-    prop(
-      TriggerActionMeta.enabled,
-      compare: projected<TriggerAction, bool?>((v) => v?.effectiveEnabled),
-    ),
+    prop(TriggerActionMeta.enabled, defaultsTo: true),
     prop(TriggerActionMeta.conflicting),
     prop(TriggerActionMeta.conditions),
     prop(TriggerActionMeta.id, adapter: nullableText()),
@@ -132,28 +126,12 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
     prop(TriggerCommonMeta.mouseButtonsExactOrder),
     prop(TriggerCommonMeta.conditions),
     prop(TriggerCommonMeta.endConditions),
-    prop(
-      TriggerCommonMeta.blockEvents,
-      compare: projected<TriggerCommon, bool?>((v) => v?.effectiveBlockEvents),
-    ),
-    prop(
-      TriggerCommonMeta.clearModifiers,
-      compare: projected<TriggerCommon, bool?>(
-        (v) => v?.effectiveClearModifiers,
-      ),
-    ),
+    prop(TriggerCommonMeta.blockEvents, defaultsTo: true),
+    prop(TriggerCommonMeta.clearModifiers, defaultsTo: false),
     prop(TriggerCommonMeta.resumeTimeout, adapter: nullableInt()),
-    prop(
-      TriggerCommonMeta.setLastTrigger,
-      compare: projected<TriggerCommon, bool?>(
-        (v) => v?.effectiveSetLastTrigger,
-      ),
-    ),
+    prop(TriggerCommonMeta.setLastTrigger, defaultsTo: true),
     prop(TriggerCommonMeta.threshold, adapter: nullableText()),
-    prop(
-      TriggerCommonMeta.accelerated,
-      compare: projected<TriggerCommon, bool?>((v) => v?.effectiveAccelerated),
-    ),
+    prop(TriggerCommonMeta.accelerated, defaultsTo: false),
     list(
       TriggerCommonMeta.actions,
       of: actionNode,
@@ -221,7 +199,7 @@ final TreeNode<MouseGesture> mouseNode = subtree<MouseGesture>(
       scope: 'press',
       fields: [
         child(PressGestureMeta.motion, node: motionNode),
-        prop(PressGestureMeta.instant, orElse: false),
+        prop(PressGestureMeta.instant, defaultsTo: false),
       ],
     ),
     valueCase<WheelGesture>(
@@ -431,24 +409,9 @@ final EditTree<Config> configTree = editTree<Config>(
     child(
       ConfigMeta.globalSettings,
       fields: [
-        prop(
-          GlobalSettingsMeta.autoreload,
-          compare: projected<GlobalSettings, bool?>(
-            (value) => value?.effectiveAutoreload,
-          ),
-        ),
-        prop(
-          GlobalSettingsMeta.externalVariableAccess,
-          compare: projected<GlobalSettings, bool?>(
-            (value) => value?.effectiveExternalVariableAccess,
-          ),
-        ),
-        prop(
-          GlobalSettingsMeta.notificationsConfigError,
-          compare: projected<GlobalSettings, bool?>(
-            (value) => value?.effectiveNotificationsConfigError,
-          ),
-        ),
+        prop(GlobalSettingsMeta.autoreload, defaultsTo: true),
+        prop(GlobalSettingsMeta.externalVariableAccess, defaultsTo: true),
+        prop(GlobalSettingsMeta.notificationsConfigError, defaultsTo: true),
         prop(GlobalSettingsMeta.emergencyCombination),
       ],
     ),

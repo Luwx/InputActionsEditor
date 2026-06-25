@@ -126,11 +126,11 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
 
   void setEnabled(int index, bool enabled) {
     _dispatch(
-      SetLens<bool?>(
+      SetLens<bool>(
         actionEnabledLens(
           ActionLocation(gesture: location, actionIndex: index),
         ),
-        enabled ? null : false,
+        enabled,
         label: enabled ? 'enable action' : 'disable action',
       ),
     );

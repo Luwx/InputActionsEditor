@@ -49,11 +49,11 @@ class EditorCommand extends HookConsumerWidget {
             final field = ref.actionField(
               context,
               actionWaitLens,
-              fallbackValue: () => null,
+              fallbackValue: () => false,
             );
             return FCheckbox(
-              value: field.value ?? false,
-              onChange: (value) => field.onChanged(value ? true : null),
+              value: field.value,
+              onChange: field.onChanged,
               label: UnsavedLabel(
                 state: field.dirty,
                 onRevert: field.onRevert,

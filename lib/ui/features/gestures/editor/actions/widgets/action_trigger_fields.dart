@@ -64,7 +64,7 @@ class ActionTriggerFields extends HookConsumerWidget {
     final triggerOnField = ref.actionField(
       context,
       actionTriggerOnLens,
-      fallbackValue: () => null,
+      fallbackValue: () => TriggerOn.end,
     );
     final intervalField = ref.actionSchemaField(context, actionIntervalField);
     final thresholdField = ref.actionSchemaField(context, actionThresholdField);
@@ -85,16 +85,19 @@ class ActionTriggerFields extends HookConsumerWidget {
             gesture,
             conflicting: conflictingField.value,
           );
+    // The lens collapses unset to `end`, so the `end` item is the default.
     final supportedOnOptions = {
       for (final MapEntry(:key, :value) in onOptions.entries)
-        if (supportedOnValues.contains(value)) key: value,
+        if (supportedOnValues.contains(value))
+          (value == TriggerOn.end
+                  ? context.l10n.actionTriggerOnDefaultOption
+                  : key):
+              value,
     };
     final triggerOnValue = triggerOnField.value;
-    final supportedTriggerOnValue =
-        triggerOnValue != null &&
-            supportedOnOptions.containsValue(triggerOnValue)
+    final displayOnValue = supportedOnOptions.containsValue(triggerOnValue)
         ? triggerOnValue
-        : null;
+        : TriggerOn.end;
     final conditionsField = ref.actionField(
       context,
       actionConditionsLens,
@@ -139,10 +142,10 @@ class ActionTriggerFields extends HookConsumerWidget {
                         tooltipContent: const ActionTriggerOnTooltip(),
                       ),
                     ),
-                    key: ValueKey(supportedTriggerOnValue),
+                    key: ValueKey(displayOnValue),
                     items: supportedOnOptions,
                     control: FSelectManagedControl<TriggerOn>(
-                      initial: supportedTriggerOnValue,
+                      initial: displayOnValue,
                       onChange: (value) {
                         if (value != null) triggerOnField.onChanged(value);
                       },
