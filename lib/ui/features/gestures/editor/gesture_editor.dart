@@ -36,8 +36,7 @@ import 'package:scroll_animator/scroll_animator.dart';
 
 // Flip to enable the magnetic float-and-dock add button. Off = app bar mirror
 // only, no floating button.
-// ignore: prefer_const_declarations
-final bool _dockingAddButton = false;
+const bool _dockingAddButton = false;
 
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
@@ -120,8 +119,7 @@ class _GestureEditorView extends HookConsumerWidget {
 
         // App bar mirror: the inline slot scrolled up behind the header.
         final headerBox =
-            addActionHeaderKey.currentContext?.findRenderObject()
-                as RenderBox?;
+            addActionHeaderKey.currentContext?.findRenderObject() as RenderBox?;
         if (headerBox != null && headerBox.attached && headerBox.hasSize) {
           final headerBottom =
               headerBox.localToGlobal(Offset.zero).dy + headerBox.size.height;
@@ -135,8 +133,7 @@ class _GestureEditorView extends HookConsumerWidget {
         // Float only while the slot sits below a line near the viewport bottom;
         // past it the inline button takes over and scrolls without lag.
         final buttonBox =
-            addActionButtonKey.currentContext?.findRenderObject()
-                as RenderBox?;
+            addActionButtonKey.currentContext?.findRenderObject() as RenderBox?;
         if (buttonBox == null || !buttonBox.attached || !buttonBox.hasSize) {
           addActionFloating.value = null;
           return;

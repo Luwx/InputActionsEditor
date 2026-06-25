@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:forui/forui.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -37,22 +38,22 @@ class _AnimatedScrollbar extends HookWidget {
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _idle = _ScrollbarVisuals(
+  static _ScrollbarVisuals _idle(Color foreground) => _ScrollbarVisuals(
     thickness: 4,
-    thumbColor: Color(0x33FFFFFF),
+    thumbColor: _scrollbarColor(foreground, 0.20),
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _hovered = _ScrollbarVisuals(
+  static _ScrollbarVisuals _hovered(Color foreground) => _ScrollbarVisuals(
     thickness: 8,
-    thumbColor: Color(0x88FFFFFF),
+    thumbColor: _scrollbarColor(foreground, 0.53),
     trackColor: Colors.transparent,
     trackBorderColor: Colors.transparent,
   );
-  static const _dragged = _ScrollbarVisuals(
+  static _ScrollbarVisuals _dragged(Color foreground) => _ScrollbarVisuals(
     thickness: 8,
-    thumbColor: Color(0xCCFFFFFF),
-    trackColor: Color(0x16FFFFFF),
+    thumbColor: _scrollbarColor(foreground, 0.80),
+    trackColor: _scrollbarColor(foreground, 0.09),
     trackBorderColor: Colors.transparent,
   );
   static const _hoverDuration = Duration(milliseconds: 120);
@@ -65,13 +66,14 @@ class _AnimatedScrollbar extends HookWidget {
     _ScrollbarVisuals end,
   ) {
     if (end.sameAs(_hidden)) return _hideDuration;
-    if (begin.sameAs(_idle) && end.sameAs(_hovered)) return _hoverDuration;
+    if (begin.thickness == 4 && end.thickness == 8) return _hoverDuration;
     return _showDuration;
   }
 
   @override
   Widget build(BuildContext context) {
     final animController = useAnimationController(duration: _showDuration);
+    final foreground = FTheme.of(context).colors.foreground;
 
     final isInsideScrollable = useState(false);
     final isHovered = useState(false);
@@ -102,9 +104,9 @@ class _AnimatedScrollbar extends HookWidget {
 
     _ScrollbarVisuals targetVisuals() {
       if (!isInsideScrollable.value && !isPressed.value) return _hidden;
-      if (isPressed.value) return _dragged;
-      if (isHovered.value) return _hovered;
-      return _idle;
+      if (isPressed.value) return _dragged(foreground);
+      if (isHovered.value) return _hovered(foreground);
+      return _idle(foreground);
     }
 
     void setAnimations(_ScrollbarVisuals begin, _ScrollbarVisuals end) {
@@ -204,6 +206,9 @@ class _AnimatedScrollbar extends HookWidget {
     );
   }
 }
+
+Color _scrollbarColor(Color foreground, double alpha) =>
+    foreground.withValues(alpha: alpha);
 
 class _ScrollbarInteractionRegion extends StatelessWidget {
   const _ScrollbarInteractionRegion({
