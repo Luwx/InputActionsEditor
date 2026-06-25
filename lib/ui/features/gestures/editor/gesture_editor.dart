@@ -8,8 +8,6 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureAt, gestureIndexOf, gestureLocationAt;
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';

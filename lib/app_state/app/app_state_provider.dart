@@ -6,8 +6,6 @@ import 'package:input_actions_editor/app_state/app/local_settings_provider.dart'
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureIndexOf;
 import 'package:input_actions_editor/model/app_state.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';

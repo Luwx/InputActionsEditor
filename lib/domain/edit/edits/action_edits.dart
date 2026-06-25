@@ -1,7 +1,5 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureActionsLens, gestureAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 

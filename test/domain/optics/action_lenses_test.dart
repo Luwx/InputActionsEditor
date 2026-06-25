@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/edit/edit_ids.dart'
     show assignEditIds;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';

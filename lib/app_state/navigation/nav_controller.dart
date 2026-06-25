@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureLocationAt;
 import 'package:input_actions_editor/model/app_state.dart'
     show StoredGestureSelection;
 import 'package:input_actions_editor/store/config_controller.dart';

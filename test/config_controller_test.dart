@@ -13,9 +13,11 @@ import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/settings_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show ActionLocation, GestureLocation, actionComponentField;
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureLocationAt;
+    show
+        ActionLocation,
+        GestureLocation,
+        actionComponentField,
+        gestureLocationAt;
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';

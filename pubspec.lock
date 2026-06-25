@@ -199,10 +199,10 @@ packages:
     description:
       path: edit_schema_generator
       ref: HEAD
-      resolved-ref: "59712fcef1eb15bfcb9d0426f0daef67da689362"
+      resolved-ref: a9dcedd581ba9fe0720f16bf96ea471001ed6fae
       url: "https://github.com/Luwx/dart_generators"
     source: git
-    version: "0.0.3"
+    version: "0.0.4"
   equatable:
     dependency: "direct main"
     description:

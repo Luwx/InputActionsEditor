@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show ActionLocation, GestureLocation, comparableTriggerActionValue;
+    show
+        ActionLocation,
+        GestureLocation,
+        actionAt,
+        comparableTriggerActionValue,
+        gestureAt;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';

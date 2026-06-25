@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show ActionLocation, GestureLocation, actionCommandLens, gestureIdLens;
-import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show gestureLocationAt;
+    show
+        ActionLocation,
+        GestureLocation,
+        actionCommandLens,
+        gestureIdLens,
+        gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';

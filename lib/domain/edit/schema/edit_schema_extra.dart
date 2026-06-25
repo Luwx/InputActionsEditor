@@ -2,27 +2,19 @@
 // (config_tree.dart) deliberately does not generate — the genuine escape
 // hatches of the edit layer:
 //  - root-level section dirty projections (RootConfigDirtyField);
-//  - per-gesture action editing (TriggerAction is edited as its own flat
-//    schema, addressed by ActionLocation);
 //  - the default-device rule, located by scanning conditions rather than index;
-//  - per-device-list CRUD helpers used by ConfigController;
-//  - device-dispatched speed compaction and the device-rule-by-index lenses.
 //
 // Everything else lives in config_tree.dart. Together these two files replace
 // the former flat schema forest.
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
-import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/global_settings.dart';
 
 part 'edit_schema_extra.g.dart';
 
@@ -124,21 +116,6 @@ final EditSchema<Config, void> rootConfigSchema = editSchema<Config, void>(
     ),
   ],
 );
-
-// Bulk gesture actions-list lens. The tree generates the per-action field
-// lenses (`actionCommandLens(ActionLocation)`, …) but scopes the list itself,
-// so this stays the one hand-written escape hatch for add/remove/reorder of a
-// gesture action, this is composed directly on the tree's `gestureLens`.
-
-final _gestureActionsPart = LensPart<Gesture, List<TriggerAction>>(
-  get: (gesture) => gesture.common.actions,
-  set: (gesture, actions) =>
-      gesture.withCommon(gesture.common.copyWith(actions: actions)),
-  name: 'actions',
-);
-
-Lens<List<TriggerAction>> gestureActionsLens(GestureLocation location) =>
-    gestureLens(location).then(_gestureActionsPart);
 
 Lens<DeviceRuleProperties> defaultDevicePropertiesLens(DeviceType device) =>
     Lens<DeviceRuleProperties>(
@@ -280,67 +257,3 @@ final EditSchema<DeviceRuleProperties, DeviceType> defaultDeviceSchema =
         ),
       ],
     );
-
-// Whole-section accessor for GlobalSettings (the tree generates the per-field
-// `globalSettings{Field}Lens()` but not a root lens); used for section-level
-// revert in the effect settings UI.
-final Lens<GlobalSettings> globalSettingsLens = Lens<GlobalSettings>(
-  get: (config) => config.globalSettings,
-  set: (config, settings) => config.copyWith(globalSettings: settings),
-  name: 'globalSettings',
-);
-
-Gesture? gestureAt(Config? config, GestureLocation location) {
-  if (config == null) return null;
-  for (final gesture in config.gesturesForDevice(location.device)) {
-    if (gesture.common.editId == location.editId) return gesture;
-  }
-  return null;
-}
-
-/// The position of [location]'s gesture inside its device list, or null when
-/// the gesture is absent. For the (positional) list edits and UI concerns that
-/// genuinely need an index; everything else should address by [location].
-int? gestureIndexOf(Config? config, GestureLocation location) {
-  if (config == null) return null;
-  final gestures = config.gesturesForDevice(location.device);
-  for (var i = 0; i < gestures.length; i++) {
-    if (gestures[i].common.editId == location.editId) return i;
-  }
-  return null;
-}
-
-/// The identity location of the gesture at [index] of [device]'s list, or null
-/// when out of range. The bridge from positional UI (list rows, reorder
-/// callbacks) into the identity-keyed edit coordinate.
-GestureLocation? gestureLocationAt(
-  Config? config,
-  DeviceType device,
-  int index,
-) {
-  if (config == null) return null;
-  final gestures = config.gesturesForDevice(device);
-  if (index < 0 || index >= gestures.length) return null;
-  final editId = gestures[index].common.editId;
-  if (editId == null) return null;
-  return GestureLocation(device: device, editId: editId);
-}
-
-/// The identity location of [gesture] within [device]'s list, or null when it
-/// carries no editId yet (configs are normalized via `assignEditIds` before
-/// they reach the UI, so this is null only for detached values).
-GestureLocation? gestureLocationOf(DeviceType device, Gesture gesture) {
-  final editId = gesture.common.editId;
-  if (editId == null) return null;
-  return GestureLocation(device: device, editId: editId);
-}
-
-TriggerAction? actionAt(Config? config, ActionLocation location) {
-  final common = gestureAt(config, location.gesture)?.common;
-  if (common == null) return null;
-  if (location.actionIndex < 0 ||
-      location.actionIndex >= common.actions.length) {
-    return null;
-  }
-  return common.actions[location.actionIndex];
-}

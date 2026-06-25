@@ -6,7 +6,7 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
-    show RootConfigDirtyField, globalSettingsLens;
+    show RootConfigDirtyField;
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
@@ -55,7 +55,7 @@ class EffectSettingsScreen extends ConsumerWidget {
         : DirtyMarkState.clean;
 
     void revertGlobalSettings(GlobalSettings next) => controller.add(
-      SetLens<GlobalSettings>(globalSettingsLens, next),
+      SetLens<GlobalSettings>(globalSettingsLens(), next),
     );
     final autoreloadField = ref.field(globalSettingsAutoreloadLens());
     final externalVariableAccessField = ref.field(
