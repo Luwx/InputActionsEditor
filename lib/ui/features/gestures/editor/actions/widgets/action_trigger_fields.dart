@@ -59,11 +59,7 @@ class ActionTriggerFields extends HookConsumerWidget {
         ),
       ),
     );
-    final triggerOnField = ref.actionField(
-      context,
-      actionTriggerOnLens,
-      fallbackValue: () => TriggerOn.end,
-    );
+    final triggerOnField = ref.actionSchemaField(context, actionTriggerOnField);
     final intervalField = ref.actionSchemaField(context, actionIntervalField);
     final thresholdField = ref.actionSchemaField(context, actionThresholdField);
     final limitField = ref.actionSchemaField(context, actionLimitField);
@@ -83,11 +79,12 @@ class ActionTriggerFields extends HookConsumerWidget {
             gesture,
             conflicting: conflictingField.value,
           );
-    // The lens collapses unset to `end`, so the `end` item is the default.
+    // The default item is the schema default, labelled as such.
+    final defaultOn = actionTriggerOnField.defaultValue!;
     final supportedOnOptions = {
       for (final MapEntry(:key, :value) in onOptions.entries)
         if (supportedOnValues.contains(value))
-          (value == TriggerOn.end
+          (value == defaultOn
                   ? context.l10n.actionTriggerOnDefaultOption
                   : key):
               value,
@@ -95,7 +92,7 @@ class ActionTriggerFields extends HookConsumerWidget {
     final triggerOnValue = triggerOnField.value;
     final displayOnValue = supportedOnOptions.containsValue(triggerOnValue)
         ? triggerOnValue
-        : TriggerOn.end;
+        : defaultOn;
     final conditionsField = ref.actionField(
       context,
       actionConditionsLens,

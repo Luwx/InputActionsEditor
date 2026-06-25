@@ -46,11 +46,7 @@ class EditorCommand extends HookConsumerWidget {
         const SizedBox(height: 8),
         Builder(
           builder: (context) {
-            final field = ref.actionField(
-              context,
-              actionWaitLens,
-              fallbackValue: () => false,
-            );
+            final field = ref.actionSchemaField(context, actionWaitField);
             return FCheckbox(
               value: field.value,
               onChange: field.onChanged,

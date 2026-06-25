@@ -109,6 +109,11 @@ extension FieldAccess on WidgetRef {
       dirty: dirty,
       scope: scope,
       canRead: canRead,
+      // Show the schema default when the lens is unreadable (wrong union case
+      // or stale location), so the default lives only in the schema.
+      fallbackValue: field.defaultValue == null
+          ? null
+          : () => field.defaultValue as T,
     );
     return SchemaEditableField<T>(
       value: editable.value,
@@ -155,7 +160,11 @@ extension FieldAccess on WidgetRef {
     final editable = bulkField<T>(
       selection,
       field.lens,
-      fallbackValue: fallbackValue ?? () => null as T,
+      fallbackValue:
+          fallbackValue ??
+          (field.defaultValue == null
+              ? () => null as T
+              : () => field.defaultValue as T),
     );
     return SchemaEditableField<T>(
       value: editable.value,

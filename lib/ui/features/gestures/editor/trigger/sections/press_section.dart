@@ -12,11 +12,7 @@ class PressSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final instantField = ref.gestureField(
-      context,
-      pressInstantLens,
-      fallbackValue: () => false,
-    );
+    final instantField = ref.gestureSchemaField(context, pressInstantField);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
