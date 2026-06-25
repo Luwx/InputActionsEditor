@@ -34,6 +34,11 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 import 'package:scroll_animator/scroll_animator.dart';
 
+// Flip to enable the magnetic float-and-dock add button. Off = app bar mirror
+// only, no floating button.
+// ignore: prefer_const_declarations
+final bool _dockingAddButton = false;
+
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
 
@@ -92,23 +97,64 @@ class _GestureEditorView extends HookConsumerWidget {
     useEffect(() => scrollController.dispose, const []);
     final anchorController = useMemoized(ScrollAnchorController.new);
     final addActionHeaderKey = useMemoized(GlobalKey.new);
+    final addActionButtonKey = useMemoized(GlobalKey.new);
+    final editorKey = useMemoized(GlobalKey.new);
     final addActionCallbackRef = useRef<Future<void> Function()?>(null);
-    final addActionVisible = useState(false);
+    // Mirror the add button in the app bar once it scrolls behind the header.
+    final addActionInAppBar = useState(false);
+    // Floating add button placement, or null while docked in the inline slot.
+    final addActionFloating = useValueNotifier<AddActionFloatingPlacement?>(
+      null,
+    );
     final tickerProvider = useSingleTickerProvider();
     final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
 
     useEffect(() {
       final ticker = tickerProvider.createTicker((_) {
-        final ctx = addActionHeaderKey.currentContext;
-        if (ctx == null) return;
-        final renderBox = ctx.findRenderObject() as RenderBox?;
-        if (renderBox == null || !renderBox.attached || !renderBox.hasSize) {
+        final editorBox =
+            editorKey.currentContext?.findRenderObject() as RenderBox?;
+        if (editorBox == null || !editorBox.attached || !editorBox.hasSize) {
           return;
         }
-        final bottom =
-            renderBox.localToGlobal(Offset.zero).dy + renderBox.size.height;
-        final hidden = bottom < GrowingFrostedHeaderDelegate.minHeight;
-        if (addActionVisible.value != hidden) addActionVisible.value = hidden;
+        final origin = editorBox.localToGlobal(Offset.zero);
+
+        // App bar mirror: the inline slot scrolled up behind the header.
+        final headerBox =
+            addActionHeaderKey.currentContext?.findRenderObject()
+                as RenderBox?;
+        if (headerBox != null && headerBox.attached && headerBox.hasSize) {
+          final headerBottom =
+              headerBox.localToGlobal(Offset.zero).dy + headerBox.size.height;
+          final above =
+              headerBottom < origin.dy + GrowingFrostedHeaderDelegate.minHeight;
+          if (addActionInAppBar.value != above) addActionInAppBar.value = above;
+        }
+
+        if (!_dockingAddButton) return;
+
+        // Float only while the slot sits below a line near the viewport bottom;
+        // past it the inline button takes over and scrolls without lag.
+        final buttonBox =
+            addActionButtonKey.currentContext?.findRenderObject()
+                as RenderBox?;
+        if (buttonBox == null || !buttonBox.attached || !buttonBox.hasSize) {
+          addActionFloating.value = null;
+          return;
+        }
+        final btnOrigin = buttonBox.localToGlobal(Offset.zero);
+        final dockTop = btnOrigin.dy - origin.dy;
+        final floatLine = editorBox.size.height - buttonBox.size.height - 16;
+        if (dockTop <= floatLine) {
+          addActionFloating.value = null;
+          return;
+        }
+        // Shadow grows with depth and fades to nothing at the dock line.
+        final next = (
+          left: btnOrigin.dx - origin.dx,
+          width: buttonBox.size.width,
+          shadow: ((dockTop - floatLine) / 24).clamp(0.0, 1.0),
+        );
+        if (addActionFloating.value != next) addActionFloating.value = next;
       });
       unawaited(ticker.start());
       return ticker.dispose;
@@ -116,7 +162,8 @@ class _GestureEditorView extends HookConsumerWidget {
 
     ref.listen(selectedGestureProvider, (prev, next) {
       if (prev == next) return;
-      addActionVisible.value = false;
+      addActionInAppBar.value = false;
+      addActionFloating.value = null;
       // WidgetsBinding.instance.addPostFrameCallback((_) async {
       //   if (!scrollController.hasClients) return;
       //   await scrollController.animateTo(
@@ -153,6 +200,7 @@ class _GestureEditorView extends HookConsumerWidget {
     final editor = ScrollbarMediaPadding(
       topInset: GrowingFrostedHeaderDelegate.maxHeight,
       child: CustomScrollView(
+        key: editorKey,
         controller: scrollController,
         slivers: [
           SliverPersistentHeader(
@@ -175,7 +223,7 @@ class _GestureEditorView extends HookConsumerWidget {
                     prefix: const Icon(FLucideIcons.plus),
                     child: Text(context.l10n.addAction),
                   ).appearToggle(
-                    visible: addActionVisible.value,
+                    visible: addActionInAppBar.value,
                     axis: Axis.horizontal,
                     slideFactor: 0.8,
                     duration: Durations.short4,
@@ -256,6 +304,8 @@ class _GestureEditorView extends HookConsumerWidget {
                 controller: anchorController,
                 child: AddActionScope(
                   headerKey: addActionHeaderKey,
+                  buttonKey: addActionButtonKey,
+                  floating: _dockingAddButton ? addActionFloating : null,
                   callbackRef: addActionCallbackRef,
                   child: _GestureEditorBody(location: location),
                 ),
@@ -265,6 +315,30 @@ class _GestureEditorView extends HookConsumerWidget {
         ],
       ),
     );
+
+    // Without docking there's no floating button, so skip the overlay Stack.
+    final editorBody = !_dockingAddButton
+        ? editor
+        : Stack(
+            children: [
+              editor,
+              ValueListenableBuilder<AddActionFloatingPlacement?>(
+                valueListenable: addActionFloating,
+                builder: (context, placement, _) {
+                  if (placement == null) return const SizedBox.shrink();
+                  return Positioned(
+                    bottom: 16,
+                    left: placement.left,
+                    width: placement.width,
+                    child: _FloatingAddAction(
+                      shadowOpacity: placement.shadow,
+                      onPress: () => addActionCallbackRef.value?.call(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
 
     return Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
@@ -314,7 +388,7 @@ class _GestureEditorView extends HookConsumerWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: undoFocusNode.requestFocus,
-            child: editor,
+            child: editorBody,
           ),
         ),
       ),
@@ -349,6 +423,40 @@ class _GestureEditorBody extends StatelessWidget {
         location: location,
       ),
     };
+  }
+}
+
+/// Floating copy of the inline add button, shown while it's below the fold.
+class _FloatingAddAction extends StatelessWidget {
+  const _FloatingAddAction({
+    required this.shadowOpacity,
+    required this.onPress,
+  });
+
+  final double shadowOpacity;
+  final VoidCallback onPress;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: shadowOpacity <= 0
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22 * shadowOpacity),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+      ),
+      child: FButton(
+        onPress: onPress,
+        prefix: const Icon(FLucideIcons.plus, size: 14),
+        child: Text(context.l10n.addAction),
+      ),
+    );
   }
 }
 

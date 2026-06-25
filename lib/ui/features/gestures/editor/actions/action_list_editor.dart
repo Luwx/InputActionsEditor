@@ -1,5 +1,6 @@
 import 'dart:async' show unawaited;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -62,6 +63,8 @@ class ActionListEditor extends HookConsumerWidget {
           key: scope?.headerKey,
           location: gestureLocation,
           onAdd: pickAndAdd,
+          buttonKey: scope?.buttonKey,
+          floating: scope?.floating,
         ),
         const SizedBox(height: 8),
         if (count == 0)
@@ -196,10 +199,22 @@ class _ActionRow extends HookConsumerWidget {
 }
 
 class _ActionsHeader extends ConsumerWidget {
-  const _ActionsHeader({required this.location, this.onAdd, super.key});
+  const _ActionsHeader({
+    required this.location,
+    this.onAdd,
+    this.buttonKey,
+    this.floating,
+    super.key,
+  });
 
   final GestureLocation location;
   final Future<void> Function()? onAdd;
+
+  /// Keys the add button so the gesture editor can measure its slot.
+  final Key? buttonKey;
+
+  /// Floating overlay placement, or null when docked.
+  final ValueListenable<AddActionFloatingPlacement?>? floating;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -231,12 +246,53 @@ class _ActionsHeader extends ConsumerWidget {
         ),
         const Spacer(),
         if (onAdd != null)
-          FButton(
-            onPress: onAdd,
-            prefix: const Icon(FLucideIcons.plus, size: 14),
-            child: Text(context.l10n.addAction),
+          _AddActionButton(
+            onAdd: onAdd!,
+            buttonKey: buttonKey,
+            floating: floating,
           ),
       ],
+    );
+  }
+}
+
+/// Inline add button. Becomes an inert placeholder while [floating] holds a
+/// placement (the gesture editor draws the floating copy then).
+class _AddActionButton extends StatelessWidget {
+  const _AddActionButton({
+    required this.onAdd,
+    this.buttonKey,
+    this.floating,
+  });
+
+  final Future<void> Function() onAdd;
+  final Key? buttonKey;
+  final ValueListenable<AddActionFloatingPlacement?>? floating;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = FButton(
+      key: buttonKey,
+      onPress: onAdd,
+      prefix: const Icon(FLucideIcons.plus, size: 14),
+      child: Text(context.l10n.addAction),
+    );
+    final floating = this.floating;
+    if (floating == null) return button;
+
+    return ValueListenableBuilder<AddActionFloatingPlacement?>(
+      valueListenable: floating,
+      builder: (context, placement, child) {
+        final hidden = placement != null;
+        return ExcludeFocus(
+          excluding: hidden,
+          child: Opacity(
+            opacity: hidden ? 0 : 1,
+            child: IgnorePointer(ignoring: hidden, child: child),
+          ),
+        );
+      },
+      child: button,
     );
   }
 }
@@ -559,17 +615,28 @@ class _ExpandedEditor extends HookConsumerWidget {
   }
 }
 
+/// Floating add button placement in editor-pane coordinates.
+typedef AddActionFloatingPlacement = ({
+  double left,
+  double width,
+  double shadow,
+});
+
 /// Allows [ActionListEditor] to register its "add action" callback with the
 /// gesture editor's pinned header, enabling an appbar shortcut button.
 class AddActionScope extends InheritedWidget {
   const AddActionScope({
     required super.child,
     required this.headerKey,
+    required this.buttonKey,
+    required this.floating,
     required this.callbackRef,
     super.key,
   });
 
   final GlobalKey headerKey;
+  final GlobalKey buttonKey;
+  final ValueListenable<AddActionFloatingPlacement?>? floating;
   final ObjectRef<Future<void> Function()?> callbackRef;
 
   static AddActionScope? maybeOf(BuildContext context) =>
@@ -577,5 +644,8 @@ class AddActionScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AddActionScope old) =>
-      headerKey != old.headerKey || callbackRef != old.callbackRef;
+      headerKey != old.headerKey ||
+      buttonKey != old.buttonKey ||
+      floating != old.floating ||
+      callbackRef != old.callbackRef;
 }
