@@ -1,14 +1,10 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-class _ContextMenuTile extends HookWidget {
+class _ContextMenuTile extends HookConsumerWidget {
   const _ContextMenuTile({
     required this.item,
     required this.newlyAddedMarkerId,
-    required this.isSelected,
-    required this.isMultiSelectMode,
-    required this.isMultiSelected,
     required this.groupDisabled,
-    required this.isGestureEnabled,
     required this.onTap,
     required this.onLongPress,
     required this.onRename,
@@ -19,11 +15,7 @@ class _ContextMenuTile extends HookWidget {
 
   final _GestureRowItem item;
   final int? newlyAddedMarkerId;
-  final bool isSelected;
-  final bool isMultiSelectMode;
-  final bool isMultiSelected;
   final bool groupDisabled;
-  final bool isGestureEnabled;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final VoidCallback onRename;
@@ -32,9 +24,49 @@ class _ContextMenuTile extends HookWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = item.location;
+    final isMultiSelectMode = ref.watch(
+      multiSelectControllerProvider.select((selection) => selection != null),
+    );
+    final isMultiSelected = ref.watch(
+      multiSelectControllerProvider.select(
+        (selection) => selection?.contains(location) ?? false,
+      ),
+    );
+    final isSelected =
+        !isMultiSelectMode &&
+        ref.watch(
+          selectedGestureProvider.select((selection) => selection == location),
+        );
+    final isGestureEnabled = ref.watch(
+      configControllerProvider.select(
+        (state) =>
+            gestureAt(state.requireValue.draft, location)?.common.enabled !=
+            false,
+      ),
+    );
     final controller = useFPopoverController();
     useListenable(controller);
+    final tile = useMemoized(
+      () => GestureListTile(
+        location: location,
+        newlyAddedMarkerId: newlyAddedMarkerId,
+        isSelected: isSelected,
+        isMultiSelectMode: isMultiSelectMode,
+        isMultiSelected: isMultiSelected,
+        groupDisabled: groupDisabled,
+        onTap: onTap,
+      ),
+      [
+        location,
+        newlyAddedMarkerId,
+        isSelected,
+        isMultiSelectMode,
+        isMultiSelected,
+        groupDisabled,
+      ],
+    );
     return FContextMenu(
       control: FPopoverControl.managed(controller: controller),
       builder: dismissibleContextMenuBuilder,
@@ -52,15 +84,7 @@ class _ContextMenuTile extends HookWidget {
       child: GestureDetector(
         onLongPress: onLongPress,
         behavior: HitTestBehavior.translucent,
-        child: GestureListTile(
-          location: item.location,
-          newlyAddedMarkerId: newlyAddedMarkerId,
-          isSelected: isSelected,
-          isMultiSelectMode: isMultiSelectMode,
-          isMultiSelected: isMultiSelected,
-          groupDisabled: groupDisabled,
-          onTap: onTap,
-        ),
+        child: tile,
       ),
     );
   }

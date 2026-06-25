@@ -1,3 +1,4 @@
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -20,11 +21,12 @@ class GestureEditorLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    print('        gestureEditorLayout build');
     final advancedFields = ref.watch(
       gestureEditorProvider(location).select(
         (s) => TriggerAdvancedFields.nonDefaultFields(
           s.common ?? const TriggerCommon(),
-        ),
+        ).lock,
       ),
     );
     final triggerDirtyState = ref.watch(
@@ -41,7 +43,7 @@ class GestureEditorLayout extends ConsumerWidget {
         children: [
           TriggerEditor(
             sections: sections,
-            initialAdvancedFields: advancedFields,
+            initialAdvancedFields: advancedFields.unlock,
             dirtyState: triggerDirtyState,
             onRevert: savedGesture == null
                 ? null

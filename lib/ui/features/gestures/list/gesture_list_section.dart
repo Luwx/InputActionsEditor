@@ -119,7 +119,6 @@ class GestureListSection extends HookConsumerWidget {
     }
 
     final viewModel = ref.watch(gestureListStructureProvider);
-    final selection = ref.watch(selectedGestureProvider);
     final multiSelect = ref.watch(multiSelectControllerProvider);
     final multiSelectNotifier = ref.read(
       multiSelectControllerProvider.notifier,
@@ -129,7 +128,6 @@ class GestureListSection extends HookConsumerWidget {
     final addedMarker = ref.watch(addedGestureProvider);
     final conflicts = ref.watch(conflictReportProvider);
     final collapsedNotifier = ref.read(collapsedGroupsProvider.notifier);
-    final draftConfig = ref.watch(draftConfigProvider);
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isMultiSelectMode = multiSelect != null;
@@ -432,10 +430,6 @@ class GestureListSection extends HookConsumerWidget {
               }
               final item = gestureItemsByKey[itemEntry.id]!;
               final selectionKey = itemEntry.id;
-              final isSelected =
-                  !isMultiSelectMode && selection == selectionKey;
-              final isMultiSelected =
-                  multiSelect?.contains(selectionKey) ?? false;
               final markerId =
                   (addedMarker?.index == item.configIndex &&
                       deviceFilter != null &&
@@ -447,19 +441,13 @@ class GestureListSection extends HookConsumerWidget {
                   viewModel.disabledGroupIds.contains(
                     item.groupId,
                   );
-              final isGestureEnabled =
-                  gestureAt(draftConfig, selectionKey)?.common.enabled != false;
               final row = AnimatedOpacity(
                 duration: Durations.short2,
                 opacity: isDragging ? 0.45 : 1,
                 child: _ContextMenuTile(
                   item: item,
                   newlyAddedMarkerId: markerId,
-                  isSelected: isSelected,
-                  isMultiSelectMode: isMultiSelectMode,
-                  isMultiSelected: isMultiSelected,
                   groupDisabled: groupDisabled,
-                  isGestureEnabled: isGestureEnabled,
                   onTap: () {
                     if (isMultiSelectMode) {
                       multiSelectNotifier.toggle(selectionKey);
@@ -496,6 +484,12 @@ class GestureListSection extends HookConsumerWidget {
                   onDuplicate: () =>
                       listNotifier.duplicateGesture(selectionKey),
                   onToggleEnabled: () {
+                    final isGestureEnabled =
+                        gestureAt(
+                          ref.read(draftConfigProvider),
+                          selectionKey,
+                        )?.common.enabled !=
+                        false;
                     if (isGestureEnabled) {
                       listNotifier.disableGestures([selectionKey]);
                     } else {
