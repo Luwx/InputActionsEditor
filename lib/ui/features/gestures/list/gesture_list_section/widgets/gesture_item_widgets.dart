@@ -8,10 +8,12 @@ class _ContextMenuTile extends HookWidget {
     required this.isMultiSelectMode,
     required this.isMultiSelected,
     required this.groupDisabled,
+    required this.isGestureEnabled,
     required this.onTap,
     required this.onLongPress,
     required this.onRename,
     required this.onDuplicate,
+    required this.onToggleEnabled,
     required this.onDelete,
   });
 
@@ -21,10 +23,12 @@ class _ContextMenuTile extends HookWidget {
   final bool isMultiSelectMode;
   final bool isMultiSelected;
   final bool groupDisabled;
+  final bool isGestureEnabled;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final VoidCallback onRename;
   final VoidCallback onDuplicate;
+  final VoidCallback onToggleEnabled;
   final VoidCallback onDelete;
 
   @override
@@ -39,8 +43,10 @@ class _ContextMenuTile extends HookWidget {
       menu: _gestureContextMenuItems(
         context,
         controller: controller,
+        isGestureEnabled: isGestureEnabled,
         onRename: onRename,
         onDuplicate: onDuplicate,
+        onToggleEnabled: onToggleEnabled,
         onDelete: onDelete,
       ),
       child: GestureDetector(
@@ -63,8 +69,10 @@ class _ContextMenuTile extends HookWidget {
 List<FItemGroupMixin> _gestureContextMenuItems(
   BuildContext context, {
   required FPopoverController controller,
+  required bool isGestureEnabled,
   required VoidCallback onRename,
   required VoidCallback onDuplicate,
+  required VoidCallback onToggleEnabled,
   required VoidCallback onDelete,
 }) {
   final l10n = context.l10n;
@@ -80,6 +88,15 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.gestureMenuDuplicate),
           onPress: dismissThen(controller, onDuplicate),
+        ),
+        FItem(
+          prefix: Icon(
+            isGestureEnabled ? FLucideIcons.eyeOff : FLucideIcons.eye,
+          ),
+          title: Text(
+            isGestureEnabled ? l10n.gestureMenuDisable : l10n.gestureMenuEnable,
+          ),
+          onPress: dismissThen(controller, onToggleEnabled),
         ),
         FItem(
           variant: FItemVariant.destructive,

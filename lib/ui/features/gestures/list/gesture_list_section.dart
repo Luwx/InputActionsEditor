@@ -131,6 +131,7 @@ class GestureListSection extends HookConsumerWidget {
     final addedMarker = ref.watch(addedGestureProvider);
     final conflicts = ref.watch(conflictReportProvider);
     final collapsedNotifier = ref.read(collapsedGroupsProvider.notifier);
+    final draftConfig = ref.watch(draftConfigProvider);
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isMultiSelectMode = multiSelect != null;
@@ -448,6 +449,8 @@ class GestureListSection extends HookConsumerWidget {
                   viewModel.disabledGroupIds.contains(
                     item.groupId,
                   );
+              final isGestureEnabled =
+                  gestureAt(draftConfig, selectionKey)?.common.enabled != false;
               final row = AnimatedOpacity(
                 duration: Durations.short2,
                 opacity: isDragging ? 0.45 : 1,
@@ -458,6 +461,7 @@ class GestureListSection extends HookConsumerWidget {
                   isMultiSelectMode: isMultiSelectMode,
                   isMultiSelected: isMultiSelected,
                   groupDisabled: groupDisabled,
+                  isGestureEnabled: isGestureEnabled,
                   onTap: () {
                     if (isMultiSelectMode) {
                       multiSelectNotifier.toggle(selectionKey);
@@ -493,6 +497,13 @@ class GestureListSection extends HookConsumerWidget {
                   },
                   onDuplicate: () =>
                       listNotifier.duplicateGesture(selectionKey),
+                  onToggleEnabled: () {
+                    if (isGestureEnabled) {
+                      listNotifier.disableGestures([selectionKey]);
+                    } else {
+                      listNotifier.enableGestures([selectionKey]);
+                    }
+                  },
                   onDelete: () => transitions.requestDelete(
                     location: selectionKey,
                     flatItems: viewModel.flatItems,
