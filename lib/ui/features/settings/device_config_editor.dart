@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
@@ -148,8 +149,9 @@ class _DevicePropertiesSection extends ConsumerWidget {
       defaultDevicePropertiesLens(device),
     );
 
-    EditableField<T> field<T>(Lens<T> Function(DeviceType device) lens) =>
-        ref.field(lens(device));
+    EditableField<T> field<T>(
+      Lens<Config, T> Function(DeviceType device) lens,
+    ) => ref.field(lens(device));
 
     Widget dirtyTitle<T>(EditableField<T> field, String label) {
       return UnsavedLabel(
@@ -162,7 +164,7 @@ class _DevicePropertiesSection extends ConsumerWidget {
     FTileMixin boolTile({
       required String title,
       required String subtitle,
-      required Lens<bool?> Function(DeviceType device) lens,
+      required Lens<Config, bool?> Function(DeviceType device) lens,
     }) {
       final editable = field(lens);
       return FTile(
@@ -180,7 +182,7 @@ class _DevicePropertiesSection extends ConsumerWidget {
     FTileMixin numberTile({
       required String title,
       required String subtitle,
-      required Lens<double?> Function(DeviceType device) lens,
+      required Lens<Config, double?> Function(DeviceType device) lens,
       double? min,
       double? max,
     }) {
@@ -200,7 +202,7 @@ class _DevicePropertiesSection extends ConsumerWidget {
     FTileMixin intTile({
       required String title,
       required String subtitle,
-      required Lens<int?> Function(DeviceType device) lens,
+      required Lens<Config, int?> Function(DeviceType device) lens,
     }) {
       final editable = field(lens);
       return FTile(

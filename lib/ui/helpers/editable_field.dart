@@ -6,7 +6,6 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
-import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -68,7 +67,7 @@ class SchemaEditableField<T> {
 
 extension FieldAccess on WidgetRef {
   EditableField<T> field<T>(
-    Lens<T> lens, {
+    Lens<Config, T> lens, {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
     Object? scope,
@@ -98,8 +97,8 @@ extension FieldAccess on WidgetRef {
     );
   }
 
-  SchemaEditableField<T> schemaField<TRoot, TLocation, T>(
-    GeneratedEditField<TRoot, TLocation, T, Lens<T>> field, {
+  SchemaEditableField<T> schemaField<TLocation, T>(
+    GeneratedEditField<Config, TLocation, T, Lens<Config, T>> field, {
     required TLocation location,
     DirtyMarkState? dirty,
     Object? scope,
@@ -124,7 +123,7 @@ extension FieldAccess on WidgetRef {
   /// value out to every selected gesture as one undoable [BatchEdit].
   EditableField<T> bulkField<T>(
     Set<GestureLocation> selection,
-    Lens<T> Function(GestureLocation location) lensFor, {
+    Lens<Config, T> Function(GestureLocation location) lensFor, {
     T Function()? fallbackValue,
   }) {
     final controller = read(configControllerProvider.notifier);
@@ -148,9 +147,9 @@ extension FieldAccess on WidgetRef {
     );
   }
 
-  SchemaEditableField<T> bulkSchemaField<TRoot, T>(
+  SchemaEditableField<T> bulkSchemaField<T>(
     Set<GestureLocation> selection,
-    GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field, {
+    GeneratedEditField<Config, GestureLocation, T, Lens<Config, T>> field, {
     T Function()? fallbackValue,
   }) {
     final editable = bulkField<T>(
@@ -174,7 +173,7 @@ const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
 ({bool readable, T value, bool mixed}) _reduceBulk<T>(
   AsyncValue<EditSession> state,
   Iterable<GestureLocation> selection,
-  Lens<T> Function(GestureLocation location) lensFor,
+  Lens<Config, T> Function(GestureLocation location) lensFor,
   T Function()? fallbackValue,
 ) {
   final config = state.requireValue.draft;
@@ -207,7 +206,7 @@ const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
 
 ({bool readable, T? value}) _readLens<T>(
   AsyncValue<EditSession> state,
-  Lens<T> lens,
+  Lens<Config, T> lens,
   bool Function(Config config)? canRead,
 ) {
   final config = state.requireValue.draft;

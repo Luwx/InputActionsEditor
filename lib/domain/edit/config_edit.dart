@@ -33,7 +33,7 @@ mixin CoalescingEdit on ConfigEdit {
 final class SetLens<T> implements ConfigEdit {
   SetLens(this.lens, this.value, {String? label}) : _label = label;
 
-  final Lens<T> lens;
+  final Lens<Config, T> lens;
   final T value;
   final String? _label;
 

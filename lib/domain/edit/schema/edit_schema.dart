@@ -11,7 +11,6 @@
 //    (see config_tree_extra.dart).
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
-import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';

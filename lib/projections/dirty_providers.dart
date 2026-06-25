@@ -49,10 +49,10 @@ final isDirtyProvider = Provider<bool>(
   ),
 );
 
-final ProviderFamily<DirtyMarkState, Lens<dynamic>> lensDirtyStateProvider =
-    Provider.family<DirtyMarkState, Lens<dynamic>>(
-      (ref, lens) => selectSession(ref, (s) => _lensDirtyState(s, lens)),
-    );
+final ProviderFamily<DirtyMarkState, Lens<Config, dynamic>>
+lensDirtyStateProvider = Provider.family<DirtyMarkState, Lens<Config, dynamic>>(
+  (ref, lens) => selectSession(ref, (s) => _lensDirtyState(s, lens)),
+);
 
 final ProviderFamily<DirtyMarkState, RootConfigDirtyField>
 rootConfigDirtyStateProvider =
@@ -100,7 +100,10 @@ final ProviderFamily<bool, ActionLocation> actionDirtyProvider =
           selectSession(ref, (s) => _actionDirtyState(s, location).isDirty),
     );
 
-DirtyMarkState _lensDirtyState(EditSession session, Lens<dynamic> lens) {
+DirtyMarkState _lensDirtyState(
+  EditSession session,
+  Lens<Config, dynamic> lens,
+) {
   final currentRead = _readLens(session.draft, lens);
   final savedRead = _readLens(session.saved, lens);
   return dirtyMarkState(
@@ -176,7 +179,10 @@ DirtyMarkState _actionDirtyState(EditSession session, ActionLocation location) {
   );
 }
 
-({bool exists, Object? value}) _readLens(Config? config, Lens<dynamic> lens) {
+({bool exists, Object? value}) _readLens(
+  Config? config,
+  Lens<Config, dynamic> lens,
+) {
   if (config == null) return (exists: false, value: null);
   try {
     return (exists: true, value: lens.get(config));

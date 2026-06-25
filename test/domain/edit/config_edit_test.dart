@@ -5,7 +5,7 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
 
-const _globalSettingsLens = Lens<GlobalSettings>(
+const _globalSettingsLens = Lens<Config, GlobalSettings>(
   get: _getGlobalSettings,
   set: _setGlobalSettings,
   name: 'globalSettings',
@@ -17,7 +17,7 @@ const _autoreloadPart = LensPart<GlobalSettings, bool?>(
   name: 'autoreload',
 );
 
-const _mouseSpeedLens = Lens<SpeedSettings?>(
+const _mouseSpeedLens = Lens<Config, SpeedSettings?>(
   get: _getMouseSpeed,
   set: _setMouseSpeed,
   name: 'mouseSpeed',

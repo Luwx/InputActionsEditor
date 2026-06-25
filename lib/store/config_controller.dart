@@ -132,7 +132,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
   bool canRedo({Object? scope}) => _editStacks[scope]?.canRedo ?? false;
 
   /// Put saved value from [lens] back, as undoable edit.
-  void revert<T>(Lens<T> lens, {Object? scope}) {
+  void revert<T>(Lens<Config, T> lens, {Object? scope}) {
     final saved = _saved;
     if (saved == null) return;
     add(SetLens<T>(lens, lens.get(saved)), scope: scope);

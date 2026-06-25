@@ -9,7 +9,6 @@
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
-import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
@@ -117,15 +116,16 @@ final EditSchema<Config, void> rootConfigSchema = editSchema<Config, void>(
   ],
 );
 
-Lens<DeviceRuleProperties> defaultDevicePropertiesLens(DeviceType device) =>
-    Lens<DeviceRuleProperties>(
-      get: (config) =>
-          _defaultDeviceRule(config, device)?.properties ??
-          const DeviceRuleProperties(),
-      set: (config, properties) =>
-          _setDefaultDeviceProperties(config, device, properties),
-      name: 'defaultDevice[${device.name}].properties',
-    );
+Lens<Config, DeviceRuleProperties> defaultDevicePropertiesLens(
+  DeviceType device,
+) => Lens<Config, DeviceRuleProperties>(
+  get: (config) =>
+      _defaultDeviceRule(config, device)?.properties ??
+      const DeviceRuleProperties(),
+  set: (config, properties) =>
+      _setDefaultDeviceProperties(config, device, properties),
+  name: 'defaultDevice[${device.name}].properties',
+);
 
 Config _setDefaultDeviceProperties(
   Config config,

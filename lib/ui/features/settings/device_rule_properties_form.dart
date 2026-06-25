@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 
@@ -28,7 +29,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     void upd(DeviceRuleProperties p) => onChanged(p);
     EditableField<T>? field<T>(
-      Lens<T> Function(DeviceRuleLocation location) lens,
+      Lens<Config, T> Function(DeviceRuleLocation location) lens,
       T fallback,
     ) {
       final index = ruleIndex;
@@ -42,7 +43,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget boolChip({
       required String label,
       required bool? value,
-      required Lens<bool?> Function(DeviceRuleLocation location) lens,
+      required Lens<Config, bool?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(bool? value) update,
     }) {
       final editable = field(lens, value);
@@ -59,7 +60,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget numberChip({
       required String label,
       required double? value,
-      required Lens<double?> Function(DeviceRuleLocation location) lens,
+      required Lens<Config, double?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(double? value) update,
     }) {
       final editable = field(lens, value);
@@ -76,7 +77,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     Widget intChip({
       required String label,
       required int? value,
-      required Lens<int?> Function(DeviceRuleLocation location) lens,
+      required Lens<Config, int?> Function(DeviceRuleLocation location) lens,
       required DeviceRuleProperties Function(int? value) update,
     }) {
       final editable = field(lens, value);

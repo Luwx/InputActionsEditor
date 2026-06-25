@@ -67,7 +67,7 @@ const _rule2 = DeviceRule(properties: DeviceRuleProperties(grab: false));
 const _speed1 = SpeedSettings(events: 4);
 const _speed2 = SpeedSettings(events: 8);
 
-const _mouseSpeedLens = Lens<SpeedSettings?>(
+const _mouseSpeedLens = Lens<Config, SpeedSettings?>(
   get: _getMouseSpeed,
   set: _setMouseSpeed,
   name: 'mouseSpeed',
@@ -283,7 +283,7 @@ void main() {
         ),
       );
 
-      Lens<String> lensFor(Config c) => actionComponentField.lens(
+      Lens<Config, String> lensFor(Config c) => actionComponentField.lens(
         ActionLocation(gesture: locOf(c), actionIndex: 0),
       );
 

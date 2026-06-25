@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 
 class EditLocationScope extends InheritedWidget {
@@ -65,7 +65,7 @@ extension EditLocationContext on BuildContext {
 extension ScopedFieldAccess on WidgetRef {
   EditableField<T> gestureField<T>(
     BuildContext context,
-    Lens<T> Function(GestureLocation location) lensFor, {
+    Lens<Config, T> Function(GestureLocation location) lensFor, {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
   }) {
@@ -85,7 +85,7 @@ extension ScopedFieldAccess on WidgetRef {
 
   EditableField<T> actionField<T>(
     BuildContext context,
-    Lens<T> Function(ActionLocation location) lensFor, {
+    Lens<Config, T> Function(ActionLocation location) lensFor, {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
   }) {
@@ -99,14 +99,14 @@ extension ScopedFieldAccess on WidgetRef {
     );
   }
 
-  SchemaEditableField<T> gestureSchemaField<TRoot, T>(
+  SchemaEditableField<T> gestureSchemaField<T>(
     BuildContext context,
-    GeneratedEditField<TRoot, GestureLocation, T, Lens<T>> field, {
+    GeneratedEditField<Config, GestureLocation, T, Lens<Config, T>> field, {
     DirtyMarkState? dirty,
   }) {
     final bulk = EditLocationScope.maybeOf(context)?.bulk;
     if (bulk != null) {
-      return bulkSchemaField<TRoot, T>(bulk, field);
+      return bulkSchemaField<T>(bulk, field);
     }
     final location = context.gestureLocation;
     return schemaField(
@@ -118,9 +118,9 @@ extension ScopedFieldAccess on WidgetRef {
     );
   }
 
-  SchemaEditableField<T> actionSchemaField<TRoot, T>(
+  SchemaEditableField<T> actionSchemaField<T>(
     BuildContext context,
-    GeneratedEditField<TRoot, ActionLocation, T, Lens<T>> field, {
+    GeneratedEditField<Config, ActionLocation, T, Lens<Config, T>> field, {
     DirtyMarkState? dirty,
   }) {
     final location = context.actionLocation;
