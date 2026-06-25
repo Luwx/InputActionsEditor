@@ -3,14 +3,18 @@ import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
+    show gestureAt;
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -48,6 +52,7 @@ class ActionTriggerFields extends HookConsumerWidget {
     if (visibleFields.isEmpty) return const SizedBox.shrink();
 
     final actionLocation = context.actionLocation;
+    final gestureLocation = context.gestureLocation;
     final (:showInterval, :showThreshold) = ref.watch(
       actionEditorProvider(actionLocation).select(
         (vm) => (
@@ -69,6 +74,27 @@ class ActionTriggerFields extends HookConsumerWidget {
       actionConflictingLens,
       fallbackValue: () => true,
     );
+    final gesture = ref.watch(
+      configControllerProvider.select(
+        (s) => gestureAt(s.requireValue.draft, gestureLocation),
+      ),
+    );
+    final supportedOnValues = gesture == null
+        ? kAllTriggerOnOptions
+        : supportedTriggerOnOptions(
+            gesture,
+            conflicting: conflictingField.value,
+          );
+    final supportedOnOptions = {
+      for (final MapEntry(:key, :value) in onOptions.entries)
+        if (supportedOnValues.contains(value)) key: value,
+    };
+    final triggerOnValue = triggerOnField.value;
+    final supportedTriggerOnValue =
+        triggerOnValue != null &&
+            supportedOnOptions.containsValue(triggerOnValue)
+        ? triggerOnValue
+        : null;
     final conditionsField = ref.actionField(
       context,
       actionConditionsLens,
@@ -113,10 +139,10 @@ class ActionTriggerFields extends HookConsumerWidget {
                         tooltipContent: const ActionTriggerOnTooltip(),
                       ),
                     ),
-                    key: ValueKey(triggerOnField.value),
-                    items: onOptions,
+                    key: ValueKey(supportedTriggerOnValue),
+                    items: supportedOnOptions,
                     control: FSelectManagedControl<TriggerOn>(
-                      initial: triggerOnField.value,
+                      initial: supportedTriggerOnValue,
                       onChange: (value) {
                         if (value != null) triggerOnField.onChanged(value);
                       },
