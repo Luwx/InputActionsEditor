@@ -1,6 +1,6 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    as gen;
+    as schema;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 
@@ -17,7 +17,7 @@ final class AddDeviceRule extends ConfigEdit {
   String get label => 'add device rule';
 
   @override
-  Config apply(Config config) => gen.addDeviceRule(config, rule);
+  Config apply(Config config) => schema.addDeviceRule(config, rule);
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -35,7 +35,7 @@ final class UpdateDeviceRule extends ConfigEdit {
 
   @override
   Config apply(Config config) =>
-      gen.updateDeviceRuleAt(config, index, transform);
+      schema.updateDeviceRuleAt(config, index, transform);
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -51,7 +51,7 @@ final class RemoveDeviceRule extends ConfigEdit {
   String get label => 'remove device rule';
 
   @override
-  Config apply(Config config) => gen.removeDeviceRuleAt(config, index);
+  Config apply(Config config) => schema.removeDeviceRuleAt(config, index);
 
   @override
   ConfigEdit inverse(Config config) =>

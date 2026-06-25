@@ -1,6 +1,6 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    as gen;
+    as schema;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
@@ -19,7 +19,7 @@ final class AddGesture extends ConfigEdit {
   String get label => 'add ${device.name} gesture';
 
   @override
-  Config apply(Config config) => gen.addGesture(config, device, gesture);
+  Config apply(Config config) => schema.addGesture(config, device, gesture);
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -36,7 +36,7 @@ final class RemoveGesture extends ConfigEdit {
   String get label => 'remove ${location.device.name} gesture';
 
   @override
-  Config apply(Config config) => gen.removeGesture(config, location);
+  Config apply(Config config) => schema.removeGesture(config, location);
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -54,13 +54,13 @@ final class DuplicateGesture extends ConfigEdit {
 
   @override
   Config apply(Config config) {
-    final index = gen.gestureIndexOf(config, location);
-    final source = gen.gestureAt(config, location);
+    final index = schema.gestureIndexOf(config, location);
+    final source = schema.gestureAt(config, location);
     if (index == null || source == null) return config;
     final copy = source.withCommon(
       source.common.copyWith(name: '${source.common.name ?? ''}-copy'),
     );
-    return gen.insertGestureAt(config, location.device, index + 1, copy);
+    return schema.insertGestureAt(config, location.device, index + 1, copy);
   }
 
   @override
@@ -82,10 +82,10 @@ final class ReorderGesture extends ConfigEdit {
 
   @override
   Config apply(Config config) {
-    final list = gen.gesturesForDevice(config, device);
+    final list = schema.gesturesForDevice(config, device);
     if (oldIndex < 0 || oldIndex >= list.length) return config;
     final insertAt = newIndex > oldIndex ? newIndex - 1 : newIndex;
-    return gen.moveGesture(config, device, oldIndex, insertAt);
+    return schema.moveGesture(config, device, oldIndex, insertAt);
   }
 
   @override
@@ -103,7 +103,8 @@ final class UpdateGesture extends ConfigEdit with CoalescingEdit {
   String get label => 'update ${location.device.name} gesture';
 
   @override
-  Config apply(Config config) => gen.updateGesture(config, location, transform);
+  Config apply(Config config) =>
+      schema.updateGesture(config, location, transform);
 
   @override
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'update');
@@ -123,7 +124,7 @@ final class UpdateGestureCommon extends ConfigEdit with CoalescingEdit {
   String get label => 'update ${location.device.name} gesture';
 
   @override
-  Config apply(Config config) => gen.updateGesture(
+  Config apply(Config config) => schema.updateGesture(
     config,
     location,
     (gesture) => gesture.withCommon(transform(gesture.common)),
