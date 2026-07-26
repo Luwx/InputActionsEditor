@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 const _projectUrl = 'https://github.com/luwx/InputActionsEditor';
 const _inputActionsUrl = 'https://github.com/taj-ny/InputActions';
@@ -29,14 +30,17 @@ const _githubMarkSvg = '''
 </svg>
 ''';
 
-Future<void> showAboutInputActionsDialog(BuildContext context) {
-  return showFDialog<void>(
+Future<void> showAboutInputActionsDialog(BuildContext context) async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  if (!context.mounted) return;
+
+  await showFDialog<void>(
     context: context,
     builder: (dialogContext, style, animation) => AppDialog(
       style: style,
       animation: animation,
       constraints: const BoxConstraints(minWidth: 380, maxWidth: 500),
-      body: const _AboutBody(),
+      body: _AboutBody(version: packageInfo.version),
       actions: [
         FButton(
           onPress: () => Navigator.of(dialogContext).pop(),
@@ -48,7 +52,9 @@ Future<void> showAboutInputActionsDialog(BuildContext context) {
 }
 
 class _AboutBody extends StatelessWidget {
-  const _AboutBody();
+  const _AboutBody({required this.version});
+
+  final String version;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,7 @@ class _AboutBody extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           Text(
-            'Version 0.5.3',
+            'Version $version',
             style: typography.body.sm.copyWith(color: colors.mutedForeground),
           ),
           const SizedBox(height: 16),
