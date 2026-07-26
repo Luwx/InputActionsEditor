@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -153,7 +153,7 @@ jobs:
             bundle
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             packaging/*.deb
@@ -178,6 +178,7 @@ jobs:
           # COPR client + rpmbuild
           sudo apt-get install -y --no-install-recommends pipx rpm
           pipx install copr-cli
+          pipx inject --force copr-cli rich
           export PATH="$HOME/.local/bin:$PATH"
 
           # Build the SRPM from the staged bundle (changelog comes from CHANGELOG.md)
