@@ -36,6 +36,7 @@ dependencies:
   scroll_animator: ^0.3.0
   show_fps: ^1.1.0
   shared_preferences: ^2.3.3
+  package_info_plus: ^10.2.1
   background_blur_linux:
     git:
       url: https://github.com/Luwx/klutter
