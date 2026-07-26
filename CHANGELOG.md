@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0] - 2026-07-26
+
+- Add a KDE Wayland application menu with file, gesture, and appearance actions
+- Add menu icons, shortcuts, checkboxes, radio options, and section headings
+- Add an About dialog with project links
+
 ## [0.5.2] - 2026-06-22
 
 - Marquee selection: drag in the gesture list to rubber-band select multiple gestures

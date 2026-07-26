@@ -3,7 +3,7 @@ description: "Input Actions configurator for managing shortcuts and input bindin
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.5.2+17
+version: 0.6.0+18
 
 environment:
   sdk: ^3.11.5
@@ -44,6 +44,11 @@ dependencies:
     git:
       url: https://github.com/Luwx/klutter
       path: kde_color_scheme
+  linux_app_menu:
+    git:
+      url: https://github.com/Luwx/klutter
+      ref: feat/ext-background-effect-v1
+      path: linux_app_menu
   flutter_animate: ^4.5.2
   animations: ^2.2.0
   window_manager: ^0.5.1
@@ -74,6 +79,9 @@ flutter:
   generate: true
 
   uses-material-design: true
+
+  assets:
+    - linux/icons/256x256/apps/dev.luwx.input_actions_editor.png
 
   fonts:
     - family: PlasmaIcons

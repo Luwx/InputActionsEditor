@@ -497,6 +497,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
+  linux_app_menu:
+    dependency: "direct main"
+    description:
+      path: linux_app_menu
+      ref: "feat/ext-background-effect-v1"
+      resolved-ref: "3b6470c57f1180844e4ea58c760c4017ad2b14cd"
+      url: "https://github.com/Luwx/klutter"
+    source: git
+    version: "0.0.1"
   logging:
     dependency: transitive
     description:
@@ -1072,5 +1081,5 @@ packages:
     source: hosted
     version: "2.2.4"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
+  dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.44.0"

@@ -122,6 +122,10 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           ),
           onPress: dismissThen(controller, onToggleEnabled),
         ),
+      ],
+    ),
+    FItemGroup(
+      children: [
         FItem(
           variant: FItemVariant.destructive,
           prefix: const Icon(FLucideIcons.trash2),

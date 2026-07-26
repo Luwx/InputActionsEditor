@@ -45,6 +45,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDuplicate => 'Duplicate';
 
   @override
+  String get actionUndo => 'Undo';
+
+  @override
+  String get actionRedo => 'Redo';
+
+  @override
+  String get actionExit => 'Exit';
+
+  @override
   String get actionEnable => 'Enable';
 
   @override
@@ -79,6 +88,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navSettings => 'Settings';
+
+  @override
+  String get menuFile => 'File';
+
+  @override
+  String get menuEdit => 'Edit';
+
+  @override
+  String get menuGesture => 'Gesture';
+
+  @override
+  String get menuOpenSettings => 'Open Settings';
+
+  @override
+  String get menuAbout => 'About';
 
   @override
   String get sidebarDeviceGesturesGroup => 'Device Gestures';

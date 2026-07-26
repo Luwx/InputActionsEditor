@@ -17,6 +17,7 @@ import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/shell/application_menu.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
 
@@ -97,19 +98,21 @@ class MainShell extends HookConsumerWidget {
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
     final gatedContent = ConfigGate(child: child);
-    return FScaffold(
-      sidebar: Blurred(
-        disabled: !transparent,
-        expand: const EdgeInsets.only(right: 30),
-        child: const DeviceSidebar(),
+    return ApplicationMenu(
+      child: FScaffold(
+        sidebar: Blurred(
+          disabled: !transparent,
+          expand: const EdgeInsets.only(right: 30),
+          child: const DeviceSidebar(),
+        ),
+        childPad: false,
+        child: transparent
+            ? ColoredBox(
+                color: context.theme.colors.background,
+                child: gatedContent,
+              )
+            : gatedContent,
       ),
-      childPad: false,
-      child: transparent
-          ? ColoredBox(
-              color: context.theme.colors.background,
-              child: gatedContent,
-            )
-          : gatedContent,
     );
   }
 }

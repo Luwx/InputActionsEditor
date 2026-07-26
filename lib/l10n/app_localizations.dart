@@ -166,6 +166,24 @@ abstract class AppLocalizations {
   /// **'Duplicate'**
   String get actionDuplicate;
 
+  /// No description provided for @actionUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get actionUndo;
+
+  /// No description provided for @actionRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get actionRedo;
+
+  /// No description provided for @actionExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get actionExit;
+
   /// No description provided for @actionEnable.
   ///
   /// In en, this message translates to:
@@ -237,6 +255,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get navSettings;
+
+  /// No description provided for @menuFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get menuFile;
+
+  /// No description provided for @menuEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get menuEdit;
+
+  /// No description provided for @menuGesture.
+  ///
+  /// In en, this message translates to:
+  /// **'Gesture'**
+  String get menuGesture;
+
+  /// No description provided for @menuOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get menuOpenSettings;
+
+  /// No description provided for @menuAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get menuAbout;
 
   /// No description provided for @sidebarDeviceGesturesGroup.
   ///

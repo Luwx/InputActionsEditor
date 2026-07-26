@@ -14,11 +14,13 @@ import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
 import 'package:input_actions_editor/services/window_service.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
+import 'package:linux_app_menu/linux_app_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LinuxAppMenu.initialize();
   await windowManager.ensureInitialized();
 
   final prefs = await SharedPreferences.getInstance();
