@@ -991,7 +991,6 @@ mouse:
       expect(c.mouseGestures.length, 2);
 
       final group = c.gestureGroups.single;
-      expect(group.native, isTrue);
       expect(group.device, DeviceType.mouse);
       expect(
         group.conditions,

@@ -326,7 +326,7 @@ void main() {
       expect(out.gestureGroups.map((g) => g.id).toList(), ['g2', 'g1', 'g3']);
     });
 
-    test('MoveGestureGroup nests under a parent, chain goes native', () {
+    test('MoveGestureGroup nests under a parent', () {
       const c = Config(gestureGroups: [_group1, _group2, _group3]);
       final out = MoveGestureGroup(
         DeviceType.mouse,
@@ -335,8 +335,6 @@ void main() {
       ).apply(c);
       final byId = {for (final g in out.gestureGroups) g.id: g};
       expect(byId['g2']!.parentId, 'g1');
-      expect(byId['g2']!.native, isTrue);
-      expect(byId['g1']!.native, isTrue);
     });
 
     test('MoveGestureGroup refuses to nest a group inside its own subtree', () {

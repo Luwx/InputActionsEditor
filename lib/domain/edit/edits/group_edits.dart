@@ -56,8 +56,7 @@ final class UpdateGestureGroup extends ConfigEdit {
 
 /// Moves group [id] before [beforeId] (or to the end of [device]'s groups),
 /// re-parenting it under [newParentId]. The moved subtree's gestures follow as
-/// a contiguous block so the emitted file order matches the list. Nesting
-/// forces the whole chain native, since only YAML nesting can express it.
+/// a contiguous block so the emitted file order matches the list.
 final class MoveGestureGroup extends ConfigEdit {
   MoveGestureGroup(this.device, this.id, {this.beforeId, this.newParentId});
 
@@ -96,28 +95,10 @@ final class MoveGestureGroup extends ConfigEdit {
       }
     }
 
-    var groups = [
+    final groups = [
       for (final g in config.gestureGroups)
-        if (g.id == id)
-          g.copyWith(
-            parentId: newParentId,
-            native: g.native || newParentId != null,
-          )
-        else
-          g,
+        if (g.id == id) g.copyWith(parentId: newParentId) else g,
     ];
-    if (newParentId != null) {
-      // Only native groups serialize as nesting; convert the parent chain.
-      var ancestor = newParentId;
-      final chain = <String>{};
-      while (ancestor != null && chain.add(ancestor)) {
-        ancestor = byId[ancestor]?.parentId;
-      }
-      groups = [
-        for (final g in groups)
-          chain.contains(g.id) && !g.native ? g.copyWith(native: true) : g,
-      ];
-    }
 
     // Reorder among the device's groups: moved before beforeId, or last.
     final moved = groups.firstWhere((g) => g.id == id);

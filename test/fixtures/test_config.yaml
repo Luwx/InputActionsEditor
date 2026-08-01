@@ -1,7 +1,8 @@
 # Comprehensive InputActions config fixture for codec round-trip tests.
-# Designed to be normalization-stable: gestures are flat, condition leaves
-# come before nested groups, and no decode-only sugar (untyped groups,
-# nested sub-gestures, single-element list conditions, raw actions) is used.
+# Designed to be normalization-stable: condition leaves come before nested
+# condition groups, gesture groups use the canonical nested form, and no
+# decode-only sugar (legacy groups:/group: keys, nested sub-gestures,
+# single-element list conditions, raw actions) is used.
 
 autoreload: false
 external_variable_access: false
@@ -52,13 +53,6 @@ mouse:
     events: 4
     swipe_threshold: 20.0
 
-  groups:
-    - id: grp_nav
-      name: Navigation
-    - id: grp_media
-      name: Media
-      enabled: false
-
   gestures:
     - type: stroke
       name: Draw circle
@@ -69,37 +63,40 @@ mouse:
       actions:
         - plasma_shortcut: kwin,Window Close
 
-    - type: swipe
-      name: Meta + Swipe up
-      group: grp_nav
-      direction: up
-      mouse_buttons: [left]
-      speed: fast
-      lock_pointer: true
-      block_events: false
-      clear_modifiers: true
-      resume_timeout: 500
-      set_last_trigger: false
-      accelerated: true
-      threshold: 50
-      conditions: $keyboard_modifiers == meta
-      end_conditions: $window_fullscreen == false
-      actions:
-        - on: begin
-          input:
-            - keyboard: [leftctrl+home]
+    - name: Navigation
+      gestures:
+        - type: swipe
+          name: Meta + Swipe up
+          direction: up
+          mouse_buttons: [left]
+          speed: fast
+          lock_pointer: true
+          block_events: false
+          clear_modifiers: true
+          resume_timeout: 500
+          set_last_trigger: false
+          accelerated: true
+          threshold: 50
+          conditions: $keyboard_modifiers == meta
+          end_conditions: $window_fullscreen == false
+          actions:
+            - on: begin
+              input:
+                - keyboard: [leftctrl+home]
 
-    - type: circle
-      name: Volume circle
-      group: grp_media
-      direction: clockwise
-      mouse_buttons: [middle]
-      actions:
-        - on: update
-          interval: 3
-          conflicting: false
-          command: xdotool key XF86AudioRaiseVolume
-          wait: true
+    - name: Media
+      enabled: false
+      gestures:
+        - type: circle
+          name: Volume circle
+          direction: clockwise
+          mouse_buttons: [middle]
+          actions:
+            - on: update
+              interval: 3
+              conflicting: false
+              command: xdotool key XF86AudioRaiseVolume
+              wait: true
 
     - type: press
       name: Instant back

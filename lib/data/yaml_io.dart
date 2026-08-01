@@ -144,7 +144,6 @@ String encodeConfig(Config config, String originalText) {
       config.groupsForDevice(DeviceType.mouse),
       mouseGestureToMap,
     ),
-    groups: _legacyGroups(config, DeviceType.mouse),
     speed: config.mouseSpeed,
   );
   _saveDeviceSection(
@@ -156,7 +155,6 @@ String encodeConfig(Config config, String originalText) {
       config.groupsForDevice(DeviceType.keyboard),
       keyboardGestureToMap,
     ),
-    groups: _legacyGroups(config, DeviceType.keyboard),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
@@ -168,7 +166,6 @@ String encodeConfig(Config config, String originalText) {
       config.groupsForDevice(DeviceType.pointer),
       pointerGestureToMap,
     ),
-    groups: _legacyGroups(config, DeviceType.pointer),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
@@ -180,7 +177,6 @@ String encodeConfig(Config config, String originalText) {
       config.groupsForDevice(DeviceType.touchpad),
       touchpadGestureToMap,
     ),
-    groups: _legacyGroups(config, DeviceType.touchpad),
     omitIfEmpty: true,
     speed: config.touchpadSpeed,
   );
@@ -193,7 +189,6 @@ String encodeConfig(Config config, String originalText) {
       config.groupsForDevice(DeviceType.touchscreen),
       touchscreenGestureToMap,
     ),
-    groups: _legacyGroups(config, DeviceType.touchscreen),
     omitIfEmpty: true,
     speed: config.touchscreenSpeed,
   );
@@ -207,28 +202,32 @@ String encodeConfig(Config config, String originalText) {
   );
 }
 
-List<GestureGroup> _legacyGroups(Config config, DeviceType device) =>
-    config.groupsForDevice(device).where((g) => !g.native).toList();
-
-/// Lays out a device's gestures as the YAML `gestures:` list, re-nesting
-/// native groups. 
+/// Lays out a device's gestures as the YAML `gestures:` list. Groups are
+/// always emitted as nesting: each at the position of its first member (or at
+/// the end when empty), containing its members and subgroups in model order.
+/// Group ids and `group:` keys never serialize — membership is the nesting.
 List<dynamic> _buildGestureLayout<T extends Gesture>(
   List<T> gestures,
   List<GestureGroup> deviceGroups,
   Map<String, dynamic> Function(T) toMap,
 ) {
-  final native = {
-    for (final g in deviceGroups)
-      if (g.native) g.id: g,
-  };
-  if (native.isEmpty) return gestures.map(toMap).toList();
+  final byId = {for (final g in deviceGroups) g.id: g};
+  if (byId.isEmpty) return gestures.map(toMap).toList();
+
+  final childGroups = <String, List<GestureGroup>>{};
+  for (final g in deviceGroups) {
+    final parent = g.parentId;
+    if (parent != null && byId.containsKey(parent)) {
+      childGroups.putIfAbsent(parent, () => []).add(g);
+    }
+  }
 
   String rootOf(String id) {
     var current = id;
     final seen = <String>{current};
     while (true) {
-      final parent = native[current]?.parentId;
-      if (parent == null || !native.containsKey(parent)) return current;
+      final parent = byId[current]?.parentId;
+      if (parent == null || !byId.containsKey(parent)) return current;
       if (!seen.add(parent)) return current;
       current = parent;
     }
@@ -239,8 +238,8 @@ List<dynamic> _buildGestureLayout<T extends Gesture>(
     final seen = <String>{};
     while (seen.add(current)) {
       if (current == ancestor) return true;
-      final parent = native[current]?.parentId;
-      if (parent == null || !native.containsKey(parent)) return false;
+      final parent = byId[current]?.parentId;
+      if (parent == null || !byId.containsKey(parent)) return false;
       current = parent;
     }
     return false;
@@ -260,7 +259,7 @@ List<dynamic> _buildGestureLayout<T extends Gesture>(
     final children = <dynamic>[];
     for (final gesture in gestures) {
       final gid = gesture.common.groupId;
-      if (gid == null || !native.containsKey(gid)) continue;
+      if (gid == null || !byId.containsKey(gid)) continue;
       if (!isInSubtree(gid, group.id)) continue;
       if (gid == group.id) {
         children.add(toMap(gesture)..remove('group'));
@@ -268,11 +267,16 @@ List<dynamic> _buildGestureLayout<T extends Gesture>(
         // First gesture of a descendant subtree: emit the direct child group
         // on its chain, which recursively covers the rest.
         var mid = gid;
-        while (native[mid]?.parentId != group.id) {
-          mid = native[mid]!.parentId!;
+        while (byId[mid]?.parentId != group.id) {
+          mid = byId[mid]!.parentId!;
         }
-        if (!emitted.contains(mid)) children.add(emitGroup(native[mid]!));
+        if (!emitted.contains(mid)) children.add(emitGroup(byId[mid]!));
       }
+    }
+    // Subgroups with no gestures anywhere in their subtree have no anchor
+    // above; append them so they survive the round-trip.
+    for (final sub in childGroups[group.id] ?? const <GestureGroup>[]) {
+      if (!emitted.contains(sub.id)) children.add(emitGroup(sub));
     }
     m['gestures'] = children;
     return m;
@@ -281,12 +285,17 @@ List<dynamic> _buildGestureLayout<T extends Gesture>(
   final result = <dynamic>[];
   for (final gesture in gestures) {
     final gid = gesture.common.groupId;
-    if (gid != null && native.containsKey(gid)) {
+    if (gid != null && byId.containsKey(gid)) {
       final root = rootOf(gid);
-      if (!emitted.contains(root)) result.add(emitGroup(native[root]!));
+      if (!emitted.contains(root)) result.add(emitGroup(byId[root]!));
     } else {
       result.add(toMap(gesture));
     }
+  }
+  for (final g in deviceGroups) {
+    final parent = g.parentId;
+    final isRoot = parent == null || !byId.containsKey(parent);
+    if (isRoot && !emitted.contains(g.id)) result.add(emitGroup(g));
   }
   return result;
 }
@@ -298,12 +307,10 @@ void _saveDeviceSection(
   List<dynamic> gestures, {
   bool omitIfEmpty = false,
   SpeedSettings? speed,
-  List<GestureGroup> groups = const [],
 }) {
   final hasGestures = gestures.isNotEmpty;
   final hasSpeed = speed != null && !speed.isEmpty;
-  final hasGroups = groups.isNotEmpty;
-  if (omitIfEmpty && !hasGestures && !hasSpeed && !hasGroups) return;
+  if (omitIfEmpty && !hasGestures && !hasSpeed) return;
 
   final hasSection = doc is YamlMap && doc.containsKey(key);
   if (hasSection) {
@@ -311,12 +318,9 @@ void _saveDeviceSection(
     if (!_yamlNodeMatches(sectionMap?['gestures'], gestures)) {
       editor.update([key, 'gestures'], gestures);
     }
-    if (hasGroups) {
-      final groupMaps = groups.map(_gestureGroupToMap).toList();
-      if (!_yamlNodeMatches(sectionMap?['groups'], groupMaps)) {
-        editor.update([key, 'groups'], groupMaps);
-      }
-    } else if (sectionMap != null && sectionMap.containsKey('groups')) {
+    // The editor's old flat `groups:` list is read for compatibility but no
+    // longer written: groups serialize as nesting. Drop it on save.
+    if (sectionMap != null && sectionMap.containsKey('groups')) {
       editor.remove([key, 'groups']);
     }
     if (hasSpeed) {
@@ -329,16 +333,9 @@ void _saveDeviceSection(
     }
   } else {
     final section = <String, dynamic>{'gestures': gestures};
-    if (hasGroups) section['groups'] = groups.map(_gestureGroupToMap).toList();
     if (hasSpeed) section['speed'] = speedSettingsToMap(speed);
     editor.update([key], section);
   }
-}
-
-Map<String, dynamic> _gestureGroupToMap(GestureGroup g) {
-  final m = <String, dynamic>{'id': g.id, 'name': g.name};
-  if (!g.enabled) m['enabled'] = false;
-  return m;
 }
 
 void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {

@@ -149,7 +149,6 @@ const _groupNodeKeys = {'gestures', 'conditions', 'name', 'enabled'};
             device: device,
             enabled: item['enabled'] as bool? ?? true,
             parentId: parentGroupId,
-            native: true,
             conditions: item.containsKey('conditions')
                 ? _parseCondition(item.nodes['conditions'])
                 : null,

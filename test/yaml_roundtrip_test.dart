@@ -184,6 +184,8 @@ void main() {
     });
 
     test('groups round-trip through a device section', () {
+      // Group ids are in-memory only; what round-trips is the structure:
+      // name, enabled, membership, and (empty) groups themselves.
       const config = Config(
         mouseGestures: [
           PressGesture(common: TriggerCommon(groupId: 'g1')),
@@ -200,8 +202,44 @@ void main() {
       );
 
       final decoded = decodeConfig(encodeConfig(config, ''));
-      expect(decoded.gestureGroups, config.gestureGroups);
-      expect(decoded.mouseGestures.single.common.groupId, 'g1');
+      final byName = {for (final g in decoded.gestureGroups) g.name: g};
+      expect(byName.keys, containsAll(['Group One', 'Group Two']));
+      expect(byName['Group Two']!.enabled, isFalse);
+      expect(
+        decoded.mouseGestures.single.common.groupId,
+        byName['Group One']!.id,
+      );
+    });
+
+    test('legacy groups:/group: keys migrate to nesting on save', () {
+      const original = '''
+mouse:
+  groups:
+    - id: grp_nav
+      name: Navigation
+  gestures:
+    - type: press
+      name: A
+      group: grp_nav
+    - type: wheel
+      direction: up
+      name: B
+''';
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(encoded.contains('groups:'), isFalse);
+      expect(encoded.contains('group:'), isFalse);
+
+      final decoded = decodeConfig(encoded);
+      final group = decoded.gestureGroups.single;
+      expect(group.name, 'Navigation');
+      final byName = {
+        for (final g in decoded.mouseGestures) g.common.name: g,
+      };
+      expect(byName['A']!.common.groupId, group.id);
+      expect(byName['B']!.common.groupId, isNull);
+
+      // Migrated text is a fixed point from here on.
+      expect(encodeConfig(decoded, encoded), encoded);
     });
   });
 
@@ -275,7 +313,6 @@ mouse:
 
       // Structure preserved: still one group node wrapping both gestures.
       final config2 = decodeConfig(yaml1);
-      expect(config2.gestureGroups.single.native, isTrue);
       // The single-element condition list normalizes to its bare child on the
       // first encode (decode-only sugar); the content is unchanged.
       expect(

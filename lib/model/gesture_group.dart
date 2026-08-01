@@ -13,13 +13,11 @@ abstract class GestureGroup with _$GestureGroup {
     required DeviceType device,
     @Default(true) bool enabled,
 
-    /// Parent group id for nested groups; null at the top level.
+    /// Parent group id for nested groups; null at the top level. The group
+    /// [id] is in-memory only — groups serialize as YAML nesting, which
+    /// carries no id (the daemon would merge one into every member).
     String? parentId,
 
-    /// Whether this group came from YAML nesting (the daemon's native trigger
-    /// group format) rather than the editor's `groups:` list. Native groups
-    /// are emitted as nesting; their [id] is synthetic and never serialized.
-    @Default(false) bool native,
 
     /// Conditions the daemon applies to every gesture in this group.
     Condition? conditions,
