@@ -54,38 +54,121 @@ final class UpdateGestureGroup extends ConfigEdit {
       RestoreConfig(config, label: 'update group');
 }
 
-/// Reorders the groups belonging to [device], leaving other devices' groups in
-/// their absolute positions within the shared `gestureGroups` list.
-final class ReorderGestureGroup extends ConfigEdit {
-  ReorderGestureGroup(this.device, this.oldIndex, this.newIndex);
+/// Moves group [id] before [beforeId] (or to the end of [device]'s groups),
+/// re-parenting it under [newParentId]. The moved subtree's gestures follow as
+/// a contiguous block so the emitted file order matches the list. Nesting
+/// forces the whole chain native, since only YAML nesting can express it.
+final class MoveGestureGroup extends ConfigEdit {
+  MoveGestureGroup(this.device, this.id, {this.beforeId, this.newParentId});
 
   final DeviceType device;
-  final int oldIndex;
-  final int newIndex;
+  final String id;
+  final String? beforeId;
+  final String? newParentId;
 
   @override
-  String get label => 'reorder groups';
+  String get label => 'move group';
 
   @override
   Config apply(Config config) {
-    final all = [...config.gestureGroups];
-    final deviceGroups = all.where((g) => g.device == device).toList();
-    if (oldIndex < 0 || oldIndex >= deviceGroups.length) return config;
+    if (beforeId == id) return config;
+    final byId = {for (final g in config.gestureGroups) g.id: g};
+    if (!byId.containsKey(id)) return config;
+    if (beforeId != null && !byId.containsKey(beforeId)) return config;
 
-    final item = deviceGroups.removeAt(oldIndex);
-    final insertAt = newIndex > oldIndex ? newIndex - 1 : newIndex;
-    deviceGroups.insert(insertAt.clamp(0, deviceGroups.length), item);
-
-    var next = 0;
-    for (var i = 0; i < all.length; i++) {
-      if (all[i].device == device) all[i] = deviceGroups[next++];
+    // Refuse a cycle: the new parent must not sit inside the moved subtree.
+    var current = newParentId;
+    final seen = <String>{};
+    while (current != null && seen.add(current)) {
+      if (current == id) return config;
+      current = byId[current]?.parentId;
     }
-    return config.copyWith(gestureGroups: all);
+
+    final subtree = <String>{id};
+    var grew = true;
+    while (grew) {
+      grew = false;
+      for (final g in config.gestureGroups) {
+        final parent = g.parentId;
+        if (parent != null && subtree.contains(parent) && subtree.add(g.id)) {
+          grew = true;
+        }
+      }
+    }
+
+    var groups = [
+      for (final g in config.gestureGroups)
+        if (g.id == id)
+          g.copyWith(
+            parentId: newParentId,
+            native: g.native || newParentId != null,
+          )
+        else
+          g,
+    ];
+    if (newParentId != null) {
+      // Only native groups serialize as nesting; convert the parent chain.
+      var ancestor = newParentId;
+      final chain = <String>{};
+      while (ancestor != null && chain.add(ancestor)) {
+        ancestor = byId[ancestor]?.parentId;
+      }
+      groups = [
+        for (final g in groups)
+          chain.contains(g.id) && !g.native ? g.copyWith(native: true) : g,
+      ];
+    }
+
+    // Reorder among the device's groups: moved before beforeId, or last.
+    final moved = groups.firstWhere((g) => g.id == id);
+    final without = groups.where((g) => g.id != id).toList();
+    var insertAt = without.length;
+    if (beforeId != null) {
+      final beforeIndex = without.indexWhere((g) => g.id == beforeId);
+      if (beforeIndex >= 0) insertAt = beforeIndex;
+    }
+    without.insert(insertAt, moved);
+
+    // Move the subtree's gestures as a block, keeping their relative order.
+    final gestures = _gestures(config, device);
+    final block = <Gesture>[];
+    final rest = <Gesture>[];
+    for (final g in gestures) {
+      final gid = g.common.groupId;
+      (gid != null && subtree.contains(gid) ? block : rest).add(g);
+    }
+    var gestureInsert = rest.length;
+    if (beforeId != null) {
+      final targetSubtree = <String>{beforeId!};
+      var targetGrew = true;
+      while (targetGrew) {
+        targetGrew = false;
+        for (final g in without) {
+          final parent = g.parentId;
+          if (parent != null &&
+              targetSubtree.contains(parent) &&
+              targetSubtree.add(g.id)) {
+            targetGrew = true;
+          }
+        }
+      }
+      final anchor = rest.indexWhere(
+        (g) =>
+            g.common.groupId != null &&
+            targetSubtree.contains(g.common.groupId),
+      );
+      if (anchor >= 0) gestureInsert = anchor;
+    }
+    rest.insertAll(gestureInsert, block);
+
+    return config
+        .copyWith(gestureGroups: without)
+        .withGesturesForDevice(device, rest);
   }
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'reorder groups');
+      RestoreConfig(config, label: 'move group');
 }
 
 /// Deletes the group [id] and clears that id from every gesture that referenced
@@ -100,17 +183,27 @@ final class RemoveGestureGroupAndUngroup extends ConfigEdit {
 
   @override
   Config apply(Config config) {
+    // Members and child groups are handed to the removed group's parent, so
+    // dissolving a nested group folds it into its enclosing one.
+    final parentId = config.gestureGroups
+        .where((g) => g.id == id)
+        .firstOrNull
+        ?.parentId;
     var next = config;
     for (final device in DeviceType.values) {
       final list = _gestures(next, device);
       final out = [
         for (final g in list)
-          g.common.groupId == id ? _withGroupId(g, null) : g,
+          g.common.groupId == id ? _withGroupId(g, parentId) : g,
       ];
       next = next.withGesturesForDevice(device, out);
     }
     return next.copyWith(
-      gestureGroups: next.gestureGroups.where((g) => g.id != id).toList(),
+      gestureGroups: [
+        for (final g in next.gestureGroups)
+          if (g.id != id)
+            g.parentId == id ? g.copyWith(parentId: parentId) : g,
+      ],
     );
   }
 

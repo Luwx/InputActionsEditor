@@ -17,12 +17,14 @@ class _GhostRow {
     required this.groupId,
     required this.anchorIndex,
     required this.collapsing,
+    this.depth = 0,
   });
 
   final int editId;
   final Gesture gesture;
   final DeviceType device;
   final String? groupId;
+  final int depth;
 
   /// Flat-list index of the row's old slot, where the ghost is inserted.
   final int anchorIndex;
@@ -37,6 +39,7 @@ class _GhostRow {
     groupId: groupId,
     anchorIndex: anchorIndex,
     collapsing: true,
+    depth: depth,
   );
 }
 
@@ -96,6 +99,13 @@ int _ghostAnchorIndex(List<_FlatItem> items, int editId) {
   return items.length;
 }
 
+int _ghostDepth(List<_FlatItem> items, int editId) {
+  for (final item in items) {
+    if (item is _GestureRowItem && item.editId == editId) return item.depth;
+  }
+  return 0;
+}
+
 _GestureTransitions _useGestureTransitions(
   WidgetRef ref,
   BuildContext context,
@@ -145,6 +155,7 @@ _GestureTransitions _useGestureTransitions(
         groupId: gesture.common.groupId,
         anchorIndex: _ghostAnchorIndex(flatItems, editId),
         collapsing: false,
+        depth: _ghostDepth(flatItems, editId),
       ),
     ];
     scheduleCollapseAndRemoval({editId});
@@ -171,6 +182,7 @@ _GestureTransitions _useGestureTransitions(
           groupId: gesture.common.groupId,
           anchorIndex: _ghostAnchorIndex(flatItems, editId),
           collapsing: false,
+          depth: _ghostDepth(flatItems, editId),
         ),
       );
     }

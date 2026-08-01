@@ -63,33 +63,28 @@ class _GroupDropState extends StatelessWidget {
   }
 }
 
-/// Two stacked drop beneath a group's last row: the upper half keeps a
-/// dropped item in the group (indented indicator), the lower half drops it just
-/// after the group, ungrouped (full-width indicator). The gap is a thin sliver
-/// when idle and grows while an item is being dragged so each half is easy to
-/// aim at.
-class _GroupEndDropZone<I, G> extends StatelessWidget {
+/// One drop half per landing level at a group boundary, indented to the level
+/// it targets: the first keeps a dropped item in the ending group, each next
+/// one exits a level (the outermost ungroups).
+typedef _BoundaryHalf<I> = ({
+  double indent,
+  bool Function(List<I> itemIds) willAccept,
+  void Function(List<I> itemIds) onAccept,
+});
+
+/// Stacked drop halves beneath a group's last row. The gap is zero-height when
+/// idle and grows while an item is being dragged so each half is easy to aim
+/// at.
+class _GroupEndDropZone<I> extends StatelessWidget {
   const _GroupEndDropZone({
     required this.isVisible,
     required this.isDragActive,
-    required this.showOutside,
-    required this.willInsideAccept,
-    required this.willOutsideAccept,
-    required this.onInsideAccept,
-    required this.onOutsideAccept,
+    required this.halves,
   });
 
   final bool isVisible;
   final bool isDragActive;
-
-  /// Whether to offer the "after group, ungrouped" half. Only useful when the
-  /// next entry is another group; otherwise that slot is already reachable via
-  /// the following row's before-target.
-  final bool showOutside;
-  final bool Function(List<I> itemIds) willInsideAccept;
-  final bool Function(List<I> itemIds) willOutsideAccept;
-  final void Function(List<I> itemIds) onInsideAccept;
-  final void Function(List<I> itemIds) onOutsideAccept;
+  final List<_BoundaryHalf<I>> halves;
 
   @override
   Widget build(BuildContext context) {
@@ -98,18 +93,12 @@ class _GroupEndDropZone<I, G> extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _BoundaryDropHalf<I>(
-          active: isDragActive,
-          indent: _groupIndent,
-          willAccept: willInsideAccept,
-          onAccept: onInsideAccept,
-        ),
-        if (showOutside)
+        for (final half in halves)
           _BoundaryDropHalf<I>(
             active: isDragActive,
-            indent: 0,
-            willAccept: willOutsideAccept,
-            onAccept: onOutsideAccept,
+            indent: half.indent,
+            willAccept: half.willAccept,
+            onAccept: half.onAccept,
           ),
       ],
     );

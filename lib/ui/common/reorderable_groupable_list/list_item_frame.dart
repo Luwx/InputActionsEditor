@@ -5,24 +5,39 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
     required this.child,
     required this.borderColor,
     required this.showTopBorder,
-    required this.isGrouped,
+    required this.depth,
+    required this.ancestorContinues,
     required this.isFirstInGroup,
     required this.isLastInGroup,
     required this.overlay,
+    this.innermostBracket = true,
     super.key,
   });
 
   final Widget child;
   final Color borderColor;
   final bool showTopBorder;
-  final bool isGrouped;
+
+  /// Nesting level; the row indents `depth * 16` and draws one rail per level.
+  final int depth;
+
+  /// Per ancestor level (outermost first): whether that ancestor's rail
+  /// continues below this row (full height) or ends here (top half only).
+  final List<bool> ancestorContinues;
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final Widget overlay;
 
+  /// Items get a tick + rail for their own group at the innermost level;
+  /// sub-group header rows draw plain rails for every ancestor instead.
+  final bool innermostBracket;
+
   @override
   Widget build(BuildContext context) {
-    final indent = isGrouped ? _groupIndent : 0.0;
+    final indent = depth * _groupIndent;
+    // Rails for ancestor levels: level L sits at x = (L + 1) * 16. With an
+    // innermost bracket the last level is drawn by the bracket instead.
+    final railLevels = innermostBracket ? depth - 1 : depth;
     return Stack(
       children: [
         Column(
@@ -51,7 +66,20 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
           bottom: 0,
           child: overlay,
         ),
-        if (isGrouped) ...[
+        for (var level = 0; level < railLevels; level++)
+          Positioned(
+            left: (level + 1) * _groupIndent,
+            top: 0,
+            bottom: 0,
+            child: _railContinues(level)
+                ? Container(width: 1, color: borderColor)
+                : FractionallySizedBox(
+                    alignment: Alignment.topCenter,
+                    heightFactor: 0.5,
+                    child: Container(width: 1, color: borderColor),
+                  ),
+          ),
+        if (innermostBracket && depth > 0) ...[
           Positioned(
             left: indent + 1,
             top: 0,
@@ -76,6 +104,9 @@ class _ReorderableGroupableItemFrame extends StatelessWidget {
       ],
     );
   }
+
+  bool _railContinues(int level) =>
+      level >= ancestorContinues.length || ancestorContinues[level];
 }
 
 class _AnimatedGroupRowVisibility extends StatelessWidget {

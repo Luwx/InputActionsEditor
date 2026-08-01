@@ -64,7 +64,7 @@ final class ReorderableGroupableController<I, G> {
   }
 
   /// Moves [draggedIds] to sit immediately after the group [groupId],
-  /// ungrouping them.
+  /// joining its parent group (ungrouped when [groupId] is top-level).
   ReorderableItemsResult<I, G>? moveItemsAfterGroup(
     List<ReorderableGroupableListEntry<I, G>> entries,
     Set<I> draggedIds,
@@ -73,7 +73,8 @@ final class ReorderableGroupableController<I, G> {
     return _moveToFlatIndex(
       entries,
       draggedIds,
-      _flatIndexForGroupAppend(entries, groupId),
+      _flatIndexAfterSubtree(entries, groupId),
+      groupId: _parentOf(entries, groupId),
     );
   }
 
@@ -85,29 +86,50 @@ final class ReorderableGroupableController<I, G> {
     return _moveToFlatIndex(entries, draggedIds, entries.length);
   }
 
-  /// Computes the `(from, to)` index pair to move group [draggedId] so it sits
-  /// before group [targetId]. Returns `null` if the move is a no-op.
-  ({int from, int to})? moveGroupBeforeGroup(
+  /// Move for group [draggedId] to sit before group [targetId] as its
+  /// sibling. Null when it is a no-op or would nest a group inside itself.
+  ReorderableGroupMove<G>? moveGroupBeforeGroup(
     List<ReorderableGroupableListEntry<I, G>> entries,
     G draggedId,
     G targetId,
   ) {
-    final order = _groupOrder(entries);
-    final from = order.indexOf(draggedId);
-    final to = order.indexOf(targetId);
-    if (from < 0 || to < 0 || from == to) return null;
-    return (from: from, to: to);
+    if (draggedId == targetId) return null;
+    final target = _groupEntry(entries, targetId);
+    if (target == null || _groupEntry(entries, draggedId) == null) return null;
+    if (_isInSubtree(entries, targetId, draggedId)) return null;
+    // No-op: already the sibling directly before the target.
+    final headers = _groupOrder(entries);
+    final targetPos = headers.indexOf(targetId);
+    if (targetPos > 0 &&
+        headers[targetPos - 1] == draggedId &&
+        _parentOf(entries, draggedId) == target.parentId) {
+      return null;
+    }
+    return (
+      groupId: draggedId,
+      beforeGroupId: targetId,
+      newParentId: target.parentId,
+    );
   }
 
-  /// Computes the `(from, to)` index pair to move group [draggedId] to the end.
-  ({int from, int to})? moveGroupToEnd(
+  /// Move for group [draggedId] to the end of the top level.
+  ReorderableGroupMove<G>? moveGroupToEnd(
     List<ReorderableGroupableListEntry<I, G>> entries,
     G draggedId,
   ) {
-    final order = _groupOrder(entries);
-    final from = order.indexOf(draggedId);
-    if (from < 0) return null;
-    return (from: from, to: order.length);
+    final dragged = _groupEntry(entries, draggedId);
+    if (dragged == null) return null;
+    final topLevel = [
+      for (final entry in entries)
+        if (entry is ReorderableGroupableGroup<I, G> && entry.depth == 0)
+          entry.id,
+    ];
+    if (dragged.depth == 0 &&
+        topLevel.isNotEmpty &&
+        topLevel.last == draggedId) {
+      return null;
+    }
+    return (groupId: draggedId, beforeGroupId: null, newParentId: null);
   }
 
   /// Inserts the dragged items at [targetFlatIndex] (in original-list
@@ -192,26 +214,86 @@ final class ReorderableGroupableController<I, G> {
     );
   }
 
+  /// Insertion index for appending a direct member: right after the group's
+  /// last direct row, before any child subgroup header.
   int _flatIndexForGroupAppend(
     List<ReorderableGroupableListEntry<I, G>> entries,
     G groupId,
   ) {
-    final headerIndex = entries.indexWhere(
-      (entry) =>
-          entry is ReorderableGroupableGroup<I, G> && entry.id == groupId,
-    );
+    final headerIndex = _groupIndexOf(entries, groupId);
     if (headerIndex < 0) return entries.length;
 
     var insertAt = headerIndex + 1;
     while (insertAt < entries.length) {
       final entry = entries[insertAt];
-      if (entry is ReorderableGroupableGroup<I, G>) break;
-      if (entry is ReorderableGroupableItem<I, G> && entry.groupId != groupId) {
+      if (entry is! ReorderableGroupableItem<I, G> ||
+          entry.groupId != groupId) {
         break;
       }
       insertAt++;
     }
     return insertAt;
+  }
+
+  /// Index just past the whole subtree of [groupId] (its rows and every
+  /// descendant group's), bounded by depth: the subtree ends at the first
+  /// entry no deeper than the group's header.
+  int _flatIndexAfterSubtree(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    G groupId,
+  ) {
+    final headerIndex = _groupIndexOf(entries, groupId);
+    if (headerIndex < 0) return entries.length;
+    final depth =
+        (entries[headerIndex] as ReorderableGroupableGroup<I, G>).depth;
+
+    // Inside the subtree, every entry is deeper than the header: direct rows
+    // have depth `header + 1`, child headers `header + 1`, and so on.
+    var end = headerIndex + 1;
+    while (end < entries.length) {
+      final entryDepth = switch (entries[end]) {
+        ReorderableGroupableGroup<I, G>(:final depth) => depth,
+        ReorderableGroupableItem<I, G>(:final depth) => depth,
+      };
+      if (entryDepth <= depth) break;
+      end++;
+    }
+    return end;
+  }
+
+  int _groupIndexOf(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    G groupId,
+  ) => entries.indexWhere(
+    (entry) => entry is ReorderableGroupableGroup<I, G> && entry.id == groupId,
+  );
+
+  ReorderableGroupableGroup<I, G>? _groupEntry(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    G groupId,
+  ) {
+    final index = _groupIndexOf(entries, groupId);
+    return index < 0
+        ? null
+        : entries[index] as ReorderableGroupableGroup<I, G>;
+  }
+
+  G? _parentOf(List<ReorderableGroupableListEntry<I, G>> entries, G groupId) =>
+      _groupEntry(entries, groupId)?.parentId;
+
+  /// Whether [groupId] is [ancestorId] or sits anywhere inside its subtree.
+  bool _isInSubtree(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    G groupId,
+    G ancestorId,
+  ) {
+    G? current = groupId;
+    final seen = <G>{};
+    while (current != null && seen.add(current)) {
+      if (current == ancestorId) return true;
+      current = _parentOf(entries, current);
+    }
+    return false;
   }
 
   List<G> _groupOrder(List<ReorderableGroupableListEntry<I, G>> entries) => [

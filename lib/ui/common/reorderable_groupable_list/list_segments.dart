@@ -27,25 +27,29 @@ class _GroupHeaderDelegate extends SliverPersistentHeaderDelegate {
       extent != oldDelegate.extent || builder != oldDelegate.builder;
 }
 
-/// An item entry paired with its global index in the flat entries list, so
-/// per-row border/first/last decisions survive the split into per-group slivers.
-typedef _IndexedItem<I, G> = ({int index, ReorderableGroupableItem<I, G> item});
+/// A row-position entry (item or nested sub-group header) paired with its
+/// global index in the flat entries list.
+typedef _IndexedEntry<I, G> = ({
+  int index,
+  ReorderableGroupableListEntry<I, G> entry,
+});
 
-/// A rendering segment of the flat entries: a [_GroupSegment] (pinned header +
-/// its rows) or an [_UngroupedSegment] (a run of items with no header).
+/// A rendering segment of the flat entries: a [_GroupSegment] (pinned
+/// top-level header + every row of its subtree, sub-headers included) or an
+/// [_UngroupedSegment] (a run of top-level items with no header).
 sealed class _ListSegment<I, G> {
   const _ListSegment();
 }
 
 final class _GroupSegment<I, G> extends _ListSegment<I, G> {
-  _GroupSegment(this.group, this.items);
+  _GroupSegment(this.group, this.rows);
 
   final ReorderableGroupableGroup<I, G> group;
-  final List<_IndexedItem<I, G>> items;
+  final List<_IndexedEntry<I, G>> rows;
 }
 
 final class _UngroupedSegment<I, G> extends _ListSegment<I, G> {
-  _UngroupedSegment(this.items);
+  _UngroupedSegment(this.rows);
 
-  final List<_IndexedItem<I, G>> items;
+  final List<_IndexedEntry<I, G>> rows;
 }

@@ -8,7 +8,12 @@ ReorderableGroupableGroup<int, String> _group(String id) =>
     ReorderableGroupableGroup(key: ValueKey('g:$id'), id: id);
 
 ReorderableGroupableItem<int, String> _item(int id, {String? group}) =>
-    ReorderableGroupableItem(key: ValueKey('i:$id'), id: id, groupId: group);
+    ReorderableGroupableItem(
+      key: ValueKey('i:$id'),
+      id: id,
+      groupId: group,
+      depth: group == null ? 0 : 1,
+    );
 
 void main() {
   const controller = ReorderableGroupableController<int, String>();
@@ -197,10 +202,11 @@ void main() {
       _group('c'),
     ];
 
-    test('moveGroupBeforeGroup returns the from/to indices', () {
+    test('moveGroupBeforeGroup emits a sibling move', () {
       expect(controller.moveGroupBeforeGroup(entries, 'c', 'a'), (
-        from: 2,
-        to: 0,
+        groupId: 'c',
+        beforeGroupId: 'a',
+        newParentId: null,
       ));
     });
 
@@ -208,13 +214,107 @@ void main() {
       expect(controller.moveGroupBeforeGroup(entries, 'a', 'a'), isNull);
     });
 
-    test('moveGroupToEnd targets the group count', () {
-      expect(controller.moveGroupToEnd(entries, 'a'), (from: 0, to: 3));
+    test('moveGroupBeforeGroup is a no-op for the sibling directly above', () {
+      expect(controller.moveGroupBeforeGroup(entries, 'b', 'c'), isNull);
+    });
+
+    test('moveGroupBeforeGroup refuses to land inside its own subtree', () {
+      final nested = [
+        _group('a'),
+        const ReorderableGroupableGroup<int, String>(
+          key: ValueKey('g:sub'),
+          id: 'sub',
+          parentId: 'a',
+          depth: 1,
+        ),
+        _group('b'),
+      ];
+      expect(controller.moveGroupBeforeGroup(nested, 'a', 'sub'), isNull);
+    });
+
+    test('moveGroupToEnd appends at the top level', () {
+      expect(controller.moveGroupToEnd(entries, 'a'), (
+        groupId: 'a',
+        beforeGroupId: null,
+        newParentId: null,
+      ));
+      // Already last at the top level.
+      expect(controller.moveGroupToEnd(entries, 'c'), isNull);
     });
 
     test('returns null for unknown groups', () {
       expect(controller.moveGroupToEnd(entries, 'z'), isNull);
       expect(controller.moveGroupBeforeGroup(entries, 'z', 'a'), isNull);
+    });
+  });
+
+  group('nested subtrees', () {
+    ReorderableGroupableGroup<int, String> subgroup(
+      String id,
+      String parent, {
+      int depth = 1,
+    }) => ReorderableGroupableGroup(
+      key: ValueKey('g:$id'),
+      id: id,
+      parentId: parent,
+      depth: depth,
+    );
+    ReorderableGroupableItem<int, String> deepItem(
+      int id,
+      String group,
+      int depth,
+    ) => ReorderableGroupableItem(
+      key: ValueKey('i:$id'),
+      id: id,
+      groupId: group,
+      depth: depth,
+    );
+
+    test('moveItemsIntoGroup appends before a child subgroup header', () {
+      final entries = [
+        _group('a'),
+        deepItem(0, 'a', 1),
+        subgroup('sub', 'a'),
+        deepItem(1, 'sub', 2),
+        _item(2),
+      ];
+
+      final result = controller.moveItemsIntoGroup(entries, {2}, 'a');
+
+      expect(result!.orderedItemIds, [0, 2, 1]);
+      expect(result.groupId, 'a');
+    });
+
+    test('moveItemsAfterGroup exits one level into the parent', () {
+      final entries = [
+        _group('a'),
+        deepItem(0, 'a', 1),
+        subgroup('sub', 'a'),
+        deepItem(1, 'sub', 2),
+        _item(2),
+      ];
+
+      final result = controller.moveItemsAfterGroup(entries, {1}, 'sub');
+
+      // Item 1 leaves 'sub' but stays in 'a'.
+      expect(result!.orderedItemIds, [0, 1, 2]);
+      expect(result.groupId, 'a');
+    });
+
+    test('moveItemsAfterGroup on a top-level group still ungroups', () {
+      final entries = [
+        _group('a'),
+        deepItem(0, 'a', 1),
+        subgroup('sub', 'a'),
+        deepItem(1, 'sub', 2),
+        _item(2),
+      ];
+
+      final result = controller.moveItemsAfterGroup(entries, {0}, 'a');
+
+      // Inserted after the whole subtree, including the nested group's rows.
+      expect(result!.orderedItemIds, [1, 0, 2]);
+      expect(result.groupId, isNull);
     });
   });
 }

@@ -18,10 +18,20 @@ final class _GestureListViewModel extends Equatable {
     final gestureCount = deviceFilter == null
         ? config.totalGestureCount
         : config.gestureCountForDevice(deviceFilter);
-    final disabledGroupIds = {
-      for (final group in config.gestureGroups)
-        if (!group.enabled) group.id,
-    };
+    // A disabled ancestor disables the whole subtree.
+    final byId = {for (final g in config.gestureGroups) g.id: g};
+    final disabledGroupIds = <String>{};
+    for (final group in config.gestureGroups) {
+      String? current = group.id;
+      final seen = <String>{};
+      while (current != null && seen.add(current)) {
+        if (byId[current]?.enabled == false) {
+          disabledGroupIds.add(group.id);
+          break;
+        }
+        current = byId[current]?.parentId;
+      }
+    }
 
     return _GestureListViewModel(
       flatItems: flatItems,

@@ -10,15 +10,43 @@ final class _GroupHeaderItem extends _FlatItem {
     required this.device,
     required this.isCollapsed,
     required this.gestureCount,
+    this.depth = 0,
+    this.parentId,
+    this.isVisible = true,
+    this.ancestorContinues = const [],
   });
 
   final GestureGroup group;
   final DeviceType device;
+
+  /// Whether this group itself is collapsed (chevron state).
   final bool isCollapsed;
+
+  /// Gestures in the whole subtree, descendant groups included.
   final int gestureCount;
 
+  /// Nesting level; 0 headers pin, deeper ones render as indented rows.
+  final int depth;
+  final String? parentId;
+
+  /// False while an ancestor group is collapsed.
+  final bool isVisible;
+
+  /// Per ancestor level (outermost first): whether that ancestor has more
+  /// content below this header.
+  final List<bool> ancestorContinues;
+
   @override
-  List<Object?> get props => [group, device, isCollapsed, gestureCount];
+  List<Object?> get props => [
+    group,
+    device,
+    isCollapsed,
+    gestureCount,
+    depth,
+    parentId,
+    isVisible,
+    ancestorContinues,
+  ];
 }
 
 final class _GestureRowItem extends _FlatItem {
@@ -27,9 +55,11 @@ final class _GestureRowItem extends _FlatItem {
     required this.configIndex,
     required this.groupId,
     required this.editId,
+    this.depth = 0,
     this.localGroupIndex,
     this.isLastInGroup = false,
     this.isVisible = true,
+    this.ancestorContinues = const [],
   });
 
   final DeviceType device;
@@ -45,9 +75,16 @@ final class _GestureRowItem extends _FlatItem {
   /// The gesture's group id, captured structurally so the row's grouping/dimming
   /// is decided without the section holding the gesture itself.
   final String? groupId;
+
+  /// Number of enclosing groups.
+  final int depth;
   final int? localGroupIndex;
   final bool isLastInGroup;
   final bool isVisible;
+
+  /// Per ancestor level (outermost first, length [depth]): whether that
+  /// ancestor has more content below this row.
+  final List<bool> ancestorContinues;
 
   bool get isFirstInGroup => localGroupIndex == 0;
 
@@ -65,8 +102,10 @@ final class _GestureRowItem extends _FlatItem {
     configIndex,
     groupId,
     editId,
+    depth,
     localGroupIndex,
     isLastInGroup,
     isVisible,
+    ancestorContinues,
   ];
 }

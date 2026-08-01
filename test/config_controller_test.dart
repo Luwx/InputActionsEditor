@@ -316,10 +316,41 @@ void main() {
       expect(UpdateGestureGroup('nope', (g) => g).apply(c), c);
     });
 
-    test("ReorderGestureGroup only touches that device's groups", () {
+    test('MoveGestureGroup reorders before a sibling', () {
       const c = Config(gestureGroups: [_group1, _group2, _group3]);
-      final out = ReorderGestureGroup(DeviceType.mouse, 0, 2).apply(c);
+      final out = MoveGestureGroup(
+        DeviceType.mouse,
+        'g2',
+        beforeId: 'g1',
+      ).apply(c);
       expect(out.gestureGroups.map((g) => g.id).toList(), ['g2', 'g1', 'g3']);
+    });
+
+    test('MoveGestureGroup nests under a parent, chain goes native', () {
+      const c = Config(gestureGroups: [_group1, _group2, _group3]);
+      final out = MoveGestureGroup(
+        DeviceType.mouse,
+        'g2',
+        newParentId: 'g1',
+      ).apply(c);
+      final byId = {for (final g in out.gestureGroups) g.id: g};
+      expect(byId['g2']!.parentId, 'g1');
+      expect(byId['g2']!.native, isTrue);
+      expect(byId['g1']!.native, isTrue);
+    });
+
+    test('MoveGestureGroup refuses to nest a group inside its own subtree', () {
+      final c = Config(
+        gestureGroups: [
+          _group1,
+          _group2.copyWith(parentId: 'g1'),
+          _group3,
+        ],
+      );
+      expect(
+        MoveGestureGroup(DeviceType.mouse, 'g1', newParentId: 'g2').apply(c),
+        c,
+      );
     });
 
     test('RemoveGestureGroupAndUngroup clears the id from all devices', () {

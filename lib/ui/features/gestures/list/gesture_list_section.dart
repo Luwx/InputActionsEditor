@@ -174,6 +174,10 @@ class GestureListSection extends HookConsumerWidget {
                 ReorderableGroupableGroup<GestureLocation, String>(
                   key: ValueKey('group:${flatItem.group.id}'),
                   id: flatItem.group.id,
+                  parentId: flatItem.parentId,
+                  depth: flatItem.depth,
+                  isVisible: flatItem.isVisible,
+                  ancestorContinues: flatItem.ancestorContinues,
                 ),
               );
             case _GestureRowItem():
@@ -203,9 +207,11 @@ class GestureListSection extends HookConsumerWidget {
                   ),
                   id: key,
                   groupId: deviceFilter == null ? null : flatItem.groupId,
+                  depth: deviceFilter == null ? 0 : flatItem.depth,
                   isFirstInGroup: flatItem.isFirstInGroup,
                   isLastInGroup: flatItem.isLastInGroup,
                   isVisible: flatItem.isVisible && !isHidden,
+                  ancestorContinues: flatItem.ancestorContinues,
                 ),
               );
           }
@@ -231,6 +237,7 @@ class GestureListSection extends HookConsumerWidget {
                 editId: -1 - ghost.editId,
               ),
               groupId: ghost.groupId,
+              depth: ghost.depth,
               isVisible: !ghost.collapsing,
               interactive: false,
             ),
@@ -321,15 +328,11 @@ class GestureListSection extends HookConsumerWidget {
               result: result,
               flatItems: viewModel.flatItems,
             ),
-            onGroupReordered: (from, to) =>
+            onGroupMoved: (move) =>
                 _GestureListController(
                   ref,
                   context,
-                ).applyGroupReorder(
-                  viewModel.deviceFilter!,
-                  from,
-                  to,
-                ),
+                ).applyGroupMove(viewModel.deviceFilter!, move),
             groupBuilder:
                 (
                   context,

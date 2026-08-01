@@ -85,8 +85,20 @@ class GestureCommands {
     _config.add(DeleteGestureGroupWithGestures(id));
   }
 
-  void reorderGroups(DeviceType device, int from, int to) {
-    _config.add(ReorderGestureGroup(device, from, to));
+  void moveGroup(
+    DeviceType device,
+    String id, {
+    String? beforeId,
+    String? newParentId,
+  }) {
+    _config.add(
+      MoveGestureGroup(
+        device,
+        id,
+        beforeId: beforeId,
+        newParentId: newParentId,
+      ),
+    );
   }
 
   void reorderGesturesAndGroups(

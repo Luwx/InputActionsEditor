@@ -475,13 +475,24 @@ class _ReorderableGroupableListState<I, G>
       draggedGroupId,
       targetGroupId,
     );
-    if (move != null) widget.onGroupReordered(move.from, move.to);
+    if (move != null) widget.onGroupMoved(move);
   }
+
+  bool _wouldMoveGroupBeforeGroup(G draggedGroupId, G targetGroupId) =>
+      _controller.moveGroupBeforeGroup(
+        widget.entries,
+        draggedGroupId,
+        targetGroupId,
+      ) !=
+      null;
 
   void _moveGroupToEnd(G draggedGroupId) {
     final move = _controller.moveGroupToEnd(widget.entries, draggedGroupId);
-    if (move != null) widget.onGroupReordered(move.from, move.to);
+    if (move != null) widget.onGroupMoved(move);
   }
+
+  /// parentId per group id, rebuilt each build for ancestor-chain walks.
+  Map<G, G?> _groupParents = const {};
 
   // The flat [widget.entries] stays the source of truth; rendering splits it
   // into one [SliverMainAxisGroup] per group so each header pins independently.
@@ -493,6 +504,10 @@ class _ReorderableGroupableListState<I, G>
   Widget build(BuildContext context) {
     final entries = widget.entries;
     final emptyPlaceholder = widget.emptyPlaceholder;
+    _groupParents = {
+      for (final entry in entries)
+        if (entry is ReorderableGroupableGroup<I, G>) entry.id: entry.parentId,
+    };
     final segments = _segmentEntries(entries);
 
     if (widget.marqueeEnabled) _pruneMeasureKeys(entries);
@@ -519,7 +534,7 @@ class _ReorderableGroupableListState<I, G>
           // segment reorder is not mistaken for a shrink.
           for (var s = 0; s < segments.length; s++)
             switch (segments[s]) {
-              _GroupSegment<I, G>(:final group, :final items) =>
+              _GroupSegment<I, G>(:final group, :final rows) =>
                 ShrinkCompensatedSliver(
                   key: group.key,
                   pinnedExtent: widget.groupHeaderExtent,
@@ -533,16 +548,16 @@ class _ReorderableGroupableListState<I, G>
                               _buildGroupHeader(context, group, isPinned),
                         ),
                       ),
-                      _buildItemSliver(context, items),
+                      _buildRowSliver(context, rows),
                       if (s < segments.length - 2) _scrollingSeparatorSliver(),
                     ],
                   ),
                 ),
-              _UngroupedSegment<I, G>(:final items) => ShrinkCompensatedSliver(
+              _UngroupedSegment<I, G>(:final rows) => ShrinkCompensatedSliver(
                 // An ungrouped segment is only created with at least one item.
-                key: items.first.item.key,
+                key: rows.first.entry.key,
                 sliver: SliverMainAxisGroup(
-                  slivers: [_buildItemSliver(context, items)],
+                  slivers: [_buildRowSliver(context, rows)],
                 ),
               ),
             },
@@ -598,9 +613,10 @@ class _ReorderableGroupableListState<I, G>
     child: Container(height: 1, color: widget.borderColor),
   );
 
-  // Splits the flat entries into ordered segments: a group header opens a group
-  // segment that collects the items carrying its id; the rest collect into
-  // ungrouped runs. Global indices are kept for per-row border decisions.
+  // Splits the flat entries into ordered segments: a depth-0 group header
+  // opens a group segment collecting its whole subtree (deeper items and
+  // sub-group headers alike); depth-0 items collect into ungrouped runs.
+  // Global indices are kept for per-row border decisions.
   List<_ListSegment<I, G>> _segmentEntries(
     List<ReorderableGroupableListEntry<I, G>> entries,
   ) {
@@ -610,61 +626,157 @@ class _ReorderableGroupableListState<I, G>
 
     for (var index = 0; index < entries.length; index++) {
       final entry = entries[index];
-      switch (entry) {
-        case final ReorderableGroupableGroup<I, G> group:
-          currentUngrouped = null;
-          currentGroup = _GroupSegment<I, G>(group, []);
-          segments.add(currentGroup);
-        case final ReorderableGroupableItem<I, G> item:
-          final group = currentGroup;
-          if (group != null && item.groupId == group.group.id) {
-            group.items.add((index: index, item: item));
-          } else {
-            currentGroup = null;
-            var ungrouped = currentUngrouped;
-            if (ungrouped == null) {
-              ungrouped = _UngroupedSegment<I, G>([]);
-              segments.add(ungrouped);
-              currentUngrouped = ungrouped;
-            }
-            ungrouped.items.add((index: index, item: item));
-          }
+      final depth = switch (entry) {
+        ReorderableGroupableGroup<I, G>(:final depth) => depth,
+        ReorderableGroupableItem<I, G>(:final depth) => depth,
+      };
+      if (entry is ReorderableGroupableGroup<I, G> && depth == 0) {
+        currentUngrouped = null;
+        currentGroup = _GroupSegment<I, G>(entry, []);
+        segments.add(currentGroup);
+        continue;
       }
+      final group = currentGroup;
+      if (depth > 0 && group != null) {
+        group.rows.add((index: index, entry: entry));
+        continue;
+      }
+      currentGroup = null;
+      var ungrouped = currentUngrouped;
+      if (ungrouped == null) {
+        ungrouped = _UngroupedSegment<I, G>([]);
+        segments.add(ungrouped);
+        currentUngrouped = ungrouped;
+      }
+      ungrouped.rows.add((index: index, entry: entry));
     }
     return segments;
   }
 
-  Widget _buildItemSliver(
+  Widget _buildRowSliver(
     BuildContext context,
-    List<_IndexedItem<I, G>> items,
+    List<_IndexedEntry<I, G>> rows,
   ) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, localIndex) {
-          final entry = items[localIndex];
-          var row = _buildItem(context, entry.item, entry.index);
+          final indexed = rows[localIndex];
+          var row = switch (indexed.entry) {
+            final ReorderableGroupableItem<I, G> item => _buildItem(
+              context,
+              item,
+              indexed.index,
+            ),
+            final ReorderableGroupableGroup<I, G> group => _buildSubHeaderRow(
+              context,
+              group,
+              indexed.index,
+            ),
+          };
           // Tag interactive rows with a stable measurement key so the marquee
           // can read their painted bounds. Ghosts (non-interactive) are skipped
           // so they never count toward a selection.
-          if (widget.marqueeEnabled && entry.item.interactive) {
+          if (widget.marqueeEnabled &&
+              indexed.entry is ReorderableGroupableItem<I, G> &&
+              (indexed.entry as ReorderableGroupableItem<I, G>).interactive) {
             row = KeyedSubtree(
-              key: _measureKeyFor(entry.item.id),
+              key: _measureKeyFor(
+                (indexed.entry as ReorderableGroupableItem<I, G>).id,
+              ),
               child: row,
             );
           }
           // Key the sliver's direct child by identity so rows reconcile across
           // index shifts (e.g. a delete) rather than positionally.
           return KeyedSubtree(
-            key: entry.item.key,
+            key: indexed.entry.key,
             child: row,
           );
         },
-        childCount: items.length,
+        childCount: rows.length,
         findChildIndexCallback: (key) {
-          final localIndex = items.indexWhere((e) => e.item.key == key);
+          final localIndex = rows.indexWhere((e) => e.entry.key == key);
           return localIndex >= 0 ? localIndex : null;
         },
       ),
+    );
+  }
+
+  /// A nested (depth > 0) group header rendered as a row inside its top-level
+  /// group's sliver: indented, rail-decorated, animated like any row, and a
+  /// drop target for items (append into the group) and for sibling group
+  /// reorders. It never pins.
+  Widget _buildSubHeaderRow(
+    BuildContext context,
+    ReorderableGroupableGroup<I, G> group,
+    int index,
+  ) {
+    final handle = widget.reorderEnabled
+        ? _GroupDragHandle<G>(
+            groupId: group.id,
+            label:
+                widget.groupDragLabelBuilder?.call(group) ??
+                group.id.toString(),
+            onDragStarted: () => _isDragging = true,
+            onDragEnded: _endDrag,
+            onPointerDown: _registerPointer,
+          )
+        : null;
+    Widget scrollBuilder(
+      ValueWidgetBuilder<ReorderableHeaderScroll> builder, {
+      Widget? child,
+    }) => builder(
+      context,
+      const (scrolledUnder: 0.0, pinOffsetPx: 1e6),
+      child,
+    );
+    final content = widget.groupBuilder(
+      context,
+      group,
+      handle,
+      false,
+      scrollBuilder,
+    );
+    final row = _ReorderableGroupableItemFrame(
+      key: group.key,
+      borderColor: widget.borderColor,
+      showTopBorder: index > 0,
+      depth: group.depth,
+      ancestorContinues: group.ancestorContinues,
+      innermostBracket: false,
+      isFirstInGroup: false,
+      isLastInGroup: false,
+      overlay: const SizedBox.shrink(),
+      child: content,
+    );
+    final visibleRow = _AnimatedGroupRowVisibility(
+      key: group.key,
+      visible: group.isVisible,
+      child: row,
+    );
+    if (!widget.reorderEnabled) return visibleRow;
+
+    return DragTarget<_ItemDragData<I>>(
+      onWillAcceptWithDetails: (details) =>
+          group.isVisible &&
+          _wouldMoveIntoGroup(details.data.itemIds, group.id),
+      onAcceptWithDetails: (details) =>
+          _moveItemsIntoGroup(details.data.itemIds, group.id),
+      builder: (context, itemCandidates, _) {
+        return DragTarget<_GroupDragData<G>>(
+          onWillAcceptWithDetails: (details) => _wouldMoveGroupBeforeGroup(
+            details.data.groupId,
+            group.id,
+          ),
+          onAcceptWithDetails: (details) =>
+              _moveGroupBeforeGroup(details.data.groupId, group.id),
+          builder: (context, groupCandidates, _) => _GroupDropState(
+            isItemDropActive: itemCandidates.isNotEmpty,
+            isGroupDropActive: groupCandidates.isNotEmpty,
+            child: visibleRow,
+          ),
+        );
+      },
     );
   }
 
@@ -718,8 +830,10 @@ class _ReorderableGroupableListState<I, G>
             _moveItemsIntoGroup(details.data.itemIds, group.id),
         builder: (context, itemCandidates, _) {
           return DragTarget<_GroupDragData<G>>(
-            onWillAcceptWithDetails: (details) =>
-                details.data.groupId != group.id,
+            onWillAcceptWithDetails: (details) => _wouldMoveGroupBeforeGroup(
+              details.data.groupId,
+              group.id,
+            ),
             onAcceptWithDetails: (details) =>
                 _moveGroupBeforeGroup(details.data.groupId, group.id),
             builder: (context, groupCandidates, _) => _GroupDropState(
@@ -761,7 +875,8 @@ class _ReorderableGroupableListState<I, G>
       key: item.key,
       borderColor: widget.borderColor,
       showTopBorder: index > 0,
-      isGrouped: item.groupId != null,
+      depth: item.depth,
+      ancestorContinues: item.ancestorContinues,
       isFirstInGroup: item.isFirstInGroup,
       isLastInGroup: item.isLastInGroup,
       overlay: item.interactive
@@ -792,31 +907,67 @@ class _ReorderableGroupableListState<I, G>
           _moveItemsBeforeItem(details.data.itemIds, item.id),
       builder: (context, candidateData, _) => _ItemDropState(
         isActive: candidateData.isNotEmpty,
-        indent: item.groupId != null ? _groupIndent : 0,
+        indent: item.depth * _groupIndent,
         child: visibleRow,
       ),
     );
 
     if (!item.isLastInGroup || groupId == null) return dropTarget;
-    final nextEntry = index + 1 < widget.entries.length
-        ? widget.entries[index + 1]
-        : null;
-    final showOutside = nextEntry is ReorderableGroupableGroup<I, G>;
+    final halves = _boundaryHalves(item, groupId, index);
+    if (halves.isEmpty) return dropTarget;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         dropTarget,
-        _GroupEndDropZone<I, G>(
+        _GroupEndDropZone<I>(
           isVisible: item.isVisible,
           isDragActive: _activeItemDragIds.isNotEmpty,
-          showOutside: showOutside,
-          willInsideAccept: (itemIds) => _wouldMoveIntoGroup(itemIds, groupId),
-          willOutsideAccept: (itemIds) =>
-              _wouldMoveAfterGroup(itemIds, groupId),
-          onInsideAccept: (itemIds) => _moveItemsIntoGroup(itemIds, groupId),
-          onOutsideAccept: (itemIds) => _moveItemsAfterGroup(itemIds, groupId),
+          halves: halves,
         ),
       ],
     );
+  }
+
+  /// Drop halves after the last direct row of a group: one to append into the
+  /// group itself, then one per ancestor level the boundary exits, outdented
+  /// step by step (the outermost half ungroups). A half whose insertion is
+  /// already covered by the next row's own before-indicator is skipped.
+  List<_BoundaryHalf<I>> _boundaryHalves(
+    ReorderableGroupableItem<I, G> item,
+    G groupId,
+    int index,
+  ) {
+    final chain = <G>[];
+    G? current = groupId;
+    while (current != null && !chain.contains(current)) {
+      chain.add(current);
+      current = _groupParents[current];
+    }
+
+    final next = index + 1 < widget.entries.length
+        ? widget.entries[index + 1]
+        : null;
+    final nextDepth = switch (next) {
+      null => 0,
+      ReorderableGroupableGroup<I, G>(:final depth) => depth,
+      ReorderableGroupableItem<I, G>(:final depth) => depth,
+    };
+
+    final depth = item.depth;
+    return [
+      (
+        indent: depth * _groupIndent,
+        willAccept: (List<I> ids) => _wouldMoveIntoGroup(ids, chain.first),
+        onAccept: (List<I> ids) => _moveItemsIntoGroup(ids, chain.first),
+      ),
+      for (var k = 1; k <= depth - nextDepth && k <= chain.length; k++)
+        if (next is! ReorderableGroupableItem<I, G> || next.depth != depth - k)
+          (
+            indent: (depth - k) * _groupIndent,
+            willAccept: (List<I> ids) =>
+                _wouldMoveAfterGroup(ids, chain[k - 1]),
+            onAccept: (List<I> ids) => _moveItemsAfterGroup(ids, chain[k - 1]),
+          ),
+    ];
   }
 }

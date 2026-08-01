@@ -152,8 +152,18 @@ _GestureListChoreography _useGestureListChoreography(
     final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
     final groupId = item.groupId;
     if (!item.isVisible && groupId != null) {
+      // Expand the whole ancestor chain; a collapsed ancestor would keep the
+      // row hidden even with its own group open.
+      final byId = {
+        for (final g in ref.read(draftConfigProvider).gestureGroups) g.id: g,
+      };
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(collapsedGroupsProvider.notifier).expand(groupId);
+        String? current = groupId;
+        final seen = <String>{};
+        while (current != null && seen.add(current)) {
+          ref.read(collapsedGroupsProvider.notifier).expand(current);
+          current = byId[current]?.parentId;
+        }
       });
       return;
     }

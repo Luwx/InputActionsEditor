@@ -21,7 +21,12 @@ final class _GestureListController {
     );
   }
 
-  void applyGroupReorder(DeviceType device, int from, int to) {
-    ref.read(gestureCommandsProvider).reorderGroups(device, from, to);
+  void applyGroupMove(DeviceType device, ReorderableGroupMove<String> move) {
+    ref.read(gestureCommandsProvider).moveGroup(
+      device,
+      move.groupId,
+      beforeId: move.beforeGroupId,
+      newParentId: move.newParentId,
+    );
   }
 }

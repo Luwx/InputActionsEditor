@@ -24,6 +24,8 @@ const _groupIndent = 16.0;
 
 sealed class ReorderableGroupableListEntry<I, G> {
   const ReorderableGroupableListEntry();
+
+  Key get key;
 }
 
 final class ReorderableGroupableGroup<I, G>
@@ -31,10 +33,29 @@ final class ReorderableGroupableGroup<I, G>
   const ReorderableGroupableGroup({
     required this.key,
     required this.id,
+    this.parentId,
+    this.depth = 0,
+    this.isVisible = true,
+    this.ancestorContinues = const [],
   });
 
+  @override
   final Key key;
   final G id;
+
+  /// Enclosing group, or null at the top level. Depth-0 headers pin; deeper
+  /// headers render as indented rows inside their top-level group's sliver.
+  final G? parentId;
+
+  /// Number of enclosing groups.
+  final int depth;
+
+  /// False while an ancestor group is collapsed.
+  final bool isVisible;
+
+  /// Per ancestor level (outermost first): whether that ancestor has more
+  /// content below this header, i.e. its indent rail continues.
+  final List<bool> ancestorContinues;
 }
 
 final class ReorderableGroupableItem<I, G>
@@ -43,15 +64,24 @@ final class ReorderableGroupableItem<I, G>
     required this.key,
     required this.id,
     this.groupId,
+    this.depth = 0,
     this.isFirstInGroup = false,
     this.isLastInGroup = false,
     this.isVisible = true,
     this.interactive = true,
+    this.ancestorContinues = const [],
   });
 
+  @override
   final Key key;
   final I id;
+
+  /// Innermost enclosing group.
   final G? groupId;
+
+  /// Number of enclosing groups; the row indents `depth * 16`.
+  final int depth;
+
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final bool isVisible;
@@ -59,6 +89,10 @@ final class ReorderableGroupableItem<I, G>
   /// When false, the row renders with no drag handle, drop target, or overlay.
   /// used for a transient collapsing "ghost" that must not be interacted with.
   final bool interactive;
+
+  /// Per ancestor level (outermost first, length [depth]): whether that
+  /// ancestor has more content below this row.
+  final List<bool> ancestorContinues;
 }
 
 typedef ReorderableGroupableItemBuilder<I, G> =
@@ -99,8 +133,16 @@ typedef ReorderableGroupableItemOverlayBuilder<I, G> =
 typedef ReorderableGroupableItemsReorderedCallback<I, G> =
     void Function(ReorderableItemsResult<I, G> result);
 
-typedef ReorderableGroupableGroupReorderedCallback =
-    void Function(int fromIndex, int toIndex);
+/// A completed group drag: [groupId] moves to just before [beforeGroupId]
+/// under [newParentId]; a null [beforeGroupId] appends at the top level's end.
+typedef ReorderableGroupMove<G> = ({
+  G groupId,
+  G? beforeGroupId,
+  G? newParentId,
+});
+
+typedef ReorderableGroupableGroupMovedCallback<G> =
+    void Function(ReorderableGroupMove<G> move);
 
 class ReorderableGroupableList<I, G> extends StatefulWidget {
   const ReorderableGroupableList({
@@ -111,7 +153,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     required this.borderColor,
     required this.groupHeaderExtent,
     required this.onItemsReordered,
-    required this.onGroupReordered,
+    required this.onGroupMoved,
     this.reorderEnabled = true,
     this.selectedItemIds = const {},
     this.itemOverlayBuilder,
@@ -148,7 +190,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   groupDragLabelBuilder;
   final bool showTrailingDropZone;
   final ReorderableGroupableItemsReorderedCallback<I, G> onItemsReordered;
-  final ReorderableGroupableGroupReorderedCallback onGroupReordered;
+  final ReorderableGroupableGroupMovedCallback<G> onGroupMoved;
 
   /// Slivers placed before the list content (e.g. a pinned app header). This
   /// widget owns the [CustomScrollView], so they are supplied here rather than
