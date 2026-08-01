@@ -63,6 +63,84 @@ class _GroupDropState extends StatelessWidget {
   }
 }
 
+enum _GroupDropZone { none, before, into }
+
+/// Group-drag target over a group header, split into two vertical zones: the
+/// top band inserts the dragged group before this one (sibling), the rest
+/// nests it inside as the last child. Zone tracking needs the hover position,
+/// which only [DragTarget.onMove] carries, hence the stateful wrapper.
+class _HeaderGroupDropTarget<G> extends StatefulWidget {
+  const _HeaderGroupDropTarget({
+    required this.wouldAcceptBefore,
+    required this.wouldAcceptInto,
+    required this.onBefore,
+    required this.onInto,
+    required this.builder,
+  });
+
+  final bool Function(G draggedId) wouldAcceptBefore;
+  final bool Function(G draggedId) wouldAcceptInto;
+  final void Function(G draggedId) onBefore;
+  final void Function(G draggedId) onInto;
+  final Widget Function(BuildContext context, _GroupDropZone zone) builder;
+
+  @override
+  State<_HeaderGroupDropTarget<G>> createState() =>
+      _HeaderGroupDropTargetState<G>();
+}
+
+class _HeaderGroupDropTargetState<G> extends State<_HeaderGroupDropTarget<G>> {
+  static const _beforeBand = 0.4;
+
+  _GroupDropZone _zone = _GroupDropZone.none;
+
+  _GroupDropZone _zoneFor(G draggedId, Offset globalOffset) {
+    var wantsBefore = true;
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      final dy = box.globalToLocal(globalOffset).dy;
+      wantsBefore = dy < box.size.height * _beforeBand;
+    }
+    final canBefore = widget.wouldAcceptBefore(draggedId);
+    final canInto = widget.wouldAcceptInto(draggedId);
+    if (wantsBefore) {
+      if (canBefore) return _GroupDropZone.before;
+      return canInto ? _GroupDropZone.into : _GroupDropZone.none;
+    }
+    if (canInto) return _GroupDropZone.into;
+    return canBefore ? _GroupDropZone.before : _GroupDropZone.none;
+  }
+
+  void _setZone(_GroupDropZone zone) {
+    if (zone != _zone) setState(() => _zone = zone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DragTarget<_GroupDragData<G>>(
+      onWillAcceptWithDetails: (details) =>
+          widget.wouldAcceptBefore(details.data.groupId) ||
+          widget.wouldAcceptInto(details.data.groupId),
+      onMove: (details) =>
+          _setZone(_zoneFor(details.data.groupId, details.offset)),
+      onLeave: (_) => _setZone(_GroupDropZone.none),
+      onAcceptWithDetails: (details) {
+        final zone = _zoneFor(details.data.groupId, details.offset);
+        _setZone(_GroupDropZone.none);
+        switch (zone) {
+          case _GroupDropZone.before:
+            widget.onBefore(details.data.groupId);
+          case _GroupDropZone.into:
+            widget.onInto(details.data.groupId);
+          case _GroupDropZone.none:
+            break;
+        }
+      },
+      builder: (context, _, _) => widget.builder(context, _zone),
+    );
+  }
+}
+
 /// One drop half per landing level at a group boundary, indented to the level
 /// it targets: the first keeps a dropped item in the ending group, each next
 /// one exits a level (the outermost ungroups).

@@ -486,6 +486,23 @@ class _ReorderableGroupableListState<I, G>
       ) !=
       null;
 
+  void _moveGroupIntoGroup(G draggedGroupId, G targetGroupId) {
+    final move = _controller.moveGroupIntoGroup(
+      widget.entries,
+      draggedGroupId,
+      targetGroupId,
+    );
+    if (move != null) widget.onGroupMoved(move);
+  }
+
+  bool _wouldMoveGroupIntoGroup(G draggedGroupId, G targetGroupId) =>
+      _controller.moveGroupIntoGroup(
+        widget.entries,
+        draggedGroupId,
+        targetGroupId,
+      ) !=
+      null;
+
   void _moveGroupToEnd(G draggedGroupId) {
     final move = _controller.moveGroupToEnd(widget.entries, draggedGroupId);
     if (move != null) widget.onGroupMoved(move);
@@ -548,7 +565,7 @@ class _ReorderableGroupableListState<I, G>
                               _buildGroupHeader(context, group, isPinned),
                         ),
                       ),
-                      _buildRowSliver(context, rows),
+                      ..._buildGroupContentSlivers(context, rows, 1),
                       if (s < segments.length - 2) _scrollingSeparatorSliver(),
                     ],
                   ),
@@ -661,18 +678,12 @@ class _ReorderableGroupableListState<I, G>
       delegate: SliverChildBuilderDelegate(
         (context, localIndex) {
           final indexed = rows[localIndex];
-          var row = switch (indexed.entry) {
-            final ReorderableGroupableItem<I, G> item => _buildItem(
-              context,
-              item,
-              indexed.index,
-            ),
-            final ReorderableGroupableGroup<I, G> group => _buildSubHeaderRow(
-              context,
-              group,
-              indexed.index,
-            ),
-          };
+          // Nested headers render as pinned slivers, never as rows.
+          var row = _buildItem(
+            context,
+            indexed.entry as ReorderableGroupableItem<I, G>,
+            indexed.index,
+          );
           // Tag interactive rows with a stable measurement key so the marquee
           // can read their painted bounds. Ghosts (non-interactive) are skipped
           // so they never count toward a selection.
@@ -702,89 +713,100 @@ class _ReorderableGroupableListState<I, G>
     );
   }
 
-  /// A nested (depth > 0) group header rendered as a row inside its top-level
-  /// group's sliver: indented, rail-decorated, animated like any row, and a
-  /// drop target for items (append into the group) and for sibling group
-  /// reorders. It never pins.
-  Widget _buildSubHeaderRow(
+  /// Splits a group's subtree rows into slivers: runs of item rows, and one
+  /// nested [SliverMainAxisGroup] per child group so its header pins too
+  /// (stacked below its ancestors', bounded by its own subtree).
+  List<Widget> _buildGroupContentSlivers(
     BuildContext context,
-    ReorderableGroupableGroup<I, G> group,
-    int index,
+    List<_IndexedEntry<I, G>> rows,
+    int childDepth,
   ) {
-    final handle = widget.reorderEnabled
-        ? _GroupDragHandle<G>(
-            groupId: group.id,
-            label:
-                widget.groupDragLabelBuilder?.call(group) ??
-                group.id.toString(),
-            onDragStarted: () => _isDragging = true,
-            onDragEnded: _endDrag,
-            onPointerDown: _registerPointer,
-          )
-        : null;
-    Widget scrollBuilder(
-      ValueWidgetBuilder<ReorderableHeaderScroll> builder, {
-      Widget? child,
-    }) => builder(
-      context,
-      const (scrolledUnder: 0.0, pinOffsetPx: 1e6),
-      child,
-    );
-    final content = widget.groupBuilder(
-      context,
-      group,
-      handle,
-      false,
-      scrollBuilder,
-    );
-    final row = _ReorderableGroupableItemFrame(
-      key: group.key,
-      borderColor: widget.borderColor,
-      showTopBorder: index > 0,
-      depth: group.depth,
-      ancestorContinues: group.ancestorContinues,
-      innermostBracket: false,
-      isFirstInGroup: false,
-      isLastInGroup: false,
-      overlay: const SizedBox.shrink(),
-      child: content,
-    );
-    final visibleRow = _AnimatedGroupRowVisibility(
-      key: group.key,
-      visible: group.isVisible,
-      child: row,
-    );
-    if (!widget.reorderEnabled) return visibleRow;
+    final slivers = <Widget>[];
+    final run = <_IndexedEntry<I, G>>[];
+    // Whether visible content precedes the current position at this level; a
+    // band directly under its parent's header skips its own top separator
+    // (the parent's bottom border already draws the line there).
+    var seenVisible = false;
+    void flush() {
+      if (run.isEmpty) return;
+      slivers.add(_buildRowSliver(context, List.of(run)));
+      run.clear();
+    }
 
-    return DragTarget<_ItemDragData<I>>(
-      onWillAcceptWithDetails: (details) =>
-          group.isVisible &&
-          _wouldMoveIntoGroup(details.data.itemIds, group.id),
-      onAcceptWithDetails: (details) =>
-          _moveItemsIntoGroup(details.data.itemIds, group.id),
-      builder: (context, itemCandidates, _) {
-        return DragTarget<_GroupDragData<G>>(
-          onWillAcceptWithDetails: (details) => _wouldMoveGroupBeforeGroup(
-            details.data.groupId,
-            group.id,
-          ),
-          onAcceptWithDetails: (details) =>
-              _moveGroupBeforeGroup(details.data.groupId, group.id),
-          builder: (context, groupCandidates, _) => _GroupDropState(
-            isItemDropActive: itemCandidates.isNotEmpty,
-            isGroupDropActive: groupCandidates.isNotEmpty,
-            child: visibleRow,
+    var k = 0;
+    while (k < rows.length) {
+      final entry = rows[k].entry;
+      if (entry is ReorderableGroupableGroup<I, G> &&
+          entry.depth == childDepth) {
+        flush();
+        var end = k + 1;
+        while (end < rows.length) {
+          final depth = switch (rows[end].entry) {
+            ReorderableGroupableGroup<I, G>(:final depth) => depth,
+            ReorderableGroupableItem<I, G>(:final depth) => depth,
+          };
+          if (depth <= childDepth) break;
+          end++;
+        }
+        slivers.add(
+          _buildNestedGroupSliver(
+            context,
+            entry,
+            rows.sublist(k + 1, end),
+            childDepth + 1,
+            showTopBorder: seenVisible,
           ),
         );
-      },
+        if (entry.isVisible) seenVisible = true;
+        k = end;
+        continue;
+      }
+      if (entry is ReorderableGroupableItem<I, G> && entry.isVisible) {
+        seenVisible = true;
+      }
+      run.add(rows[k]);
+      k++;
+    }
+    flush();
+    return slivers;
+  }
+
+  Widget _buildNestedGroupSliver(
+    BuildContext context,
+    ReorderableGroupableGroup<I, G> group,
+    List<_IndexedEntry<I, G>> subtree,
+    int childDepth, {
+    required bool showTopBorder,
+  }) {
+    return SliverMainAxisGroup(
+      key: group.key,
+      slivers: [
+        // An ancestor collapse hides the whole subtree; the header sliver
+        // vanishes with it (rows animate out on their own).
+        if (group.isVisible)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _GroupHeaderDelegate(
+              extent: widget.groupHeaderExtent,
+              builder: (context, isPinned) => _buildGroupHeader(
+                context,
+                group,
+                isPinned,
+                showTopBorder: showTopBorder,
+              ),
+            ),
+          ),
+        ..._buildGroupContentSlivers(context, subtree, childDepth),
+      ],
     );
   }
 
   Widget _buildGroupHeader(
     BuildContext context,
     ReorderableGroupableGroup<I, G> group,
-    bool isPinned,
-  ) {
+    bool isPinned, {
+    bool showTopBorder = false,
+  }) {
     final handle = widget.reorderEnabled
         ? _GroupDragHandle<G>(
             groupId: group.id,
@@ -806,18 +828,36 @@ class _ReorderableGroupableListState<I, G>
       Widget? child,
     }) => _HeaderScrollProgress(
       scrollable: widget.scrollController,
-      leadingInset: widget.leadingPinnedExtent,
+      // Nested headers pin stacked below their ancestors' headers.
+      leadingInset:
+          widget.leadingPinnedExtent + group.depth * widget.groupHeaderExtent,
       measureKey: headerKey,
       builder: builder,
       child: child,
     );
-    final row = widget.groupBuilder(
+    var row = widget.groupBuilder(
       context,
       group,
       handle,
       isPinned,
       scrollBuilder,
     );
+    if (group.depth > 0) {
+      row = _ReorderableGroupableItemFrame(
+        borderColor: widget.borderColor,
+        // A pinned nested header sits flush under its ancestor's pinned band,
+        // whose bottom border already draws the line — an own separator there
+        // would stack into a double border.
+        showTopBorder: showTopBorder && !isPinned,
+        overlayTopBorder: true,
+        depth: group.depth,
+        ancestorContinues: group.ancestorContinues,
+        innermostBracket: false,
+        isFirstInGroup: false,
+        overlay: const SizedBox.shrink(),
+        child: row,
+      );
+    }
     if (!widget.reorderEnabled) {
       return KeyedSubtree(key: headerKey, child: row);
     }
@@ -829,16 +869,17 @@ class _ReorderableGroupableListState<I, G>
         onAcceptWithDetails: (details) =>
             _moveItemsIntoGroup(details.data.itemIds, group.id),
         builder: (context, itemCandidates, _) {
-          return DragTarget<_GroupDragData<G>>(
-            onWillAcceptWithDetails: (details) => _wouldMoveGroupBeforeGroup(
-              details.data.groupId,
-              group.id,
-            ),
-            onAcceptWithDetails: (details) =>
-                _moveGroupBeforeGroup(details.data.groupId, group.id),
-            builder: (context, groupCandidates, _) => _GroupDropState(
-              isItemDropActive: itemCandidates.isNotEmpty,
-              isGroupDropActive: groupCandidates.isNotEmpty,
+          return _HeaderGroupDropTarget<G>(
+            wouldAcceptBefore: (dragged) =>
+                _wouldMoveGroupBeforeGroup(dragged, group.id),
+            wouldAcceptInto: (dragged) =>
+                _wouldMoveGroupIntoGroup(dragged, group.id),
+            onBefore: (dragged) => _moveGroupBeforeGroup(dragged, group.id),
+            onInto: (dragged) => _moveGroupIntoGroup(dragged, group.id),
+            builder: (context, zone) => _GroupDropState(
+              isItemDropActive:
+                  itemCandidates.isNotEmpty || zone == _GroupDropZone.into,
+              isGroupDropActive: zone == _GroupDropZone.before,
               child: row,
             ),
           );
@@ -878,7 +919,6 @@ class _ReorderableGroupableListState<I, G>
       depth: item.depth,
       ancestorContinues: item.ancestorContinues,
       isFirstInGroup: item.isFirstInGroup,
-      isLastInGroup: item.isLastInGroup,
       overlay: item.interactive
           ? Row(
               mainAxisSize: MainAxisSize.min,
@@ -898,19 +938,39 @@ class _ReorderableGroupableListState<I, G>
     );
     if (!widget.reorderEnabled || !item.interactive) return visibleRow;
 
-    final dropTarget = DragTarget<_ItemDragData<I>>(
-      onWillAcceptWithDetails: (details) =>
-          item.isVisible &&
-          !details.data.itemIds.contains(item.id) &&
-          _wouldMoveBeforeItem(details.data.itemIds, item.id),
-      onAcceptWithDetails: (details) =>
-          _moveItemsBeforeItem(details.data.itemIds, item.id),
-      builder: (context, candidateData, _) => _ItemDropState(
-        isActive: candidateData.isNotEmpty,
-        indent: item.depth * _groupIndent,
-        child: visibleRow,
-      ),
-    );
+    var dropTarget =
+        DragTarget<_ItemDragData<I>>(
+              onWillAcceptWithDetails: (details) =>
+                  item.isVisible &&
+                  !details.data.itemIds.contains(item.id) &&
+                  _wouldMoveBeforeItem(details.data.itemIds, item.id),
+              onAcceptWithDetails: (details) =>
+                  _moveItemsBeforeItem(details.data.itemIds, item.id),
+              builder: (context, candidateData, _) => _ItemDropState(
+                isActive: candidateData.isNotEmpty,
+                indent: item.depth * _groupIndent,
+                child: visibleRow,
+              ),
+            )
+            as Widget;
+
+    // A grouped row is also a landing surface for group drags: dropping a
+    // group anywhere on its containing group's rows nests it there.
+    if (groupId != null) {
+      final core = dropTarget;
+      dropTarget = DragTarget<_GroupDragData<G>>(
+        onWillAcceptWithDetails: (details) =>
+            item.isVisible &&
+            _wouldMoveGroupIntoGroup(details.data.groupId, groupId),
+        onAcceptWithDetails: (details) =>
+            _moveGroupIntoGroup(details.data.groupId, groupId),
+        builder: (context, groupCandidates, _) => _GroupDropState(
+          isItemDropActive: groupCandidates.isNotEmpty,
+          isGroupDropActive: false,
+          child: core,
+        ),
+      );
+    }
 
     if (!item.isLastInGroup || groupId == null) return dropTarget;
     final halves = _boundaryHalves(item, groupId, index);

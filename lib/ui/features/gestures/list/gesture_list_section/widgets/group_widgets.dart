@@ -17,6 +17,7 @@ class _GroupHeaderRow extends HookWidget {
     required this.reorderHandle,
     required this.onToggleCollapse,
     required this.onRename,
+    required this.onAddSubgroup,
     required this.onToggleEnabled,
     required this.onBulkEdit,
     required this.onBreakdown,
@@ -39,6 +40,7 @@ class _GroupHeaderRow extends HookWidget {
   final Widget? reorderHandle;
   final VoidCallback onToggleCollapse;
   final VoidCallback onRename;
+  final VoidCallback onAddSubgroup;
   final VoidCallback onToggleEnabled;
   final VoidCallback onBulkEdit;
   final VoidCallback onBreakdown;
@@ -142,6 +144,7 @@ class _GroupHeaderRow extends HookWidget {
         controller: menuController,
         enabled: enabled,
         onRename: onRename,
+        onAddSubgroup: onAddSubgroup,
         onToggleEnabled: onToggleEnabled,
         onBulkEdit: onBulkEdit,
         onBreakdown: onBreakdown,
@@ -233,6 +236,7 @@ List<FItemGroupMixin> _groupContextMenuItems(
   required FPopoverController controller,
   required bool enabled,
   required VoidCallback onRename,
+  required VoidCallback onAddSubgroup,
   required VoidCallback onToggleEnabled,
   required VoidCallback onBulkEdit,
   required VoidCallback onBreakdown,
@@ -244,6 +248,11 @@ List<FItemGroupMixin> _groupContextMenuItems(
         prefix: const Icon(FLucideIcons.pencil),
         title: Text(context.l10n.groupMenuRename),
         onPress: dismissThen(controller, onRename),
+      ),
+      FItem(
+        prefix: const Icon(FLucideIcons.folderPlus),
+        title: Text(context.l10n.groupMenuNewSubgroup),
+        onPress: dismissThen(controller, onAddSubgroup),
       ),
       FItem(
         prefix: Icon(enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),

@@ -112,6 +112,36 @@ final class ReorderableGroupableController<I, G> {
     );
   }
 
+  /// Move for group [draggedId] to nest inside group [targetId], appended
+  /// after its existing children. Null when it is a no-op or would nest a
+  /// group inside its own subtree.
+  ReorderableGroupMove<G>? moveGroupIntoGroup(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+    G draggedId,
+    G targetId,
+  ) {
+    if (draggedId == targetId) return null;
+    if (_groupEntry(entries, draggedId) == null ||
+        _groupEntry(entries, targetId) == null) {
+      return null;
+    }
+    if (_isInSubtree(entries, targetId, draggedId)) return null;
+    // No-op: already the last child group of the target (append changes
+    // nothing).
+    final childGroups = [
+      for (final entry in entries)
+        if (entry is ReorderableGroupableGroup<I, G> &&
+            entry.parentId == targetId)
+          entry.id,
+    ];
+    if (_parentOf(entries, draggedId) == targetId &&
+        childGroups.isNotEmpty &&
+        childGroups.last == draggedId) {
+      return null;
+    }
+    return (groupId: draggedId, beforeGroupId: null, newParentId: targetId);
+  }
+
   /// Move for group [draggedId] to the end of the top level.
   ReorderableGroupMove<G>? moveGroupToEnd(
     List<ReorderableGroupableListEntry<I, G>> entries,

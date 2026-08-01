@@ -2033,6 +2033,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupMenuRename => 'Rename';
 
   @override
+  String get groupMenuNewSubgroup => 'New subgroup';
+
+  @override
   String get groupMenuBreakdown => 'Ungroup';
 
   @override

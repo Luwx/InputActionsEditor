@@ -52,15 +52,13 @@ List<_FlatItem> _buildDeviceFlatList(
     List<GestureNode> nodes,
     int depth,
     int? parentKey,
-    List<bool> ancestorContinues, {
+    List<bool> chain, {
     required bool anyAncestorCollapsed,
   }) {
     final rowTotal = nodes.whereType<GestureLeaf>().length;
     var rowCounter = 0;
     for (final (childIndex, node) in nodes.indexed) {
-      final continues = depth == 0
-          ? const <bool>[]
-          : [...ancestorContinues, childIndex < nodes.length - 1];
+      final hasNext = childIndex < nodes.length - 1;
       switch (node) {
         case GestureLeaf(:final gesture):
           final localIndex = rowCounter++;
@@ -74,7 +72,10 @@ List<_FlatItem> _buildDeviceFlatList(
               localGroupIndex: parentKey == null ? null : localIndex,
               isLastInGroup: parentKey != null && localIndex == rowTotal - 1,
               isVisible: !anyAncestorCollapsed,
-              ancestorContinues: continues,
+              // Raw sibling chain, own step last: ancestor guides draw only
+              // while their step has a following sibling; the own-parent
+              // level terminates with a half stem on the last child.
+              ancestorContinues: depth == 0 ? const [] : [...chain, hasNext],
             ),
           );
         case GestureGroupNode():
@@ -91,14 +92,14 @@ List<_FlatItem> _buildDeviceFlatList(
               depth: depth,
               parentKey: parentKey,
               isVisible: !anyAncestorCollapsed,
-              ancestorContinues: continues,
+              ancestorContinues: depth == 0 ? const [] : [...chain, hasNext],
             ),
           );
           walk(
             node.children,
             depth + 1,
             groupKey,
-            continues,
+            depth == 0 ? const [] : [...chain, hasNext],
             anyAncestorCollapsed: anyAncestorCollapsed || isCollapsed,
           );
       }

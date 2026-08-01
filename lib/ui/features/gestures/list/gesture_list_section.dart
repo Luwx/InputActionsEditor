@@ -368,6 +368,20 @@ class GestureListSection extends HookConsumerWidget {
                         );
                       },
                     ),
+                    onAddSubgroup: () => _showRenameDialog(
+                      context,
+                      title: 'New Subgroup',
+                      initial: '',
+                      onConfirm: (name) {
+                        if (name.trim().isEmpty) return;
+                        listNotifier.addGroup(
+                          flatItem.device,
+                          GestureGroupNode(name: name.trim()),
+                          parentKey: flatItem.groupKey,
+                        );
+                        collapsedNotifier.expand(flatItem.groupKey);
+                      },
+                    ),
                     onToggleEnabled: () => listNotifier.updateGroup(
                       flatItem.location,
                       (g) => g.copyWith(enabled: !g.enabled),

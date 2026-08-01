@@ -87,6 +87,54 @@ void main() {
     expect(tester.getTopLeft(find.text('item:1')).dy, greaterThan(innerY));
   });
 
+  testWidgets('nested headers pin stacked below their ancestors', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host([
+        _outer,
+        for (var i = 0; i < 3; i++) _item(i, 'outer', 1),
+        _inner,
+        for (var i = 3; i < 40; i++) _item(i, 'inner', 2),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+
+    // Deep inside the inner group: both headers pinned, stacked.
+    expect(tester.getTopLeft(find.text('group:outer')).dy, 0);
+    expect(tester.getTopLeft(find.text('group:inner')).dy, 38);
+  });
+
+  testWidgets('a pinned nested header scrolls away with its own subtree', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host([
+        _outer,
+        _inner,
+        for (var i = 0; i < 20; i++) _item(i, 'inner', 2),
+        // Direct rows of the outer group after the inner subtree.
+        for (var i = 20; i < 40; i++) _item(i, 'outer', 1),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    // Scroll until the inner subtree has fully passed.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1400));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(find.text('group:outer')).dy, 0);
+    final inner = find.text('group:inner');
+    if (inner.evaluate().isNotEmpty) {
+      // Still mounted: it must have been pushed off above the outer header's
+      // bottom edge rather than lingering pinned over foreign rows.
+      expect(tester.getBottomLeft(inner).dy, lessThanOrEqualTo(38));
+    }
+  });
+
   testWidgets('collapsing an ancestor hides the nested subtree', (
     tester,
   ) async {

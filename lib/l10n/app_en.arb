@@ -716,6 +716,7 @@
   "actionFunctionLabel": "Function",
   "actionFunctionHint": "() => initialDirection = \"l\"",
   "groupMenuRename": "Rename",
+  "groupMenuNewSubgroup": "New subgroup",
   "groupMenuBreakdown": "Ungroup",
   "groupMenuDeleteWithGestures": "Delete",
   "strokeRowTitle": "Stroke {n}",

@@ -232,6 +232,63 @@ void main() {
       expect(controller.moveGroupBeforeGroup(nested, 'a', 'sub'), isNull);
     });
 
+    test('moveGroupIntoGroup nests as the last child', () {
+      expect(controller.moveGroupIntoGroup(entries, 'c', 'a'), (
+        groupId: 'c',
+        beforeGroupId: null,
+        newParentId: 'a',
+      ));
+    });
+
+    test('moveGroupIntoGroup is a no-op onto itself', () {
+      expect(controller.moveGroupIntoGroup(entries, 'a', 'a'), isNull);
+    });
+
+    test('moveGroupIntoGroup refuses its own subtree', () {
+      final nested = [
+        _group('a'),
+        const ReorderableGroupableGroup<int, String>(
+          key: ValueKey('g:sub'),
+          id: 'sub',
+          parentId: 'a',
+          depth: 1,
+        ),
+        _group('b'),
+      ];
+      expect(controller.moveGroupIntoGroup(nested, 'a', 'sub'), isNull);
+      // Nesting a sibling into a nested group is fine.
+      expect(controller.moveGroupIntoGroup(nested, 'b', 'sub'), (
+        groupId: 'b',
+        beforeGroupId: null,
+        newParentId: 'sub',
+      ));
+    });
+
+    test('moveGroupIntoGroup is a no-op when already the last child', () {
+      final nested = [
+        _group('a'),
+        const ReorderableGroupableGroup<int, String>(
+          key: ValueKey('g:sub'),
+          id: 'sub',
+          parentId: 'a',
+          depth: 1,
+        ),
+        const ReorderableGroupableGroup<int, String>(
+          key: ValueKey('g:sub2'),
+          id: 'sub2',
+          parentId: 'a',
+          depth: 1,
+        ),
+      ];
+      expect(controller.moveGroupIntoGroup(nested, 'sub2', 'a'), isNull);
+      // A non-last child re-nests (moves to the end).
+      expect(controller.moveGroupIntoGroup(nested, 'sub', 'a'), (
+        groupId: 'sub',
+        beforeGroupId: null,
+        newParentId: 'a',
+      ));
+    });
+
     test('moveGroupToEnd appends at the top level', () {
       expect(controller.moveGroupToEnd(entries, 'a'), (
         groupId: 'a',

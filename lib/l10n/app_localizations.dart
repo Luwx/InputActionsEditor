@@ -3652,6 +3652,12 @@ abstract class AppLocalizations {
   /// **'Rename'**
   String get groupMenuRename;
 
+  /// No description provided for @groupMenuNewSubgroup.
+  ///
+  /// In en, this message translates to:
+  /// **'New subgroup'**
+  String get groupMenuNewSubgroup;
+
   /// No description provided for @groupMenuBreakdown.
   ///
   /// In en, this message translates to:
