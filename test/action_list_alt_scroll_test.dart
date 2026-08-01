@@ -9,6 +9,7 @@ import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -163,8 +164,10 @@ const _seedEditId = 9001;
 class _SeededController extends ConfigController {
   _SeededController(TriggerCommon common)
     : _config = Config(
-        mouseGestures: [
-          PressGesture(common: common.copyWith(editId: _seedEditId)),
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: common.copyWith(editId: _seedEditId)),
+          ),
         ],
       );
 

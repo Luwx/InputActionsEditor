@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
@@ -12,12 +13,14 @@ void main() {
   group('action lenses', () {
     final config = assignEditIds(
       const Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(action: CommandAction(command: 'old')),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'old')),
+                ],
+              ),
             ),
           ),
         ],
@@ -74,21 +77,23 @@ void main() {
   group('generated gesture lenses', () {
     final config = assignEditIds(
       const Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              id: 'old-id',
-              threshold: '5',
-              resumeTimeout: 10,
-              accelerated: true,
-              blockEvents: true,
-              clearModifiers: false,
-              setLastTrigger: true,
-              mouseButtons: [MouseButtonValue.left],
-              mouseButtonsExactOrder: true,
-              actions: [
-                TriggerAction(action: CommandAction(command: 'old')),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                id: 'old-id',
+                threshold: '5',
+                resumeTimeout: 10,
+                accelerated: true,
+                blockEvents: true,
+                clearModifiers: false,
+                setLastTrigger: true,
+                mouseButtons: [MouseButtonValue.left],
+                mouseButtonsExactOrder: true,
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'old')),
+                ],
+              ),
             ),
           ),
         ],

@@ -8,7 +8,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -61,86 +61,98 @@ void main() {
   group('programmatic round-trip (build -> encode -> decode)', () {
     test('a hand-built config survives encode + decode', () {
       const config = Config(
-        mouseGestures: [
-          StrokeGesture(
-            common: TriggerCommon(
-              name: 'Stroke',
-              mouseButtons: [
-                MouseButtonValue.right,
-              ],
-            ),
-            strokes: ['AAA=='],
-          ),
-          SwipeGesture(
-            common: TriggerCommon(
-              name: 'Swipe',
-              conditions: VariableCondition(
-                variable: ConditionVariableRef.known('keyboard_modifiers'),
-                operator: ConditionOperator.equals,
-                value: ConditionValue.flags(['meta']),
+        mouseNodes: [
+          GestureNode.leaf(
+            StrokeGesture(
+              common: TriggerCommon(
+                name: 'Stroke',
+                mouseButtons: [
+                  MouseButtonValue.right,
+                ],
               ),
-              actions: [
-                TriggerAction(
-                  on: TriggerOn.begin,
-                  action: InputAction(
-                    entries: [
-                      InputEntry(
-                        device: InputDevice.keyboard,
-                        tokens: [
-                          'leftctrl+home',
-                        ],
-                      ),
-                    ],
+              strokes: ['AAA=='],
+            ),
+          ),
+          GestureNode.leaf(
+            SwipeGesture(
+              common: TriggerCommon(
+                name: 'Swipe',
+                conditions: VariableCondition(
+                  variable: ConditionVariableRef.known('keyboard_modifiers'),
+                  operator: ConditionOperator.equals,
+                  value: ConditionValue.flags(['meta']),
+                ),
+                actions: [
+                  TriggerAction(
+                    on: TriggerOn.begin,
+                    action: InputAction(
+                      entries: [
+                        InputEntry(
+                          device: InputDevice.keyboard,
+                          tokens: [
+                            'leftctrl+home',
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              mode: SwipeDirectionMode(direction: SwipeDirection.up),
+              motion: MotionCommon(speed: TriggerSpeed.fast, lockPointer: true),
             ),
-            mode: SwipeDirectionMode(direction: SwipeDirection.up),
-            motion: MotionCommon(speed: TriggerSpeed.fast, lockPointer: true),
           ),
         ],
-        keyboardGestures: [
-          ShortcutGesture(
-            common: TriggerCommon(
-              name: 'Copy',
-              actions: [
-                TriggerAction(
-                  action: CommandAction(command: 'echo copy', wait: true),
-                ),
-              ],
-            ),
-            keys: ['leftctrl', 'c'],
-          ),
-        ],
-        pointerGestures: [
-          HoverGesture(common: TriggerCommon(name: 'Hover')),
-        ],
-        touchpadGestures: [
-          TouchpadPinchGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(
-                  action: PlasmaShortcutAction(
-                    component: 'kwin',
-                    shortcut: 'Window Close',
+        keyboardNodes: [
+          GestureNode.leaf(
+            ShortcutGesture(
+              common: TriggerCommon(
+                name: 'Copy',
+                actions: [
+                  TriggerAction(
+                    action: CommandAction(command: 'echo copy', wait: true),
                   ),
-                ),
-              ],
+                ],
+              ),
+              keys: ['leftctrl', 'c'],
             ),
-            fingers: 2,
-            direction: PinchDirection.inward,
           ),
-          TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
         ],
-        touchscreenGestures: [
-          TouchscreenSwipeGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(action: SleepAction(milliseconds: 200)),
-              ],
+        pointerNodes: [
+          GestureNode.leaf(HoverGesture(common: TriggerCommon(name: 'Hover'))),
+        ],
+        touchpadNodes: [
+          GestureNode.leaf(
+            TouchpadPinchGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(
+                    action: PlasmaShortcutAction(
+                      component: 'kwin',
+                      shortcut: 'Window Close',
+                    ),
+                  ),
+                ],
+              ),
+              fingers: 2,
+              direction: PinchDirection.inward,
             ),
-            fingers: 2,
-            mode: SwipeDirectionMode(direction: SwipeDirection.left),
+          ),
+          GestureNode.leaf(
+            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+          ),
+        ],
+        touchscreenNodes: [
+          GestureNode.leaf(
+            TouchscreenSwipeGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(action: SleepAction(milliseconds: 200)),
+                ],
+              ),
+              fingers: 2,
+              mode: SwipeDirectionMode(direction: SwipeDirection.left),
+            ),
           ),
         ],
         deviceRules: [
@@ -184,31 +196,26 @@ void main() {
     });
 
     test('groups round-trip through a device section', () {
-      // Group ids are in-memory only; what round-trips is the structure:
-      // name, enabled, membership, and (empty) groups themselves.
+      // What round-trips is the structure itself: name, enabled, membership
+      // by containment, and (empty) groups.
       const config = Config(
-        mouseGestures: [
-          PressGesture(common: TriggerCommon(groupId: 'g1')),
-        ],
-        gestureGroups: [
-          GestureGroup(id: 'g1', name: 'Group One', device: DeviceType.mouse),
-          GestureGroup(
-            id: 'g2',
-            name: 'Group Two',
-            device: DeviceType.mouse,
-            enabled: false,
+        mouseNodes: [
+          GestureNode.group(
+            name: 'Group One',
+            children: [GestureNode.leaf(PressGesture(common: TriggerCommon()))],
           ),
+          GestureNode.group(name: 'Group Two', enabled: false),
         ],
       );
 
       final decoded = decodeConfig(encodeConfig(config, ''));
-      final byName = {for (final g in decoded.gestureGroups) g.name: g};
+      final byName = {
+        for (final g in decoded.mouseNodes.whereType<GestureGroupNode>())
+          g.name: g,
+      };
       expect(byName.keys, containsAll(['Group One', 'Group Two']));
       expect(byName['Group Two']!.enabled, isFalse);
-      expect(
-        decoded.mouseGestures.single.common.groupId,
-        byName['Group One']!.id,
-      );
+      expect(byName['Group One']!.children.single, isA<GestureLeaf>());
     });
 
     test('legacy groups:/group: keys migrate to nesting on save', () {
@@ -230,13 +237,13 @@ mouse:
       expect(encoded.contains('group:'), isFalse);
 
       final decoded = decodeConfig(encoded);
-      final group = decoded.gestureGroups.single;
+      final group = decoded.mouseNodes.whereType<GestureGroupNode>().single;
       expect(group.name, 'Navigation');
-      final byName = {
-        for (final g in decoded.mouseGestures) g.common.name: g,
-      };
-      expect(byName['A']!.common.groupId, group.id);
-      expect(byName['B']!.common.groupId, isNull);
+      expect(group.gestures.single.common.name, 'A');
+      expect(
+        decoded.mouseNodes.whereType<GestureLeaf>().single.gesture.common.name,
+        'B',
+      );
 
       // Migrated text is a fixed point from here on.
       expect(encodeConfig(decoded, encoded), encoded);
@@ -255,7 +262,10 @@ mouse:
 ''';
       final decoded = decodeConfig(original);
       // Drop the groups but keep the gesture.
-      final cleared = decoded.copyWith(gestureGroups: []);
+      final cleared = decoded.withNodesForDevice(
+        DeviceType.mouse,
+        decoded.mouseNodes.whereType<GestureLeaf>().toList(),
+      );
       final encoded = encodeConfig(cleared, original);
 
       expect(encoded.contains('groups'), isFalse);
@@ -275,7 +285,7 @@ device_rules:
     test('omits empty optional device sections', () {
       final encoded = encodeConfig(
         const Config(
-          mouseGestures: [PressGesture(common: TriggerCommon())],
+          mouseNodes: [GestureNode.leaf(PressGesture(common: TriggerCommon()))],
         ),
         '',
       );
@@ -315,8 +325,9 @@ mouse:
       final config2 = decodeConfig(yaml1);
       // The single-element condition list normalizes to its bare child on the
       // first encode (decode-only sugar); the content is unchanged.
+      final groupNode = config2.mouseNodes.single as GestureGroupNode;
       expect(
-        config2.gestureGroups.single.conditions,
+        groupNode.conditions,
         const VariableCondition(
           variable: ConditionVariableRef.known('window_fullscreen'),
           operator: ConditionOperator.equals,
@@ -324,10 +335,7 @@ mouse:
         ),
       );
       expect(config2.mouseGestures.length, 2);
-      expect(
-        config2.mouseGestures.map((g) => g.common.groupId).toSet().single,
-        config2.gestureGroups.single.id,
-      );
+      expect(groupNode.children, hasLength(2));
 
       // Textual fixed point.
       final yaml2 = encodeConfig(config2, yaml1);
@@ -355,7 +363,10 @@ mouse:
       final yaml1 = encodeConfig(config1, original);
       final config2 = decodeConfig(yaml1);
       expect(config2.mouseGestures.single.common.name, 'Deep');
-      expect(config2.gestureGroups.length, 3);
+      final outer = config2.mouseNodes.single as GestureGroupNode;
+      final middle = outer.children.single as GestureGroupNode;
+      final inner = middle.children.single as GestureGroupNode;
+      expect(inner.children.single, isA<GestureLeaf>());
       expect(encodeConfig(config2, yaml1), yaml1);
     });
 
@@ -372,10 +383,15 @@ mouse:
       final encoded = encodeConfig(decodeConfig(original), original);
       expect(encoded, contains('mouse_buttons'));
       expect(encoded, contains('threshold: 5'));
-      expect(decodeConfig(encoded).gestureGroups.single.extra, {
-        'mouse_buttons': ['right'],
-        'threshold': 5,
-      });
+      expect(
+        decodeConfig(
+          encoded,
+        ).mouseNodes.whereType<GestureGroupNode>().single.extra,
+        {
+          'mouse_buttons': ['right'],
+          'threshold': 5,
+        },
+      );
     });
 
     test('moving a gesture out of a native group un-nests it', () {
@@ -391,21 +407,27 @@ mouse:
           name: AlsoIn
 ''';
       final config = decodeConfig(original);
-      final freed = config.mouseGestures.first.withCommon(
-        config.mouseGestures.first.common.copyWith(groupId: null),
-      );
-      final edited = config.copyWith(
-        mouseGestures: [freed, config.mouseGestures[1]],
-      );
+      final group = config.mouseNodes.single as GestureGroupNode;
+      final edited = config.withNodesForDevice(DeviceType.mouse, [
+        group.children.first,
+        group.copyWith(children: group.children.sublist(1)),
+      ]);
       final encoded = encodeConfig(edited, original);
 
       final reDecoded = decodeConfig(encoded);
       expect(reDecoded.mouseGestures.length, 2);
-      final byName = {
-        for (final g in reDecoded.mouseGestures) g.common.name: g,
-      };
-      expect(byName['In']!.common.groupId, isNull);
-      expect(byName['AlsoIn']!.common.groupId, isNotNull);
+      expect(
+        (reDecoded.mouseNodes.first as GestureLeaf).gesture.common.name,
+        'In',
+      );
+      expect(
+        (reDecoded.mouseNodes[1] as GestureGroupNode)
+            .gestures
+            .single
+            .common
+            .name,
+        'AlsoIn',
+      );
     });
   });
 
@@ -471,13 +493,13 @@ touchpad:
       fingers: 3
 ''';
       final decoded = decodeConfig(original);
-      final edited = decoded.copyWith(
-        touchpadGestures: [
+      final edited = decoded.withNodesForDevice(DeviceType.touchpad, [
+        GestureNode.leaf(
           (decoded.touchpadGestures.first as TouchpadTapGesture).copyWith(
             fingers: 4,
           ),
-        ],
-      );
+        ),
+      ]);
       final encoded = encodeConfig(edited, original);
 
       // The untouched mouse section keeps its internal blank lines...

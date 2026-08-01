@@ -8,9 +8,8 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -139,10 +138,9 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'mouse',
-    _buildGestureLayout(
-      config.mouseGestures,
-      config.groupsForDevice(DeviceType.mouse),
-      mouseGestureToMap,
+    _nodesToYaml(
+      config.mouseNodes,
+      (g) => mouseGestureToMap(g as MouseGesture),
     ),
     speed: config.mouseSpeed,
   );
@@ -150,10 +148,9 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'keyboard',
-    _buildGestureLayout(
-      config.keyboardGestures,
-      config.groupsForDevice(DeviceType.keyboard),
-      keyboardGestureToMap,
+    _nodesToYaml(
+      config.keyboardNodes,
+      (g) => keyboardGestureToMap(g as KeyboardGesture),
     ),
     omitIfEmpty: true,
   );
@@ -161,10 +158,9 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'pointer',
-    _buildGestureLayout(
-      config.pointerGestures,
-      config.groupsForDevice(DeviceType.pointer),
-      pointerGestureToMap,
+    _nodesToYaml(
+      config.pointerNodes,
+      (g) => pointerGestureToMap(g as PointerGesture),
     ),
     omitIfEmpty: true,
   );
@@ -172,10 +168,9 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'touchpad',
-    _buildGestureLayout(
-      config.touchpadGestures,
-      config.groupsForDevice(DeviceType.touchpad),
-      touchpadGestureToMap,
+    _nodesToYaml(
+      config.touchpadNodes,
+      (g) => touchpadGestureToMap(g as TouchpadGesture),
     ),
     omitIfEmpty: true,
     speed: config.touchpadSpeed,
@@ -184,10 +179,9 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'touchscreen',
-    _buildGestureLayout(
-      config.touchscreenGestures,
-      config.groupsForDevice(DeviceType.touchscreen),
-      touchscreenGestureToMap,
+    _nodesToYaml(
+      config.touchscreenNodes,
+      (g) => touchscreenGestureToMap(g as TouchscreenGesture),
     ),
     omitIfEmpty: true,
     speed: config.touchscreenSpeed,
@@ -202,103 +196,25 @@ String encodeConfig(Config config, String originalText) {
   );
 }
 
-/// Lays out a device's gestures as the YAML `gestures:` list. Groups are
-/// always emitted as nesting: each at the position of its first member (or at
-/// the end when empty), containing its members and subgroups in model order.
-/// Group ids and `group:` keys never serialize — membership is the nesting.
-List<dynamic> _buildGestureLayout<T extends Gesture>(
-  List<T> gestures,
-  List<GestureGroup> deviceGroups,
-  Map<String, dynamic> Function(T) toMap,
-) {
-  final byId = {for (final g in deviceGroups) g.id: g};
-  if (byId.isEmpty) return gestures.map(toMap).toList();
-
-  final childGroups = <String, List<GestureGroup>>{};
-  for (final g in deviceGroups) {
-    final parent = g.parentId;
-    if (parent != null && byId.containsKey(parent)) {
-      childGroups.putIfAbsent(parent, () => []).add(g);
-    }
-  }
-
-  String rootOf(String id) {
-    var current = id;
-    final seen = <String>{current};
-    while (true) {
-      final parent = byId[current]?.parentId;
-      if (parent == null || !byId.containsKey(parent)) return current;
-      if (!seen.add(parent)) return current;
-      current = parent;
-    }
-  }
-
-  bool isInSubtree(String id, String ancestor) {
-    var current = id;
-    final seen = <String>{};
-    while (seen.add(current)) {
-      if (current == ancestor) return true;
-      final parent = byId[current]?.parentId;
-      if (parent == null || !byId.containsKey(parent)) return false;
-      current = parent;
-    }
-    return false;
-  }
-
-  final emitted = <String>{};
-
-  Map<String, dynamic> emitGroup(GestureGroup group) {
-    emitted.add(group.id);
-    final m = <String, dynamic>{};
-    if (group.name.isNotEmpty) m['name'] = group.name;
-    if (!group.enabled) m['enabled'] = false;
-    if (group.conditions != null) {
-      m['conditions'] = conditionToYaml(group.conditions!);
-    }
-    m.addAll(group.extra);
-    final children = <dynamic>[];
-    for (final gesture in gestures) {
-      final gid = gesture.common.groupId;
-      if (gid == null || !byId.containsKey(gid)) continue;
-      if (!isInSubtree(gid, group.id)) continue;
-      if (gid == group.id) {
-        children.add(toMap(gesture)..remove('group'));
-      } else {
-        // First gesture of a descendant subtree: emit the direct child group
-        // on its chain, which recursively covers the rest.
-        var mid = gid;
-        while (byId[mid]?.parentId != group.id) {
-          mid = byId[mid]!.parentId!;
-        }
-        if (!emitted.contains(mid)) children.add(emitGroup(byId[mid]!));
-      }
-    }
-    // Subgroups with no gestures anywhere in their subtree have no anchor
-    // above; append them so they survive the round-trip.
-    for (final sub in childGroups[group.id] ?? const <GestureGroup>[]) {
-      if (!emitted.contains(sub.id)) children.add(emitGroup(sub));
-    }
-    m['gestures'] = children;
-    return m;
-  }
-
-  final result = <dynamic>[];
-  for (final gesture in gestures) {
-    final gid = gesture.common.groupId;
-    if (gid != null && byId.containsKey(gid)) {
-      final root = rootOf(gid);
-      if (!emitted.contains(root)) result.add(emitGroup(byId[root]!));
-    } else {
-      result.add(toMap(gesture));
-    }
-  }
-  for (final g in deviceGroups) {
-    final parent = g.parentId;
-    final isRoot = parent == null || !byId.containsKey(parent);
-    if (isRoot && !emitted.contains(g.id)) result.add(emitGroup(g));
-  }
-  return result;
-}
+/// Lays out a device's gesture tree as the YAML `gestures:` list. Membership
+/// is the nesting; nothing about grouping needs reconstruction.
+List<dynamic> _nodesToYaml(
+  List<GestureNode> nodes,
+  Map<String, dynamic> Function(Gesture) toMap,
+) => [
+  for (final node in nodes)
+    switch (node) {
+      GestureLeaf(:final gesture) => toMap(gesture),
+      GestureGroupNode() => {
+        if (node.name.isNotEmpty) 'name': node.name,
+        if (!node.enabled) 'enabled': false,
+        if (node.conditions != null)
+          'conditions': conditionToYaml(node.conditions!),
+        ...node.extra,
+        'gestures': _nodesToYaml(node.children, toMap),
+      },
+    },
+];
 
 void _saveDeviceSection(
   YamlEditor editor,
@@ -557,7 +473,6 @@ void _writeCommon(
   if (c.name != null) m['name'] = c.name;
   if (c.enabled != null) m['enabled'] = c.enabled;
   if (c.id != null) m['id'] = c.id;
-  if (c.groupId != null) m['group'] = c.groupId;
   if (includeMouseButtons && c.mouseButtons.isNotEmpty) {
     m['mouse_buttons'] = c.mouseButtons.map((b) => b.toYaml()).toList();
   }

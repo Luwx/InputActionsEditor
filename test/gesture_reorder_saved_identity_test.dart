@@ -12,6 +12,7 @@ import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
@@ -24,14 +25,18 @@ void main() {
       'editor saved gesture follows moved gesture, not destination index',
       () async {
         const seed = Config(
-          mouseGestures: [
-            WheelGesture(
-              common: TriggerCommon(name: 'Wheel #1', groupId: 'wheel'),
-              direction: WheelDirection.left,
+          mouseNodes: [
+            GestureNode.leaf(
+              WheelGesture(
+                common: TriggerCommon(name: 'Wheel #1'),
+                direction: WheelDirection.left,
+              ),
             ),
-            WheelGesture(
-              common: TriggerCommon(name: 'Wheel #2', groupId: 'wheel'),
-              direction: WheelDirection.right,
+            GestureNode.leaf(
+              WheelGesture(
+                common: TriggerCommon(name: 'Wheel #2'),
+                direction: WheelDirection.right,
+              ),
             ),
           ],
         );
@@ -136,10 +141,12 @@ void main() {
 
     test('a new gesture has no saved backing wherever it sits', () async {
       const seed = Config(
-        mouseGestures: [
-          WheelGesture(
-            common: TriggerCommon(name: 'Wheel #1'),
-            direction: WheelDirection.left,
+        mouseNodes: [
+          GestureNode.leaf(
+            WheelGesture(
+              common: TriggerCommon(name: 'Wheel #1'),
+              direction: WheelDirection.left,
+            ),
           ),
         ],
       );

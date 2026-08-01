@@ -1,6 +1,8 @@
 import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -122,18 +124,13 @@ String gestureYamlSnippet({
   required DeviceType device,
   required Object gesture,
 }) {
+  final node = GestureNode.leaf(gesture as Gesture);
   final config = switch (device) {
-    DeviceType.mouse => Config(mouseGestures: [gesture as MouseGesture]),
-    DeviceType.keyboard => Config(
-      keyboardGestures: [gesture as KeyboardGesture],
-    ),
-    DeviceType.pointer => Config(pointerGestures: [gesture as PointerGesture]),
-    DeviceType.touchpad => Config(
-      touchpadGestures: [gesture as TouchpadGesture],
-    ),
-    DeviceType.touchscreen => Config(
-      touchscreenGestures: [gesture as TouchscreenGesture],
-    ),
+    DeviceType.mouse => Config(mouseNodes: [node]),
+    DeviceType.keyboard => Config(keyboardNodes: [node]),
+    DeviceType.pointer => Config(pointerNodes: [node]),
+    DeviceType.touchpad => Config(touchpadNodes: [node]),
+    DeviceType.touchscreen => Config(touchscreenNodes: [node]),
   };
   return encodeConfig(config, '').trim();
 }

@@ -6,6 +6,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -130,7 +131,6 @@ void main() {
                 name: 'My Press',
                 enabled: false,
                 id: 'press_1',
-                groupId: 'grp_a',
                 mouseButtons: [MouseButtonValue.right, MouseButtonValue.left],
                 mouseButtonsExactOrder: true,
                 blockEvents: false,
@@ -154,7 +154,6 @@ void main() {
       expect(map['name'], 'My Press');
       expect(map['enabled'], false);
       expect(map['id'], 'press_1');
-      expect(map['group'], 'grp_a');
       expect(map['mouse_buttons'], ['right', 'left']);
       expect(map['mouse_buttons_exact_order'], true);
       expect(map['block_events'], false);
@@ -191,14 +190,16 @@ void main() {
   group('encodeConfig disabled comments', () {
     test('disabled gestures are emitted as commented-out YAML', () {
       const config = Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              name: 'Disabled Press',
-              enabled: false,
-              actions: [
-                TriggerAction(action: CommandAction(command: 'echo hi')),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                name: 'Disabled Press',
+                enabled: false,
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'echo hi')),
+                ],
+              ),
             ),
           ),
         ],
@@ -213,15 +214,17 @@ void main() {
 
     test('disabled actions are emitted as commented-out YAML', () {
       const config = Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(
-                  enabled: false,
-                  action: CommandAction(command: 'echo hi'),
-                ),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(
+                    enabled: false,
+                    action: CommandAction(command: 'echo hi'),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -238,16 +241,18 @@ void main() {
       'disabled action stays disabled when enclosing gesture is re-enabled',
       () {
         const disabledConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(
-                enabled: false,
-                actions: [
-                  TriggerAction(
-                    enabled: false,
-                    action: CommandAction(command: 'echo hi'),
-                  ),
-                ],
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  enabled: false,
+                  actions: [
+                    TriggerAction(
+                      enabled: false,
+                      action: CommandAction(command: 'echo hi'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -265,8 +270,10 @@ void main() {
 
         final gesture = decoded.mouseGestures.single;
         final reenabled = decoded.copyWith(
-          mouseGestures: [
-            gesture.withCommon(gesture.common.copyWith(enabled: null)),
+          mouseNodes: [
+            GestureNode.leaf(
+              gesture.withCommon(gesture.common.copyWith(enabled: null)),
+            ),
           ],
         );
         final yaml = encodeConfig(reenabled, disabledYaml);

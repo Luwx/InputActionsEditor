@@ -197,11 +197,9 @@ packages:
   edit_schema_generator:
     dependency: "direct main"
     description:
-      path: edit_schema_generator
-      ref: HEAD
-      resolved-ref: "923d04cf0398b56ead1e82d101c66803a8f2e1ad"
-      url: "https://github.com/Luwx/dart_generators"
-    source: git
+      path: "/home/luwx/Github/dart_generators/edit_schema_generator"
+      relative: false
+    source: path
     version: "0.0.10"
   equatable:
     dependency: "direct main"

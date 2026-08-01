@@ -6,6 +6,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
@@ -52,10 +53,12 @@ void main() {
 
     test('baseline config with no conflicts starts clean', () async {
       final seed = Config(
-        mouseGestures: [
-          _instantPress([MouseButtonValue.right]),
-          const StrokeGesture(
-            common: TriggerCommon(mouseButtons: [MouseButtonValue.middle]),
+        mouseNodes: [
+          GestureNode.leaf(_instantPress([MouseButtonValue.right])),
+          const GestureNode.leaf(
+            StrokeGesture(
+              common: TriggerCommon(mouseButtons: [MouseButtonValue.middle]),
+            ),
           ),
         ],
       );
@@ -65,8 +68,10 @@ void main() {
 
     test('adding a conflicting gesture is reflected immediately', () async {
       final seed = Config(
-        mouseGestures: [
-          _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+        mouseNodes: [
+          GestureNode.leaf(
+            _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+          ),
         ],
       );
       final container = await makeContainer(seed);
@@ -96,8 +101,10 @@ void main() {
 
     test('edit that removes the conflict clears the report', () async {
       final seed = Config(
-        mouseGestures: [
-          _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+        mouseNodes: [
+          GestureNode.leaf(
+            _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+          ),
         ],
       );
       final container = await makeContainer(seed);
@@ -135,8 +142,10 @@ void main() {
         // Exercises the full add → [left] → [right] → [left,right] flow so the
         // provider stays correct across multiple consecutive edits.
         final seed = Config(
-          mouseGestures: [
-            _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+          mouseNodes: [
+            GestureNode.leaf(
+              _instantPress([MouseButtonValue.right, MouseButtonValue.left]),
+            ),
           ],
         );
         final container = await makeContainer(seed);

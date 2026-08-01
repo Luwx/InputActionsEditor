@@ -6,31 +6,32 @@ final class _GestureListViewModel extends Equatable {
     required this.gestureCount,
     required this.reorderEnabled,
     required this.deviceFilter,
-    required this.disabledGroupIds,
+    required this.disabledGroupKeys,
   });
 
   factory _GestureListViewModel.fromConfig({
     required Config config,
     required DeviceType? deviceFilter,
-    required Set<String> collapsedGroups,
+    required Set<int> collapsedGroups,
   }) {
     final flatItems = _buildFlatList(config, deviceFilter, collapsedGroups);
     final gestureCount = deviceFilter == null
         ? config.totalGestureCount
         : config.gestureCountForDevice(deviceFilter);
     // A disabled ancestor disables the whole subtree.
-    final byId = {for (final g in config.gestureGroups) g.id: g};
-    final disabledGroupIds = <String>{};
-    for (final group in config.gestureGroups) {
-      String? current = group.id;
-      final seen = <String>{};
-      while (current != null && seen.add(current)) {
-        if (byId[current]?.enabled == false) {
-          disabledGroupIds.add(group.id);
-          break;
-        }
-        current = byId[current]?.parentId;
+    final disabledGroupKeys = <int>{};
+    void walk(List<GestureNode> nodes, {required bool ancestorDisabled}) {
+      for (final node in nodes) {
+        if (node is! GestureGroupNode) continue;
+        final disabled = ancestorDisabled || !node.enabled;
+        final key = node.editId;
+        if (disabled && key != null) disabledGroupKeys.add(key);
+        walk(node.children, ancestorDisabled: disabled);
       }
+    }
+
+    for (final device in DeviceType.values) {
+      walk(config.nodesForDevice(device), ancestorDisabled: false);
     }
 
     return _GestureListViewModel(
@@ -38,7 +39,7 @@ final class _GestureListViewModel extends Equatable {
       gestureCount: gestureCount,
       reorderEnabled: deviceFilter != null,
       deviceFilter: deviceFilter,
-      disabledGroupIds: disabledGroupIds,
+      disabledGroupKeys: disabledGroupKeys,
     );
   }
 
@@ -47,7 +48,7 @@ final class _GestureListViewModel extends Equatable {
   final bool reorderEnabled;
   final DeviceType? deviceFilter;
 
-  final Set<String> disabledGroupIds;
+  final Set<int> disabledGroupKeys;
 
   @override
   List<Object?> get props => [
@@ -55,7 +56,7 @@ final class _GestureListViewModel extends Equatable {
     gestureCount,
     reorderEnabled,
     deviceFilter,
-    disabledGroupIds,
+    disabledGroupKeys,
   ];
 }
 

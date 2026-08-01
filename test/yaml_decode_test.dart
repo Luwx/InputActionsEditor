@@ -5,6 +5,7 @@ import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -194,7 +195,6 @@ mouse:
       expect(common.name, 'My Press');
       expect(common.enabled, isFalse);
       expect(common.id, 'press_1');
-      expect(common.groupId, 'grp_a');
       expect(common.blockEvents, isFalse);
       expect(common.clearModifiers, isTrue);
       expect(common.resumeTimeout, 250);
@@ -933,8 +933,8 @@ touchpad:
     });
   });
 
-  group('decodeConfig - gesture groups', () {
-    test('groups parse with enabled default true', () {
+  group('decodeConfig - legacy flat groups', () {
+    test('legacy defs migrate to nesting, memberless ones append empty', () {
       final c = decodeConfig('''
 mouse:
   groups:
@@ -945,11 +945,43 @@ mouse:
       enabled: false
   gestures: []
 ''');
-      expect(c.gestureGroups.length, 2);
-      expect(c.gestureGroups[0].id, 'g1');
-      expect(c.gestureGroups[0].device, DeviceType.mouse);
-      expect(c.gestureGroups[0].enabled, isTrue);
-      expect(c.gestureGroups[1].enabled, isFalse);
+      expect(c.mouseNodes.length, 2);
+      final g1 = c.mouseNodes[0] as GestureGroupNode;
+      final g2 = c.mouseNodes[1] as GestureGroupNode;
+      expect(g1.name, 'Group One');
+      expect(g1.enabled, isTrue);
+      expect(g1.children, isEmpty);
+      expect(g2.name, 'Group Two');
+      expect(g2.enabled, isFalse);
+    });
+
+    test('legacy members nest at the first member position', () {
+      final c = decodeConfig('''
+mouse:
+  groups:
+    - id: g1
+      name: Group One
+  gestures:
+    - type: press
+      name: before
+    - type: press
+      name: member a
+      group: g1
+    - type: press
+      name: between
+    - type: press
+      name: member b
+      group: g1
+''');
+      expect(c.mouseNodes.length, 3);
+      expect((c.mouseNodes[0] as GestureLeaf).gesture.common.name, 'before');
+      final group = c.mouseNodes[1] as GestureGroupNode;
+      expect(group.name, 'Group One');
+      expect(
+        [for (final g in group.gestures) g.common.name],
+        ['member a', 'member b'],
+      );
+      expect((c.mouseNodes[2] as GestureLeaf).gesture.common.name, 'between');
     });
 
     test('groups without id or name are skipped', () {
@@ -960,23 +992,22 @@ mouse:
     - name: only name
   gestures: []
 ''');
-      expect(c.gestureGroups, isEmpty);
+      expect(c.mouseNodes, isEmpty);
     });
 
-    test('groups are tagged with their device type', () {
+    test('refs to undefined groups are dropped', () {
       final c = decodeConfig('''
-touchpad:
-  groups:
-    - id: t1
-      name: TP Group
-  gestures: []
+mouse:
+  gestures:
+    - type: press
+      group: nope
 ''');
-      expect(c.gestureGroups.single.device, DeviceType.touchpad);
+      expect(c.mouseNodes.single, isA<GestureLeaf>());
     });
   });
 
   group('decodeConfig - native trigger groups', () {
-    test('untyped group becomes a GestureGroup carrying its conditions', () {
+    test('untyped group becomes a group node carrying its conditions', () {
       final c = decodeConfig(r'''
 mouse:
   gestures:
@@ -990,8 +1021,7 @@ mouse:
 ''');
       expect(c.mouseGestures.length, 2);
 
-      final group = c.gestureGroups.single;
-      expect(group.device, DeviceType.mouse);
+      final group = c.mouseNodes.single as GestureGroupNode;
       expect(
         group.conditions,
         const VariableCondition(
@@ -1001,9 +1031,8 @@ mouse:
         ),
       );
 
-      // Members reference the group; their own conditions are untouched.
-      expect(c.mouseGestures[0].common.groupId, group.id);
-      expect(c.mouseGestures[1].common.groupId, group.id);
+      // Membership is containment; member conditions are untouched.
+      expect(group.children, hasLength(2));
       expect(c.mouseGestures[0].common.conditions, isNull);
       expect(
         c.mouseGestures[1].common.conditions,
@@ -1015,7 +1044,7 @@ mouse:
       );
     });
 
-    test('nested groups parse to any depth with parent links', () {
+    test('nested groups parse to any depth', () {
       final c = decodeConfig(r'''
 mouse:
   gestures:
@@ -1029,14 +1058,10 @@ mouse:
                   name: Deep
 ''');
       expect(c.mouseGestures.single.common.name, 'Deep');
-      expect(c.gestureGroups.length, 3);
-      final outer = c.gestureGroups[0];
-      final middle = c.gestureGroups[1];
-      final inner = c.gestureGroups[2];
-      expect(outer.parentId, isNull);
-      expect(middle.parentId, outer.id);
-      expect(inner.parentId, middle.id);
-      expect(c.mouseGestures.single.common.groupId, inner.id);
+      final outer = c.mouseNodes.single as GestureGroupNode;
+      final middle = outer.children.single as GestureGroupNode;
+      final inner = middle.children.single as GestureGroupNode;
+      expect(inner.children.single, isA<GestureLeaf>());
     });
 
     test('unmodelled group properties are preserved in extra', () {
@@ -1049,7 +1074,7 @@ mouse:
       gestures:
         - type: press
 ''');
-      final group = c.gestureGroups.single;
+      final group = c.mouseNodes.single as GestureGroupNode;
       expect(group.extra, {
         'mouse_buttons': ['right'],
         'threshold': 5,
@@ -1244,7 +1269,7 @@ autoreload: true
     });
 
     test('parses groups, device rules, speeds and global settings', () {
-      expect(config.gestureGroups.length, 2);
+      expect(config.mouseNodes.whereType<GestureGroupNode>().length, 2);
       expect(config.deviceRules.length, 4);
       expect(config.mouseSpeed, isNotNull);
       expect(config.touchpadSpeed, isNotNull);

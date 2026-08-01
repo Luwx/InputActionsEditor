@@ -5,7 +5,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
@@ -29,60 +29,48 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 ///   *equal*. Differing conditions (e.g. `$keyboard_modifiers == meta`) are
 ///   assumed to disambiguate, so they are never flagged, this avoids false
 ///   positives on the common "X normally / modifier+X otherwise" pattern.
-List<GestureConflict> detectConflicts(Config config) {
-  final chainKeys = _groupChainKeys(config.gestureGroups);
-  return [
-    ..._detectForDevice(DeviceType.mouse, config.mouseGestures, chainKeys),
+List<GestureConflict> detectConflicts(Config config) => [
+  for (final device in DeviceType.values)
     ..._detectForDevice(
-      DeviceType.keyboard,
-      config.keyboardGestures,
-      chainKeys,
+      device,
+      config.gesturesForDevice(device),
+      _chainKeysForDevice(config.nodesForDevice(device)),
     ),
-    ..._detectForDevice(DeviceType.pointer, config.pointerGestures, chainKeys),
-    ..._detectForDevice(
-      DeviceType.touchpad,
-      config.touchpadGestures,
-      chainKeys,
-    ),
-    ..._detectForDevice(
-      DeviceType.touchscreen,
-      config.touchscreenGestures,
-      chainKeys,
-    ),
-  ];
-}
+];
 
-/// Condition-key prefix contributed by each group's condition chain. Group
+/// Condition-key prefix each gesture inherits from its ancestor groups. Group
 /// conditions apply to every member, so they take part in the "same
 /// conditions" comparison exactly as if they were written on the gesture.
-Map<String, String> _groupChainKeys(List<GestureGroup> groups) {
-  final byId = {for (final g in groups) g.id: g};
-  final memo = <String, String>{};
-  String chainOf(String id) {
-    final cached = memo[id];
-    if (cached != null) return cached;
-    final g = byId[id];
-    if (g == null) return '';
-    memo[id] = ''; // cycle guard
-    final parentId = g.parentId;
-    final parent = parentId == null ? '' : chainOf(parentId);
-    final own = g.conditions == null ? '' : _conditionKey(g.conditions);
-    return memo[id] = [
-      parent,
-      own,
-    ].where((s) => s.isNotEmpty).join('&');
+/// Keyed by gesture editId.
+Map<int, String> _chainKeysForDevice(List<GestureNode> nodes) {
+  final result = <int, String>{};
+  void walk(List<GestureNode> level, String chain) {
+    for (final node in level) {
+      switch (node) {
+        case GestureLeaf(:final gesture):
+          final id = gesture.common.editId;
+          if (id != null && chain.isNotEmpty) result[id] = chain;
+        case GestureGroupNode(:final conditions, :final children):
+          final own = conditions == null ? '' : _conditionKey(conditions);
+          walk(
+            children,
+            [
+              chain,
+              own,
+            ].where((s) => s.isNotEmpty).join('&'),
+          );
+      }
+    }
   }
 
-  for (final g in groups) {
-    chainOf(g.id);
-  }
-  return memo;
+  walk(nodes, '');
+  return result;
 }
 
 List<GestureConflict> _detectForDevice(
   DeviceType device,
   List<Object> raw, [
-  Map<String, String> chainKeys = const {},
+  Map<int, String> chainKeys = const {},
 ]) {
   final items = <_G>[];
   for (final (i, g) in raw.indexed) {
@@ -95,7 +83,7 @@ List<GestureConflict> _detectForDevice(
         common.editId ?? -1 - i,
         g,
         common,
-        chainKeys[common.groupId] ?? '',
+        chainKeys[common.editId] ?? '',
       ),
     );
   }

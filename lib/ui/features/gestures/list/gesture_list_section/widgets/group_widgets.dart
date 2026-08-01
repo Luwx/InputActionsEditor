@@ -7,7 +7,8 @@ const _frostRampPx = 20.0;
 class _GroupHeaderRow extends HookWidget {
   const _GroupHeaderRow({
     required this.index,
-    required this.group,
+    required this.name,
+    required this.enabled,
     required this.device,
     required this.isCollapsed,
     required this.scrollBuilder,
@@ -25,7 +26,8 @@ class _GroupHeaderRow extends HookWidget {
   });
 
   final int index;
-  final GestureGroup group;
+  final String name;
+  final bool enabled;
   final DeviceType device;
   final bool isCollapsed;
 
@@ -47,7 +49,7 @@ class _GroupHeaderRow extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final isDisabled = !group.enabled;
+    final isDisabled = !enabled;
     final isHovered = useState(false);
     final menuController = useFPopoverController();
     useListenable(menuController);
@@ -85,9 +87,7 @@ class _GroupHeaderRow extends HookWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    group.name.isEmpty
-                        ? context.l10n.gestureGroupUnnamed
-                        : group.name,
+                    name.isEmpty ? context.l10n.gestureGroupUnnamed : name,
                     style: typography.body.sm.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDisabled
@@ -140,7 +140,7 @@ class _GroupHeaderRow extends HookWidget {
       menu: _groupContextMenuItems(
         context,
         controller: menuController,
-        group: group,
+        enabled: enabled,
         onRename: onRename,
         onToggleEnabled: onToggleEnabled,
         onBulkEdit: onBulkEdit,
@@ -231,7 +231,7 @@ class _PinnedHeaderBacking extends StatelessWidget {
 List<FItemGroupMixin> _groupContextMenuItems(
   BuildContext context, {
   required FPopoverController controller,
-  required GestureGroup group,
+  required bool enabled,
   required VoidCallback onRename,
   required VoidCallback onToggleEnabled,
   required VoidCallback onBulkEdit,
@@ -246,9 +246,9 @@ List<FItemGroupMixin> _groupContextMenuItems(
         onPress: dismissThen(controller, onRename),
       ),
       FItem(
-        prefix: Icon(group.enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
+        prefix: Icon(enabled ? FLucideIcons.eyeOff : FLucideIcons.eye),
         title: Text(
-          group.enabled
+          enabled
               ? context.l10n.gestureMenuDisable
               : context.l10n.gestureMenuEnable,
         ),

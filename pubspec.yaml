@@ -67,6 +67,12 @@ dependencies:
   hooks_riverpod: ^3.3.1
   forui_hooks: ^0.23.0
   fast_immutable_collections: ^11.2.0
+# Local checkout while the tree-collections generator work lands; remove once
+# the dart_generators changes are pushed.
+dependency_overrides:
+  edit_schema_generator:
+    path: /home/luwx/Github/dart_generators/edit_schema_generator
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

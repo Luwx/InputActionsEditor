@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -167,15 +168,22 @@ List<ConfigIssue> findConfigIssues(Config config, [String sourceText = '']) {
     );
   }
 
-  // Native group conditions have no stable path; the content fallback finds
-  // them.
-  for (final group in config.gestureGroups) {
-    add(
-      group.conditions,
-      source: ConfigIssueSource.conditions,
-      device: group.device,
-      gestureName: group.name.isEmpty ? null : group.name,
-    );
+  // Group conditions have no stable path; the content fallback finds them.
+  void addGroupConditions(List<GestureNode> nodes, DeviceType device) {
+    for (final node in nodes) {
+      if (node is! GestureGroupNode) continue;
+      add(
+        node.conditions,
+        source: ConfigIssueSource.conditions,
+        device: device,
+        gestureName: node.name.isEmpty ? null : node.name,
+      );
+      addGroupConditions(node.children, device);
+    }
+  }
+
+  for (final device in DeviceType.values) {
+    addGroupConditions(config.nodesForDevice(device), device);
   }
 
   return located;
@@ -190,9 +198,7 @@ List<String> _rawConditions(Condition? condition) => switch (condition) {
 };
 
 class _Locator {
-  _Locator(this.text)
-    : lines = text.split('\n'),
-      editor = YamlEditor(text);
+  _Locator(this.text) : lines = text.split('\n'), editor = YamlEditor(text);
 
   final String text;
   final List<String> lines;

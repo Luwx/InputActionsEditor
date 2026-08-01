@@ -13,6 +13,7 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
@@ -24,21 +25,25 @@ void main() {
       'mouse buttons section becomes clean when restored to saved values',
       () async {
         const savedConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(
-                mouseButtons: [MouseButtonValue.middle],
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  mouseButtons: [MouseButtonValue.middle],
+                ),
               ),
             ),
           ],
         );
         final currentConfig = Config(
-          mouseGestures: [
-            const PressGesture(
-              common: TriggerCommon(),
-            ).withCommon(
-              const TriggerCommon().copyWith(
-                mouseButtons: [MouseButtonValue.middle],
+          mouseNodes: [
+            GestureNode.leaf(
+              const PressGesture(
+                common: TriggerCommon(),
+              ).withCommon(
+                const TriggerCommon().copyWith(
+                  mouseButtons: [MouseButtonValue.middle],
+                ),
               ),
             ),
           ],
@@ -69,30 +74,34 @@ void main() {
       'point condition section is clean when only decimal spelling differs',
       () async {
         const savedConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(
-                conditions: VariableCondition(
-                  variable: ConditionVariableRef.custom(
-                    'pointer_position_screen_percentage',
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  conditions: VariableCondition(
+                    variable: ConditionVariableRef.custom(
+                      'pointer_position_screen_percentage',
+                    ),
+                    operator: ConditionOperator.equals,
+                    value: ConditionValue.point(0.2, 0.2),
                   ),
-                  operator: ConditionOperator.equals,
-                  value: ConditionValue.point(0.2, 0.2),
                 ),
               ),
             ),
           ],
         );
         const currentConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(
-                conditions: VariableCondition(
-                  variable: ConditionVariableRef.custom(
-                    'pointer_position_screen_percentage',
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  conditions: VariableCondition(
+                    variable: ConditionVariableRef.custom(
+                      'pointer_position_screen_percentage',
+                    ),
+                    operator: ConditionOperator.equals,
+                    value: ConditionValue.point(0.2, 0.2),
                   ),
-                  operator: ConditionOperator.equals,
-                  value: ConditionValue.point(0.2, 0.2),
                 ),
               ),
             ),
@@ -131,25 +140,29 @@ void main() {
           action: CommandAction(command: 'echo saved'),
         );
         const savedConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(actions: [savedAction]),
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(actions: [savedAction]),
+              ),
             ),
           ],
         );
         final currentConfig = Config(
-          mouseGestures: [
-            const PressGesture(
-              common: TriggerCommon(),
-            ).withCommon(
-              const TriggerCommon().copyWith(
-                actions: [
-                  const TriggerAction(
-                    action: CommandAction(command: 'echo draft'),
-                  ).copyWith(
-                    action: const CommandAction(command: 'echo saved'),
-                  ),
-                ],
+          mouseNodes: [
+            GestureNode.leaf(
+              const PressGesture(
+                common: TriggerCommon(),
+              ).withCommon(
+                const TriggerCommon().copyWith(
+                  actions: [
+                    const TriggerAction(
+                      action: CommandAction(command: 'echo draft'),
+                    ).copyWith(
+                      action: const CommandAction(command: 'echo saved'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -183,28 +196,32 @@ void main() {
           action: CommandAction(command: 'echo saved'),
         );
         const savedConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(actions: [savedAction]),
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(actions: [savedAction]),
+              ),
             ),
           ],
         );
         final currentConfig = Config(
-          mouseGestures: [
-            const PressGesture(
-              common: TriggerCommon(),
-            ).withCommon(
-              const TriggerCommon().copyWith(
-                actions: [
-                  const TriggerAction(
-                    action: CommandAction(command: 'echo saved', wait: true),
-                  ).copyWith(
-                    action: const CommandAction(
-                      command: 'echo saved',
-                      wait: false,
+          mouseNodes: [
+            GestureNode.leaf(
+              const PressGesture(
+                common: TriggerCommon(),
+              ).withCommon(
+                const TriggerCommon().copyWith(
+                  actions: [
+                    const TriggerAction(
+                      action: CommandAction(command: 'echo saved', wait: true),
+                    ).copyWith(
+                      action: const CommandAction(
+                        command: 'echo saved',
+                        wait: false,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -230,23 +247,27 @@ void main() {
 
     test('lens dirty reports changed scalar fields', () async {
       const savedConfig = Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(action: CommandAction(command: 'saved')),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'saved')),
+                ],
+              ),
             ),
           ),
         ],
       );
       const currentConfig = Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(
-              actions: [
-                TriggerAction(action: CommandAction(command: 'draft')),
-              ],
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'draft')),
+                ],
+              ),
             ),
           ),
         ],
@@ -271,8 +292,8 @@ void main() {
 
     test('lens dirty treats a missing saved path as new unsaved', () async {
       const currentConfig = Config(
-        mouseGestures: [
-          PressGesture(common: TriggerCommon(id: 'new')),
+        mouseNodes: [
+          GestureNode.leaf(PressGesture(common: TriggerCommon(id: 'new'))),
         ],
       );
 
@@ -296,18 +317,22 @@ void main() {
         'is changedFromSaved when swipe mode changes direction→angle',
         () async {
           const savedConfig = Config(
-            mouseGestures: [
-              SwipeGesture(
-                common: TriggerCommon(),
-                mode: SwipeMode.direction(direction: SwipeDirection.right),
+            mouseNodes: [
+              GestureNode.leaf(
+                SwipeGesture(
+                  common: TriggerCommon(),
+                  mode: SwipeMode.direction(direction: SwipeDirection.right),
+                ),
               ),
             ],
           );
           const currentConfig = Config(
-            mouseGestures: [
-              SwipeGesture(
-                common: TriggerCommon(),
-                mode: SwipeMode.angle(minAngle: 0, maxAngle: 90),
+            mouseNodes: [
+              GestureNode.leaf(
+                SwipeGesture(
+                  common: TriggerCommon(),
+                  mode: SwipeMode.angle(minAngle: 0, maxAngle: 90),
+                ),
               ),
             ],
           );
@@ -330,18 +355,22 @@ void main() {
 
       test('is changedFromSaved when swipe direction changes', () async {
         const savedConfig = Config(
-          mouseGestures: [
-            SwipeGesture(
-              common: TriggerCommon(),
-              mode: SwipeMode.direction(direction: SwipeDirection.right),
+          mouseNodes: [
+            GestureNode.leaf(
+              SwipeGesture(
+                common: TriggerCommon(),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
             ),
           ],
         );
         const currentConfig = Config(
-          mouseGestures: [
-            SwipeGesture(
-              common: TriggerCommon(),
-              mode: SwipeMode.direction(direction: SwipeDirection.left),
+          mouseNodes: [
+            GestureNode.leaf(
+              SwipeGesture(
+                common: TriggerCommon(),
+                mode: SwipeMode.direction(direction: SwipeDirection.left),
+              ),
             ),
           ],
         );
@@ -363,10 +392,12 @@ void main() {
 
       test('is clean when swipe mode is identical to saved', () async {
         const config = Config(
-          mouseGestures: [
-            SwipeGesture(
-              common: TriggerCommon(),
-              mode: SwipeMode.direction(direction: SwipeDirection.right),
+          mouseNodes: [
+            GestureNode.leaf(
+              SwipeGesture(
+                common: TriggerCommon(),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
             ),
           ],
         );
@@ -385,18 +416,22 @@ void main() {
 
       test('is changedFromSaved when a TriggerCommon field changes', () async {
         const savedConfig = Config(
-          mouseGestures: [
-            SwipeGesture(
-              common: TriggerCommon(threshold: '5'),
-              mode: SwipeMode.direction(direction: SwipeDirection.right),
+          mouseNodes: [
+            GestureNode.leaf(
+              SwipeGesture(
+                common: TriggerCommon(threshold: '5'),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
             ),
           ],
         );
         const currentConfig = Config(
-          mouseGestures: [
-            SwipeGesture(
-              common: TriggerCommon(threshold: '10'),
-              mode: SwipeMode.direction(direction: SwipeDirection.right),
+          mouseNodes: [
+            GestureNode.leaf(
+              SwipeGesture(
+                common: TriggerCommon(threshold: '10'),
+                mode: SwipeMode.direction(direction: SwipeDirection.right),
+              ),
             ),
           ],
         );
@@ -420,22 +455,30 @@ void main() {
         'is clean when only action changes (actions are excluded)',
         () async {
           const savedConfig = Config(
-            mouseGestures: [
-              SwipeGesture(
-                common: TriggerCommon(
-                  actions: [TriggerAction(action: CommandAction(command: 'a'))],
+            mouseNodes: [
+              GestureNode.leaf(
+                SwipeGesture(
+                  common: TriggerCommon(
+                    actions: [
+                      TriggerAction(action: CommandAction(command: 'a')),
+                    ],
+                  ),
+                  mode: SwipeMode.direction(direction: SwipeDirection.right),
                 ),
-                mode: SwipeMode.direction(direction: SwipeDirection.right),
               ),
             ],
           );
           const currentConfig = Config(
-            mouseGestures: [
-              SwipeGesture(
-                common: TriggerCommon(
-                  actions: [TriggerAction(action: CommandAction(command: 'b'))],
+            mouseNodes: [
+              GestureNode.leaf(
+                SwipeGesture(
+                  common: TriggerCommon(
+                    actions: [
+                      TriggerAction(action: CommandAction(command: 'b')),
+                    ],
+                  ),
+                  mode: SwipeMode.direction(direction: SwipeDirection.right),
                 ),
-                mode: SwipeMode.direction(direction: SwipeDirection.right),
               ),
             ],
           );
@@ -461,18 +504,22 @@ void main() {
       'gesture becomes clean when block events is toggled back to default',
       () async {
         const savedConfig = Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(),
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(),
+              ),
             ),
           ],
         );
         final currentConfig = Config(
-          mouseGestures: [
-            const PressGesture(
-              common: TriggerCommon(blockEvents: false),
-            ).withCommon(
-              const TriggerCommon().copyWith(blockEvents: true),
+          mouseNodes: [
+            GestureNode.leaf(
+              const PressGesture(
+                common: TriggerCommon(blockEvents: false),
+              ).withCommon(
+                const TriggerCommon().copyWith(blockEvents: true),
+              ),
             ),
           ],
         );

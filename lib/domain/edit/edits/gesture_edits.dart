@@ -8,18 +8,28 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
-/// Appends [gesture] to [device]'s list.
+/// Appends [gesture] at the root of [device]'s tree, or inside the group
+/// [groupKey].
 final class AddGesture extends ConfigEdit {
-  AddGesture(this.device, this.gesture);
+  AddGesture(this.device, this.gesture, {this.groupKey});
 
   final DeviceType device;
   final Gesture gesture;
+  final int? groupKey;
 
   @override
   String get label => 'add ${device.name} gesture';
 
   @override
-  Config apply(Config config) => schema.addGesture(config, device, gesture);
+  Config apply(Config config) {
+    final key = groupKey;
+    if (key == null) return schema.addGesture(config, device, gesture);
+    return schema.addGestureToGestureGroup(
+      config,
+      schema.GestureGroupLocation(device: device, editId: key),
+      gesture,
+    );
+  }
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -54,13 +64,12 @@ final class DuplicateGesture extends ConfigEdit {
 
   @override
   Config apply(Config config) {
-    final index = schema.gestureIndexOf(config, location);
     final source = schema.gestureAt(config, location);
-    if (index == null || source == null) return config;
+    if (source == null) return config;
     final copy = source.withCommon(
       source.common.copyWith(name: '${source.common.name ?? ''}-copy'),
     );
-    return schema.insertGestureAt(config, location.device, index + 1, copy);
+    return schema.insertGestureAfter(config, location, copy);
   }
 
   @override
@@ -68,8 +77,10 @@ final class DuplicateGesture extends ConfigEdit {
       RestoreConfig(config, label: 'remove duplicate');
 }
 
-/// Reorders [device]'s list using Flutter's `ReorderableList` index semantics
-/// (when moving down, [newIndex] counts the slot the item currently occupies).
+/// Reorders [device]'s flat gesture order using Flutter's `ReorderableList`
+/// index semantics (when moving down, [newIndex] counts the slot the item
+/// currently occupies). Membership is unchanged — order shifts within each
+/// gesture's containing group.
 final class ReorderGesture extends ConfigEdit {
   ReorderGesture(this.device, this.oldIndex, this.newIndex);
 
@@ -84,8 +95,21 @@ final class ReorderGesture extends ConfigEdit {
   Config apply(Config config) {
     final list = schema.gesturesForDevice(config, device);
     if (oldIndex < 0 || oldIndex >= list.length) return config;
-    final insertAt = newIndex > oldIndex ? newIndex - 1 : newIndex;
-    return schema.moveGesture(config, device, oldIndex, insertAt);
+    final insertAt = (newIndex > oldIndex ? newIndex - 1 : newIndex).clamp(
+      0,
+      list.length - 1,
+    );
+    final keys = [for (final g in list) g.common.editId];
+    if (keys.any((k) => k == null)) return config;
+    final ordered = [...keys]
+      ..removeAt(oldIndex)
+      ..insert(insertAt, keys[oldIndex]);
+    return schema.reorderGestures(
+      config,
+      device,
+      ordered.cast<int>(),
+      const {},
+    );
   }
 
   @override

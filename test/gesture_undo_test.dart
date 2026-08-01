@@ -7,6 +7,7 @@ import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -42,9 +43,9 @@ void main() {
     )!;
 
     const seed = Config(
-      mouseGestures: [
-        PressGesture(common: TriggerCommon(threshold: '1')),
-        PressGesture(common: TriggerCommon(threshold: '2')),
+      mouseNodes: [
+        GestureNode.leaf(PressGesture(common: TriggerCommon(threshold: '1'))),
+        GestureNode.leaf(PressGesture(common: TriggerCommon(threshold: '2'))),
       ],
     );
 
@@ -172,7 +173,13 @@ void main() {
       final shared = PressGesture(
         common: const TriggerCommon().copyWith(threshold: '2', editId: 7),
       );
-      final config = Config(mouseGestures: [a, shared, shared]);
+      final config = Config(
+        mouseNodes: [
+          const GestureNode.leaf(a),
+          GestureNode.leaf(shared),
+          GestureNode.leaf(shared),
+        ],
+      );
 
       final out = assignEditIds(config);
       final ids = out.mouseGestures
@@ -186,17 +193,21 @@ void main() {
     test('preserveEditIds carries ids across a save round-trip by index', () {
       final saved = assignEditIds(
         const Config(
-          mouseGestures: [
-            PressGesture(common: TriggerCommon(threshold: '1')),
-            PressGesture(common: TriggerCommon(threshold: '2')),
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(common: TriggerCommon(threshold: '1')),
+            ),
+            GestureNode.leaf(
+              PressGesture(common: TriggerCommon(threshold: '2')),
+            ),
           ],
         ),
       );
       // Reload reconstructs gestures with null editIds but identical order.
       const reloaded = Config(
-        mouseGestures: [
-          PressGesture(common: TriggerCommon(threshold: '1')),
-          PressGesture(common: TriggerCommon(threshold: '2')),
+        mouseNodes: [
+          GestureNode.leaf(PressGesture(common: TriggerCommon(threshold: '1'))),
+          GestureNode.leaf(PressGesture(common: TriggerCommon(threshold: '2'))),
         ],
       );
 

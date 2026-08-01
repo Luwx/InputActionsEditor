@@ -291,29 +291,15 @@ class ConfigController extends AsyncNotifier<EditSession> {
     final current = _draft;
     if (current == null) return;
     final incoming = _repository.decodeFromText(text);
-    final existingGroupIds = current.gestureGroups.map((g) => g.id).toSet();
-    final newGroups = incoming.gestureGroups
-        .where((g) => !existingGroupIds.contains(g.id))
-        .toList();
     final merged = current.copyWith(
-      mouseGestures: [...current.mouseGestures, ...incoming.mouseGestures],
-      keyboardGestures: [
-        ...current.keyboardGestures,
-        ...incoming.keyboardGestures,
+      mouseNodes: [...current.mouseNodes, ...incoming.mouseNodes],
+      keyboardNodes: [...current.keyboardNodes, ...incoming.keyboardNodes],
+      pointerNodes: [...current.pointerNodes, ...incoming.pointerNodes],
+      touchpadNodes: [...current.touchpadNodes, ...incoming.touchpadNodes],
+      touchscreenNodes: [
+        ...current.touchscreenNodes,
+        ...incoming.touchscreenNodes,
       ],
-      pointerGestures: [
-        ...current.pointerGestures,
-        ...incoming.pointerGestures,
-      ],
-      touchpadGestures: [
-        ...current.touchpadGestures,
-        ...incoming.touchpadGestures,
-      ],
-      touchscreenGestures: [
-        ...current.touchscreenGestures,
-        ...incoming.touchscreenGestures,
-      ],
-      gestureGroups: [...current.gestureGroups, ...newGroups],
       deviceRules: [...current.deviceRules, ...incoming.deviceRules],
       mouseSpeed: current.mouseSpeed ?? incoming.mouseSpeed,
       touchpadSpeed: current.touchpadSpeed ?? incoming.touchpadSpeed,

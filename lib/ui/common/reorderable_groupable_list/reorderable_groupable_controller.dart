@@ -273,9 +273,7 @@ final class ReorderableGroupableController<I, G> {
     G groupId,
   ) {
     final index = _groupIndexOf(entries, groupId);
-    return index < 0
-        ? null
-        : entries[index] as ReorderableGroupableGroup<I, G>;
+    return index < 0 ? null : entries[index] as ReorderableGroupableGroup<I, G>;
   }
 
   G? _parentOf(List<ReorderableGroupableListEntry<I, G>> entries, G groupId) =>

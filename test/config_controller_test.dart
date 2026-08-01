@@ -15,6 +15,7 @@ import 'package:input_actions_editor/domain/edit/edits/settings_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show
         ActionLocation,
+        GestureGroupLocation,
         GestureLocation,
         actionComponentField,
         gestureLocationAt;
@@ -24,7 +25,7 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -57,9 +58,11 @@ const _ts1 = TouchscreenSwipeGesture(
   mode: SwipeDirectionMode(direction: SwipeDirection.up),
 );
 
-const _group1 = GestureGroup(id: 'g1', name: 'G1', device: DeviceType.mouse);
-const _group2 = GestureGroup(id: 'g2', name: 'G2', device: DeviceType.mouse);
-const _group3 = GestureGroup(id: 'g3', name: 'G3', device: DeviceType.keyboard);
+const _group1 = GestureGroupNode(name: 'G1', editId: 901);
+const _group2 = GestureGroupNode(name: 'G2', editId: 902);
+
+GestureGroupLocation _groupAt(int editId) =>
+    GestureGroupLocation(device: DeviceType.mouse, editId: editId);
 
 const _rule1 = DeviceRule(properties: DeviceRuleProperties(grab: true));
 const _rule2 = DeviceRule(properties: DeviceRuleProperties(grab: false));
@@ -151,7 +154,11 @@ void main() {
     });
 
     test('RemoveGesture deletes by identity, ignores a missing gesture', () {
-      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
+        ),
+      );
       expect(
         _names(
           RemoveGesture(_at(c, DeviceType.mouse, 0)).apply(c).mouseGestures,
@@ -162,7 +169,11 @@ void main() {
     });
 
     test('RemoveGesture follows the gesture across a reorder', () {
-      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
+        ),
+      );
       final m1 = _at(c, DeviceType.mouse, 0);
       final reordered = ReorderGesture(DeviceType.mouse, 0, 2).apply(c);
       expect(
@@ -172,13 +183,21 @@ void main() {
     });
 
     test('DuplicateGesture inserts a copy after the original', () {
-      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
+        ),
+      );
       final out = DuplicateGesture(_at(c, DeviceType.mouse, 0)).apply(c);
       expect(_names(out.mouseGestures), ['m1', 'm1-copy', 'm2']);
     });
 
     test('UpdateGesture transforms in place, ignores a missing gesture', () {
-      final c = assignEditIds(const Config(keyboardGestures: [_kbd1, _kbd2]));
+      final c = assignEditIds(
+        const Config(
+          keyboardNodes: [GestureNode.leaf(_kbd1), GestureNode.leaf(_kbd2)],
+        ),
+      );
       final out = UpdateGesture(
         _at(c, DeviceType.keyboard, 0),
         (g) => g.withCommon(_rename('updated')(g.common)),
@@ -188,7 +207,9 @@ void main() {
     });
 
     test('UpdateGestureCommon patches the shared common', () {
-      final c = assignEditIds(const Config(touchpadGestures: [_tp1]));
+      final c = assignEditIds(
+        const Config(touchpadNodes: [GestureNode.leaf(_tp1)]),
+      );
       final out = UpdateGestureCommon(
         _at(c, DeviceType.touchpad, 0),
         (common) => common.copyWith(threshold: '5'),
@@ -197,14 +218,30 @@ void main() {
     });
 
     test('ReorderGesture moves forward (newIndex > oldIndex)', () {
-      const c = Config(mouseGestures: [_mouse1, _mouse2, _mouse3]);
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [
+            GestureNode.leaf(_mouse1),
+            GestureNode.leaf(_mouse2),
+            GestureNode.leaf(_mouse3),
+          ],
+        ),
+      );
       // Move index 0 to after index 1: Flutter passes newIndex = 2.
       final out = ReorderGesture(DeviceType.mouse, 0, 2).apply(c);
       expect(_names(out.mouseGestures), ['m2', 'm1', 'm3']);
     });
 
     test('ReorderGesture moves backward (newIndex < oldIndex)', () {
-      const c = Config(mouseGestures: [_mouse1, _mouse2, _mouse3]);
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [
+            GestureNode.leaf(_mouse1),
+            GestureNode.leaf(_mouse2),
+            GestureNode.leaf(_mouse3),
+          ],
+        ),
+      );
       final out = ReorderGesture(DeviceType.mouse, 2, 0).apply(c);
       expect(_names(out.mouseGestures), ['m3', 'm1', 'm2']);
     });
@@ -226,9 +263,11 @@ void main() {
 
     Config seed(List<int> ms) => assignEditIds(
       Config(
-        mouseGestures: [
-          PressGesture(
-            common: TriggerCommon(actions: [for (final m in ms) sleep(m)]),
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(actions: [for (final m in ms) sleep(m)]),
+            ),
           ),
         ],
       ),
@@ -275,9 +314,11 @@ void main() {
     test('subtype lens canGet narrows by union member', () {
       Config withAction(Action action) => assignEditIds(
         Config(
-          mouseGestures: [
-            PressGesture(
-              common: TriggerCommon(actions: [TriggerAction(action: action)]),
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(actions: [TriggerAction(action: action)]),
+              ),
             ),
           ],
         ),
@@ -300,117 +341,124 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('Gesture group edits', () {
-    test('AddGestureGroup appends', () {
-      final out = AddGestureGroup(_group1).apply(const Config());
-      expect(out.gestureGroups.single.id, 'g1');
+    test('AddGestureGroup appends at root or under a parent', () {
+      final out = AddGestureGroup(
+        DeviceType.mouse,
+        _group1,
+      ).apply(const Config());
+      expect((out.mouseNodes.single as GestureGroupNode).name, 'G1');
+
+      final nested = AddGestureGroup(
+        DeviceType.mouse,
+        _group2,
+        parentKey: 901,
+      ).apply(out);
+      final outer = nested.mouseNodes.single as GestureGroupNode;
+      expect((outer.children.single as GestureGroupNode).name, 'G2');
     });
 
-    test('UpdateGestureGroup edits by id; unknown id is a no-op', () {
-      const c = Config(gestureGroups: [_group1, _group2]);
+    test('UpdateGestureGroup edits by location; unknown is a no-op', () {
+      const c = Config(mouseNodes: [_group1, _group2]);
       final out = UpdateGestureGroup(
-        'g1',
+        _groupAt(901),
         (g) => g.copyWith(name: 'Updated'),
       ).apply(c);
-      expect(out.gestureGroups[0].name, 'Updated');
-      expect(out.gestureGroups[1].name, 'G2');
-      expect(UpdateGestureGroup('nope', (g) => g).apply(c), c);
+      expect((out.mouseNodes[0] as GestureGroupNode).name, 'Updated');
+      expect((out.mouseNodes[1] as GestureGroupNode).name, 'G2');
+      expect(UpdateGestureGroup(_groupAt(999), (g) => g).apply(c), c);
     });
 
     test('MoveGestureGroup reorders before a sibling', () {
-      const c = Config(gestureGroups: [_group1, _group2, _group3]);
-      final out = MoveGestureGroup(
-        DeviceType.mouse,
-        'g2',
-        beforeId: 'g1',
-      ).apply(c);
-      expect(out.gestureGroups.map((g) => g.id).toList(), ['g2', 'g1', 'g3']);
+      const c = Config(mouseNodes: [_group1, _group2]);
+      final out = MoveGestureGroup(_groupAt(902), beforeKey: 901).apply(c);
+      expect(
+        [for (final n in out.mouseNodes) (n as GestureGroupNode).name],
+        ['G2', 'G1'],
+      );
     });
 
     test('MoveGestureGroup nests under a parent', () {
-      const c = Config(gestureGroups: [_group1, _group2, _group3]);
-      final out = MoveGestureGroup(
-        DeviceType.mouse,
-        'g2',
-        newParentId: 'g1',
-      ).apply(c);
-      final byId = {for (final g in out.gestureGroups) g.id: g};
-      expect(byId['g2']!.parentId, 'g1');
+      const c = Config(mouseNodes: [_group1, _group2]);
+      final out = MoveGestureGroup(_groupAt(902), newParentKey: 901).apply(c);
+      final outer = out.mouseNodes.single as GestureGroupNode;
+      expect((outer.children.single as GestureGroupNode).name, 'G2');
     });
 
     test('MoveGestureGroup refuses to nest a group inside its own subtree', () {
-      final c = Config(
-        gestureGroups: [
-          _group1,
-          _group2.copyWith(parentId: 'g1'),
-          _group3,
+      const c = Config(
+        mouseNodes: [
+          GestureGroupNode(name: 'G1', editId: 901, children: [_group2]),
         ],
       );
-      expect(
-        MoveGestureGroup(DeviceType.mouse, 'g1', newParentId: 'g2').apply(c),
-        c,
-      );
+      expect(MoveGestureGroup(_groupAt(901), newParentKey: 902).apply(c), c);
     });
 
-    test('RemoveGestureGroupAndUngroup clears the id from all devices', () {
-      final mouse = _mouse1.withCommon(_mouse1.common.copyWith(groupId: 'g1'));
-      final kbd = _kbd1.withCommon(_kbd1.common.copyWith(groupId: 'g1'));
-      final c = Config(
-        mouseGestures: [mouse],
-        keyboardGestures: [kbd],
-        gestureGroups: const [_group1],
+    test('RemoveGestureGroupAndUngroup splices members into the parent', () {
+      const c = Config(
+        mouseNodes: [
+          GestureGroupNode(
+            name: 'G1',
+            editId: 901,
+            children: [GestureNode.leaf(_mouse1)],
+          ),
+          GestureNode.leaf(_mouse2),
+        ],
       );
-      final out = RemoveGestureGroupAndUngroup('g1').apply(c);
-      expect(out.gestureGroups, isEmpty);
-      expect(out.mouseGestures.single.common.groupId, isNull);
-      expect(out.keyboardGestures.single.common.groupId, isNull);
+      final out = RemoveGestureGroupAndUngroup(_groupAt(901)).apply(c);
+      expect(out.mouseNodes.whereType<GestureGroupNode>(), isEmpty);
+      expect(_names(out.mouseGestures), ['m1', 'm2']);
     });
 
     test('DeleteGestureGroupWithGestures removes group and its gestures', () {
-      final mouse = _mouse1.withCommon(_mouse1.common.copyWith(groupId: 'g1'));
-      final c = Config(
-        mouseGestures: [mouse, _mouse2],
-        gestureGroups: const [_group1],
+      const c = Config(
+        mouseNodes: [
+          GestureGroupNode(
+            name: 'G1',
+            editId: 901,
+            children: [GestureNode.leaf(_mouse1)],
+          ),
+          GestureNode.leaf(_mouse2),
+        ],
       );
-      final out = DeleteGestureGroupWithGestures('g1').apply(c);
-      expect(out.gestureGroups, isEmpty);
+      final out = DeleteGestureGroupWithGestures(_groupAt(901)).apply(c);
+      expect(out.mouseNodes.whereType<GestureGroupNode>(), isEmpty);
       expect(_names(out.mouseGestures), ['m2']);
     });
 
-    test('ReorderAndUpdateGroup reorders and reassigns one groupId', () {
-      final m1 = _mouse1.withCommon(_mouse1.common.copyWith(groupId: 'g1'));
-      final m2 = _mouse2.withCommon(_mouse2.common.copyWith(groupId: 'g2'));
-      final c = Config(mouseGestures: [m1, m2]);
-      // newOrder [1,0]; reassign the originally-second gesture (oldIdx 1).
-      final out = ReorderAndUpdateGroup(
-        DeviceType.mouse,
-        [1, 0],
-        1,
-        'g1',
-      ).apply(c);
-      expect(out.mouseGestures[0].common.name, 'm2');
-      expect(out.mouseGestures[0].common.groupId, 'g1');
-      expect(out.mouseGestures[1].common.groupId, 'g1');
-    });
-
-    test('ReorderAndUpdateGroups reassigns several groupIds', () {
-      final m1 = _mouse1.withCommon(_mouse1.common.copyWith(groupId: 'g1'));
-      final m2 = _mouse2.withCommon(_mouse2.common.copyWith(groupId: 'g1'));
-      final c = assignEditIds(Config(mouseGestures: [m1, m2]));
+    test('ReorderAndUpdateGroups reorders and reassigns membership', () {
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [
+            GestureGroupNode(
+              name: 'G1',
+              children: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
+            ),
+          ],
+        ),
+      );
       final first = _at(c, DeviceType.mouse, 0);
       final second = _at(c, DeviceType.mouse, 1);
+      // Reverse the order and hoist m2 to the root.
       final out = ReorderAndUpdateGroups(
         DeviceType.mouse,
         [second, first],
-        {second: 'g2'},
+        {second: null},
       ).apply(c);
-      expect(out.mouseGestures[0].common.name, 'm2');
-      expect(out.mouseGestures[0].common.groupId, 'g2');
-      expect(out.mouseGestures[1].common.groupId, 'g1');
+      expect(_names(out.mouseGestures), ['m2', 'm1']);
+      expect(out.mouseNodes.first, isA<GestureLeaf>());
+      expect(
+        (out.mouseNodes[1] as GestureGroupNode).gestures.single.common.name,
+        'm1',
+      );
     });
 
     test('ReorderAndUpdateGroups drops a stale order instead of applying it '
         'partially', () {
-      final c = assignEditIds(const Config(mouseGestures: [_mouse1, _mouse2]));
+      final c = assignEditIds(
+        const Config(
+          mouseNodes: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
+        ),
+      );
       final first = _at(c, DeviceType.mouse, 0);
       // Misses the second gesture entirely.
       expect(
@@ -574,7 +622,10 @@ void main() {
   // paths hit the repository and are covered separately; here we exercise the
   // pure partitioning that everything else derives from.
   group('settings / gestures partition', () {
-    const seed = Config(mouseGestures: [_mouse1], mouseSpeed: _speed1);
+    const seed = Config(
+      mouseNodes: [GestureNode.leaf(_mouse1)],
+      mouseSpeed: _speed1,
+    );
 
     Future<ConfigController> ready(ProviderContainer c) async {
       await c.read(configControllerProvider.future);
@@ -603,7 +654,7 @@ void main() {
 
     test('gesture groups count as gesture data, not settings', () async {
       final c = _makeContainer(seed);
-      (await ready(c)).add(AddGestureGroup(_group1));
+      (await ready(c)).add(AddGestureGroup(DeviceType.mouse, _group1));
       expect(_session(c).gesturesDirty.isDirty, isTrue);
       expect(_session(c).settingsDirty.isDirty, isFalse);
     });

@@ -1,52 +1,48 @@
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation;
+    as schema;
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show GestureGroupLocation, GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 
-List<Gesture> _gestures(Config config, DeviceType device) =>
-    config.gesturesForDevice(device).cast<Gesture>();
-
-Gesture _withGroupId(Gesture gesture, String? groupId) =>
-    gesture.withCommon(gesture.common.copyWith(groupId: groupId));
-
-/// Appends a UI grouping bucket.
+/// Appends a group node at the root of [device]'s tree, or inside the group
+/// [parentKey].
 final class AddGestureGroup extends ConfigEdit {
-  AddGestureGroup(this.group);
+  AddGestureGroup(this.device, this.group, {this.parentKey});
 
-  final GestureGroup group;
+  final DeviceType device;
+  final GestureGroupNode group;
+  final int? parentKey;
 
   @override
   String get label => 'add group';
 
   @override
   Config apply(Config config) =>
-      config.copyWith(gestureGroups: [...config.gestureGroups, group]);
+      schema.addGestureGroup(config, device, group, parentKey: parentKey);
 
   @override
   ConfigEdit inverse(Config config) =>
       RestoreConfig(config, label: 'remove group');
 }
 
-/// Transforms the group whose id is [id] (no-op when not found).
+/// Transforms the group at [location] (no-op when it no longer exists).
 final class UpdateGestureGroup extends ConfigEdit {
-  UpdateGestureGroup(this.id, this.transform);
+  UpdateGestureGroup(this.location, this.transform);
 
-  final String id;
-  final GestureGroup Function(GestureGroup group) transform;
+  final GestureGroupLocation location;
+  final GestureGroupNode Function(GestureGroupNode group) transform;
 
   @override
   String get label => 'update group';
 
   @override
   Config apply(Config config) {
-    final groups = [...config.gestureGroups];
-    final i = groups.indexWhere((g) => g.id == id);
-    if (i < 0) return config;
-    groups[i] = transform(groups[i]);
-    return config.copyWith(gestureGroups: groups);
+    final group = schema.gestureGroupAt(config, location);
+    if (group == null) return config;
+    return schema.gestureGroupLens(location).set(config, transform(group));
   }
 
   @override
@@ -54,240 +50,84 @@ final class UpdateGestureGroup extends ConfigEdit {
       RestoreConfig(config, label: 'update group');
 }
 
-/// Moves group [id] before [beforeId] (or to the end of [device]'s groups),
-/// re-parenting it under [newParentId]. The moved subtree's gestures follow as
-/// a contiguous block so the emitted file order matches the list.
+/// Moves the group at [location] (with its subtree) under [newParentKey]
+/// (root when null), just before the sibling group [beforeKey] (or last).
 final class MoveGestureGroup extends ConfigEdit {
-  MoveGestureGroup(this.device, this.id, {this.beforeId, this.newParentId});
+  MoveGestureGroup(this.location, {this.beforeKey, this.newParentKey});
 
-  final DeviceType device;
-  final String id;
-  final String? beforeId;
-  final String? newParentId;
+  final GestureGroupLocation location;
+  final int? beforeKey;
+  final int? newParentKey;
 
   @override
   String get label => 'move group';
 
   @override
-  Config apply(Config config) {
-    if (beforeId == id) return config;
-    final byId = {for (final g in config.gestureGroups) g.id: g};
-    if (!byId.containsKey(id)) return config;
-    if (beforeId != null && !byId.containsKey(beforeId)) return config;
-
-    // Refuse a cycle: the new parent must not sit inside the moved subtree.
-    var current = newParentId;
-    final seen = <String>{};
-    while (current != null && seen.add(current)) {
-      if (current == id) return config;
-      current = byId[current]?.parentId;
-    }
-
-    final subtree = <String>{id};
-    var grew = true;
-    while (grew) {
-      grew = false;
-      for (final g in config.gestureGroups) {
-        final parent = g.parentId;
-        if (parent != null && subtree.contains(parent) && subtree.add(g.id)) {
-          grew = true;
-        }
-      }
-    }
-
-    final groups = [
-      for (final g in config.gestureGroups)
-        if (g.id == id) g.copyWith(parentId: newParentId) else g,
-    ];
-
-    // Reorder among the device's groups: moved before beforeId, or last.
-    final moved = groups.firstWhere((g) => g.id == id);
-    final without = groups.where((g) => g.id != id).toList();
-    var insertAt = without.length;
-    if (beforeId != null) {
-      final beforeIndex = without.indexWhere((g) => g.id == beforeId);
-      if (beforeIndex >= 0) insertAt = beforeIndex;
-    }
-    without.insert(insertAt, moved);
-
-    // Move the subtree's gestures as a block, keeping their relative order.
-    final gestures = _gestures(config, device);
-    final block = <Gesture>[];
-    final rest = <Gesture>[];
-    for (final g in gestures) {
-      final gid = g.common.groupId;
-      (gid != null && subtree.contains(gid) ? block : rest).add(g);
-    }
-    var gestureInsert = rest.length;
-    if (beforeId != null) {
-      final targetSubtree = <String>{beforeId!};
-      var targetGrew = true;
-      while (targetGrew) {
-        targetGrew = false;
-        for (final g in without) {
-          final parent = g.parentId;
-          if (parent != null &&
-              targetSubtree.contains(parent) &&
-              targetSubtree.add(g.id)) {
-            targetGrew = true;
-          }
-        }
-      }
-      final anchor = rest.indexWhere(
-        (g) =>
-            g.common.groupId != null &&
-            targetSubtree.contains(g.common.groupId),
-      );
-      if (anchor >= 0) gestureInsert = anchor;
-    }
-    rest.insertAll(gestureInsert, block);
-
-    return config
-        .copyWith(gestureGroups: without)
-        .withGesturesForDevice(device, rest);
-  }
+  Config apply(Config config) => schema.moveGestureGroup(
+    config,
+    location,
+    beforeKey: beforeKey,
+    newParentKey: newParentKey,
+  );
 
   @override
   ConfigEdit inverse(Config config) =>
       RestoreConfig(config, label: 'move group');
 }
 
-/// Deletes the group [id] and clears that id from every gesture that referenced
-/// it (the gestures themselves stay).
+/// Dissolves the group at [location]: its children take its place.
 final class RemoveGestureGroupAndUngroup extends ConfigEdit {
-  RemoveGestureGroupAndUngroup(this.id);
+  RemoveGestureGroupAndUngroup(this.location);
 
-  final String id;
+  final GestureGroupLocation location;
 
   @override
   String get label => 'ungroup';
 
   @override
-  Config apply(Config config) {
-    // Members and child groups are handed to the removed group's parent, so
-    // dissolving a nested group folds it into its enclosing one.
-    final parentId = config.gestureGroups
-        .where((g) => g.id == id)
-        .firstOrNull
-        ?.parentId;
-    var next = config;
-    for (final device in DeviceType.values) {
-      final list = _gestures(next, device);
-      final out = [
-        for (final g in list)
-          g.common.groupId == id ? _withGroupId(g, parentId) : g,
-      ];
-      next = next.withGesturesForDevice(device, out);
-    }
-    return next.copyWith(
-      gestureGroups: [
-        for (final g in next.gestureGroups)
-          if (g.id != id)
-            g.parentId == id ? g.copyWith(parentId: parentId) : g,
-      ],
-    );
-  }
+  Config apply(Config config) => schema.spliceGestureGroup(config, location);
 
   @override
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'ungroup');
 }
 
-/// Deletes the group [id] together with every gesture that belonged to it.
+/// Deletes the group at [location] together with its whole subtree.
 final class DeleteGestureGroupWithGestures extends ConfigEdit {
-  DeleteGestureGroupWithGestures(this.id);
+  DeleteGestureGroupWithGestures(this.location);
 
-  final String id;
+  final GestureGroupLocation location;
 
   @override
   String get label => 'delete group';
 
   @override
-  Config apply(Config config) {
-    var next = config;
-    for (final device in DeviceType.values) {
-      final kept = _gestures(
-        next,
-        device,
-      ).where((g) => g.common.groupId != id).toList();
-      next = next.withGesturesForDevice(device, kept);
-    }
-    return next.copyWith(
-      gestureGroups: next.gestureGroups.where((g) => g.id != id).toList(),
-    );
-  }
+  Config apply(Config config) => schema.removeGestureGroup(config, location);
 
   @override
   ConfigEdit inverse(Config config) =>
       RestoreConfig(config, label: 'delete group');
 }
 
-/// Reorders [device]'s gestures to [newOrder] (old indices in their new order)
-/// and reassigns the group of the gesture originally at [changedOldIndex].
-final class ReorderAndUpdateGroup extends ConfigEdit {
-  ReorderAndUpdateGroup(
-    this.device,
-    this.newOrder,
-    this.changedOldIndex,
-    this.newGroupId,
-  );
-
-  final DeviceType device;
-  final List<int> newOrder;
-  final int changedOldIndex;
-  final String? newGroupId;
-
-  @override
-  String get label => 'regroup';
-
-  @override
-  Config apply(Config config) {
-    final original = _gestures(config, device);
-    final out = [
-      for (final oldIdx in newOrder)
-        oldIdx == changedOldIndex
-            ? _withGroupId(original[oldIdx], newGroupId)
-            : original[oldIdx],
-    ];
-    return config.withGesturesForDevice(device, out);
-  }
-
-  @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'regroup');
-}
-
-/// Reorders [device]'s gestures to [newOrder] (identity locations in their new
-/// order) and reassigns the group of every gesture in [changedGroupIds].
-///
-/// A no-op unless [newOrder] covers the device's list exactly — a location
-/// that no longer resolves, or a gesture it misses, means the drop went stale
-/// against a newer config; applying it partially would scramble the list.
+/// Reorders [device]'s gestures to [newOrder] (identity locations in their
+/// new order) and reassigns the containing group of every gesture in
+/// [changedGroups] (group editId, null = root). Stale input is a no-op.
 final class ReorderAndUpdateGroups extends ConfigEdit {
-  ReorderAndUpdateGroups(this.device, this.newOrder, this.changedGroupIds);
+  ReorderAndUpdateGroups(this.device, this.newOrder, this.changedGroups);
 
   final DeviceType device;
   final List<GestureLocation> newOrder;
-  final Map<GestureLocation, String?> changedGroupIds;
+  final Map<GestureLocation, int?> changedGroups;
 
   @override
   String get label => 'regroup';
 
   @override
-  Config apply(Config config) {
-    final original = _gestures(config, device);
-    if (newOrder.length != original.length) return config;
-    final byEditId = {for (final g in original) g.common.editId: g};
-    final out = <Gesture>[];
-    for (final location in newOrder) {
-      final gesture = byEditId[location.editId];
-      if (gesture == null) return config;
-      out.add(
-        changedGroupIds.containsKey(location)
-            ? _withGroupId(gesture, changedGroupIds[location])
-            : gesture,
-      );
-    }
-    return config.withGesturesForDevice(device, out);
-  }
+  Config apply(Config config) => schema.reorderGestures(
+    config,
+    device,
+    [for (final location in newOrder) location.editId],
+    {for (final e in changedGroups.entries) e.key.editId: e.value},
+  );
 
   @override
   ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'regroup');

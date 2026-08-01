@@ -14,7 +14,7 @@ class _GhostRow {
     required this.editId,
     required this.gesture,
     required this.device,
-    required this.groupId,
+    required this.groupKey,
     required this.anchorIndex,
     required this.collapsing,
     this.depth = 0,
@@ -23,7 +23,7 @@ class _GhostRow {
   final int editId;
   final Gesture gesture;
   final DeviceType device;
-  final String? groupId;
+  final int? groupKey;
   final int depth;
 
   /// Flat-list index of the row's old slot, where the ghost is inserted.
@@ -36,7 +36,7 @@ class _GhostRow {
     editId: editId,
     gesture: gesture,
     device: device,
-    groupId: groupId,
+    groupKey: groupKey,
     anchorIndex: anchorIndex,
     collapsing: true,
     depth: depth,
@@ -85,7 +85,7 @@ final class _GestureTransitions {
 
   final void Function({
     required DeviceType device,
-    required ReorderableItemsResult<GestureLocation, String> result,
+    required ReorderableItemsResult<GestureLocation, int> result,
     required List<_FlatItem> flatItems,
   })
   requestItemsReorder;
@@ -99,11 +99,11 @@ int _ghostAnchorIndex(List<_FlatItem> items, int editId) {
   return items.length;
 }
 
-int _ghostDepth(List<_FlatItem> items, int editId) {
+_GestureRowItem? _ghostRowItem(List<_FlatItem> items, int editId) {
   for (final item in items) {
-    if (item is _GestureRowItem && item.editId == editId) return item.depth;
+    if (item is _GestureRowItem && item.editId == editId) return item;
   }
-  return 0;
+  return null;
 }
 
 _GestureTransitions _useGestureTransitions(
@@ -146,16 +146,17 @@ _GestureTransitions _useGestureTransitions(
 
     if (gesture == null) return;
     final editId = location.editId;
+    final row = _ghostRowItem(flatItems, editId);
     ghosts.value = [
       ...ghosts.value,
       _GhostRow(
         editId: editId,
         gesture: gesture,
         device: location.device,
-        groupId: gesture.common.groupId,
+        groupKey: row?.groupKey,
         anchorIndex: _ghostAnchorIndex(flatItems, editId),
         collapsing: false,
-        depth: _ghostDepth(flatItems, editId),
+        depth: row?.depth ?? 0,
       ),
     ];
     scheduleCollapseAndRemoval({editId});
@@ -163,7 +164,7 @@ _GestureTransitions _useGestureTransitions(
 
   void requestItemsReorder({
     required DeviceType device,
-    required ReorderableItemsResult<GestureLocation, String> result,
+    required ReorderableItemsResult<GestureLocation, int> result,
     required List<_FlatItem> flatItems,
   }) {
     final draft = ref.read(draftConfigProvider);
@@ -174,15 +175,16 @@ _GestureTransitions _useGestureTransitions(
       final editId = gesture?.common.editId;
       if (gesture == null || editId == null) continue;
       movedIds.add(editId);
+      final row = _ghostRowItem(flatItems, editId);
       newGhosts.add(
         _GhostRow(
           editId: editId,
           gesture: gesture,
           device: device,
-          groupId: gesture.common.groupId,
+          groupKey: row?.groupKey,
           anchorIndex: _ghostAnchorIndex(flatItems, editId),
           collapsing: false,
-          depth: _ghostDepth(flatItems, editId),
+          depth: row?.depth ?? 0,
         ),
       );
     }

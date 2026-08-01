@@ -6,17 +6,23 @@ sealed class _FlatItem extends Equatable {
 
 final class _GroupHeaderItem extends _FlatItem {
   const _GroupHeaderItem({
-    required this.group,
+    required this.groupKey,
+    required this.name,
+    required this.enabled,
     required this.device,
     required this.isCollapsed,
     required this.gestureCount,
     this.depth = 0,
-    this.parentId,
+    this.parentKey,
     this.isVisible = true,
     this.ancestorContinues = const [],
   });
 
-  final GestureGroup group;
+  /// The group node's editId — the session identity every group operation and
+  /// UI state (collapse, drop targets) is keyed by.
+  final int groupKey;
+  final String name;
+  final bool enabled;
   final DeviceType device;
 
   /// Whether this group itself is collapsed (chevron state).
@@ -27,7 +33,7 @@ final class _GroupHeaderItem extends _FlatItem {
 
   /// Nesting level; 0 headers pin, deeper ones render as indented rows.
   final int depth;
-  final String? parentId;
+  final int? parentKey;
 
   /// False while an ancestor group is collapsed.
   final bool isVisible;
@@ -36,14 +42,19 @@ final class _GroupHeaderItem extends _FlatItem {
   /// content below this header.
   final List<bool> ancestorContinues;
 
+  GestureGroupLocation get location =>
+      GestureGroupLocation(device: device, editId: groupKey);
+
   @override
   List<Object?> get props => [
-    group,
+    groupKey,
+    name,
+    enabled,
     device,
     isCollapsed,
     gestureCount,
     depth,
-    parentId,
+    parentKey,
     isVisible,
     ancestorContinues,
   ];
@@ -53,7 +64,7 @@ final class _GestureRowItem extends _FlatItem {
   const _GestureRowItem({
     required this.device,
     required this.configIndex,
-    required this.groupId,
+    required this.groupKey,
     required this.editId,
     this.depth = 0,
     this.localGroupIndex,
@@ -72,9 +83,8 @@ final class _GestureRowItem extends _FlatItem {
   /// config.
   final int? editId;
 
-  /// The gesture's group id, captured structurally so the row's grouping/dimming
-  /// is decided without the section holding the gesture itself.
-  final String? groupId;
+  /// EditId of the directly containing group, null at the root.
+  final int? groupKey;
 
   /// Number of enclosing groups.
   final int depth;
@@ -100,7 +110,7 @@ final class _GestureRowItem extends _FlatItem {
   List<Object?> get props => [
     device,
     configIndex,
-    groupId,
+    groupKey,
     editId,
     depth,
     localGroupIndex,

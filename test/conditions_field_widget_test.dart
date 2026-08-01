@@ -11,6 +11,7 @@ import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
@@ -35,8 +36,10 @@ class _PointConditionConfig extends ConfigController {
   );
 
   static const config = Config(
-    mouseGestures: [
-      PressGesture(common: TriggerCommon(conditions: condition)),
+    mouseNodes: [
+      GestureNode.leaf(
+        PressGesture(common: TriggerCommon(conditions: condition)),
+      ),
     ],
   );
 

@@ -4,6 +4,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
@@ -35,9 +36,13 @@ void main() {
   group('mouse', () {
     test('two presses on the same button conflict', () {
       final config = Config(
-        mouseGestures: [
-          PressGesture(common: common(buttons: [MouseButtonValue.right])),
-          PressGesture(common: common(buttons: [MouseButtonValue.right])),
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.right])),
+          ),
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.right])),
+          ),
         ],
       );
       final conflicts = detectConflicts(config);
@@ -47,9 +52,13 @@ void main() {
 
     test('presses on different buttons do not conflict', () {
       final config = Config(
-        mouseGestures: [
-          PressGesture(common: common(buttons: [MouseButtonValue.right])),
-          PressGesture(common: common(buttons: [MouseButtonValue.left])),
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.right])),
+          ),
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.left])),
+          ),
         ],
       );
       expect(detectConflicts(config), isEmpty);
@@ -57,9 +66,13 @@ void main() {
 
     test('swipes with overlapping directions conflict', () {
       final config = Config(
-        mouseGestures: [
-          swipe(SwipeDirection.leftRight, buttons: [MouseButtonValue.right]),
-          swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
+        mouseNodes: [
+          GestureNode.leaf(
+            swipe(SwipeDirection.leftRight, buttons: [MouseButtonValue.right]),
+          ),
+          GestureNode.leaf(
+            swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
+          ),
         ],
       );
       final conflicts = detectConflicts(config);
@@ -69,9 +82,13 @@ void main() {
 
     test('swipes with disjoint directions do not conflict', () {
       final config = Config(
-        mouseGestures: [
-          swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
-          swipe(SwipeDirection.right, buttons: [MouseButtonValue.right]),
+        mouseNodes: [
+          GestureNode.leaf(
+            swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
+          ),
+          GestureNode.leaf(
+            swipe(SwipeDirection.right, buttons: [MouseButtonValue.right]),
+          ),
         ],
       );
       expect(detectConflicts(config), isEmpty);
@@ -79,16 +96,20 @@ void main() {
 
     test('different speeds disambiguate overlapping swipes', () {
       final config = Config(
-        mouseGestures: [
-          swipe(
-            SwipeDirection.left,
-            buttons: [MouseButtonValue.right],
-            speed: TriggerSpeed.fast,
+        mouseNodes: [
+          GestureNode.leaf(
+            swipe(
+              SwipeDirection.left,
+              buttons: [MouseButtonValue.right],
+              speed: TriggerSpeed.fast,
+            ),
           ),
-          swipe(
-            SwipeDirection.left,
-            buttons: [MouseButtonValue.right],
-            speed: TriggerSpeed.slow,
+          GestureNode.leaf(
+            swipe(
+              SwipeDirection.left,
+              buttons: [MouseButtonValue.right],
+              speed: TriggerSpeed.slow,
+            ),
           ),
         ],
       );
@@ -97,9 +118,13 @@ void main() {
 
     test('stroke and swipe on the same button are incompatible', () {
       final config = Config(
-        mouseGestures: [
-          StrokeGesture(common: common(buttons: [MouseButtonValue.right])),
-          swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
+        mouseNodes: [
+          GestureNode.leaf(
+            StrokeGesture(common: common(buttons: [MouseButtonValue.right])),
+          ),
+          GestureNode.leaf(
+            swipe(SwipeDirection.left, buttons: [MouseButtonValue.right]),
+          ),
         ],
       );
       final conflicts = detectConflicts(config);
@@ -114,12 +139,16 @@ void main() {
         value: ConditionValue.text('meta'),
       );
       final config = Config(
-        mouseGestures: [
-          PressGesture(common: common(buttons: [MouseButtonValue.left])),
-          PressGesture(
-            common: common(
-              buttons: [MouseButtonValue.left],
-              conditions: meta,
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.left])),
+          ),
+          GestureNode.leaf(
+            PressGesture(
+              common: common(
+                buttons: [MouseButtonValue.left],
+                conditions: meta,
+              ),
             ),
           ),
         ],
@@ -129,12 +158,16 @@ void main() {
 
     test('instant press blocks a swipe on the same button', () {
       final config = Config(
-        mouseGestures: [
-          PressGesture(
-            common: common(buttons: [MouseButtonValue.left]),
-            instant: true,
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: common(buttons: [MouseButtonValue.left]),
+              instant: true,
+            ),
           ),
-          swipe(SwipeDirection.up, buttons: [MouseButtonValue.left]),
+          GestureNode.leaf(
+            swipe(SwipeDirection.up, buttons: [MouseButtonValue.left]),
+          ),
         ],
       );
       final conflicts = detectConflicts(config);
@@ -144,10 +177,14 @@ void main() {
 
     test('disabled gestures are ignored', () {
       final config = Config(
-        mouseGestures: [
-          PressGesture(common: common(buttons: [MouseButtonValue.right])),
-          PressGesture(
-            common: common(buttons: [MouseButtonValue.right], enabled: false),
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: common(buttons: [MouseButtonValue.right])),
+          ),
+          GestureNode.leaf(
+            PressGesture(
+              common: common(buttons: [MouseButtonValue.right], enabled: false),
+            ),
           ),
         ],
       );
@@ -156,9 +193,11 @@ void main() {
 
     test('empty button set acts as a wildcard', () {
       final config = Config(
-        mouseGestures: [
-          swipe(SwipeDirection.up),
-          swipe(SwipeDirection.up, buttons: [MouseButtonValue.right]),
+        mouseNodes: [
+          GestureNode.leaf(swipe(SwipeDirection.up)),
+          GestureNode.leaf(
+            swipe(SwipeDirection.up, buttons: [MouseButtonValue.right]),
+          ),
         ],
       );
       expect(detectConflicts(config), hasLength(1));
@@ -168,16 +207,20 @@ void main() {
   group('touchpad', () {
     test('same gesture with same fingers conflicts', () {
       const config = Config(
-        touchpadGestures: [
-          TouchpadPinchGesture(
-            common: TriggerCommon(),
-            fingers: 2,
-            direction: PinchDirection.inward,
+        touchpadNodes: [
+          GestureNode.leaf(
+            TouchpadPinchGesture(
+              common: TriggerCommon(),
+              fingers: 2,
+              direction: PinchDirection.inward,
+            ),
           ),
-          TouchpadPinchGesture(
-            common: TriggerCommon(),
-            fingers: 2,
-            direction: PinchDirection.inward,
+          GestureNode.leaf(
+            TouchpadPinchGesture(
+              common: TriggerCommon(),
+              fingers: 2,
+              direction: PinchDirection.inward,
+            ),
           ),
         ],
       );
@@ -186,9 +229,13 @@ void main() {
 
     test('different finger counts do not conflict', () {
       const config = Config(
-        touchpadGestures: [
-          TouchpadTapGesture(common: TriggerCommon(), fingers: 2),
-          TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+        touchpadNodes: [
+          GestureNode.leaf(
+            TouchpadTapGesture(common: TriggerCommon(), fingers: 2),
+          ),
+          GestureNode.leaf(
+            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+          ),
         ],
       );
       expect(detectConflicts(config), isEmpty);
@@ -196,9 +243,11 @@ void main() {
 
     test('null finger count is a wildcard', () {
       const config = Config(
-        touchpadGestures: [
-          TouchpadTapGesture(common: TriggerCommon()),
-          TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+        touchpadNodes: [
+          GestureNode.leaf(TouchpadTapGesture(common: TriggerCommon())),
+          GestureNode.leaf(
+            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+          ),
         ],
       );
       expect(detectConflicts(config), hasLength(1));
@@ -206,9 +255,13 @@ void main() {
 
     test('pinch and rotate on the same fingers do not conflict', () {
       const config = Config(
-        touchpadGestures: [
-          TouchpadPinchGesture(common: TriggerCommon(), fingers: 2),
-          TouchpadRotateGesture(common: TriggerCommon(), fingers: 2),
+        touchpadNodes: [
+          GestureNode.leaf(
+            TouchpadPinchGesture(common: TriggerCommon(), fingers: 2),
+          ),
+          GestureNode.leaf(
+            TouchpadRotateGesture(common: TriggerCommon(), fingers: 2),
+          ),
         ],
       );
       expect(detectConflicts(config), isEmpty);
@@ -218,9 +271,13 @@ void main() {
   group('keyboard', () {
     test('identical shortcuts conflict', () {
       const config = Config(
-        keyboardGestures: [
-          ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'z']),
-          ShortcutGesture(common: TriggerCommon(), keys: ['z', 'leftctrl']),
+        keyboardNodes: [
+          GestureNode.leaf(
+            ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'z']),
+          ),
+          GestureNode.leaf(
+            ShortcutGesture(common: TriggerCommon(), keys: ['z', 'leftctrl']),
+          ),
         ],
       );
       expect(detectConflicts(config), hasLength(1));
@@ -228,9 +285,13 @@ void main() {
 
     test('different shortcuts do not conflict', () {
       const config = Config(
-        keyboardGestures: [
-          ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'z']),
-          ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'y']),
+        keyboardNodes: [
+          GestureNode.leaf(
+            ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'z']),
+          ),
+          GestureNode.leaf(
+            ShortcutGesture(common: TriggerCommon(), keys: ['leftctrl', 'y']),
+          ),
         ],
       );
       expect(detectConflicts(config), isEmpty);
@@ -250,9 +311,9 @@ void main() {
       ' with instant right+left press',
       () {
         final config = Config(
-          mouseGestures: [
-            instantRightLeft(),
-            const StrokeGesture(common: TriggerCommon()),
+          mouseNodes: [
+            GestureNode.leaf(instantRightLeft()),
+            const GestureNode.leaf(StrokeGesture(common: TriggerCommon())),
           ],
         );
         final conflicts = detectConflicts(config);
@@ -266,9 +327,11 @@ void main() {
       ' with instant right+left press',
       () {
         final config = Config(
-          mouseGestures: [
-            instantRightLeft(),
-            StrokeGesture(common: common(buttons: [MouseButtonValue.left])),
+          mouseNodes: [
+            GestureNode.leaf(instantRightLeft()),
+            GestureNode.leaf(
+              StrokeGesture(common: common(buttons: [MouseButtonValue.left])),
+            ),
           ],
         );
         expect(detectConflicts(config), isEmpty);
@@ -280,9 +343,11 @@ void main() {
       ' with instant right+left press',
       () {
         final config = Config(
-          mouseGestures: [
-            instantRightLeft(),
-            StrokeGesture(common: common(buttons: [MouseButtonValue.right])),
+          mouseNodes: [
+            GestureNode.leaf(instantRightLeft()),
+            GestureNode.leaf(
+              StrokeGesture(common: common(buttons: [MouseButtonValue.right])),
+            ),
           ],
         );
         expect(detectConflicts(config), isEmpty);
@@ -294,11 +359,13 @@ void main() {
       ' with instant right+left press',
       () {
         final config = Config(
-          mouseGestures: [
-            instantRightLeft(),
-            StrokeGesture(
-              common: common(
-                buttons: [MouseButtonValue.left, MouseButtonValue.right],
+          mouseNodes: [
+            GestureNode.leaf(instantRightLeft()),
+            GestureNode.leaf(
+              StrokeGesture(
+                common: common(
+                  buttons: [MouseButtonValue.left, MouseButtonValue.right],
+                ),
               ),
             ),
           ],
@@ -312,16 +379,20 @@ void main() {
 
   test('describeFrom references the other gesture', () {
     final config = Config(
-      mouseGestures: [
-        PressGesture(
-          common: common(
-            buttons: [MouseButtonValue.right],
-          ).copyWith(name: 'First'),
+      mouseNodes: [
+        GestureNode.leaf(
+          PressGesture(
+            common: common(
+              buttons: [MouseButtonValue.right],
+            ).copyWith(name: 'First'),
+          ),
         ),
-        PressGesture(
-          common: common(
-            buttons: [MouseButtonValue.right],
-          ).copyWith(name: 'Second'),
+        GestureNode.leaf(
+          PressGesture(
+            common: common(
+              buttons: [MouseButtonValue.right],
+            ).copyWith(name: 'Second'),
+          ),
         ),
       ],
     );

@@ -4,7 +4,7 @@ import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
 /// Stateless facade for the *structural* gesture/group operations the list view
@@ -16,9 +16,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 /// their own providers, and the structure it renders is derived by
 /// [gestureListStructureProvider]). Single-address reads/writes go through
 /// `ref.field(lens)` and the per-row gesture watch; only the irreducible
-/// structural intents live here. This replaced `GestureListNotifier`, whose
-/// `state` was an unused whole-config passthrough the command methods never
-/// read — a stateful notifier was the wrong shape for a pure command surface.
+/// structural intents live here.
 class GestureCommands {
   const GestureCommands(this._ref);
 
@@ -26,8 +24,8 @@ class GestureCommands {
 
   ConfigController get _config => _ref.read(configControllerProvider.notifier);
 
-  void addGesture(DeviceType device, Gesture gesture) {
-    _config.add(AddGesture(device, gesture));
+  void addGesture(DeviceType device, Gesture gesture, {int? groupKey}) {
+    _config.add(AddGesture(device, gesture, groupKey: groupKey));
   }
 
   void duplicateGesture(GestureLocation location) {
@@ -69,34 +67,35 @@ class GestureCommands {
     }
   }
 
-  void addGroup(GestureGroup group) {
-    _config.add(AddGestureGroup(group));
+  void addGroup(DeviceType device, GestureGroupNode group, {int? parentKey}) {
+    _config.add(AddGestureGroup(device, group, parentKey: parentKey));
   }
 
-  void updateGroup(String id, GestureGroup Function(GestureGroup) update) {
-    _config.add(UpdateGestureGroup(id, update));
+  void updateGroup(
+    GestureGroupLocation location,
+    GestureGroupNode Function(GestureGroupNode) update,
+  ) {
+    _config.add(UpdateGestureGroup(location, update));
   }
 
-  void removeGroupAndUngroup(String id) {
-    _config.add(RemoveGestureGroupAndUngroup(id));
+  void removeGroupAndUngroup(GestureGroupLocation location) {
+    _config.add(RemoveGestureGroupAndUngroup(location));
   }
 
-  void deleteGroupWithGestures(String id, DeviceType device) {
-    _config.add(DeleteGestureGroupWithGestures(id));
+  void deleteGroupWithGestures(GestureGroupLocation location) {
+    _config.add(DeleteGestureGroupWithGestures(location));
   }
 
   void moveGroup(
-    DeviceType device,
-    String id, {
-    String? beforeId,
-    String? newParentId,
+    GestureGroupLocation location, {
+    int? beforeKey,
+    int? newParentKey,
   }) {
     _config.add(
       MoveGestureGroup(
-        device,
-        id,
-        beforeId: beforeId,
-        newParentId: newParentId,
+        location,
+        beforeKey: beforeKey,
+        newParentKey: newParentKey,
       ),
     );
   }
@@ -104,7 +103,7 @@ class GestureCommands {
   void reorderGesturesAndGroups(
     DeviceType device,
     List<GestureLocation> newOrder,
-    Map<GestureLocation, String?> assignments,
+    Map<GestureLocation, int?> assignments,
   ) {
     _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
   }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +16,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart'
     hide gestureCommon, gestureDisplayName, gestureTypeLabel;
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -73,11 +72,13 @@ class GestureListSection extends HookConsumerWidget {
     void handleGestureAdded(
       DeviceType device,
       Gesture gesture, {
-      String? groupId,
+      int? groupKey,
     }) {
       final config = ref.read(draftConfigProvider);
       final existingGestures = config.gesturesForDevice(device);
-      final newIndex = existingGestures.length;
+      final existingIds = {
+        for (final g in existingGestures) g.common.editId,
+      };
       final l10n = context.l10n;
       final typeLabel = gestureTypeLabel(gesture, l10n);
       final sameTypeCount = existingGestures
@@ -85,17 +86,21 @@ class GestureListSection extends HookConsumerWidget {
           .length;
       final defaultName = '$typeLabel #${sameTypeCount + 1}';
       final named = gesture.withCommon(
-        gesture.common.copyWith(name: defaultName, groupId: groupId),
+        gesture.common.copyWith(name: defaultName),
       );
-      ref.read(gestureCommandsProvider).addGesture(device, named);
-      ref.read(addedGestureProvider.notifier).markAdded(newIndex);
+      ref
+          .read(gestureCommandsProvider)
+          .addGesture(device, named, groupKey: groupKey);
       // The editId is assigned when the add lands in the draft, so the
-      // identity location is only known after the dispatch.
-      final location = gestureLocationAt(
-        ref.read(draftConfigProvider),
-        device,
-        newIndex,
-      );
+      // identity location is only known after the dispatch — and with group
+      // targets the new row is not necessarily last, so find it by fresh id.
+      final draft = ref.read(draftConfigProvider);
+      final newIndex = draft
+          .gesturesForDevice(device)
+          .indexWhere((g) => !existingIds.contains(g.common.editId));
+      if (newIndex < 0) return;
+      ref.read(addedGestureProvider.notifier).markAdded(newIndex);
+      final location = gestureLocationAt(draft, device, newIndex);
       if (location == null) return;
       context.selectGesture(location);
       choreo.scrollToGesture(location);
@@ -108,12 +113,9 @@ class GestureListSection extends HookConsumerWidget {
         initial: '',
         onConfirm: (name) {
           if (name.trim().isEmpty) return;
-          final id = _generateGroupId();
           ref
               .read(gestureCommandsProvider)
-              .addGroup(
-                GestureGroup(id: id, name: name.trim(), device: device),
-              );
+              .addGroup(device, GestureGroupNode(name: name.trim()));
         },
       );
     }
@@ -163,18 +165,18 @@ class GestureListSection extends HookConsumerWidget {
       builder: (context) {
         choreo.prepare(viewModel);
         final reorderEntries =
-            <ReorderableGroupableListEntry<GestureLocation, String>>[];
+            <ReorderableGroupableListEntry<GestureLocation, int>>[];
         final gestureItemsByKey = <GestureLocation, _GestureRowItem>{};
-        final groupItemsById = <String, _GroupHeaderItem>{};
+        final groupItemsByKey = <int, _GroupHeaderItem>{};
         for (final flatItem in viewModel.flatItems) {
           switch (flatItem) {
             case _GroupHeaderItem():
-              groupItemsById[flatItem.group.id] = flatItem;
+              groupItemsByKey[flatItem.groupKey] = flatItem;
               reorderEntries.add(
-                ReorderableGroupableGroup<GestureLocation, String>(
-                  key: ValueKey('group:${flatItem.group.id}'),
-                  id: flatItem.group.id,
-                  parentId: flatItem.parentId,
+                ReorderableGroupableGroup<GestureLocation, int>(
+                  key: ValueKey('group:${flatItem.groupKey}'),
+                  id: flatItem.groupKey,
+                  parentId: flatItem.parentKey,
                   depth: flatItem.depth,
                   isVisible: flatItem.isVisible,
                   ancestorContinues: flatItem.ancestorContinues,
@@ -193,7 +195,7 @@ class GestureListSection extends HookConsumerWidget {
               final isHidden =
                   editId != null && transitions.enteringHidden.contains(editId);
               reorderEntries.add(
-                ReorderableGroupableItem<GestureLocation, String>(
+                ReorderableGroupableItem<GestureLocation, int>(
                   // Keyed by stable identity (editId), not position, so
                   // a removed row disposes its own element instead of
                   // its collapsed cross-fade bleeding onto the row that
@@ -206,7 +208,7 @@ class GestureListSection extends HookConsumerWidget {
                               '${flatItem.configIndex}',
                   ),
                   id: key,
-                  groupId: deviceFilter == null ? null : flatItem.groupId,
+                  groupId: deviceFilter == null ? null : flatItem.groupKey,
                   depth: deviceFilter == null ? 0 : flatItem.depth,
                   isFirstInGroup: flatItem.isFirstInGroup,
                   isLastInGroup: flatItem.isLastInGroup,
@@ -228,7 +230,7 @@ class GestureListSection extends HookConsumerWidget {
           ghostByKey[ghostKey] = ghost;
           reorderEntries.insert(
             ghost.anchorIndex.clamp(0, reorderEntries.length),
-            ReorderableGroupableItem<GestureLocation, String>(
+            ReorderableGroupableItem<GestureLocation, int>(
               key: ghostKey,
               // Negative editIds are never assigned, so a ghost's id can
               // never collide with (or resolve to) a live gesture.
@@ -236,7 +238,7 @@ class GestureListSection extends HookConsumerWidget {
                 device: ghost.device,
                 editId: -1 - ghost.editId,
               ),
-              groupId: ghost.groupId,
+              groupId: ghost.groupKey,
               depth: ghost.depth,
               isVisible: !ghost.collapsing,
               interactive: false,
@@ -246,7 +248,7 @@ class GestureListSection extends HookConsumerWidget {
 
         return ScrollbarMediaPadding(
           topInset: GestureListSection._headerHeight,
-          child: ReorderableGroupableList<GestureLocation, String>(
+          child: ReorderableGroupableList<GestureLocation, int>(
             scrollController: scrollController,
             leadingSlivers: [
               SliverPersistentHeader(
@@ -322,17 +324,16 @@ class GestureListSection extends HookConsumerWidget {
             itemDragLabelBuilder: (_, count) =>
                 count == 1 ? 'Move gesture' : 'Move $count gestures',
             groupDragLabelBuilder: (group) =>
-                groupItemsById[group.id]?.group.name ?? 'Move group',
+                groupItemsByKey[group.id]?.name ?? 'Move group',
             onItemsReordered: (result) => transitions.requestItemsReorder(
               device: viewModel.deviceFilter!,
               result: result,
               flatItems: viewModel.flatItems,
             ),
-            onGroupMoved: (move) =>
-                _GestureListController(
-                  ref,
-                  context,
-                ).applyGroupMove(viewModel.deviceFilter!, move),
+            onGroupMoved: (move) => _GestureListController(
+              ref,
+              context,
+            ).applyGroupMove(viewModel.deviceFilter!, move),
             groupBuilder:
                 (
                   context,
@@ -341,11 +342,12 @@ class GestureListSection extends HookConsumerWidget {
                   isPinned,
                   scrollBuilder,
                 ) {
-                  final flatItem = groupItemsById[groupEntry.id]!;
+                  final flatItem = groupItemsByKey[groupEntry.id]!;
                   return _GroupHeaderRow(
                     key: groupEntry.key,
                     index: viewModel.flatItems.indexOf(flatItem),
-                    group: flatItem.group,
+                    name: flatItem.name,
+                    enabled: flatItem.enabled,
                     device: flatItem.device,
                     isCollapsed: flatItem.isCollapsed,
                     scrollBuilder: scrollBuilder,
@@ -353,28 +355,28 @@ class GestureListSection extends HookConsumerWidget {
                     borderColor: colors.border,
                     reorderHandle: reorderHandle,
                     onToggleCollapse: () =>
-                        collapsedNotifier.toggle(flatItem.group.id),
+                        collapsedNotifier.toggle(flatItem.groupKey),
                     onRename: () => _showRenameDialog(
                       context,
                       title: 'Rename Group',
-                      initial: flatItem.group.name,
+                      initial: flatItem.name,
                       onConfirm: (name) {
                         if (name.trim().isEmpty) return;
                         listNotifier.updateGroup(
-                          flatItem.group.id,
+                          flatItem.location,
                           (g) => g.copyWith(name: name.trim()),
                         );
                       },
                     ),
                     onToggleEnabled: () => listNotifier.updateGroup(
-                      flatItem.group.id,
+                      flatItem.location,
                       (g) => g.copyWith(enabled: !g.enabled),
                     ),
                     onBulkEdit: () {
                       final locations = <GestureLocation>{
                         for (final item in viewModel.flatItems)
                           if (item is _GestureRowItem &&
-                              item.groupId == flatItem.group.id)
+                              item.groupKey == flatItem.groupKey)
                             item.location,
                       };
                       if (locations.isEmpty) return;
@@ -382,11 +384,10 @@ class GestureListSection extends HookConsumerWidget {
                       ref.read(bulkEditActiveProvider.notifier).open();
                     },
                     onBreakdown: () => listNotifier.removeGroupAndUngroup(
-                      flatItem.group.id,
+                      flatItem.location,
                     ),
                     onDelete: () => listNotifier.deleteGroupWithGestures(
-                      flatItem.group.id,
-                      flatItem.device,
+                      flatItem.location,
                     ),
                     onAddGesture: () => showAddGestureDialogForDevice(
                       context,
@@ -394,7 +395,7 @@ class GestureListSection extends HookConsumerWidget {
                       (device, gesture) => handleGestureAdded(
                         device,
                         gesture,
-                        groupId: flatItem.group.id,
+                        groupKey: flatItem.groupKey,
                       ),
                     ),
                   );
@@ -424,9 +425,9 @@ class GestureListSection extends HookConsumerWidget {
                   isMultiSelectMode: false,
                   isMultiSelected: false,
                   groupDisabled:
-                      ghost.groupId != null &&
-                      viewModel.disabledGroupIds.contains(
-                        ghost.groupId,
+                      ghost.groupKey != null &&
+                      viewModel.disabledGroupKeys.contains(
+                        ghost.groupKey,
                       ),
                   onTap: () {},
                 );
@@ -440,9 +441,9 @@ class GestureListSection extends HookConsumerWidget {
                   ? addedMarker?.id
                   : null;
               final groupDisabled =
-                  item.groupId != null &&
-                  viewModel.disabledGroupIds.contains(
-                    item.groupId,
+                  item.groupKey != null &&
+                  viewModel.disabledGroupKeys.contains(
+                    item.groupKey,
                   );
               final row = AnimatedOpacity(
                 duration: Durations.short2,

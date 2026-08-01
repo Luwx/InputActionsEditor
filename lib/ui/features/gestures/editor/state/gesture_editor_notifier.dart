@@ -110,7 +110,6 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
         saved.common.copyWith(
           name: current.common.name,
           enabled: current.common.enabled,
-          groupId: current.common.groupId,
           editId: current.common.editId,
           actions: current.common.actions,
         ),
