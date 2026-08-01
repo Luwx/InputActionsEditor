@@ -190,6 +190,31 @@
   "configLoadClipboardError": "Could not parse clipboard YAML.",
   "configLoadClipboardDetailsButton": "Details",
   "configLoadFailedTitle": "Couldn't load your configuration",
+  "configIssuesTitle": "{count, plural, =1{1 condition couldn't be read} other{{count} conditions couldn't be read}}",
+  "@configIssuesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "configIssuesDescription": "They're shown read-only. Saving will overwrite them.",
+  "configIssuesDialogBody": "The editor couldn't understand these conditions and shows them read-only. If you save, they'll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.",
+  "configIssuesUnnamedGesture": "Unnamed gesture",
+  "gestureGroupUnnamed": "Group",
+  "configIssuesDeviceRule": "Device rules",
+  "configIssuesLine": "line {number}",
+  "@configIssuesLine": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "configIssuesSourceConditions": "conditions",
+  "configIssuesSourceEndConditions": "end conditions",
+  "configIssuesSourceActionConditions": "action conditions",
+  "configIssuesSourceDeviceRule": "device rule",
   "actionRetry": "Retry",
   "actionDetails": "Details",
   "dialogClipboardLoadTitle": "Load from Clipboard",

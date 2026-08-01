@@ -323,6 +323,39 @@ mouse:
       );
     });
 
+    test('unquoted negation is recovered from the YAML tag', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      conditions: !$cursor_shape == pointer
+    - type: press
+      conditions:
+        - all:
+            - !$window_maximized
+''');
+      expect(
+        c.mouseGestures[0].common.conditions,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('cursor_shape'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.text('pointer'),
+          negate: true,
+        ),
+      );
+      final group = c.mouseGestures[1].common.conditions! as ConditionGroup;
+      final inner = group.children.single as ConditionGroup;
+      expect(
+        inner.children.single,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('window_maximized'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.boolean(true),
+          negate: true,
+        ),
+      );
+    });
+
     test('value containing spaces is preserved', () {
       final c = decodeConfig(r'''
 mouse:
@@ -942,8 +975,8 @@ touchpad:
     });
   });
 
-  group('decodeConfig - decode-only sugar (group flattening)', () {
-    test('untyped group propagates shared conditions into children', () {
+  group('decodeConfig - native trigger groups', () {
+    test('untyped group becomes a GestureGroup carrying its conditions', () {
       final c = decodeConfig(r'''
 mouse:
   gestures:
@@ -956,18 +989,72 @@ mouse:
           conditions: $window_fullscreen == true
 ''');
       expect(c.mouseGestures.length, 2);
-      // First child gets the group condition verbatim.
+
+      final group = c.gestureGroups.single;
+      expect(group.native, isTrue);
+      expect(group.device, DeviceType.mouse);
       expect(
-        c.mouseGestures[0].common.conditions,
+        group.conditions,
         const VariableCondition(
           variable: ConditionVariableRef.known('keyboard_modifiers'),
           operator: ConditionOperator.equals,
           value: ConditionValue.flags(['meta']),
         ),
       );
-      // Second child's own condition is merged under the group condition.
-      final merged = c.mouseGestures[1].common.conditions! as ConditionGroup;
-      expect(merged.children.length, 2);
+
+      // Members reference the group; their own conditions are untouched.
+      expect(c.mouseGestures[0].common.groupId, group.id);
+      expect(c.mouseGestures[1].common.groupId, group.id);
+      expect(c.mouseGestures[0].common.conditions, isNull);
+      expect(
+        c.mouseGestures[1].common.conditions,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('window_fullscreen'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.boolean(true),
+        ),
+      );
+    });
+
+    test('nested groups parse to any depth with parent links', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - conditions: $a
+      gestures:
+        - conditions: $b
+          gestures:
+            - conditions: $c
+              gestures:
+                - type: press
+                  name: Deep
+''');
+      expect(c.mouseGestures.single.common.name, 'Deep');
+      expect(c.gestureGroups.length, 3);
+      final outer = c.gestureGroups[0];
+      final middle = c.gestureGroups[1];
+      final inner = c.gestureGroups[2];
+      expect(outer.parentId, isNull);
+      expect(middle.parentId, outer.id);
+      expect(inner.parentId, middle.id);
+      expect(c.mouseGestures.single.common.groupId, inner.id);
+    });
+
+    test('unmodelled group properties are preserved in extra', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - mouse_buttons:
+        - right
+      threshold: 5
+      gestures:
+        - type: press
+''');
+      final group = c.gestureGroups.single;
+      expect(group.extra, {
+        'mouse_buttons': ['right'],
+        'threshold': 5,
+      });
     });
 
     test('typed gesture with nested sub-gestures flattens into actions', () {

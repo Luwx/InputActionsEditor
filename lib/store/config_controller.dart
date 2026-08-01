@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/data/config_repository.dart';
+import 'package:input_actions_editor/domain/config_issues.dart';
 import 'package:input_actions_editor/domain/diff/config_slices.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
@@ -80,6 +81,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final normalized = assignEditIds(config);
       _originalText = text;
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       return EditSession(draft: normalized, saved: normalized);
     } on Object catch (error) {
       // A corrupt/unreadable config must not brick the app: start empty so the
@@ -87,6 +89,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       // untouched; the failure is surfaced as a toast (see MainShell).
       _originalText = '';
       ref.read(configLoadErrorProvider.notifier).report(error);
+      ref.read(configIssuesProvider.notifier).clear();
       return const EditSession(draft: Config(), saved: Config());
     }
   }
@@ -257,6 +260,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final normalized = assignEditIds(config);
       _originalText = text;
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       state = AsyncData(EditSession(draft: normalized, saved: normalized));
     } on Object catch (error) {
       // Keep the current config; surface the failure.
@@ -269,6 +273,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     const empty = Config();
     _originalText = '';
     _editStacks.clear();
+    ref.read(configIssuesProvider.notifier).clear();
     state = const AsyncData(EditSession(draft: empty, saved: empty));
   }
 
@@ -277,6 +282,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     final config = assignEditIds(_repository.decodeFromText(text));
     _originalText = text;
     _editStacks.clear();
+    ref.read(configIssuesProvider.notifier).report(config, text);
     state = AsyncData(EditSession(draft: config, saved: config));
   }
 
@@ -313,6 +319,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       touchpadSpeed: current.touchpadSpeed ?? incoming.touchpadSpeed,
       touchscreenSpeed: current.touchscreenSpeed ?? incoming.touchscreenSpeed,
     );
+    ref.read(configIssuesProvider.notifier).report(merged, text);
     _applyConfig(merged);
   }
 
@@ -358,6 +365,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       _originalText = text;
       _editStacks.clear();
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       state = AsyncData(EditSession(draft: normalized, saved: normalized));
     } on Object catch (error) {
       // Keep the current config; surface the failure.
@@ -389,6 +397,26 @@ class ConfigLoadErrorController extends Notifier<Object?> {
 final configLoadErrorProvider =
     NotifierProvider<ConfigLoadErrorController, Object?>(
       ConfigLoadErrorController.new,
+    );
+
+/// Conditions in the loaded config the decoder could not model, or empty.
+///
+/// Unlike [configLoadErrorProvider] the file parsed fine and the app is fully
+/// usable; the risk is that saving overwrites those conditions with our
+/// misreading of them, so the shell surfaces them once per load.
+class ConfigIssuesController extends Notifier<List<ConfigIssue>> {
+  @override
+  List<ConfigIssue> build() => const [];
+
+  void report(Config config, String sourceText) =>
+      state = findConfigIssues(config, sourceText);
+
+  void clear() => state = const [];
+}
+
+final configIssuesProvider =
+    NotifierProvider<ConfigIssuesController, List<ConfigIssue>>(
+      ConfigIssuesController.new,
     );
 
 /// The current editing session, unwrapped. Safe to read only below the root

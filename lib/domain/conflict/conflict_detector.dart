@@ -5,6 +5,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
+import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
@@ -29,23 +30,74 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 ///   assumed to disambiguate, so they are never flagged, this avoids false
 ///   positives on the common "X normally / modifier+X otherwise" pattern.
 List<GestureConflict> detectConflicts(Config config) {
+  final chainKeys = _groupChainKeys(config.gestureGroups);
   return [
-    ..._detectForDevice(DeviceType.mouse, config.mouseGestures),
-    ..._detectForDevice(DeviceType.keyboard, config.keyboardGestures),
-    ..._detectForDevice(DeviceType.pointer, config.pointerGestures),
-    ..._detectForDevice(DeviceType.touchpad, config.touchpadGestures),
-    ..._detectForDevice(DeviceType.touchscreen, config.touchscreenGestures),
+    ..._detectForDevice(DeviceType.mouse, config.mouseGestures, chainKeys),
+    ..._detectForDevice(
+      DeviceType.keyboard,
+      config.keyboardGestures,
+      chainKeys,
+    ),
+    ..._detectForDevice(DeviceType.pointer, config.pointerGestures, chainKeys),
+    ..._detectForDevice(
+      DeviceType.touchpad,
+      config.touchpadGestures,
+      chainKeys,
+    ),
+    ..._detectForDevice(
+      DeviceType.touchscreen,
+      config.touchscreenGestures,
+      chainKeys,
+    ),
   ];
 }
 
-List<GestureConflict> _detectForDevice(DeviceType device, List<Object> raw) {
+/// Condition-key prefix contributed by each group's condition chain. Group
+/// conditions apply to every member, so they take part in the "same
+/// conditions" comparison exactly as if they were written on the gesture.
+Map<String, String> _groupChainKeys(List<GestureGroup> groups) {
+  final byId = {for (final g in groups) g.id: g};
+  final memo = <String, String>{};
+  String chainOf(String id) {
+    final cached = memo[id];
+    if (cached != null) return cached;
+    final g = byId[id];
+    if (g == null) return '';
+    memo[id] = ''; // cycle guard
+    final parentId = g.parentId;
+    final parent = parentId == null ? '' : chainOf(parentId);
+    final own = g.conditions == null ? '' : _conditionKey(g.conditions);
+    return memo[id] = [
+      parent,
+      own,
+    ].where((s) => s.isNotEmpty).join('&');
+  }
+
+  for (final g in groups) {
+    chainOf(g.id);
+  }
+  return memo;
+}
+
+List<GestureConflict> _detectForDevice(
+  DeviceType device,
+  List<Object> raw, [
+  Map<String, String> chainKeys = const {},
+]) {
   final items = <_G>[];
   for (final (i, g) in raw.indexed) {
     final common = gestureCommon(g);
     if (common.enabled == false) continue; // user has turned it off
     // Live configs are normalized (assignEditIds), so the negative fallback
     // only keeps detached test fixtures addressable.
-    items.add(_G(common.editId ?? -1 - i, g, common));
+    items.add(
+      _G(
+        common.editId ?? -1 - i,
+        g,
+        common,
+        chainKeys[common.groupId] ?? '',
+      ),
+    );
   }
 
   final conflicts = <GestureConflict>[];
@@ -446,7 +498,7 @@ enum _Kind {
 }
 
 class _G {
-  _G(this.editId, this.gesture, this.common)
+  _G(this.editId, this.gesture, this.common, [String groupChainKey = ''])
     : kind = _kindOf(gesture),
       fingers = _fingersOf(gesture),
       speed = _speedOf(gesture),
@@ -455,7 +507,9 @@ class _G {
       dirTokens = _dirTokensOf(gesture),
       // Serialized once per gesture; the O(n^2) pair loop then compares the
       // cached strings instead of rebuilding the condition key for every pair.
-      conditionKey = _conditionKey(common.conditions);
+      conditionKey = groupChainKey.isEmpty
+          ? _conditionKey(common.conditions)
+          : '$groupChainKey|${_conditionKey(common.conditions)}';
 
   final int editId;
   final Object gesture;

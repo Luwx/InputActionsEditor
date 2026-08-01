@@ -9,6 +9,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -138,32 +139,48 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'mouse',
-    config.mouseGestures.map(mouseGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.mouse),
+    _buildGestureLayout(
+      config.mouseGestures,
+      config.groupsForDevice(DeviceType.mouse),
+      mouseGestureToMap,
+    ),
+    groups: _legacyGroups(config, DeviceType.mouse),
     speed: config.mouseSpeed,
   );
   _saveDeviceSection(
     editor,
     doc,
     'keyboard',
-    config.keyboardGestures.map(keyboardGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.keyboard),
+    _buildGestureLayout(
+      config.keyboardGestures,
+      config.groupsForDevice(DeviceType.keyboard),
+      keyboardGestureToMap,
+    ),
+    groups: _legacyGroups(config, DeviceType.keyboard),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
     editor,
     doc,
     'pointer',
-    config.pointerGestures.map(pointerGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.pointer),
+    _buildGestureLayout(
+      config.pointerGestures,
+      config.groupsForDevice(DeviceType.pointer),
+      pointerGestureToMap,
+    ),
+    groups: _legacyGroups(config, DeviceType.pointer),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
     editor,
     doc,
     'touchpad',
-    config.touchpadGestures.map(touchpadGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.touchpad),
+    _buildGestureLayout(
+      config.touchpadGestures,
+      config.groupsForDevice(DeviceType.touchpad),
+      touchpadGestureToMap,
+    ),
+    groups: _legacyGroups(config, DeviceType.touchpad),
     omitIfEmpty: true,
     speed: config.touchpadSpeed,
   );
@@ -171,8 +188,12 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'touchscreen',
-    config.touchscreenGestures.map(touchscreenGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.touchscreen),
+    _buildGestureLayout(
+      config.touchscreenGestures,
+      config.groupsForDevice(DeviceType.touchscreen),
+      touchscreenGestureToMap,
+    ),
+    groups: _legacyGroups(config, DeviceType.touchscreen),
     omitIfEmpty: true,
     speed: config.touchscreenSpeed,
   );
@@ -186,11 +207,95 @@ String encodeConfig(Config config, String originalText) {
   );
 }
 
+List<GestureGroup> _legacyGroups(Config config, DeviceType device) =>
+    config.groupsForDevice(device).where((g) => !g.native).toList();
+
+/// Lays out a device's gestures as the YAML `gestures:` list, re-nesting
+/// native groups. 
+List<dynamic> _buildGestureLayout<T extends Gesture>(
+  List<T> gestures,
+  List<GestureGroup> deviceGroups,
+  Map<String, dynamic> Function(T) toMap,
+) {
+  final native = {
+    for (final g in deviceGroups)
+      if (g.native) g.id: g,
+  };
+  if (native.isEmpty) return gestures.map(toMap).toList();
+
+  String rootOf(String id) {
+    var current = id;
+    final seen = <String>{current};
+    while (true) {
+      final parent = native[current]?.parentId;
+      if (parent == null || !native.containsKey(parent)) return current;
+      if (!seen.add(parent)) return current;
+      current = parent;
+    }
+  }
+
+  bool isInSubtree(String id, String ancestor) {
+    var current = id;
+    final seen = <String>{};
+    while (seen.add(current)) {
+      if (current == ancestor) return true;
+      final parent = native[current]?.parentId;
+      if (parent == null || !native.containsKey(parent)) return false;
+      current = parent;
+    }
+    return false;
+  }
+
+  final emitted = <String>{};
+
+  Map<String, dynamic> emitGroup(GestureGroup group) {
+    emitted.add(group.id);
+    final m = <String, dynamic>{};
+    if (group.name.isNotEmpty) m['name'] = group.name;
+    if (!group.enabled) m['enabled'] = false;
+    if (group.conditions != null) {
+      m['conditions'] = conditionToYaml(group.conditions!);
+    }
+    m.addAll(group.extra);
+    final children = <dynamic>[];
+    for (final gesture in gestures) {
+      final gid = gesture.common.groupId;
+      if (gid == null || !native.containsKey(gid)) continue;
+      if (!isInSubtree(gid, group.id)) continue;
+      if (gid == group.id) {
+        children.add(toMap(gesture)..remove('group'));
+      } else {
+        // First gesture of a descendant subtree: emit the direct child group
+        // on its chain, which recursively covers the rest.
+        var mid = gid;
+        while (native[mid]?.parentId != group.id) {
+          mid = native[mid]!.parentId!;
+        }
+        if (!emitted.contains(mid)) children.add(emitGroup(native[mid]!));
+      }
+    }
+    m['gestures'] = children;
+    return m;
+  }
+
+  final result = <dynamic>[];
+  for (final gesture in gestures) {
+    final gid = gesture.common.groupId;
+    if (gid != null && native.containsKey(gid)) {
+      final root = rootOf(gid);
+      if (!emitted.contains(root)) result.add(emitGroup(native[root]!));
+    } else {
+      result.add(toMap(gesture));
+    }
+  }
+  return result;
+}
+
 void _saveDeviceSection(
   YamlEditor editor,
   dynamic doc,
   String key,
-  List<Map<String, dynamic>> gestures, {
+  List<dynamic> gestures, {
   bool omitIfEmpty = false,
   SpeedSettings? speed,
   List<GestureGroup> groups = const [],
@@ -202,20 +307,24 @@ void _saveDeviceSection(
 
   final hasSection = doc is YamlMap && doc.containsKey(key);
   if (hasSection) {
-    editor.update([key, 'gestures'], gestures);
+    final sectionMap = doc[key] is YamlMap ? doc[key] as YamlMap : null;
+    if (!_yamlNodeMatches(sectionMap?['gestures'], gestures)) {
+      editor.update([key, 'gestures'], gestures);
+    }
     if (hasGroups) {
-      editor.update(
-        [key, 'groups'],
-        groups.map(_gestureGroupToMap).toList(),
-      );
-    } else if (doc[key] is YamlMap &&
-        (doc[key] as YamlMap).containsKey('groups')) {
+      final groupMaps = groups.map(_gestureGroupToMap).toList();
+      if (!_yamlNodeMatches(sectionMap?['groups'], groupMaps)) {
+        editor.update([key, 'groups'], groupMaps);
+      }
+    } else if (sectionMap != null && sectionMap.containsKey('groups')) {
       editor.remove([key, 'groups']);
     }
     if (hasSpeed) {
-      editor.update([key, 'speed'], speedSettingsToMap(speed));
-    } else if (doc[key] is YamlMap &&
-        (doc[key] as YamlMap).containsKey('speed')) {
+      final speedMap = speedSettingsToMap(speed);
+      if (!_yamlNodeMatches(sectionMap?['speed'], speedMap)) {
+        editor.update([key, 'speed'], speedMap);
+      }
+    } else if (sectionMap != null && sectionMap.containsKey('speed')) {
       editor.remove([key, 'speed']);
     }
   } else {
@@ -239,7 +348,42 @@ void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {
     if (hasSection) editor.remove(['device_rules']);
     return;
   }
-  editor.update(['device_rules'], rules);
+  final existing = hasSection ? doc['device_rules'] : null;
+  if (!_yamlNodeMatches(existing, rules)) {
+    editor.update(['device_rules'], rules);
+  }
+}
+
+/// True when [node], as parsed from the original document, already serializes
+/// to exactly [value], same shape, same values, same key order.
+///
+/// [YamlEditor.update] rewrites the node's whole text range, so an update that
+/// changes nothing still discards blank lines (and comments) inside it. Callers
+/// use this to skip those no-op writes.
+bool _yamlNodeMatches(dynamic node, dynamic value) {
+  if (node is YamlMap) {
+    if (value is! Map) return false;
+    if (node.length != value.length) return false;
+    final nodeKeys = node.keys.toList();
+    final valueKeys = value.keys.toList();
+    for (var i = 0; i < nodeKeys.length; i++) {
+      if (nodeKeys[i] != valueKeys[i]) return false;
+      if (!_yamlNodeMatches(node[nodeKeys[i]], value[valueKeys[i]])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (node is YamlList) {
+    if (value is! List) return false;
+    if (node.length != value.length) return false;
+    for (var i = 0; i < node.length; i++) {
+      if (!_yamlNodeMatches(node[i], value[i])) return false;
+    }
+    return true;
+  }
+  if (value is Map || value is List) return false;
+  return node == value;
 }
 
 void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
@@ -260,10 +404,14 @@ void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
   if (gs.notificationsConfigError != null) {
     final hasNotifications = doc is YamlMap && doc.containsKey('notifications');
     if (hasNotifications) {
-      editor.update(
-        ['notifications', 'config_error'],
-        gs.notificationsConfigError,
-      );
+      final notif = doc['notifications'];
+      final existing = notif is YamlMap ? notif['config_error'] : null;
+      if (!_yamlNodeMatches(existing, gs.notificationsConfigError)) {
+        editor.update(
+          ['notifications', 'config_error'],
+          gs.notificationsConfigError,
+        );
+      }
     } else {
       // Parent map is absent; create it so update() has something to traverse.
       editor.update(
@@ -288,7 +436,10 @@ void _saveOrRemoveKey(
   dynamic value,
 ) {
   if (value != null) {
-    editor.update([key], value);
+    final hasKey = doc is YamlMap && doc.containsKey(key);
+    if (!hasKey || !_yamlNodeMatches(doc[key], value)) {
+      editor.update([key], value);
+    }
   } else if (doc is YamlMap && doc.containsKey(key)) {
     editor.remove([key]);
   }
@@ -732,8 +883,11 @@ dynamic conditionToYaml(Condition c) => switch (c) {
   ) =>
     '${negate ? "!" : ""}\$${conditionVariableName(variable)} '
         '${conditionOperatorToken(operator)} ${conditionValueToText(value)}',
-  ConditionGroup(:final children)
-      when normalizeConditionChildren(children).length == 1 =>
+  // A single-child group is redundant for all/any, but `none` negates: it must
+  // never collapse into its bare child.
+  ConditionGroup(:final mode, :final children)
+      when mode != ConditionGroupMode.none &&
+          normalizeConditionChildren(children).length == 1 =>
     conditionToYaml(
       normalizeConditionChildren(children).first,
     ),

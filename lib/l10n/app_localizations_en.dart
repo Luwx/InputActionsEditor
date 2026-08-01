@@ -439,6 +439,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configLoadFailedTitle => 'Couldn\'t load your configuration';
 
   @override
+  String configIssuesTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conditions couldn\'t be read',
+      one: '1 condition couldn\'t be read',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get configIssuesDescription =>
+      'They\'re shown read-only. Saving will overwrite them.';
+
+  @override
+  String get configIssuesDialogBody =>
+      'The editor couldn\'t understand these conditions and shows them read-only. If you save, they\'ll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.';
+
+  @override
+  String get configIssuesUnnamedGesture => 'Unnamed gesture';
+
+  @override
+  String get gestureGroupUnnamed => 'Group';
+
+  @override
+  String get configIssuesDeviceRule => 'Device rules';
+
+  @override
+  String configIssuesLine(int number) {
+    return 'line $number';
+  }
+
+  @override
+  String get configIssuesSourceConditions => 'conditions';
+
+  @override
+  String get configIssuesSourceEndConditions => 'end conditions';
+
+  @override
+  String get configIssuesSourceActionConditions => 'action conditions';
+
+  @override
+  String get configIssuesSourceDeviceRule => 'device rule';
+
+  @override
   String get actionRetry => 'Retry';
 
   @override

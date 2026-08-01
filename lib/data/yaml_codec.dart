@@ -5,6 +5,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_group.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -27,26 +28,36 @@ Config decodeConfig(String yamlText) {
   if (doc == null) return const Config();
   final map = doc as YamlMap;
 
-  final mouseGestures = _parseDeviceGestures<MouseGesture>(
-    map['mouse'],
-    _parseMouseGesture,
-  );
-  final keyboardGestures = _parseDeviceGestures<KeyboardGesture>(
-    map['keyboard'],
-    _parseKeyboardGesture,
-  );
-  final pointerGestures = _parseDeviceGestures<PointerGesture>(
-    map['pointer'],
-    _parsePointerGesture,
-  );
-  final touchpadGestures = _parseDeviceGestures<TouchpadGesture>(
-    map['touchpad'],
-    _parseTouchpadGesture,
-  );
-  final touchscreenGestures = _parseDeviceGestures<TouchscreenGesture>(
-    map['touchscreen'],
-    _parseTouchscreenGesture,
-  );
+  final (mouseGestures, mouseNativeGroups) =
+      _parseDeviceGestures<MouseGesture>(
+        map['mouse'],
+        DeviceType.mouse,
+        _parseMouseGesture,
+      );
+  final (keyboardGestures, keyboardNativeGroups) =
+      _parseDeviceGestures<KeyboardGesture>(
+        map['keyboard'],
+        DeviceType.keyboard,
+        _parseKeyboardGesture,
+      );
+  final (pointerGestures, pointerNativeGroups) =
+      _parseDeviceGestures<PointerGesture>(
+        map['pointer'],
+        DeviceType.pointer,
+        _parsePointerGesture,
+      );
+  final (touchpadGestures, touchpadNativeGroups) =
+      _parseDeviceGestures<TouchpadGesture>(
+        map['touchpad'],
+        DeviceType.touchpad,
+        _parseTouchpadGesture,
+      );
+  final (touchscreenGestures, touchscreenNativeGroups) =
+      _parseDeviceGestures<TouchscreenGesture>(
+        map['touchscreen'],
+        DeviceType.touchscreen,
+        _parseTouchscreenGesture,
+      );
 
   final gestureGroups = [
     ..._parseGestureGroups(map['mouse'], DeviceType.mouse),
@@ -54,6 +65,11 @@ Config decodeConfig(String yamlText) {
     ..._parseGestureGroups(map['pointer'], DeviceType.pointer),
     ..._parseGestureGroups(map['touchpad'], DeviceType.touchpad),
     ..._parseGestureGroups(map['touchscreen'], DeviceType.touchscreen),
+    ...mouseNativeGroups,
+    ...keyboardNativeGroups,
+    ...pointerNativeGroups,
+    ...touchpadNativeGroups,
+    ...touchscreenNativeGroups,
   ];
 
   final deviceRules = _parseDeviceRules(map['device_rules']);
@@ -96,73 +112,123 @@ Config decodeConfig(String yamlText) {
   );
 }
 
-List<T> _parseDeviceGestures<T>(
+const _groupNodeKeys = {'gestures', 'conditions', 'name', 'enabled'};
+
+/// Parses a device's `gestures:` list into gestures plus the native group
+/// tree. Untyped list items with a `gestures:` key are the daemon's trigger
+/// groups; they nest to any depth, and each becomes a [GestureGroup] (with a
+/// synthetic, never-serialized id) whose members carry its id as `groupId`.
+(List<T>, List<GestureGroup>) _parseDeviceGestures<T>(
   dynamic deviceNode,
+  DeviceType device,
   T? Function(YamlMap) parseGesture,
 ) {
-  if (deviceNode is! YamlMap) return [];
+  if (deviceNode is! YamlMap) return (const [], const []);
   final gesturesNode = deviceNode['gestures'];
-  if (gesturesNode is! YamlList) return [];
+  if (gesturesNode is! YamlList) return (const [], const []);
   final results = <T>[];
-  for (final item in gesturesNode) {
-    if (item is! YamlMap) continue;
-    // Untyped group: propagate shared conditions into each child gesture.
-    if (item.containsKey('gestures') && !item.containsKey('type')) {
-      final groupCondition = item.containsKey('conditions')
-          ? _parseCondition(item['conditions'])
-          : null;
-      for (final child in (item['gestures'] as YamlList?) ?? []) {
-        if (child is! YamlMap) continue;
-        final g = parseGesture(child);
-        if (g == null) continue;
-        results.add(
-          groupCondition == null
-              ? g
-              : _mergeConditionGeneric(g, groupCondition) as T,
+  final groups = <GestureGroup>[];
+  var groupCounter = 0;
+
+  void walk(YamlList list, String? parentGroupId) {
+    for (final item in list) {
+      if (item is! YamlMap) continue;
+      // Untyped group node.
+      if (item.containsKey('gestures') && !item.containsKey('type')) {
+        final id = '#${device.name}:${++groupCounter}';
+        final extra = <String, dynamic>{};
+        for (final key in item.keys) {
+          if (!_groupNodeKeys.contains(key)) {
+            extra[key as String] = _plainValue(item[key]);
+          }
+        }
+        groups.add(
+          GestureGroup(
+            id: id,
+            name: item['name'] as String? ?? '',
+            device: device,
+            enabled: item['enabled'] as bool? ?? true,
+            parentId: parentGroupId,
+            native: true,
+            conditions: item.containsKey('conditions')
+                ? _parseCondition(item.nodes['conditions'])
+                : null,
+            extra: extra,
+          ),
         );
-      }
-      continue;
-    }
-    // Typed gesture with nested conditional sub-gestures: flatten into
-    // per-action conditions so the rest of the model stays uniform.
-    if (item.containsKey('gestures') && item.containsKey('type')) {
-      final g = parseGesture(item);
-      if (g == null) continue;
-      final subList = item['gestures'];
-      if (subList is! YamlList) {
-        results.add(g);
+        final sub = item['gestures'];
+        if (sub is YamlList) walk(sub, id);
         continue;
       }
-      final dynamic gd = g;
-      final existingActions = gd.common.actions as List<TriggerAction>;
-      final flatActions = <TriggerAction>[...existingActions];
-      for (final sub in subList) {
-        if (sub is! YamlMap) continue;
-        final subCond = sub.containsKey('conditions')
-            ? _parseCondition(sub['conditions'])
-            : null;
-        final subActions = _parseActions(sub['actions']);
-        if (subCond == null) {
-          flatActions.addAll(subActions);
-        } else {
-          flatActions.addAll(
-            subActions.map(
-              (a) => a.copyWith(
-                conditions: a.conditions == null
-                    ? subCond
-                    : ConditionGroup(children: [subCond, a.conditions!]),
-              ),
-            ),
-          );
+      // Typed gesture with nested conditional sub-gestures: flatten into
+      // per-action conditions so the rest of the model stays uniform.
+      if (item.containsKey('gestures') && item.containsKey('type')) {
+        final g = parseGesture(item);
+        if (g == null) continue;
+        final subList = item['gestures'];
+        if (subList is! YamlList) {
+          results.add(_withGroupIdGeneric(g, parentGroupId) as T);
+          continue;
         }
+        final dynamic gd = g;
+        final existingActions = gd.common.actions as List<TriggerAction>;
+        final flatActions = <TriggerAction>[...existingActions];
+        for (final sub in subList) {
+          if (sub is! YamlMap) continue;
+          final subCond = sub.containsKey('conditions')
+              ? _parseCondition(sub.nodes['conditions'])
+              : null;
+          final subActions = _parseActions(sub['actions']);
+          if (subCond == null) {
+            flatActions.addAll(subActions);
+          } else {
+            flatActions.addAll(
+              subActions.map(
+                (a) => a.copyWith(
+                  conditions: a.conditions == null
+                      ? subCond
+                      : ConditionGroup(children: [subCond, a.conditions!]),
+                ),
+              ),
+            );
+          }
+        }
+        results.add(
+          _withGroupIdGeneric(
+                _mergeActionsGeneric(g, flatActions),
+                parentGroupId,
+              )
+              as T,
+        );
+        continue;
       }
-      results.add(_mergeActionsGeneric(g, flatActions) as T);
-      continue;
+      final g = parseGesture(item);
+      if (g != null) results.add(_withGroupIdGeneric(g, parentGroupId) as T);
     }
-    final g = parseGesture(item);
-    if (g != null) results.add(g);
   }
-  return results;
+
+  walk(gesturesNode, null);
+  return (results, groups);
+}
+
+/// Converts a yaml node into plain Dart values so it can be held in the model
+/// and handed back to the emitter.
+dynamic _plainValue(dynamic node) {
+  if (node is YamlMap) {
+    return {for (final e in node.entries) e.key: _plainValue(e.value)};
+  }
+  if (node is YamlList) return node.map(_plainValue).toList();
+  return node;
+}
+
+dynamic _withGroupIdGeneric(dynamic g, String? groupId) {
+  if (groupId == null) return g;
+  return switch (g) {
+    final Gesture gesture => gesture.withCommon(
+      gesture.common.copyWith(groupId: groupId),
+    ),
+    _ => g,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -359,10 +425,10 @@ TriggerCommon _parseTriggerCommon(YamlMap m) => TriggerCommon(
   mouseButtons: _parseMouseButtons(m['mouse_buttons']),
   mouseButtonsExactOrder: m['mouse_buttons_exact_order'] as bool? ?? false,
   conditions: m.containsKey('conditions')
-      ? _parseCondition(m['conditions'])
+      ? _parseCondition(m.nodes['conditions'])
       : null,
   endConditions: m.containsKey('end_conditions')
-      ? _parseCondition(m['end_conditions'])
+      ? _parseCondition(m.nodes['end_conditions'])
       : null,
   blockEvents: m['block_events'] as bool?,
   clearModifiers: m['clear_modifiers'] as bool?,
@@ -417,18 +483,23 @@ SwipeMode _parseSwipeMode(YamlMap m) {
 }
 
 Condition _parseCondition(dynamic node) {
+  if (node is YamlScalar) {
+    final recovered = _recoverTaggedCondition(node);
+    if (recovered != null) return _parseStringCondition(recovered);
+    return _parseCondition(node.value);
+  }
   if (node is String) return _parseStringCondition(node);
   if (node is YamlList) {
-    return ConditionGroup(children: node.map(_parseCondition).toList());
+    return ConditionGroup(children: node.nodes.map(_parseCondition).toList());
   }
   if (node is YamlMap) {
     for (final mode in ConditionGroupMode.values) {
       if (node.containsKey(mode.name)) {
-        final children = node[mode.name];
+        final children = node.nodes[mode.name];
         return ConditionGroup(
           mode: mode,
           children: children is YamlList
-              ? children.map(_parseCondition).toList()
+              ? children.nodes.map(_parseCondition).toList()
               : [],
         );
       }
@@ -438,6 +509,16 @@ Condition _parseCondition(dynamic node) {
     }
   }
   return RawCondition(raw: node.toString());
+}
+
+/// Hack, mirroring the daemon: unquoted `!$var …` parses as a YAML tag that
+/// eats part of the text, so the original is recovered from the span.
+String? _recoverTaggedCondition(YamlScalar node) {
+  final value = node.value;
+  if (value != null && value is! String) return null;
+  final text = node.span.text;
+  if (!text.startsWith(r'!$')) return null;
+  return text.trim();
 }
 
 Condition _parseStringCondition(String raw) {
@@ -489,7 +570,7 @@ TriggerAction? _parseTriggerAction(dynamic node) {
         ? TriggerOn.fromYaml(node['on'] as String? ?? '')
         : null,
     conditions: node.containsKey('conditions')
-        ? _parseCondition(node['conditions'])
+        ? _parseCondition(node.nodes['conditions'])
         : null,
     action: action,
     interval: node['interval']?.toString(),
@@ -716,45 +797,6 @@ dynamic _mergeActionsGeneric(dynamic g, List<TriggerAction> actions) {
   return g;
 }
 
-dynamic _mergeConditionGeneric(dynamic g, Condition extra) {
-  if (g is MouseGesture) {
-    final existing = g.common.conditions;
-    final merged = existing == null
-        ? extra
-        : ConditionGroup(children: [extra, existing]);
-    return g.withCommon(g.common.copyWith(conditions: merged));
-  }
-  if (g is KeyboardGesture) {
-    final existing = g.common.conditions;
-    final merged = existing == null
-        ? extra
-        : ConditionGroup(children: [extra, existing]);
-    return g.withCommon(g.common.copyWith(conditions: merged));
-  }
-  if (g is PointerGesture) {
-    final existing = g.common.conditions;
-    final merged = existing == null
-        ? extra
-        : ConditionGroup(children: [extra, existing]);
-    return g.withCommon(g.common.copyWith(conditions: merged));
-  }
-  if (g is TouchpadGesture) {
-    final existing = g.common.conditions;
-    final merged = existing == null
-        ? extra
-        : ConditionGroup(children: [extra, existing]);
-    return g.withCommon(g.common.copyWith(conditions: merged));
-  }
-  if (g is TouchscreenGesture) {
-    final existing = g.common.conditions;
-    final merged = existing == null
-        ? extra
-        : ConditionGroup(children: [extra, existing]);
-    return g.withCommon(g.common.copyWith(conditions: merged));
-  }
-  return g;
-}
-
 List<InputEntry> _parseInputEntries(dynamic node) {
   if (node is! YamlList) return [];
   final entries = <InputEntry>[];
@@ -834,7 +876,7 @@ List<DeviceRule> _parseDeviceRules(dynamic node) {
 DeviceRule? _parseDeviceRule(dynamic node) {
   if (node is! YamlMap) return null;
   final conditions = node.containsKey('conditions')
-      ? _parseCondition(node['conditions'])
+      ? _parseCondition(node.nodes['conditions'])
       : null;
   return DeviceRule(
     conditions: conditions,

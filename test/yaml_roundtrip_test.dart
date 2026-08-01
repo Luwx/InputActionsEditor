@@ -248,4 +248,205 @@ device_rules:
       expect(encoded.contains('touchscreen'), isFalse);
     });
   });
+
+  group('native trigger groups', () {
+    test('a nested group round-trips without dissolving', () {
+      const original = r'''
+mouse:
+  gestures:
+    - conditions:
+        - $window_fullscreen == false
+      gestures:
+        - type: press
+          instant: true
+          conditions:
+            - $cursor_shape == pointer
+          actions:
+            - on: begin
+              command: echo one
+        - type: press
+          instant: true
+          actions:
+            - on: begin
+              command: echo two
+''';
+      final config1 = decodeConfig(original);
+      final yaml1 = encodeConfig(config1, original);
+
+      // Structure preserved: still one group node wrapping both gestures.
+      final config2 = decodeConfig(yaml1);
+      expect(config2.gestureGroups.single.native, isTrue);
+      // The single-element condition list normalizes to its bare child on the
+      // first encode (decode-only sugar); the content is unchanged.
+      expect(
+        config2.gestureGroups.single.conditions,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('window_fullscreen'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.boolean(false),
+        ),
+      );
+      expect(config2.mouseGestures.length, 2);
+      expect(
+        config2.mouseGestures.map((g) => g.common.groupId).toSet().single,
+        config2.gestureGroups.single.id,
+      );
+
+      // Textual fixed point.
+      final yaml2 = encodeConfig(config2, yaml1);
+      expect(yaml2, yaml1);
+    });
+
+    test('depth-3 nesting survives decode -> encode -> decode', () {
+      const original = r'''
+mouse:
+  gestures:
+    - conditions: $a
+      gestures:
+        - conditions: $b
+          gestures:
+            - conditions: $c
+              gestures:
+                - type: press
+                  name: Deep
+                  actions:
+                    - command: echo important
+''';
+      final config1 = decodeConfig(original);
+      expect(config1.mouseGestures.single.common.name, 'Deep');
+
+      final yaml1 = encodeConfig(config1, original);
+      final config2 = decodeConfig(yaml1);
+      expect(config2.mouseGestures.single.common.name, 'Deep');
+      expect(config2.gestureGroups.length, 3);
+      expect(encodeConfig(config2, yaml1), yaml1);
+    });
+
+    test('group shared properties are re-emitted', () {
+      const original = '''
+mouse:
+  gestures:
+    - mouse_buttons:
+        - right
+      threshold: 5
+      gestures:
+        - type: press
+''';
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(encoded, contains('mouse_buttons'));
+      expect(encoded, contains('threshold: 5'));
+      expect(decodeConfig(encoded).gestureGroups.single.extra, {
+        'mouse_buttons': ['right'],
+        'threshold': 5,
+      });
+    });
+
+    test('moving a gesture out of a native group un-nests it', () {
+      const original = r'''
+mouse:
+  gestures:
+    - conditions: $a
+      gestures:
+        - type: press
+          name: In
+        - type: wheel
+          direction: up
+          name: AlsoIn
+''';
+      final config = decodeConfig(original);
+      final freed = config.mouseGestures.first.withCommon(
+        config.mouseGestures.first.common.copyWith(groupId: null),
+      );
+      final edited = config.copyWith(
+        mouseGestures: [freed, config.mouseGestures[1]],
+      );
+      final encoded = encodeConfig(edited, original);
+
+      final reDecoded = decodeConfig(encoded);
+      expect(reDecoded.mouseGestures.length, 2);
+      final byName = {
+        for (final g in reDecoded.mouseGestures) g.common.name: g,
+      };
+      expect(byName['In']!.common.groupId, isNull);
+      expect(byName['AlsoIn']!.common.groupId, isNotNull);
+    });
+  });
+
+  group('single-child none group', () {
+    test('survives a round-trip instead of collapsing to its child', () {
+      const original = r'''
+mouse:
+  gestures:
+    - type: press
+      conditions:
+        none:
+          - $window_class == FreeCAD
+''';
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(encoded, contains('none:'));
+
+      final reDecoded = decodeConfig(encoded);
+      expect(
+        reDecoded.mouseGestures.single.common.conditions,
+        decodeConfig(original).mouseGestures.single.common.conditions,
+      );
+    });
+  });
+
+  group('blank line preservation', () {
+    test('unchanged sections keep their blank lines', () {
+      const original = '''
+autoreload: true
+
+mouse:
+
+  gestures:
+
+    - type: press
+      name: A
+
+    - type: wheel
+      direction: up
+
+device_rules:
+
+  - grab: true
+''';
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(encoded, original);
+    });
+
+    test('editing one section leaves blank lines in the others', () {
+      const original = '''
+mouse:
+  gestures:
+
+    - type: press
+      name: A
+
+    - type: wheel
+      direction: up
+
+touchpad:
+  gestures:
+
+    - type: tap
+      fingers: 3
+''';
+      final decoded = decodeConfig(original);
+      final edited = decoded.copyWith(
+        touchpadGestures: [
+          (decoded.touchpadGestures.first as TouchpadTapGesture).copyWith(
+            fingers: 4,
+          ),
+        ],
+      );
+      final encoded = encodeConfig(edited, original);
+
+      // The untouched mouse section keeps its internal blank lines...
+      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      // ...while the edited touchpad section is rewritten with the new value.
+      expect(encoded, contains('fingers: 4'));
+    });
+  });
 }

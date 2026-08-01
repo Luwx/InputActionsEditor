@@ -85,7 +85,9 @@ class _GroupHeaderRow extends HookWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    group.name,
+                    group.name.isEmpty
+                        ? context.l10n.gestureGroupUnnamed
+                        : group.name,
                     style: typography.body.sm.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDisabled

@@ -934,6 +934,72 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load your configuration'**
   String get configLoadFailedTitle;
 
+  /// No description provided for @configIssuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 condition couldn\'t be read} other{{count} conditions couldn\'t be read}}'**
+  String configIssuesTitle(int count);
+
+  /// No description provided for @configIssuesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'re shown read-only. Saving will overwrite them.'**
+  String get configIssuesDescription;
+
+  /// No description provided for @configIssuesDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The editor couldn\'t understand these conditions and shows them read-only. If you save, they\'ll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.'**
+  String get configIssuesDialogBody;
+
+  /// No description provided for @configIssuesUnnamedGesture.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed gesture'**
+  String get configIssuesUnnamedGesture;
+
+  /// No description provided for @gestureGroupUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get gestureGroupUnnamed;
+
+  /// No description provided for @configIssuesDeviceRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Device rules'**
+  String get configIssuesDeviceRule;
+
+  /// No description provided for @configIssuesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'line {number}'**
+  String configIssuesLine(int number);
+
+  /// No description provided for @configIssuesSourceConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'conditions'**
+  String get configIssuesSourceConditions;
+
+  /// No description provided for @configIssuesSourceEndConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'end conditions'**
+  String get configIssuesSourceEndConditions;
+
+  /// No description provided for @configIssuesSourceActionConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'action conditions'**
+  String get configIssuesSourceActionConditions;
+
+  /// No description provided for @configIssuesSourceDeviceRule.
+  ///
+  /// In en, this message translates to:
+  /// **'device rule'**
+  String get configIssuesSourceDeviceRule;
+
   /// No description provided for @actionRetry.
   ///
   /// In en, this message translates to:
