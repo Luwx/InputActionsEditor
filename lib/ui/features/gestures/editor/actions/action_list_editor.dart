@@ -460,9 +460,19 @@ class _RowHeader extends HookConsumerWidget {
                 onPress: onDelete,
                 child: const Icon(FLucideIcons.trash),
               ),
-              FCheckbox(
-                value: action.enabled != false,
-                onChange: onEnabledChanged,
+              FTappable(
+                behavior: HitTestBehavior.opaque,
+                onPress: () => onEnabledChanged(action.enabled == false),
+                child: SizedBox(
+                  width: 34,
+                  height: 34,
+                  child: FittedBox(
+                    child: FSwitch(
+                      value: action.enabled != false,
+                      onChange: onEnabledChanged,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
