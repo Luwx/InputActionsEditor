@@ -115,26 +115,26 @@ class ShortcutFilterNotifier extends Notifier<ShortcutFilterState> {
     required int loaded,
     required int total,
   }) {
-    final lq = query.toLowerCase();
+    final terms = query
+        .toLowerCase()
+        .split(_separators)
+        .where((t) => t.isNotEmpty)
+        .toList();
     final results = <String, List<KGlobalAccelShortcut>>{};
 
     for (final comp in _allComponents) {
       final shortcuts = _rawByComponent[comp.uniqueName];
       if (shortcuts == null) continue;
 
-      final compMatches =
-          comp.friendlyName.toLowerCase().contains(lq) ||
-          comp.uniqueName.toLowerCase().contains(lq);
+      final compHaystack = _haystack([comp.friendlyName, comp.uniqueName]);
 
-      final filtered = compMatches
+      final filtered = terms.every(compHaystack.contains)
           ? shortcuts
-          : shortcuts
-                .where(
-                  (s) =>
-                      s.friendlyName.toLowerCase().contains(lq) ||
-                      s.uniqueName.toLowerCase().contains(lq),
-                )
-                .toList();
+          : shortcuts.where((s) {
+              final haystack =
+                  '${_haystack([s.friendlyName, s.uniqueName])} $compHaystack';
+              return terms.every(haystack.contains);
+            }).toList();
 
       if (filtered.isNotEmpty) {
         results[comp.uniqueName] = filtered;
@@ -150,6 +150,11 @@ class ShortcutFilterNotifier extends Notifier<ShortcutFilterState> {
     );
   }
 }
+
+final _separators = RegExp(r'[\s_\-./]+');
+
+String _haystack(List<String> fields) =>
+    fields.join(' ').toLowerCase().replaceAll(_separators, ' ');
 
 final NotifierProvider<ShortcutFilterNotifier, ShortcutFilterState>
 shortcutFilterProvider =
