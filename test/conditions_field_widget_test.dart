@@ -7,6 +7,7 @@ import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show gestureAt, gestureConditionsLens, gestureLocationAt;
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -60,6 +61,8 @@ class _PointConditionConfig extends ConfigController {
 Widget _host({
   required Condition? condition,
   ValueChanged<Condition?>? onChanged,
+  List<InheritedCondition> inherited = const [],
+  ValueChanged<InheritedCondition>? onOpenInheritedGroup,
 }) {
   return ProviderScope(
     overrides: [
@@ -78,6 +81,8 @@ Widget _host({
               child: ConditionEditor.generic(
                 condition: condition,
                 onConditionChanged: onChanged ?? (_) {},
+                inherited: inherited,
+                onOpenInheritedGroup: onOpenInheritedGroup,
               ),
             ),
           ),
@@ -441,6 +446,91 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('*'), findsNothing);
+  });
+
+  group('inherited group conditions', () {
+    const inherited = [
+      InheritedCondition(
+        condition: ConditionGroup(children: [leafA]),
+        groupName: 'Browser',
+        groupEditId: 7,
+      ),
+    ];
+
+    testWidgets("merges under an ALL root with the gesture's own", (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(condition: leafB, inherited: inherited),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Inherited from Browser'), findsOneWidget);
+      expect(find.text('Active window - app class'), findsOneWidget);
+      expect(find.text('Number of fingers'), findsOneWidget);
+      // The synthetic root badge, plus the inherited group's own mode badge.
+      expect(find.text('ALL'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('inherited rows carry no delete action', (tester) async {
+      await tester.pumpWidget(
+        _host(condition: leafB, inherited: inherited),
+      );
+      await tester.pumpAndSettle();
+
+      // Only the gesture's own leaf is deletable.
+      expect(find.byIcon(FLucideIcons.trash2), findsOneWidget);
+    });
+
+    testWidgets('the gesture keeps editing only its own conditions', (
+      tester,
+    ) async {
+      Condition? result = leafB;
+      await tester.pumpWidget(
+        _host(
+          condition: leafB,
+          inherited: inherited,
+          onChanged: (c) => result = c,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(FLucideIcons.trash2));
+      await tester.pumpAndSettle();
+
+      expect(result, isNull);
+    });
+
+    testWidgets('shows inherited conditions when the gesture sets none', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(condition: null, inherited: inherited),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('No conditions set'), findsNothing);
+      expect(find.text('Inherited from Browser'), findsOneWidget);
+      expect(find.textContaining('No conditions of its own'), findsOneWidget);
+    });
+
+    testWidgets('the inherited header opens its group', (tester) async {
+      InheritedCondition? opened;
+      await tester.pumpWidget(
+        _host(
+          condition: leafB,
+          inherited: inherited,
+          onOpenInheritedGroup: (source) => opened = source,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Inherited from Browser'));
+      await tester.pumpAndSettle();
+
+      expect(opened?.groupEditId, 7);
+    });
   });
 
   testWidgets('text value detect popover closes on submit', (tester) async {

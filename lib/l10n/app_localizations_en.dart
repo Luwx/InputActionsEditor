@@ -593,6 +593,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'No conditions set. Add a condition or group to specify when this gesture should trigger.';
 
   @override
+  String get conditionsMergedRootLabel =>
+      'must match: group conditions merged with this gesture\'s';
+
+  @override
+  String get conditionsMergedRootLabelGroup =>
+      'must match: conditions from enclosing groups merged with this group\'s';
+
+  @override
+  String conditionsInheritedFrom(String group) {
+    return 'Inherited from $group';
+  }
+
+  @override
+  String conditionsInheritedReadOnly(String group) {
+    return 'Set on $group. Open that group to change it.';
+  }
+
+  @override
+  String get conditionsNoneOfItsOwn => 'No conditions of its own.';
+
+  @override
   String get triggerFieldIdLabel => 'ID';
 
   @override

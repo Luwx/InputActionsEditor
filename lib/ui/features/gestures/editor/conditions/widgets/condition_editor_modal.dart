@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' show Colors, Curves, Material;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
@@ -23,6 +24,9 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
   required Condition? initialCondition,
   required void Function(Condition?) onConditionChanged,
   Widget? titleTooltipContent,
+  List<InheritedCondition> inherited = const [],
+  bool inheritedForGroup = false,
+  ValueChanged<InheritedCondition>? onOpenInheritedGroup,
 }) {
   return PageRouteBuilder<void>(
     opaque: false,
@@ -46,6 +50,9 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
           onRevert: onRevert,
           initialCondition: initialCondition,
           onConditionChanged: onConditionChanged,
+          inherited: inherited,
+          inheritedForGroup: inheritedForGroup,
+          onOpenInheritedGroup: onOpenInheritedGroup,
         ),
       );
     },
@@ -89,6 +96,9 @@ class _ConditionsExpandModal extends StatelessWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    required this.inherited,
+    required this.inheritedForGroup,
+    required this.onOpenInheritedGroup,
     this.titleTooltipContent,
   });
 
@@ -104,6 +114,9 @@ class _ConditionsExpandModal extends StatelessWidget {
   final VoidCallback? onRevert;
   final Condition? initialCondition;
   final void Function(Condition?) onConditionChanged;
+  final List<InheritedCondition> inherited;
+  final bool inheritedForGroup;
+  final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +205,9 @@ class _ConditionsExpandModal extends StatelessWidget {
                                   onRevert: onRevert,
                                   initialCondition: initialCondition,
                                   onConditionChanged: onConditionChanged,
+                                  inherited: inherited,
+                                  inheritedForGroup: inheritedForGroup,
+                                  onOpenInheritedGroup: onOpenInheritedGroup,
                                 ),
                               ),
                             ),
@@ -222,6 +238,9 @@ class _ConditionsWrapper extends StatefulWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    required this.inherited,
+    required this.inheritedForGroup,
+    required this.onOpenInheritedGroup,
     this.titleTooltipContent,
   });
 
@@ -236,6 +255,9 @@ class _ConditionsWrapper extends StatefulWidget {
   final VoidCallback? onRevert;
   final Condition? initialCondition;
   final void Function(Condition?) onConditionChanged;
+  final List<InheritedCondition> inherited;
+  final bool inheritedForGroup;
+  final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
 
   @override
   State<_ConditionsWrapper> createState() => _ConditionsWrapperState();
@@ -266,6 +288,9 @@ class _ConditionsWrapperState extends State<_ConditionsWrapper> {
       dirtyState: widget.dirtyState,
       onRevert: widget.onRevert,
       expandable: false,
+      inherited: widget.inherited,
+      inheritedForGroup: widget.inheritedForGroup,
+      onOpenInheritedGroup: widget.onOpenInheritedGroup,
       heroTag: widget.heroTag,
       bodyBackgroundColor: widget.backgroundColor,
       onCollapse: () => Navigator.of(context).pop(),

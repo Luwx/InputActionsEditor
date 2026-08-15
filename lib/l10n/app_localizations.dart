@@ -1156,6 +1156,36 @@ abstract class AppLocalizations {
   /// **'No conditions set. Add a condition or group to specify when this gesture should trigger.'**
   String get triggerConditionsEmpty;
 
+  /// Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge.
+  ///
+  /// In en, this message translates to:
+  /// **'must match: group conditions merged with this gesture\'s'**
+  String get conditionsMergedRootLabel;
+
+  /// Same header, shown while editing a group nested inside other groups.
+  ///
+  /// In en, this message translates to:
+  /// **'must match: conditions from enclosing groups merged with this group\'s'**
+  String get conditionsMergedRootLabelGroup;
+
+  /// Header of a read-only branch holding one ancestor group's conditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from {group}'**
+  String conditionsInheritedFrom(String group);
+
+  /// Tooltip on a read-only inherited condition branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Set on {group}. Open that group to change it.'**
+  String conditionsInheritedReadOnly(String group);
+
+  /// Placeholder row where the local conditions would be, when only inherited ones exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No conditions of its own.'**
+  String get conditionsNoneOfItsOwn;
+
   /// No description provided for @triggerFieldIdLabel.
   ///
   /// In en, this message translates to:

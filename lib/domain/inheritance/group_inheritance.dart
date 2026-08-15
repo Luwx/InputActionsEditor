@@ -1,5 +1,6 @@
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation;
+    show GestureGroupLocation, GestureLocation;
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
@@ -138,6 +139,81 @@ List<InheritedProperty> inheritedPropertiesFor(
   GestureLocation location,
 ) =>
     inheritedPropertiesForDevice(config, location.device)[location.editId] ??
+    const [];
+
+/// One ancestor group's `conditions`, which the daemon AND-merges into every
+/// node below it rather than copying like a [SharedTriggerProperty].
+class InheritedCondition {
+  const InheritedCondition({
+    required this.condition,
+    required this.groupName,
+    required this.groupEditId,
+  });
+
+  final Condition condition;
+
+  final String groupName;
+
+  /// Identifies the group for [GestureGroupLocation]-based navigation. Null
+  /// only before `assignEditIds` has run.
+  final int? groupEditId;
+}
+
+/// Resolves, per node editId, the ancestor conditions merged into that node's
+/// own, outermost group first.
+///
+/// Covers gestures and group nodes alike: both draw editIds from the single
+/// sequence in `assignEditIds`, so the keys cannot collide.
+Map<int, List<InheritedCondition>> inheritedConditionsForDevice(
+  Config config,
+  DeviceType device,
+) {
+  final result = <int, List<InheritedCondition>>{};
+
+  void walk(List<GestureNode> level, List<InheritedCondition> ancestors) {
+    for (final node in level) {
+      switch (node) {
+        case GestureGroupNode(:final children, :final conditions, :final name):
+          final editId = node.editId;
+          if (editId != null && ancestors.isNotEmpty) {
+            result[editId] = ancestors;
+          }
+          walk(children, [
+            ...ancestors,
+            if (conditions != null)
+              InheritedCondition(
+                condition: conditions,
+                groupName: name,
+                groupEditId: editId,
+              ),
+          ]);
+        case GestureLeaf(:final gesture):
+          final editId = gesture.common.editId;
+          if (editId == null || ancestors.isEmpty) continue;
+          result[editId] = ancestors;
+      }
+    }
+  }
+
+  walk(config.nodesForDevice(device), const []);
+  return result;
+}
+
+/// Convenience read for a single gesture.
+List<InheritedCondition> inheritedConditionsFor(
+  Config config,
+  GestureLocation location,
+) =>
+    inheritedConditionsForDevice(config, location.device)[location.editId] ??
+    const [];
+
+/// Convenience read for a single group node, which inherits from the groups
+/// above it exactly as a gesture does.
+List<InheritedCondition> inheritedConditionsForGroup(
+  Config config,
+  GestureGroupLocation location,
+) =>
+    inheritedConditionsForDevice(config, location.device)[location.editId] ??
     const [];
 
 bool _isSetOnGesture(TriggerCommon common, SharedTriggerProperty property) =>

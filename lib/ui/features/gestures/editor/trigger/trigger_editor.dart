@@ -38,11 +38,15 @@ class TriggerEditor extends HookConsumerWidget {
     final inherited = _byField(
       ref.watch(gestureInheritedPropertiesProvider(location)),
     );
+    final inheritedConditions = ref.watch(
+      gestureInheritedConditionsProvider(location),
+    );
     // An inherited property is worth seeing even when the gesture leaves it
     // unset, so it joins the pinned set rather than hiding in the accordion.
     final pinnedFields = useState({
       ...initialAdvancedFields,
       ...inherited.keys,
+      if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
     });
     final optionsExpanded = useState(false);
     final accordionFields = TriggerAdvancedField.values
@@ -50,9 +54,7 @@ class TriggerEditor extends HookConsumerWidget {
         .toList();
     final conflicts = ref.watch(conflictReportProvider).forGesture(location);
 
-    void openGroup(InheritedProperty property) {
-      final editId = property.groupEditId;
-      if (editId == null) return;
+    void openGroup(int editId) {
       ref
           .read(selectedGroupProvider.notifier)
           .open(
@@ -107,6 +109,7 @@ class TriggerEditor extends HookConsumerWidget {
               child: TriggerAdvancedFields(
                 fields: pinnedFields.value,
                 inherited: inherited,
+                inheritedConditions: inheritedConditions,
                 onOpenGroup: openGroup,
               ),
             ),
@@ -131,6 +134,7 @@ class TriggerEditor extends HookConsumerWidget {
                 child: TriggerAdvancedFields(
                   fields: accordionFields,
                   inherited: inherited,
+                  inheritedConditions: inheritedConditions,
                   onOpenGroup: openGroup,
                 ),
               ),

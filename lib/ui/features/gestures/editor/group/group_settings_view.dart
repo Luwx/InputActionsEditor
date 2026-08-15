@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
+import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
@@ -33,7 +34,13 @@ class GroupSettingsView extends HookConsumerWidget {
     // The group can vanish under us (deleted, or broken down from the list).
     if (group == null) return const SizedBox.shrink();
 
-    final pinned = useState(TriggerAdvancedFields.nonDefaultGroupFields(group));
+    final inheritedConditions = ref.watch(
+      groupInheritedConditionsProvider(location),
+    );
+    final pinned = useState({
+      ...TriggerAdvancedFields.nonDefaultGroupFields(group),
+      if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
+    });
     final optionsExpanded = useState(true);
 
     final pinnedFields = TriggerAdvancedField.values
@@ -60,7 +67,19 @@ class GroupSettingsView extends HookConsumerWidget {
             ),
           ),
           if (pinnedFields.isNotEmpty)
-            TriggerAdvancedFields(fields: pinnedFields, group: location),
+            TriggerAdvancedFields(
+              fields: pinnedFields,
+              group: location,
+              inheritedConditions: inheritedConditions,
+              onOpenGroup: (editId) => ref
+                  .read(selectedGroupProvider.notifier)
+                  .open(
+                    GestureGroupLocation(
+                      device: location.device,
+                      editId: editId,
+                    ),
+                  ),
+            ),
           if (accordionFields.isNotEmpty)
             FAccordion(
               control: FAccordionControl.lifted(
@@ -82,6 +101,7 @@ class GroupSettingsView extends HookConsumerWidget {
                   child: TriggerAdvancedFields(
                     fields: accordionFields,
                     group: location,
+                    inheritedConditions: inheritedConditions,
                   ),
                 ),
               ],

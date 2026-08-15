@@ -287,6 +287,36 @@
   "triggerConditionsTitle": "Trigger Conditions",
   "triggerEndConditionsTitle": "End conditions",
   "triggerConditionsEmpty": "No conditions set. Add a condition or group to specify when this gesture should trigger.",
+  "conditionsMergedRootLabel": "must match: group conditions merged with this gesture's",
+  "@conditionsMergedRootLabel": {
+    "description": "Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge."
+  },
+  "conditionsMergedRootLabelGroup": "must match: conditions from enclosing groups merged with this group's",
+  "@conditionsMergedRootLabelGroup": {
+    "description": "Same header, shown while editing a group nested inside other groups."
+  },
+  "conditionsInheritedFrom": "Inherited from {group}",
+  "@conditionsInheritedFrom": {
+    "description": "Header of a read-only branch holding one ancestor group's conditions.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "conditionsInheritedReadOnly": "Set on {group}. Open that group to change it.",
+  "@conditionsInheritedReadOnly": {
+    "description": "Tooltip on a read-only inherited condition branch.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "conditionsNoneOfItsOwn": "No conditions of its own.",
+  "@conditionsNoneOfItsOwn": {
+    "description": "Placeholder row where the local conditions would be, when only inherited ones exist."
+  },
   "triggerFieldIdLabel": "ID",
   "triggerFieldIdHint": "e.g. my_trigger",
   "triggerFieldThresholdLabel": "Threshold",

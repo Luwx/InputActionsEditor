@@ -24,6 +24,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
     this.fields = TriggerAdvancedField.values,
     this.group,
     this.inherited = const {},
+    this.inheritedConditions = const [],
     this.onOpenGroup,
   });
 
@@ -38,8 +39,12 @@ class TriggerAdvancedFields extends HookConsumerWidget {
   /// bulk scope.
   final Map<TriggerAdvancedField, InheritedProperty> inherited;
 
-  /// Opens the group an inherited property came from.
-  final ValueChanged<InheritedProperty>? onOpenGroup;
+  /// Conditions ancestor groups AND-merge into this node's own, outermost
+  /// first. Shown read-only inside the conditions editor.
+  final List<InheritedCondition> inheritedConditions;
+
+  /// Opens the group an inherited property or condition came from, by editId.
+  final ValueChanged<int>? onOpenGroup;
 
   /// Which of [TriggerAdvancedField] a group shares with its subtree.
   static Set<TriggerAdvancedField> nonDefaultGroupFields(GestureGroupNode g) =>
@@ -168,7 +173,9 @@ class TriggerAdvancedFields extends HookConsumerWidget {
           child,
           InheritedFieldNote(
             inherited: note,
-            onOpenGroup: onOpenGroup == null ? null : () => onOpenGroup!(note),
+            onOpenGroup: onOpenGroup == null || note.groupEditId == null
+                ? null
+                : () => onOpenGroup!(note.groupEditId!),
           ),
         ],
       );
@@ -352,6 +359,14 @@ class TriggerAdvancedFields extends HookConsumerWidget {
               dirtyState: conditionsField.dirty,
               onRevert: conditionsField.onRevert,
               mixed: conditionsField.mixed,
+              inherited: inheritedConditions,
+              inheritedForGroup: scope != null,
+              onOpenInheritedGroup: onOpenGroup == null
+                  ? null
+                  : (source) {
+                      final editId = source.groupEditId;
+                      if (editId != null) onOpenGroup!(editId);
+                    },
             ),
           ),
         ],

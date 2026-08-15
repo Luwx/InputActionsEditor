@@ -160,6 +160,74 @@ mouse:
       expect(all.values.single.single.value, 'first');
     });
 
+    test('conditions are reported separately, outermost group first', () {
+      final config = assignEditIds(
+        decodeConfig(r'''
+mouse:
+  gestures:
+    - name: Outer
+      conditions: $a
+      gestures:
+        - name: Inner
+          conditions: $b
+          gestures:
+            - type: press
+              conditions: $c
+'''),
+      );
+      final all = inheritedConditionsForDevice(config, DeviceType.mouse);
+
+      // The gesture, plus the inner group which inherits from the outer one.
+      expect(all, hasLength(2));
+
+      final gesture = all.values.firstWhere((list) => list.length == 2);
+      expect(gesture.map((i) => i.groupName), ['Outer', 'Inner']);
+      expect(gesture.every((i) => i.groupEditId != null), isTrue);
+
+      final innerGroup = all.values.firstWhere((list) => list.length == 1);
+      expect(innerGroup.single.groupName, 'Outer');
+    });
+
+    test('a group without conditions contributes no branch', () {
+      final all = inheritedConditionsForDevice(
+        assignEditIds(
+          decodeConfig(r'''
+mouse:
+  gestures:
+    - name: Outer
+      threshold: 10
+      gestures:
+        - type: press
+          conditions: $c
+'''),
+        ),
+        DeviceType.mouse,
+      );
+
+      expect(all, isEmpty);
+    });
+
+    test('sibling subtrees do not leak conditions to each other', () {
+      final all = inheritedConditionsForDevice(
+        assignEditIds(
+          decodeConfig(r'''
+mouse:
+  gestures:
+    - name: Browser
+      conditions: $a
+      gestures:
+        - type: press
+    - gestures:
+        - type: press
+'''),
+        ),
+        DeviceType.mouse,
+      );
+
+      expect(all, hasLength(1));
+      expect(all.values.single.single.groupName, 'Browser');
+    });
+
     test('every shared property the daemon copies is covered', () {
       final inherited = singleGesture(r'''
 mouse:
