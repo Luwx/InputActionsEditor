@@ -14,6 +14,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
@@ -650,6 +651,9 @@ class _GestureHeaderMenu extends StatelessWidget {
             .item(
               prefix: const Icon(Icons.copy_all),
               title: Text(context.l10n.gestureMenuDuplicate),
+              details: const MenuShortcutHint(
+                SingleActivator(LogicalKeyboardKey.keyD, control: true),
+              ),
               onPress: () async {
                 await controller.hide();
                 onDuplicate();
@@ -658,6 +662,13 @@ class _GestureHeaderMenu extends StatelessWidget {
             .item(
               prefix: const Icon(FLucideIcons.code),
               title: Text(context.l10n.gestureMenuCopyYaml),
+              details: const MenuShortcutHint(
+                SingleActivator(
+                  LogicalKeyboardKey.keyC,
+                  control: true,
+                  shift: true,
+                ),
+              ),
               onPress: () async {
                 await controller.hide();
                 await onCopyYaml();
@@ -667,6 +678,9 @@ class _GestureHeaderMenu extends StatelessWidget {
               variant: FItemVariant.destructive,
               prefix: const Icon(Icons.delete_outline),
               title: Text(context.l10n.gestureMenuDelete),
+              details: const MenuShortcutHint(
+                SingleActivator(LogicalKeyboardKey.delete),
+              ),
               onPress: () async {
                 await controller.hide();
                 onDelete();

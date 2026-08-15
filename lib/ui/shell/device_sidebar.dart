@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
@@ -95,105 +97,16 @@ class DeviceSidebar extends HookConsumerWidget {
                         FPopoverMenu(
                           menuAnchor: .topRight,
                           childAnchor: .bottomLeft,
-                          menuBuilder: (context, controller, _) => [
-                            .group(
-                              children: [
-                                .item(
-                                  prefix: const Icon(FLucideIcons.filePlus2),
-                                  title: Text(l10n.actionNew),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await newConfigDocument(rootContext, ref);
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.folderOpen),
-                                  title: Text(l10n.actionLoad),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await loadConfigDocument(rootContext, ref);
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.clipboard),
-                                  title: Text(l10n.actionLoadFromClipboard),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await loadConfigFromClipboard(
-                                      rootContext,
-                                      ref,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            .group(
-                              children: [
-                                .item(
-                                  prefix: const Icon(FLucideIcons.save),
-                                  title: Text(l10n.actionSave),
-                                  enabled: canSave,
-                                  onPress: canSave
-                                      ? () async {
-                                          await controller.hide();
-                                          await configController.save();
-                                          if (!rootContext.mounted) return;
-                                          showFToast(
-                                            context: rootContext,
-                                            title: Text(l10n.configSaveSuccess),
-                                            suffixBuilder: (context, entry) =>
-                                                FButton.icon(
-                                                  onPress: entry.dismiss,
-                                                  child: const Icon(
-                                                    FLucideIcons.x,
-                                                  ),
-                                                ),
-                                            duration: const Duration(
-                                              seconds: 3,
-                                            ),
-                                          );
-                                        }
-                                      : null,
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.save),
-                                  title: Text(l10n.actionSaveAs),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    await configController.saveAs();
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(
-                                    FLucideIcons.clipboardCopy,
-                                  ),
-                                  title: Text(l10n.actionCopyToClipboard),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await copyConfigToClipboard(
-                                      rootContext,
-                                      configController,
-                                    );
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.undo2),
-                                  title: Text(l10n.actionDiscardChanges),
-                                  enabled: canDiscard,
-                                  onPress: canDiscard
-                                      ? () async {
-                                          await controller.hide();
-                                          configController.discardChanges();
-                                        }
-                                      : null,
-                                ),
-                              ],
-                            ),
-                          ],
+                          menuBuilder: (context, controller, _) =>
+                              _fileMenuItems(
+                                l10n: l10n,
+                                controller: controller,
+                                rootContext: rootContext,
+                                ref: ref,
+                                configController: configController,
+                                canSave: canSave,
+                                canDiscard: canDiscard,
+                              ),
                           builder: (context, controller, _) => FButton.icon(
                             variant: .ghost,
                             size: .sm,
@@ -278,4 +191,136 @@ class DeviceSidebar extends HookConsumerWidget {
       ),
     );
   }
+}
+
+List<FItemGroupMixin> _fileMenuItems({
+  required AppLocalizations l10n,
+  required FPopoverController controller,
+  required BuildContext rootContext,
+  required WidgetRef ref,
+  required ConfigController configController,
+  required bool canSave,
+  required bool canDiscard,
+}) {
+  return [
+    FItemGroup(
+      children: [
+        FItem(
+          title: Text(l10n.actionNew),
+          prefix: const Icon(FLucideIcons.filePlus2),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyN,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await newConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionLoad),
+          prefix: const Icon(FLucideIcons.folderOpen),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyO,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await loadConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionLoadFromClipboard),
+          prefix: const Icon(FLucideIcons.clipboard),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyV,
+              control: true,
+              shift: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await loadConfigFromClipboard(rootContext, ref);
+          },
+        ),
+      ],
+    ),
+    FItemGroup(
+      children: [
+        FItem(
+          title: Text(l10n.actionSave),
+          prefix: const Icon(FLucideIcons.save),
+          enabled: canSave,
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyS,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            await configController.save();
+            if (!rootContext.mounted) return;
+            showFToast(
+              context: rootContext,
+              title: Text(l10n.configSaveSuccess),
+              suffixBuilder: (context, entry) => FButton.icon(
+                onPress: entry.dismiss,
+                child: const Icon(FLucideIcons.x),
+              ),
+              duration: const Duration(seconds: 3),
+            );
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionSaveAs),
+          prefix: const Icon(FLucideIcons.save),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyS,
+              control: true,
+              shift: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            await configController.saveAs();
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionCopyToClipboard),
+          prefix: const Icon(FLucideIcons.clipboardCopy),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyC,
+              control: true,
+              alt: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await copyConfigToClipboard(rootContext, configController);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionDiscardChanges),
+          prefix: const Icon(FLucideIcons.undo2),
+          enabled: canDiscard,
+          onPress: () async {
+            await controller.hide();
+            configController.discardChanges();
+          },
+        ),
+      ],
+    ),
+  ];
 }

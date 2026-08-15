@@ -81,10 +81,15 @@ class _ContextMenuTile extends HookConsumerWidget {
         onToggleEnabled: onToggleEnabled,
         onDelete: onDelete,
       ),
-      child: GestureDetector(
-        onLongPress: onLongPress,
-        behavior: HitTestBehavior.translucent,
-        child: tile,
+      child: Listener(
+        onPointerDown: (event) {
+          if (event.buttons & kSecondaryButton != 0) onTap();
+        },
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          behavior: HitTestBehavior.translucent,
+          child: tile,
+        ),
       ),
     );
   }
@@ -111,6 +116,9 @@ List<FItemGroupMixin> _gestureContextMenuItems(
         FItem(
           prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.gestureMenuDuplicate),
+          details: const MenuShortcutHint(
+            SingleActivator(LogicalKeyboardKey.keyD, control: true),
+          ),
           onPress: dismissThen(controller, onDuplicate),
         ),
         FItem(
@@ -130,6 +138,9 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           variant: FItemVariant.destructive,
           prefix: const Icon(FLucideIcons.trash2),
           title: Text(l10n.gestureMenuDelete),
+          details: const MenuShortcutHint(
+            SingleActivator(LogicalKeyboardKey.delete),
+          ),
           onPress: dismissThen(controller, onDelete),
         ),
       ],
