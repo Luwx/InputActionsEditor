@@ -151,9 +151,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
       gestureGroupEndConditionsField,
     );
 
-    /// What a checkbox should show. A gesture that leaves the property unset
-    /// runs with the group's value, so display that rather than the schema
-    /// default, which would contradict the note underneath.
+    /// What a checkbox should show.
     bool effective(TriggerAdvancedField field, bool own) {
       final note = inherited[field];
       if (note == null || note.setLocally) return own;

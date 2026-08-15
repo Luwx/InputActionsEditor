@@ -21,12 +21,15 @@ void main() {
 
   group('group inheritance', () {
     test('a gesture outside any group inherits nothing', () {
-      expect(inheritedFor('''
+      expect(
+        inheritedFor('''
 mouse:
   gestures:
     - type: press
       id: solo
-'''), isEmpty);
+'''),
+        isEmpty,
+      );
     });
 
     test('a property set only on the group is inherited, not a conflict', () {

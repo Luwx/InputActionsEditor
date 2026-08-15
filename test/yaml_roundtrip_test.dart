@@ -405,8 +405,9 @@ mouse:
         - type: press
 ''';
       final encoded = encodeConfig(decodeConfig(original), original);
-      final group =
-          decodeConfig(encoded).mouseNodes.whereType<GestureGroupNode>().single;
+      final group = decodeConfig(
+        encoded,
+      ).mouseNodes.whereType<GestureGroupNode>().single;
       expect(group.id, 'shared');
       expect(group.resumeTimeout, 250);
       expect(group.blockEvents, false);

@@ -215,8 +215,7 @@ List<dynamic> _nodesToYaml(
         if (node.endConditions != null)
           'end_conditions': conditionToYaml(node.endConditions!),
         if (node.blockEvents != null) 'block_events': node.blockEvents,
-        if (node.clearModifiers != null)
-          'clear_modifiers': node.clearModifiers,
+        if (node.clearModifiers != null) 'clear_modifiers': node.clearModifiers,
         if (node.resumeTimeout != null) 'resume_timeout': node.resumeTimeout,
         if (node.setLastTrigger != null)
           'set_last_trigger': node.setLastTrigger,
