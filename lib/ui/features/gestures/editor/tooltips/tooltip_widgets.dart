@@ -7,3 +7,4 @@ part '_helpers.dart';
 part 'trigger_tooltips.dart';
 part 'action_tooltips.dart';
 part 'input_tooltips.dart';
+part 'condition_tooltips.dart';

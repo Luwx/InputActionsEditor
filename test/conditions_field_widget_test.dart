@@ -17,6 +17,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
@@ -407,10 +408,18 @@ void main() {
 
     expect(find.text('*'), findsNothing);
 
-    await tester.tap(find.text('0.33, 0.02'));
+    await tester.tap(find.textContaining('.33,'));
     await tester.pumpAndSettle();
 
-    final yField = find.byType(EditableText).last;
+    // The popover holds an X and a Y spinbox, in that order. Scoping to
+    // FSpinBox skips the other text fields on screen (the operator select and
+    // the pixel preview's resolution select).
+    final spinFields = find.descendant(
+      of: find.byType(FSpinBox),
+      matching: find.byType(EditableText),
+    );
+
+    final yField = spinFields.at(1);
     await tester.enterText(yField, '0.03');
     await tester.pumpAndSettle();
 
@@ -421,9 +430,7 @@ void main() {
 
     expect(find.text('*'), findsNothing);
 
-    // The popover holds two spinboxes; the X field is the middle EditableText
-    // (index 0 is the operator FSelect's field, index 2 is the Y spinbox).
-    final xField = find.byType(EditableText).at(1);
+    final xField = spinFields.first;
     await tester.enterText(xField, '0.34');
     await tester.pumpAndSettle();
 

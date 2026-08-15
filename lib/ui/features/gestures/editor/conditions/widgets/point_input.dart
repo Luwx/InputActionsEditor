@@ -2,10 +2,17 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/state/preview_resolution_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:pixel_snap/widgets.dart' as ps;
 
-class PointInput extends HookWidget {
+class PointInput extends StatelessWidget {
   const PointInput({
     required this.value,
     required this.onChanged,
@@ -17,19 +24,19 @@ class PointInput extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final x = value?.$1 ?? 0.0;
-    final y = value?.$2 ?? 0.0;
+    final point = value ?? (0.0, 0.0);
+    final label = value == null ? '--' : _formatPoint(value!);
 
     return _PointChipFrame(
-      label: value == null ? '--' : _formatPoint(value!),
+      label: label,
       child: _PointPopoverChip(
-        point: value,
-        fallbackX: x,
-        fallbackY: y,
+        label: label,
+        isPlaceholder: value == null,
+        points: [point],
         onOpen: () {
-          if (value == null) onChanged(x, y);
+          if (value == null) onChanged(point.$1, point.$2);
         },
-        onChanged: onChanged,
+        onChanged: (points) => onChanged(points[0].$1, points[0].$2),
       ),
     );
   }
@@ -47,74 +54,27 @@ class PointBetweenInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final from = value.from;
-    final to = value.to;
-    final fromX = from?.$1 ?? 0.0;
-    final fromY = from?.$2 ?? 0.0;
-    final toX = to?.$1 ?? 0.0;
-    final toY = to?.$2 ?? 0.0;
+    // Unset endpoints fall back to the full screen area so the region is
+    // visible (and draggable) the moment the popover opens.
+    final from = value.from ?? (0.0, 0.0);
+    final to = value.to ?? (1.0, 1.0);
 
-    final btnLabel = from == null && to == null
+    final label = value.from == null && value.to == null
         ? '--'
-        : '${from == null ? '--' : _formatPoint(from)}-'
-              '${to == null ? '--' : _formatPoint(to)}';
+        : '${value.from == null ? '--' : _formatPoint(from)} → '
+              '${value.to == null ? '--' : _formatPoint(to)}';
 
-    void emit(double nx1, double ny1, double nx2, double ny2) =>
-        onChanged((nx1, ny1), (nx2, ny2));
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final stacked = constraints.maxWidth < 170;
-        final fromChip = _PointPopoverChip(
-          point: from,
-          fallbackX: fromX,
-          fallbackY: fromY,
-          onOpen: () {
-            if (from == null) emit(fromX, fromY, toX, toY);
-          },
-          onChanged: (nx, ny) => emit(nx, ny, toX, toY),
-        );
-        final toChip = _PointPopoverChip(
-          point: to,
-          fallbackX: toX,
-          fallbackY: toY,
-          onOpen: () {
-            if (to == null) emit(fromX, fromY, toX, toY);
-          },
-          onChanged: (nx, ny) => emit(fromX, fromY, nx, ny),
-        );
-
-        return _PointChipFrame(
-          label: btnLabel,
-          height: stacked ? 52 : 32,
-          child: stacked
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    fromChip,
-                    const SizedBox(height: 2),
-                    toChip,
-                  ],
-                )
-              : Row(
-                  children: [
-                    fromChip,
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text(
-                        '-',
-                        style: context.theme.typography.body.sm.copyWith(
-                          color: context.theme.colors.mutedForeground,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    toChip,
-                  ],
-                ),
-        );
-      },
+    return _PointChipFrame(
+      label: label,
+      child: _PointPopoverChip(
+        label: label,
+        isPlaceholder: value.from == null && value.to == null,
+        points: [from, to],
+        onOpen: () {
+          if (value.from == null || value.to == null) onChanged(from, to);
+        },
+        onChanged: (points) => onChanged(points[0], points[1]),
+      ),
     );
   }
 }
@@ -123,24 +83,21 @@ class _PointChipFrame extends StatelessWidget {
   const _PointChipFrame({
     required this.label,
     required this.child,
-    this.height = 30,
   });
 
   final String label;
   final Widget child;
-  final double height;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: height,
       child: Semantics(
         button: true,
         label: label,
         child: Align(
           alignment: Alignment.centerLeft,
-          child: ClipRect(child: child),
+          child: child,
         ),
       ),
     );
@@ -149,35 +106,41 @@ class _PointChipFrame extends StatelessWidget {
 
 class _PointPopoverChip extends HookWidget {
   const _PointPopoverChip({
-    required this.point,
-    required this.fallbackX,
-    required this.fallbackY,
+    required this.label,
+    required this.isPlaceholder,
+    required this.points,
     required this.onOpen,
     required this.onChanged,
   });
 
-  final (double, double)? point;
-  final double fallbackX;
-  final double fallbackY;
+  final String label;
+  final bool isPlaceholder;
+  final List<(double, double)> points;
   final VoidCallback onOpen;
-  final void Function(double x, double y) onChanged;
+  final void Function(List<(double, double)> points) onChanged;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
     final isHovered = useState(false);
-    final textColor = point == null
+    final menuOpen = useState(false);
+    final textColor = isPlaceholder
         ? colors.mutedForeground
         : colors.foreground;
 
     return FPopover(
       constraints: const FPortalConstraints(maxWidth: 300),
+      childAnchor: Alignment.bottomLeft,
+      // The resolution menu renders outside this popover's tap region, so
+      // while it is open every tap would read as a tap outside.
+      hideRegion: menuOpen.value ? .none : .excludeChild,
       builder: (context, controller, child) => MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => isHovered.value = true,
         onExit: (_) => isHovered.value = false,
         child: GestureDetector(
           onTap: () {
+            menuOpen.value = false;
             onOpen();
             unawaited(controller.toggle());
           },
@@ -187,14 +150,14 @@ class _PointPopoverChip extends HookWidget {
       ),
       popoverBuilder: (_, _) => Padding(
         padding: const EdgeInsets.all(12),
-        child: _PointXYRow(
-          x: fallbackX,
-          y: fallbackY,
+        child: _PointEditor(
+          points: points,
           onChanged: onChanged,
+          menuOpen: menuOpen,
         ),
       ),
       child: _CoordinateChip(
-        value: point == null ? '--' : _formatPoint(point!),
+        value: label,
         isHovered: isHovered.value,
         textColor: textColor,
         backgroundColor: colors.secondary.withValues(alpha: 0.55),
@@ -204,42 +167,249 @@ class _PointPopoverChip extends HookWidget {
   }
 }
 
-class _PointXYRow extends StatelessWidget {
-  const _PointXYRow({
-    required this.x,
-    required this.y,
+/// Spin box row per point, the preview canvas, and the pixel readout.
+class _PointEditor extends StatelessWidget {
+  const _PointEditor({
+    required this.points,
     required this.onChanged,
+    required this.menuOpen,
   });
 
-  final double x;
-  final double y;
-  final void Function(double x, double y) onChanged;
+  final List<(double, double)> points;
+  final void Function(List<(double, double)> points) onChanged;
+  final ValueNotifier<bool> menuOpen;
+
+  void _update(int index, (double, double) point) {
+    final next = [...points];
+    next[index] = point;
+    onChanged(next);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isRange = points.length == 2;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < points.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          if (isRange) ...[
+            Text(
+              i == 0
+                  ? context.l10n.pointRangeFromLabel
+                  : context.l10n.pointRangeToLabel,
+              style: context.theme.typography.body.xs.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+          _PointXYRow(
+            point: points[i],
+            onChanged: (point) => _update(i, point),
+          ),
+        ],
+        const SizedBox(height: 16),
+        ps.Center(
+          child: PointPreview(points: points, onChanged: onChanged),
+        ),
+        const SizedBox(height: 8),
+        Center(child: _PixelReadout(points: points, menuOpen: menuOpen)),
+      ],
+    );
+  }
+}
+
+/// `<resolution>: <pixels>` line under the preview. A single point reads out
+/// as a position, a range as the size of the area it covers.
+class _PixelReadout extends ConsumerWidget {
+  const _PixelReadout({required this.points, required this.menuOpen});
+
+  final List<(double, double)> points;
+  final ValueNotifier<bool> menuOpen;
+
+  String _pixels(Size resolution) {
+    int px(double value, double extent) => (value * extent).round();
+    if (points.length == 2) {
+      final [from, to] = points;
+      return '${px((from.$1 - to.$1).abs(), resolution.width)} × '
+          '${px((from.$2 - to.$2).abs(), resolution.height)} px';
+    }
+    final point = points.first;
+    return '${px(point.$1, resolution.width)}, '
+        '${px(point.$2, resolution.height)} px';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final display = View.of(context).display.size;
+    final options = previewResolutionOptions(display);
+    final selected = ref.watch(previewResolutionProvider) ?? display;
+    final resolution = options.contains(selected) ? selected : display;
+
+    final muted = context.theme.typography.body.xs.copyWith(
+      color: context.theme.colors.mutedForeground,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        Text(context.l10n.pointPixelReadoutPrefix, style: muted),
+        const SizedBox(width: 2),
+        _ResolutionPicker(
+          resolution: resolution,
+          options: options,
+          isOpen: menuOpen,
+          onChanged: (value) =>
+              ref.read(previewResolutionProvider.notifier).state = value,
+        ),
+        Flexible(
+          child: Text(
+            ': ${_pixels(resolution)}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: muted,
+          ),
+        ),
+        const SizedBox(width: 4),
+        AppTooltip(
+          tipBuilder: (context, _) => const PointPixelPreviewTooltip(),
+          child: Icon(
+            FLucideIcons.circleQuestionMark,
+            size: 13,
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResolutionPicker extends HookWidget {
+  const _ResolutionPicker({
+    required this.resolution,
+    required this.options,
+    required this.isOpen,
+    required this.onChanged,
+  });
+
+  final Size resolution;
+  final List<Size> options;
+  final ValueNotifier<bool> isOpen;
+  final ValueChanged<Size> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final isHovered = useState(false);
+
+    return FPopoverMenu(
+      control: FPopoverControl.lifted(
+        shown: isOpen.value,
+        onChange: (shown) => isOpen.value = shown,
+      ),
+      autofocus: true,
+      menuAnchor: Alignment.bottomLeft,
+      childAnchor: Alignment.topLeft,
+      maxHeight: 260,
+      menuBuilder: (context, controller, _) => [
+        FItemGroup(
+          children: [
+            for (final option in options)
+              FItem(
+                title: Text(formatResolution(option)),
+                suffix: option == resolution
+                    ? const Icon(FLucideIcons.check)
+                    : null,
+                onPress: () async {
+                  await controller.hide();
+                  onChanged(option);
+                },
+              ),
+          ],
+        ),
+      ],
+      builder: (context, controller, _) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => isHovered.value = true,
+        onExit: (_) => isHovered.value = false,
+        child: GestureDetector(
+          onTap: controller.toggle,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: isHovered.value
+                  ? colors.secondary.withValues(alpha: 0.78)
+                  : null,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  formatResolution(resolution),
+                  style: context.theme.typography.body.xs.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  FLucideIcons.chevronDown,
+                  size: 11,
+                  color: colors.mutedForeground,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PointXYRow extends StatelessWidget {
+  const _PointXYRow({
+    required this.point,
+    required this.onChanged,
+  });
+
+  final (double, double) point;
+  final void Function((double, double) point) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final (x, y) = point;
+
+    return Row(
+      // mainAxisSize: MainAxisSize.min,
+      // mainAxisAlignment: MainAxisAlignment.center,
+      children: [
         FSpinBox(
           value: x,
-          onChanged: (nx) => onChanged(nx, y),
-          label: const Text('X'),
+          onChanged: (nx) => onChanged((nx, y)),
+          prefix: 'X: ',
           min: 0,
           max: 1,
           step: 0.01,
-          width: 100,
           decimalPlaces: 4,
+          width: 130,
         ),
         const SizedBox(width: 12),
         FSpinBox(
           value: y,
-          onChanged: (ny) => onChanged(x, ny),
-          label: const Text('Y'),
+          onChanged: (ny) => onChanged((x, ny)),
+          prefix: 'Y: ',
           min: 0,
           max: 1,
           step: 0.01,
-          width: 100,
           decimalPlaces: 4,
+          width: 130,
         ),
       ],
     );
@@ -272,6 +442,11 @@ class _CoordinateChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: isHovered ? hoverBackgroundColor : backgroundColor,
         borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: context.theme.colors.border.withValues(
+            alpha: context.theme.colors.border.a * 0.5,
+          ),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -282,8 +457,8 @@ class _CoordinateChip extends StatelessWidget {
             fontSize: fontSize == null ? 12 : fontSize.clamp(0, 12),
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
-          maxLines: 1,
-          overflow: TextOverflow.visible,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -297,8 +472,8 @@ String _formatCoord(double value) {
         .replaceFirst(RegExp(r'0+$'), '')
         .replaceFirst(RegExp(r'\.$'), '');
   }
-  return text;
+  return text.startsWith('0.') ? text.substring(1) : text;
 }
 
 String _formatPoint((double, double) point) =>
-    '${_formatCoord(point.$1)}, ${_formatCoord(point.$2)}';
+    '${_formatCoord(point.$1)},\u00A0${_formatCoord(point.$2)}';

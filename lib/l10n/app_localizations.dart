@@ -3172,6 +3172,36 @@ abstract class AppLocalizations {
   /// **'Rows are AND-ed. Use an \"any\" group inside for OR logic.'**
   String get tooltip_triggerConditions_noteAnd;
 
+  /// No description provided for @tooltip_pointPixels_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Previews the position or size of the selected fraction in pixels.'**
+  String get tooltip_pointPixels_body;
+
+  /// No description provided for @tooltip_pointPixels_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On the chosen resolution'**
+  String get tooltip_pointPixels_sectionLabel;
+
+  /// No description provided for @tooltip_pointPixels_pointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'a point: the pointer position'**
+  String get tooltip_pointPixels_pointLabel;
+
+  /// No description provided for @tooltip_pointPixels_rangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'a range: the size of the area'**
+  String get tooltip_pointPixels_rangeLabel;
+
+  /// No description provided for @tooltip_pointPixels_notePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the preview changes. The value stays a fraction of the screen, so it works on any display.'**
+  String get tooltip_pointPixels_notePreview;
+
   /// No description provided for @tooltip_triggerEndConditions_body.
   ///
   /// In en, this message translates to:
@@ -3897,6 +3927,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Prevent the pointer from moving on screen while this gesture is active.'**
   String get motionLockPointerTooltip;
+
+  /// No description provided for @pointRangeFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get pointRangeFromLabel;
+
+  /// No description provided for @pointRangeToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get pointRangeToLabel;
+
+  /// No description provided for @pointPixelReadoutPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'on'**
+  String get pointPixelReadoutPrefix;
 
   /// No description provided for @swipeMinAngleLabel.
   ///

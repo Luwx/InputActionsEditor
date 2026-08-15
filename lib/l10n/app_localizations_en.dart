@@ -1770,6 +1770,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Rows are AND-ed. Use an \"any\" group inside for OR logic.';
 
   @override
+  String get tooltip_pointPixels_body =>
+      'Previews the position or size of the selected fraction in pixels.';
+
+  @override
+  String get tooltip_pointPixels_sectionLabel => 'On the chosen resolution';
+
+  @override
+  String get tooltip_pointPixels_pointLabel => 'a point: the pointer position';
+
+  @override
+  String get tooltip_pointPixels_rangeLabel => 'a range: the size of the area';
+
+  @override
+  String get tooltip_pointPixels_notePreview =>
+      'Only the preview changes. The value stays a fraction of the screen, so it works on any display.';
+
+  @override
   String get tooltip_triggerEndConditions_body =>
       'Checked at the moment the gesture ends.';
 
@@ -2176,6 +2193,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get motionLockPointerTooltip =>
       'Prevent the pointer from moving on screen while this gesture is active.';
+
+  @override
+  String get pointRangeFromLabel => 'From';
+
+  @override
+  String get pointRangeToLabel => 'To';
+
+  @override
+  String get pointPixelReadoutPrefix => 'on';
 
   @override
   String get swipeMinAngleLabel => 'Min angle °';
