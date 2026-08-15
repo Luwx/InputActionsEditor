@@ -3958,6 +3958,30 @@ abstract class AppLocalizations {
   /// **'Prevent the pointer from moving on screen while this gesture is active.'**
   String get motionLockPointerTooltip;
 
+  /// No description provided for @numberRangeBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be {min} to {max}'**
+  String numberRangeBetween(String min, String max);
+
+  /// No description provided for @numberRangeMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at least {min}'**
+  String numberRangeMin(String min);
+
+  /// No description provided for @numberRangeMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at most {max}'**
+  String numberRangeMax(String max);
+
+  /// No description provided for @numberRangeWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole numbers only'**
+  String get numberRangeWhole;
+
   /// No description provided for @pointRangeFromLabel.
   ///
   /// In en, this message translates to:
@@ -4653,6 +4677,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Number of fingers'**
   String get varLabel_fingers;
+
+  /// No description provided for @varLabel_maxFingerDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Max finger distance %'**
+  String get varLabel_maxFingerDistance;
 
   /// No description provided for @varLabel_keyboardModifiers.
   ///

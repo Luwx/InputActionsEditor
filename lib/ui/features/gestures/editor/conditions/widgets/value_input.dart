@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
@@ -10,6 +11,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/number_value_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/one_of_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_input.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/raw_fallback.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
 // Maps a window variable name to the WindowProperties field it should detect.
@@ -44,6 +46,9 @@ class ValueInput extends ConsumerWidget {
     final value = condition.value;
     final variable = condition.variable.name;
 
+    // Values we don't support are shown as-is, so saving keeps them.
+    if (_rawValue(value) case final raw?) return RawFallback(raw: raw);
+
     if (condition.operator == ConditionOperator.between) {
       if (type == ConditionValueType.point) {
         return PointBetweenInput(
@@ -69,6 +74,7 @@ class ValueInput extends ConsumerWidget {
             ),
           ),
           hint: type == ConditionValueType.time ? 'ms' : 'n',
+          range: info?.range,
         );
       }
       final (:from, :to) = _rangeTextValue(value);
@@ -177,6 +183,7 @@ class ValueInput extends ConsumerWidget {
         value: value.numberOrZero,
         onChanged: (value) => onChanged(ConditionValue.number(value)),
         hint: type == ConditionValueType.time ? 'ms' : 'value',
+        range: info?.range,
       );
     }
 
@@ -202,6 +209,14 @@ class ValueInput extends ConsumerWidget {
     );
   }
 }
+
+String? _rawValue(ConditionValue value) => switch (value) {
+  RawConditionValue(:final value) => value,
+  RangeConditionValue(:final from, :final to)
+      when from is RawConditionValue || to is RawConditionValue =>
+    conditionValueToText(value),
+  _ => null,
+};
 
 ({String from, String to}) _rangeTextValue(ConditionValue value) =>
     switch (value) {

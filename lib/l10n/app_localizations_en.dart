@@ -2216,6 +2216,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Prevent the pointer from moving on screen while this gesture is active.';
 
   @override
+  String numberRangeBetween(String min, String max) {
+    return 'Must be $min to $max';
+  }
+
+  @override
+  String numberRangeMin(String min) {
+    return 'Must be at least $min';
+  }
+
+  @override
+  String numberRangeMax(String max) {
+    return 'Must be at most $max';
+  }
+
+  @override
+  String get numberRangeWhole => 'Whole numbers only';
+
+  @override
   String get pointRangeFromLabel => 'From';
 
   @override
@@ -2592,6 +2610,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get varLabel_fingers => 'Number of fingers';
+
+  @override
+  String get varLabel_maxFingerDistance => 'Max finger distance %';
 
   @override
   String get varLabel_keyboardModifiers => 'Held modifier keys';

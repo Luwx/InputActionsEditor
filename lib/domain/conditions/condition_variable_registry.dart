@@ -1,5 +1,27 @@
 import 'package:input_actions_editor/model/condition.dart';
 
+/// Bounds of a numeric variable. A null bound means the daemon has none.
+class ConditionNumberRange {
+  const ConditionNumberRange({this.min, this.max, this.integer = false});
+
+  final double? min;
+  final double? max;
+  final bool integer;
+}
+
+/// Fraction of the device or screen size.
+const _unitInterval = ConditionNumberRange(min: 0, max: 1);
+
+/// The daemon tracks at most 5 fingers.
+const _fingerCount = ConditionNumberRange(min: 1, max: 5, integer: true);
+
+const _processId = ConditionNumberRange(min: 0, integer: true);
+
+/// Raw evdev pressure, no defined maximum.
+const _pressure = ConditionNumberRange(min: 0, integer: true);
+
+const _milliseconds = ConditionNumberRange(min: 0, integer: true);
+
 enum ConditionVariableId {
   windowTitle('window_title', .string),
   windowClass('window_class', .string),
@@ -7,7 +29,7 @@ enum ConditionVariableId {
   windowId('window_id', .string),
   initialWindowId('initial_window_id', .string),
   previousWindowId('previous_window_id', .string),
-  windowPid('window_pid', .number),
+  windowPid('window_pid', .number, _processId),
   windowFullscreen('window_fullscreen', .bool_),
   windowMaximized('window_maximized', .bool_),
   windowUnderPointerTitle(
@@ -27,7 +49,7 @@ enum ConditionVariableId {
     'initial_window_under_pointer_id',
     .string,
   ),
-  windowUnderPointerPid('window_under_pointer_pid', .number),
+  windowUnderPointerPid('window_under_pointer_pid', .number, _processId),
   windowUnderPointerFullscreen(
     'window_under_pointer_fullscreen',
     .bool_,
@@ -53,7 +75,7 @@ enum ConditionVariableId {
     'initial_window_under_fingers_id',
     .string,
   ),
-  windowUnderFingersPid('window_under_fingers_pid', .number),
+  windowUnderFingersPid('window_under_fingers_pid', .number, _processId),
   windowUnderFingersFullscreen(
     'window_under_fingers_fullscreen',
     .bool_,
@@ -69,10 +91,12 @@ enum ConditionVariableId {
   pointerPositionScreenPercentageX(
     'pointer_position_screen_percentage_x',
     .number,
+    _unitInterval,
   ),
   pointerPositionScreenPercentageY(
     'pointer_position_screen_percentage_y',
     .number,
+    _unitInterval,
   ),
   pointerPositionWindowPercentage(
     'pointer_position_window_percentage',
@@ -81,10 +105,12 @@ enum ConditionVariableId {
   pointerPositionWindowPercentageX(
     'pointer_position_window_percentage_x',
     .number,
+    _unitInterval,
   ),
   pointerPositionWindowPercentageY(
     'pointer_position_window_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger1PositionPercentage(
     'finger_1_position_percentage',
@@ -93,10 +119,12 @@ enum ConditionVariableId {
   finger1PositionPercentageX(
     'finger_1_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger1PositionPercentageY(
     'finger_1_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger2PositionPercentage(
     'finger_2_position_percentage',
@@ -105,10 +133,12 @@ enum ConditionVariableId {
   finger2PositionPercentageX(
     'finger_2_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger2PositionPercentageY(
     'finger_2_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger3PositionPercentage(
     'finger_3_position_percentage',
@@ -117,10 +147,12 @@ enum ConditionVariableId {
   finger3PositionPercentageX(
     'finger_3_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger3PositionPercentageY(
     'finger_3_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger4PositionPercentage(
     'finger_4_position_percentage',
@@ -129,10 +161,12 @@ enum ConditionVariableId {
   finger4PositionPercentageX(
     'finger_4_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger4PositionPercentageY(
     'finger_4_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger5PositionPercentage(
     'finger_5_position_percentage',
@@ -141,10 +175,12 @@ enum ConditionVariableId {
   finger5PositionPercentageX(
     'finger_5_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger5PositionPercentageY(
     'finger_5_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger1InitialPositionPercentage(
     'finger_1_initial_position_percentage',
@@ -153,10 +189,12 @@ enum ConditionVariableId {
   finger1InitialPositionPercentageX(
     'finger_1_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger1InitialPositionPercentageY(
     'finger_1_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger2InitialPositionPercentage(
     'finger_2_initial_position_percentage',
@@ -165,10 +203,12 @@ enum ConditionVariableId {
   finger2InitialPositionPercentageX(
     'finger_2_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger2InitialPositionPercentageY(
     'finger_2_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger3InitialPositionPercentage(
     'finger_3_initial_position_percentage',
@@ -177,10 +217,12 @@ enum ConditionVariableId {
   finger3InitialPositionPercentageX(
     'finger_3_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger3InitialPositionPercentageY(
     'finger_3_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger4InitialPositionPercentage(
     'finger_4_initial_position_percentage',
@@ -189,10 +231,12 @@ enum ConditionVariableId {
   finger4InitialPositionPercentageX(
     'finger_4_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger4InitialPositionPercentageY(
     'finger_4_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   finger5InitialPositionPercentage(
     'finger_5_initial_position_percentage',
@@ -201,16 +245,18 @@ enum ConditionVariableId {
   finger5InitialPositionPercentageX(
     'finger_5_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   finger5InitialPositionPercentageY(
     'finger_5_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
-  finger1Pressure('finger_1_pressure', .number),
-  finger2Pressure('finger_2_pressure', .number),
-  finger3Pressure('finger_3_pressure', .number),
-  finger4Pressure('finger_4_pressure', .number),
-  finger5Pressure('finger_5_pressure', .number),
+  finger1Pressure('finger_1_pressure', .number, _pressure),
+  finger2Pressure('finger_2_pressure', .number, _pressure),
+  finger3Pressure('finger_3_pressure', .number, _pressure),
+  finger4Pressure('finger_4_pressure', .number, _pressure),
+  finger5Pressure('finger_5_pressure', .number, _pressure),
   thumbPresent('thumb_present', .bool_),
   thumbPositionPercentage(
     'thumb_position_percentage',
@@ -219,10 +265,12 @@ enum ConditionVariableId {
   thumbPositionPercentageX(
     'thumb_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   thumbPositionPercentageY(
     'thumb_position_percentage_y',
     .number,
+    _unitInterval,
   ),
   thumbInitialPositionPercentage(
     'thumb_initial_position_percentage',
@@ -231,18 +279,25 @@ enum ConditionVariableId {
   thumbInitialPositionPercentageX(
     'thumb_initial_position_percentage_x',
     .number,
+    _unitInterval,
   ),
   thumbInitialPositionPercentageY(
     'thumb_initial_position_percentage_y',
     .number,
+    _unitInterval,
   ),
-  fingers('fingers', .number),
+  fingers('fingers', .number, _fingerCount),
+  maxFingerDistancePercentage(
+    'max_finger_distance_percentage',
+    .number,
+    _unitInterval,
+  ),
   keyboardModifiers('keyboard_modifiers', .flags),
   cursorShape('cursor_shape', .enum_),
   screenName('screen_name', .string),
   plasmaOverviewActive('plasma_overview_active', .bool_),
   lastTriggerId('last_trigger_id', .string),
-  timeSinceLastTrigger('time_since_last_trigger', .time),
+  timeSinceLastTrigger('time_since_last_trigger', .time, _milliseconds),
   name('name', .string),
   types('types', .flags),
   keyboard('keyboard', .bool_),
@@ -250,17 +305,21 @@ enum ConditionVariableId {
   touchpad('touchpad', .bool_),
   touchscreen('touchscreen', .bool_);
 
-  const ConditionVariableId(this.configName, this.valueType);
+  const ConditionVariableId(this.configName, this.valueType, [this.range]);
 
   final String configName;
   final ConditionValueType valueType;
+  final ConditionNumberRange? range;
 
   List<ConditionOperator> get operators =>
       knownConditionOperatorsByType[valueType]!;
 
   ConditionOperator get defaultOperator => ConditionOperator.equals;
 
-  ConditionValue get defaultValue => defaultConditionValueForType(valueType);
+  ConditionValue get defaultValue => switch (range?.min) {
+    final min? when min != 0 => ConditionValue.number(min),
+    _ => defaultConditionValueForType(valueType),
+  };
 }
 
 const List<ConditionOperator> stringConditionOperators = [

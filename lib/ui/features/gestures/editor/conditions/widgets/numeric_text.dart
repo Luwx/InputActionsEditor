@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
+import 'package:input_actions_editor/l10n/app_localizations.dart';
 
 String formatNumber(double value) {
   final text = value.toString();
@@ -8,19 +10,40 @@ String formatNumber(double value) {
 
 final _partialNumber = RegExp(r'^-?\d*\.?\d*$');
 
-/// Rejects edits that can never become a number, while still allowing the
-/// incomplete states typed on the way to one.
+/// Rejects text that is not on its way to being a number. Out-of-range values
+/// are accepted and reported by [numberRangeError] instead.
 final numberInputFormatters = <TextInputFormatter>[
   TextInputFormatter.withFunction(
     (old, next) => _partialNumber.hasMatch(next.text) ? next : old,
   ),
 ];
 
-/// Text of numeric fields whose value round-trips through [double].
-///
-/// `''`, `'-'` and `'3.'` do not survive that round trip, so the typed text is
-/// kept verbatim for as long as the incoming values match what was last
-/// emitted from here.
+String? numberRangeError(
+  ConditionNumberRange? range,
+  String text,
+  AppLocalizations l10n,
+) {
+  final value = double.tryParse(text.trim());
+  if (range == null || value == null) return null;
+
+  final min = range.min;
+  final max = range.max;
+  if (range.integer && value != value.roundToDouble()) {
+    return l10n.numberRangeWhole;
+  }
+  if ((min != null && value < min) || (max != null && value > max)) {
+    if (min != null && max != null) {
+      return l10n.numberRangeBetween(formatNumber(min), formatNumber(max));
+    }
+    return min != null
+        ? l10n.numberRangeMin(formatNumber(min))
+        : l10n.numberRangeMax(formatNumber(max!));
+  }
+  return null;
+}
+
+/// Keeps the typed text while the values still match what it last emitted.
+/// Without it `''`, `'-'` and `'3.'` are reformatted away mid-edit.
 class NumericTexts {
   const NumericTexts(this.texts, this.update);
 

@@ -2,7 +2,10 @@ import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/numeric_text.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Numeric range editor. Owns the string<->double conversion so callers work
 /// purely with typed endpoints and never parse text themselves.
@@ -12,6 +15,7 @@ class NumberBetweenInput extends HookWidget {
     required this.to,
     required this.onChanged,
     required this.hint,
+    this.range,
     super.key,
   });
 
@@ -19,6 +23,7 @@ class NumberBetweenInput extends HookWidget {
   final double? to;
   final void Function(double from, double to) onChanged;
   final String hint;
+  final ConditionNumberRange? range;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +38,8 @@ class NumberBetweenInput extends HookWidget {
       onChanged: (f, t) => numeric.update([f, t]),
       inputFormatters: numberInputFormatters,
       hint: hint,
+      fromError: numberRangeError(range, numeric.texts[0], context.l10n),
+      toError: numberRangeError(range, numeric.texts[1], context.l10n),
     );
   }
 }
@@ -45,6 +52,8 @@ class BetweenInput extends HookWidget {
     required this.hint,
     this.autofocus = false,
     this.inputFormatters,
+    this.fromError,
+    this.toError,
     super.key,
   });
 
@@ -54,6 +63,8 @@ class BetweenInput extends HookWidget {
   final String hint;
   final bool autofocus;
   final List<TextInputFormatter>? inputFormatters;
+  final String? fromError;
+  final String? toError;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +103,9 @@ class BetweenInput extends HookWidget {
             inputFormatters: inputFormatters,
             autofocus: autofocus,
             hint: hint,
+            error: fromError == null
+                ? null
+                : Text(fromError!, style: fieldErrorStyle(context)),
           ),
         ),
         Padding(
@@ -112,6 +126,9 @@ class BetweenInput extends HookWidget {
             ),
             inputFormatters: inputFormatters,
             hint: hint,
+            error: toError == null
+                ? null
+                : Text(toError!, style: fieldErrorStyle(context)),
           ),
         ),
       ],

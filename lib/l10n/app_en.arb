@@ -838,6 +838,34 @@
   "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.",
   "motionLockPointerLabel": "Lock pointer",
   "motionLockPointerTooltip": "Prevent the pointer from moving on screen while this gesture is active.",
+  "numberRangeBetween": "Must be {min} to {max}",
+  "@numberRangeBetween": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeMin": "Must be at least {min}",
+  "@numberRangeMin": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeMax": "Must be at most {max}",
+  "@numberRangeMax": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeWhole": "Whole numbers only",
   "pointRangeFromLabel": "From",
   "pointRangeToLabel": "To",
   "pointPixelReadoutPrefix": "on",
@@ -954,6 +982,7 @@
   "varLabel_thumbInitialPositionX": "Thumb initial position X %",
   "varLabel_thumbInitialPositionY": "Thumb initial position Y %",
   "varLabel_fingers": "Number of fingers",
+  "varLabel_maxFingerDistance": "Max finger distance %",
   "varLabel_keyboardModifiers": "Held modifier keys",
   "varLabel_cursorShape": "Cursor shape",
   "varLabel_screenName": "Screen name",

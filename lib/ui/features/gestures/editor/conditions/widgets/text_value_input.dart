@@ -7,6 +7,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 
+TextStyle fieldErrorStyle(BuildContext context) =>
+    context.theme.typography.body.xs.copyWith(
+      color: context.theme.colors.error,
+    );
+
 class TextValueInput extends HookWidget {
   const TextValueInput({
     required this.value,
@@ -15,6 +20,7 @@ class TextValueInput extends HookWidget {
     this.autofocus = false,
     this.onDetect,
     this.inputFormatters,
+    this.error,
     super.key,
   });
 
@@ -23,6 +29,7 @@ class TextValueInput extends HookWidget {
   final String hint;
   final bool autofocus;
   final List<TextInputFormatter>? inputFormatters;
+  final String? error;
 
   /// When non-null, the input renders as a chip that opens a popover with the
   /// text field and a detect-window button.
@@ -43,10 +50,12 @@ class TextValueInput extends HookWidget {
 
     final idle =
         FTextFieldVariantConstraint.not(
-          FTextFieldVariant.hovered,
-        ).and(
-          FTextFieldVariantConstraint.not(FTextFieldVariant.focused),
-        );
+              FTextFieldVariant.hovered,
+            )
+            .and(FTextFieldVariantConstraint.not(FTextFieldVariant.focused))
+            .and(
+              FTextFieldVariantConstraint.not(FTextFieldVariant.error),
+            );
     final style = FTextFieldStyleDelta.delta(
       border: .delta([
         .exact(
@@ -76,6 +85,9 @@ class TextValueInput extends HookWidget {
       inputFormatters: inputFormatters,
       autofocus: autofocus,
       hint: hint,
+      error: error == null
+          ? null
+          : Text(error!, style: fieldErrorStyle(context)),
     );
 
     if (onDetect == null) return textField;
