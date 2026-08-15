@@ -20,11 +20,12 @@ const _transparent = Color(0x00000000);
 /// [TileMode.decal] stops the blur sampling pixels from outside the popup and
 /// smearing that content into the surface. The stricter fix is `ImageFilter`'s
 /// `bounds` argument, but that needs a canvas-space rect the theme never sees.
-ImageFilter _popupBlur(double animation) => ImageFilter.blur(
-  sigmaX: animation * _popupBlurSigma,
-  sigmaY: animation * _popupBlurSigma,
-  tileMode: TileMode.decal,
-);
+ImageFilter _popupBlur(BuildContext context, double animation) =>
+    ImageFilter.blur(
+      sigmaX: animation * _popupBlurSigma,
+      sigmaY: animation * _popupBlurSigma,
+      tileMode: TileMode.decal,
+    );
 
 /// Returns [theme] with glassmorphic popups: a translucent card surface over a
 /// backdrop blur, for popovers, menus, select dropdowns and tooltips.

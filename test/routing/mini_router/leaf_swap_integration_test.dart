@@ -11,6 +11,7 @@ import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/recognition_event.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
 import 'package:input_actions_editor/ui/features/history/history_screen.dart';
 import 'package:input_actions_editor/ui/features/history/state/recognition_history_provider.dart';
@@ -63,7 +64,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: FTheme(
-          data: FThemes.zinc.light.desktop,
+          data: AppThemes.zinc.light.desktop,
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

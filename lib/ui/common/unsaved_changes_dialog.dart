@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 enum UnsavedChangesAction { apply, discard }
@@ -47,10 +48,9 @@ class _UnsavedChangesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FDialog(
+    return AppDialog(
       style: style ?? const FDialogStyleDelta.context(),
       animation: animation,
-      direction: .horizontal,
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
       title: Text(context.l10n.dialogUnsavedChangesTitle),
       body: Padding(

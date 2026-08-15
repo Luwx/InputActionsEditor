@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 
 Widget _host(List<ReorderableGroupableListEntry<int, String>> entries) {
   final scrollController = ScrollController();
   return MaterialApp(
     builder: (context, child) => FTheme(
-      data: FThemes.zinc.dark.desktop,
+      data: AppThemes.zinc.dark.desktop,
       child: child!,
     ),
     home: Scaffold(

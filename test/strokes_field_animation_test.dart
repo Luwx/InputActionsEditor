@@ -6,6 +6,7 @@ import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/ui/common/path_preview.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/strokes_field.dart';
 
@@ -35,7 +36,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: FTheme(
-            data: FThemes.zinc.dark.desktop,
+            data: AppThemes.zinc.dark.desktop,
             child: const Scaffold(
               body: _StrokesFieldHost(initialStrokes: ['existing-stroke']),
             ),

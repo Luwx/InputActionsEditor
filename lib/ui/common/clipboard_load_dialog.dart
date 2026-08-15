@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 enum ClipboardLoadAction { newConfig, merge }
@@ -25,10 +26,9 @@ class _ClipboardLoadDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return FDialog(
+    return AppDialog(
       style: style ?? const FDialogStyleDelta.context(),
       animation: animation,
-      direction: .horizontal,
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
       title: Text(l10n.dialogClipboardLoadTitle),
       body: Padding(

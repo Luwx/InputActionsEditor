@@ -14,6 +14,7 @@ import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
@@ -110,7 +111,7 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
           ),
         ],
         child: FTheme(
-          data: FThemes.zinc.dark.desktop,
+          data: AppThemes.zinc.dark.desktop,
           child: FScaffold(
             child: Align(
               alignment: Alignment.bottomCenter,

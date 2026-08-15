@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/clipboard_load_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -74,7 +75,7 @@ Future<void> loadConfigFromClipboard(
           unawaited(
             showFDialog<void>(
               context: context,
-              builder: (ctx, style, animation) => FDialog(
+              builder: (ctx, style, animation) => AppDialog(
                 style: style,
                 animation: animation,
                 constraints: const BoxConstraints(

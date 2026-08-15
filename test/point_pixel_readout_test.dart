@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
 
@@ -12,7 +13,7 @@ Widget _host(Widget child) => ProviderScope(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: FTheme(
-      data: FThemes.zinc.dark.desktop,
+      data: AppThemes.zinc.dark.desktop,
       child: Scaffold(
         body: Align(
           alignment: Alignment.topLeft,

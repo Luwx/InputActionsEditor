@@ -34,7 +34,7 @@ class UnsavedMarker extends StatelessWidget {
       '*',
       style: TextStyle(
         color: context.theme.colors.primary.withAlpha(150),
-        // color: FThemes.violet.dark.desktop.colors.primary,
+        // color: AppThemes.violet.dark.desktop.colors.primary,
         fontWeight: FontWeight.w700,
       ),
     );

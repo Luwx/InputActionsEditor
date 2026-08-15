@@ -18,6 +18,7 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
@@ -69,7 +70,7 @@ Widget _host({
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: FTheme(
-        data: FThemes.zinc.dark.desktop,
+        data: AppThemes.zinc.dark.desktop,
         child: FScaffold(
           child: SizedBox(
             width: 900,
@@ -96,7 +97,7 @@ Widget _pointDirtyHost() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: FTheme(
-        data: FThemes.zinc.dark.desktop,
+        data: AppThemes.zinc.dark.desktop,
         child: const FScaffold(
           child: SizedBox(
             width: 900,
@@ -111,7 +112,7 @@ Widget _pointDirtyHost() {
 Widget _textValueInputHost() {
   return MaterialApp(
     home: FTheme(
-      data: FThemes.zinc.dark.desktop,
+      data: AppThemes.zinc.dark.desktop,
       child: Scaffold(
         body: SizedBox(
           width: 320,

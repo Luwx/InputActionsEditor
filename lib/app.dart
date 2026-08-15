@@ -12,6 +12,7 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/theme/popup_glass.dart';
 import 'package:input_actions_editor/ui/common/theme/switch_style.dart';
@@ -92,22 +93,22 @@ class App extends ConsumerWidget {
 
 FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
   final colorPair = switch (settings.colorTheme) {
-    FColorTheme.neutral => FThemes.neutral,
-    FColorTheme.zinc => FThemes.zinc,
-    FColorTheme.slate => FThemes.slate,
-    FColorTheme.blue => FThemes.blue,
-    FColorTheme.green => FThemes.green,
-    FColorTheme.orange => FThemes.orange,
-    FColorTheme.red => FThemes.red,
-    FColorTheme.rose => FThemes.rose,
-    FColorTheme.violet => FThemes.violet,
-    FColorTheme.yellow => FThemes.yellow,
+    FColorTheme.neutral => AppThemes.neutral,
+    FColorTheme.zinc => AppThemes.zinc,
+    FColorTheme.slate => AppThemes.slate,
+    FColorTheme.blue => AppThemes.blue,
+    FColorTheme.green => AppThemes.green,
+    FColorTheme.orange => AppThemes.orange,
+    FColorTheme.red => AppThemes.red,
+    FColorTheme.rose => AppThemes.rose,
+    FColorTheme.violet => AppThemes.violet,
+    FColorTheme.yellow => AppThemes.yellow,
     FColorTheme.kde => null,
   };
 
   if (colorPair == null) {
     // KDE theme is handled separately
-    return withGlassPopups(FThemes.zinc.dark.desktop);
+    return withGlassPopups(AppThemes.zinc.dark.desktop);
   }
 
   final baseTheme = switch (settings.themeMode) {

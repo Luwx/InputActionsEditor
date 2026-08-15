@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/config_issues.dart';
+import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 const _warningLight = Color(0xFFB45309);
@@ -13,7 +14,7 @@ Future<void> showConfigIssuesDialog(
   final l10n = context.l10n;
   return showFDialog<void>(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
+    builder: (ctx, style, animation) => AppDialog(
       style: style,
       animation: animation,
       constraints: const BoxConstraints(minWidth: 360, maxWidth: 560),

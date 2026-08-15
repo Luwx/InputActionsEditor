@@ -200,7 +200,7 @@ packages:
       path: "/home/luwx/Github/dart_generators/edit_schema_generator"
       relative: false
     source: path
-    version: "0.0.10"
+    version: "0.0.11"
   equatable:
     dependency: "direct main"
     description:
@@ -346,26 +346,26 @@ packages:
     dependency: "direct main"
     description:
       name: forui
-      sha256: "68c656bc1aa70040647124b2028116fd099a3d345f84e28daeff2b2c63982ced"
+      sha256: bf2a76293044ec8fbe8869032a67e79b6dfb12a471c9c3ecacb45626e69744d2
       url: "https://pub.dev"
     source: hosted
-    version: "0.23.0"
+    version: "0.25.0"
   forui_assets:
     dependency: transitive
     description:
       name: forui_assets
-      sha256: bc7201e28a4dc4a9e0e65c849b9d9e10b5fcfd48a75b3ba7d912d5543044db6b
+      sha256: "43b219f28399786b8ac51c01048f583b3155c0e39ac163845b1e73c959240139"
       url: "https://pub.dev"
     source: hosted
-    version: "0.23.0"
+    version: "0.25.0"
   forui_hooks:
     dependency: "direct main"
     description:
       name: forui_hooks
-      sha256: ccbe05cf5532ec7c11ac920a6fcd42953f0b144d415e110cf14e64d4cbb3cbe6
+      sha256: "821e9581cb8a92b20c02a8efafc19fdeb20824cf393735bb73da2bd71ecd7927"
       url: "https://pub.dev"
     source: hosted
-    version: "0.23.0"
+    version: "0.25.0"
   freezed:
     dependency: "direct dev"
     description:

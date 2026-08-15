@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/theme/color_contrast.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 /// Builds a [FThemeData] from a [KdeColorScheme].
@@ -13,7 +14,9 @@ import 'package:kde_color_scheme/kde_color_scheme.dart';
 FThemeData buildKdeThemeData(KdeColorScheme kde) {
   final colors = _kdeToFColors(kde);
   final isDark = kde.isDark;
-  final base = isDark ? FThemes.zinc.dark.desktop : FThemes.zinc.light.desktop;
+  final base = isDark
+      ? AppThemes.zinc.dark.desktop
+      : AppThemes.zinc.light.desktop;
 
   // Rebuild all text styles with the KDE foreground color.
   // Zinc's baked-in foreground (~white/black) would otherwise override
