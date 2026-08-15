@@ -13,6 +13,7 @@ import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
+import 'package:input_actions_editor/ui/common/theme/switch_style.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
@@ -135,6 +136,7 @@ FThemeData _withAppChromeStyle(
   final selectedPressedColor = colors.primary.withValues(alpha: 0.34);
 
   return baseTheme.copyWith(
+    switchStyle: switchContrastDelta(baseTheme),
     scaffoldStyle: transparentSidebar
         ? const .delta(
             backgroundColor: Colors.transparent,

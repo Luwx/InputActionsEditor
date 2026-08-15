@@ -17,8 +17,23 @@ sealed class GestureNode with _$GestureNode {
     @Default('') String name,
     @Default(true) bool enabled,
 
-    /// Conditions the daemon applies to every gesture in this group.
+    /// Conditions the daemon applies to every gesture in this group. Unlike
+    /// the shared properties below, conditions genuinely compose: the daemon
+    /// AND-merges a group's conditions into each descendant's own.
     Condition? conditions,
+
+    /// Shared trigger properties. The daemon copies each of these onto every
+    /// gesture in the subtree that does not set the key itself, see
+    /// [GestureGroupNode] docs on why a descendant setting the same key is an
+    /// unresolvable conflict rather than an override.
+    String? id,
+    String? threshold,
+    int? resumeTimeout,
+    bool? accelerated,
+    bool? blockEvents,
+    bool? clearModifiers,
+    bool? setLastTrigger,
+    Condition? endConditions,
 
     /// Unmodelled properties of the group node, preserved for round-trip.
     @Default(<String, dynamic>{}) Map<String, dynamic> extra,

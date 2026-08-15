@@ -4,12 +4,16 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
+import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -31,12 +35,30 @@ class TriggerEditor extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = context.gestureLocation;
-    final pinnedFields = useState(initialAdvancedFields);
+    final inherited = _byField(
+      ref.watch(gestureInheritedPropertiesProvider(location)),
+    );
+    // An inherited property is worth seeing even when the gesture leaves it
+    // unset, so it joins the pinned set rather than hiding in the accordion.
+    final pinnedFields = useState({
+      ...initialAdvancedFields,
+      ...inherited.keys,
+    });
     final optionsExpanded = useState(false);
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinnedFields.value.contains(field))
         .toList();
     final conflicts = ref.watch(conflictReportProvider).forGesture(location);
+
+    void openGroup(InheritedProperty property) {
+      final editId = property.groupEditId;
+      if (editId == null) return;
+      ref
+          .read(selectedGroupProvider.notifier)
+          .open(
+            GestureGroupLocation(device: location.device, editId: editId),
+          );
+    }
 
     return SectionCard(
       color: context.theme.colors.card.withValues(alpha: 0.55),
@@ -82,7 +104,11 @@ class TriggerEditor extends HookConsumerWidget {
           if (pinnedFields.value.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 4),
-              child: TriggerAdvancedFields(fields: pinnedFields.value),
+              child: TriggerAdvancedFields(
+                fields: pinnedFields.value,
+                inherited: inherited,
+                onOpenGroup: openGroup,
+              ),
             ),
           FAccordion(
             key: ValueKey(location.editId),
@@ -104,6 +130,8 @@ class TriggerEditor extends HookConsumerWidget {
                 title: Text(context.l10n.triggerOtherOptions),
                 child: TriggerAdvancedFields(
                   fields: accordionFields,
+                  inherited: inherited,
+                  onOpenGroup: openGroup,
                 ),
               ),
             ],
@@ -113,6 +141,27 @@ class TriggerEditor extends HookConsumerWidget {
     );
   }
 }
+
+/// Indexes inherited properties by the field that renders them. Conditions are
+/// absent by construction: the daemon AND-merges those, so a group condition is
+/// never in tension with a gesture's own.
+Map<TriggerAdvancedField, InheritedProperty> _byField(
+  List<InheritedProperty> inherited,
+) => {
+  for (final property in inherited)
+    switch (property.property) {
+      SharedTriggerProperty.id => TriggerAdvancedField.id,
+      SharedTriggerProperty.threshold => TriggerAdvancedField.threshold,
+      SharedTriggerProperty.resumeTimeout => TriggerAdvancedField.resumeTimeout,
+      SharedTriggerProperty.accelerated => TriggerAdvancedField.accelerated,
+      SharedTriggerProperty.blockEvents => TriggerAdvancedField.blockEvents,
+      SharedTriggerProperty.clearModifiers =>
+        TriggerAdvancedField.clearModifiers,
+      SharedTriggerProperty.setLastTrigger =>
+        TriggerAdvancedField.setLastTrigger,
+      SharedTriggerProperty.endConditions => TriggerAdvancedField.endConditions,
+    }: property,
+};
 
 class _TriggerConflictBadge extends StatelessWidget {
   const _TriggerConflictBadge({

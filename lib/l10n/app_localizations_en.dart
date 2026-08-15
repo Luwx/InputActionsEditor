@@ -464,6 +464,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gestureGroupUnnamed => 'Group';
 
   @override
+  String inheritedFieldFrom(String group, String value) {
+    return 'Inherited from $group: $value';
+  }
+
+  @override
+  String inheritedFieldConflict(String group) {
+    return 'Also set by $group. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.';
+  }
+
+  @override
+  String get groupSettingsTitle => 'Shared properties';
+
+  @override
+  String groupSettingsSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Applies to $count gestures',
+      one: 'Applies to 1 gesture',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupSettingsDescription =>
+      'Every gesture in this group inherits these. A gesture that sets the same property does not override it, the result is undefined.';
+
+  @override
   String get configIssuesDeviceRule => 'Device rules';
 
   @override

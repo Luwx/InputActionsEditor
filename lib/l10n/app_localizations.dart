@@ -964,6 +964,36 @@ abstract class AppLocalizations {
   /// **'Group'**
   String get gestureGroupUnnamed;
 
+  /// Muted note under a trigger field whose value comes from an ancestor group.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from {group}: {value}'**
+  String inheritedFieldFrom(String group, String value);
+
+  /// Warning under a trigger field that both the gesture and an ancestor group set.
+  ///
+  /// In en, this message translates to:
+  /// **'Also set by {group}. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.'**
+  String inheritedFieldConflict(String group);
+
+  /// Title of the panel editing properties every gesture in a group inherits.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared properties'**
+  String get groupSettingsTitle;
+
+  /// No description provided for @groupSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Applies to 1 gesture} other{Applies to {count} gestures}}'**
+  String groupSettingsSubtitle(int count);
+
+  /// Explains group property inheritance and the daemon's lack of override support.
+  ///
+  /// In en, this message translates to:
+  /// **'Every gesture in this group inherits these. A gesture that sets the same property does not override it, the result is undefined.'**
+  String get groupSettingsDescription;
+
   /// No description provided for @configIssuesDeviceRule.
   ///
   /// In en, this message translates to:

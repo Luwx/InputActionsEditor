@@ -82,7 +82,22 @@ Config decodeConfig(String yamlText) {
   );
 }
 
-const _groupNodeKeys = {'gestures', 'conditions', 'name', 'enabled'};
+/// Group keys the model holds as typed fields. Anything else on a group node
+/// lands in [GestureGroupNode.extra] and round-trips untouched.
+const _groupNodeKeys = {
+  'gestures',
+  'conditions',
+  'name',
+  'enabled',
+  'id',
+  'threshold',
+  'resume_timeout',
+  'accelerated',
+  'block_events',
+  'clear_modifiers',
+  'set_last_trigger',
+  'end_conditions',
+};
 
 /// Parses a device's `gestures:` list into the gesture tree. Untyped list
 /// items with a `gestures:` key are the daemon's trigger groups; they nest to
@@ -117,6 +132,16 @@ List<GestureNode> _parseDeviceNodes(
             enabled: item['enabled'] as bool? ?? true,
             conditions: item.containsKey('conditions')
                 ? _parseCondition(item.nodes['conditions'])
+                : null,
+            id: item['id'] as String?,
+            threshold: item['threshold']?.toString(),
+            resumeTimeout: item['resume_timeout'] as int?,
+            accelerated: item['accelerated'] as bool?,
+            blockEvents: item['block_events'] as bool?,
+            clearModifiers: item['clear_modifiers'] as bool?,
+            setLastTrigger: item['set_last_trigger'] as bool?,
+            endConditions: item.containsKey('end_conditions')
+                ? _parseCondition(item.nodes['end_conditions'])
                 : null,
             extra: extra,
             children: sub is YamlList ? walk(sub) : const [],

@@ -27,6 +27,7 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
@@ -396,6 +397,12 @@ class GestureListSection extends HookConsumerWidget {
                       if (locations.isEmpty) return;
                       multiSelectNotifier.enterAll(locations);
                       ref.read(bulkEditActiveProvider.notifier).open();
+                    },
+                    onOpenSettings: () {
+                      multiSelectNotifier.exit();
+                      ref
+                          .read(selectedGroupProvider.notifier)
+                          .open(flatItem.location);
                     },
                     onBreakdown: () => listNotifier.removeGroupAndUngroup(
                       flatItem.location,

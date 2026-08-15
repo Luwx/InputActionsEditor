@@ -376,22 +376,42 @@ mouse:
   gestures:
     - mouse_buttons:
         - right
-      threshold: 5
+      speed: fast
       gestures:
         - type: press
 ''';
       final encoded = encodeConfig(decodeConfig(original), original);
       expect(encoded, contains('mouse_buttons'));
-      expect(encoded, contains('threshold: 5'));
+      expect(encoded, contains('speed: fast'));
       expect(
         decodeConfig(
           encoded,
         ).mouseNodes.whereType<GestureGroupNode>().single.extra,
         {
           'mouse_buttons': ['right'],
-          'threshold': 5,
+          'speed': 'fast',
         },
       );
+    });
+
+    test('modelled shared trigger properties survive a round-trip', () {
+      const original = '''
+mouse:
+  gestures:
+    - id: shared
+      resume_timeout: 250
+      block_events: false
+      gestures:
+        - type: press
+''';
+      final encoded = encodeConfig(decodeConfig(original), original);
+      final group =
+          decodeConfig(encoded).mouseNodes.whereType<GestureGroupNode>().single;
+      expect(group.id, 'shared');
+      expect(group.resumeTimeout, 250);
+      expect(group.blockEvents, false);
+      expect(group.extra, isEmpty);
+      expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
     });
 
     test('moving a gesture out of a native group un-nests it', () {

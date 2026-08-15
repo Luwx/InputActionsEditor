@@ -348,6 +348,14 @@ final TreeNode<GestureGroupNode> gestureGroupSubtree =
         prop(GestureGroupNodeMeta.name),
         prop(GestureGroupNodeMeta.enabled),
         prop(GestureGroupNodeMeta.conditions),
+        prop(GestureGroupNodeMeta.id, adapter: nullableText()),
+        prop(GestureGroupNodeMeta.threshold, adapter: nullableText()),
+        prop(GestureGroupNodeMeta.resumeTimeout, adapter: nullableInt()),
+        prop(GestureGroupNodeMeta.accelerated, defaultsTo: false),
+        prop(GestureGroupNodeMeta.blockEvents, defaultsTo: true),
+        prop(GestureGroupNodeMeta.clearModifiers, defaultsTo: false),
+        prop(GestureGroupNodeMeta.setLastTrigger, defaultsTo: true),
+        prop(GestureGroupNodeMeta.endConditions),
       ],
     );
 

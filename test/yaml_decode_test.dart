@@ -1070,15 +1070,40 @@ mouse:
   gestures:
     - mouse_buttons:
         - right
-      threshold: 5
+      speed: fast
       gestures:
         - type: press
 ''');
       final group = c.mouseNodes.single as GestureGroupNode;
       expect(group.extra, {
         'mouse_buttons': ['right'],
-        'threshold': 5,
+        'speed': 'fast',
       });
+    });
+
+    test('shared trigger properties decode onto the group, not extra', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - id: shared
+      threshold: 5
+      resume_timeout: 250
+      accelerated: true
+      block_events: false
+      clear_modifiers: true
+      set_last_trigger: false
+      gestures:
+        - type: press
+''');
+      final group = c.mouseNodes.single as GestureGroupNode;
+      expect(group.id, 'shared');
+      expect(group.threshold, '5');
+      expect(group.resumeTimeout, 250);
+      expect(group.accelerated, true);
+      expect(group.blockEvents, false);
+      expect(group.clearModifiers, true);
+      expect(group.setLastTrigger, false);
+      expect(group.extra, isEmpty);
     });
 
     test('typed gesture with nested sub-gestures flattens into actions', () {

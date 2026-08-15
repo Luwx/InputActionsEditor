@@ -25,7 +25,9 @@ import 'package:input_actions_editor/ui/features/gestures/editor/devices/pointer
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchpad_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchscreen_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/group/group_settings_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
@@ -70,6 +72,11 @@ class GestureDetailSection extends ConsumerWidget {
                 selected: multiSelect,
               ),
       );
+    }
+
+    final group = ref.watch(selectedGroupProvider);
+    if (group != null) {
+      return GroupSettingsView(key: ValueKey(group), location: group);
     }
 
     final location = ref.watch(selectedGestureProvider);

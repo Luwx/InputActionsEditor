@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/common/theme/color_contrast.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 /// Builds a [FThemeData] from a [KdeColorScheme].
@@ -124,14 +125,6 @@ FColors _kdeToFColors(KdeColorScheme kde) {
 /// (e.g. MonochromeTint's light gray on near-black), blends 25% toward it
 /// so the raised surface stays subtle.
 Color _safeSurface(Color base, Color alternate) {
-  if (_contrastRatio(base, alternate) <= 2.0) return alternate;
+  if (contrastRatio(base, alternate) <= 2.0) return alternate;
   return Color.lerp(base, alternate, 0.25)!;
-}
-
-double _contrastRatio(Color a, Color b) {
-  final la = a.computeLuminance();
-  final lb = b.computeLuminance();
-  final lighter = la > lb ? la : lb;
-  final darker = la > lb ? lb : la;
-  return (lighter + 0.05) / (darker + 0.05);
 }

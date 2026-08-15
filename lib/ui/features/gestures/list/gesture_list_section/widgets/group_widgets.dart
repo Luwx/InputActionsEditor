@@ -23,6 +23,7 @@ class _GroupHeaderRow extends HookWidget {
     required this.onBreakdown,
     required this.onDelete,
     required this.onAddGesture,
+    required this.onOpenSettings,
     super.key,
   });
 
@@ -46,6 +47,10 @@ class _GroupHeaderRow extends HookWidget {
   final VoidCallback onBreakdown;
   final VoidCallback onDelete;
   final VoidCallback onAddGesture;
+
+  /// Opens the group's shared properties, the ones every gesture in the
+  /// subtree inherits from the daemon's trigger group.
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -102,26 +107,34 @@ class _GroupHeaderRow extends HookWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                AnimatedOpacity(
-                  opacity: isHovered.value ? 0.8 : 0.5,
-                  duration: Durations.short2,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: FButton.icon(
-                      size: .xs,
-                      variant: isHovered.value
-                          ? FButtonVariant.primary
-                          : FButtonVariant.ghost,
-                      onPress: onAddGesture,
-                      child: const Icon(FLucideIcons.plus, size: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 2),
                 Text(
                   '$gestureCount',
                   style: typography.body.xs.copyWith(
                     color: colors.mutedForeground,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                AnimatedOpacity(
+                  opacity: isHovered.value ? 0.8 : 0.5,
+                  duration: Durations.short2,
+                  child: FButton.icon(
+                    size: .xs,
+                    variant: isHovered.value
+                        ? FButtonVariant.primary
+                        : FButtonVariant.ghost,
+                    onPress: onAddGesture,
+                    child: const Icon(FLucideIcons.plus, size: 12),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                AnimatedOpacity(
+                  opacity: isHovered.value ? 0.8 : 0.5,
+                  duration: Durations.short2,
+                  child: FButton.icon(
+                    size: .xs,
+                    variant: FButtonVariant.ghost,
+                    onPress: onOpenSettings,
+                    child: const Icon(FLucideIcons.settings2, size: 12),
                   ),
                 ),
                 if (reorderHandle != null) ...[

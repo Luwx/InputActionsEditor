@@ -210,6 +210,18 @@ List<dynamic> _nodesToYaml(
         if (!node.enabled) 'enabled': false,
         if (node.conditions != null)
           'conditions': conditionToYaml(node.conditions!),
+        // Shared trigger properties, in the same key order gestures use.
+        if (node.id != null) 'id': node.id,
+        if (node.endConditions != null)
+          'end_conditions': conditionToYaml(node.endConditions!),
+        if (node.blockEvents != null) 'block_events': node.blockEvents,
+        if (node.clearModifiers != null)
+          'clear_modifiers': node.clearModifiers,
+        if (node.resumeTimeout != null) 'resume_timeout': node.resumeTimeout,
+        if (node.setLastTrigger != null)
+          'set_last_trigger': node.setLastTrigger,
+        if (node.threshold != null) 'threshold': node.threshold,
+        if (node.accelerated != null) 'accelerated': node.accelerated,
         ...node.extra,
         'gestures': _nodesToYaml(node.children, toMap),
       },
