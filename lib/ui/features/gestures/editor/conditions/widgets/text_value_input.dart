@@ -2,7 +2,7 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart' show Colors, OutlineInputBorder;
 import 'package:flutter/services.dart'
-    show FilteringTextInputFormatter, TextInputAction;
+    show FilteringTextInputFormatter, TextInputAction, TextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -14,6 +14,7 @@ class TextValueInput extends HookWidget {
     required this.hint,
     this.autofocus = false,
     this.onDetect,
+    this.inputFormatters,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class TextValueInput extends HookWidget {
   final void Function(String) onChanged;
   final String hint;
   final bool autofocus;
+  final List<TextInputFormatter>? inputFormatters;
 
   /// When non-null, the input renders as a chip that opens a popover with the
   /// text field and a detect-window button.
@@ -29,11 +31,14 @@ class TextValueInput extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final controller = useTextEditingController(text: value);
+    final syncing = useRef(false);
 
     // Sync controller when external value changes (didUpdateWidget).
     final prevValue = usePrevious(value);
     if (prevValue != null && prevValue != value && value != controller.text) {
+      syncing.value = true;
       controller.text = value;
+      syncing.value = false;
     }
 
     final idle =
@@ -61,13 +66,14 @@ class TextValueInput extends HookWidget {
 
     final textField = FTextField(
       style: style,
-      control: FTextFieldControl.lifted(
-        value: controller.value,
+      control: FTextFieldControl.managed(
+        controller: controller,
         onChange: (v) {
-          controller.value = v;
+          if (syncing.value || v.text == value) return;
           onChanged(v.text);
         },
       ),
+      inputFormatters: inputFormatters,
       autofocus: autofocus,
       hint: hint,
     );
@@ -79,6 +85,7 @@ class TextValueInput extends HookWidget {
       hint: hint,
       onChanged: onChanged,
       onDetect: onDetect!,
+      inputFormatters: inputFormatters,
     );
   }
 }
@@ -89,12 +96,14 @@ class _TextValueChip extends HookWidget {
     required this.hint,
     required this.onChanged,
     required this.onDetect,
+    required this.inputFormatters,
   });
 
   final String value;
   final String hint;
   final void Function(String) onChanged;
   final Future<void> Function() onDetect;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +152,7 @@ class _TextValueChip extends HookWidget {
         onDetect: handleDetect,
         detecting: detecting.value,
         onSubmit: () => unawaited(controller.hide()),
+        inputFormatters: inputFormatters,
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
@@ -176,6 +186,7 @@ class _TextValuePopover extends HookWidget {
     required this.onDetect,
     required this.detecting,
     required this.onSubmit,
+    required this.inputFormatters,
   });
 
   final String value;
@@ -184,6 +195,7 @@ class _TextValuePopover extends HookWidget {
   final Future<void> Function() onDetect;
   final bool detecting;
   final VoidCallback onSubmit;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +232,7 @@ class _TextValuePopover extends HookWidget {
             onSubmit: (_) => onSubmit(),
             inputFormatters: [
               FilteringTextInputFormatter.deny(RegExp(r'\n')),
+              ...?inputFormatters,
             ],
             control: FTextFieldControl.managed(
               controller: controller,

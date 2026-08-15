@@ -157,12 +157,12 @@ class _AnimatedScrollbar extends HookWidget {
 
     return MouseRegion(
       onEnter: (_) {
-        if (isInsideScrollable.value) return;
+        if (!context.mounted || isInsideScrollable.value) return;
         isInsideScrollable.value = true;
         animateToCurrentState();
       },
       onExit: (_) {
-        if (!isInsideScrollable.value) return;
+        if (!context.mounted || !isInsideScrollable.value) return;
         isInsideScrollable.value = false;
         isHovered.value = false;
         animateToCurrentState();
@@ -207,12 +207,12 @@ class _AnimatedScrollbar extends HookWidget {
                 isVertical: isVertical,
                 hitExtent: _hitExtent,
                 onHoverChanged: (value) {
-                  if (isHovered.value == value) return;
+                  if (!context.mounted || isHovered.value == value) return;
                   isHovered.value = value;
                   animateToCurrentState();
                 },
                 onPressedChanged: (value) {
-                  if (isPressed.value == value) return;
+                  if (!context.mounted || isPressed.value == value) return;
                   isPressed.value = value;
                   animateToCurrentState();
                 },

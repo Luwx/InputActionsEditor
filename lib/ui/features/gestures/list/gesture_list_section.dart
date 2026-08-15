@@ -348,10 +348,9 @@ class GestureListSection extends HookConsumerWidget {
                   final flatItem = groupItemsByKey[groupEntry.id]!;
                   return _GroupHeaderRow(
                     key: groupEntry.key,
-                    index: viewModel.flatItems.indexOf(flatItem),
+                    location: flatItem.location,
                     name: flatItem.name,
                     enabled: flatItem.enabled,
-                    device: flatItem.device,
                     isCollapsed: flatItem.isCollapsed,
                     scrollBuilder: scrollBuilder,
                     gestureCount: flatItem.gestureCount,

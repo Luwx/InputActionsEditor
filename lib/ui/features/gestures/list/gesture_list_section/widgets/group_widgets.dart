@@ -4,12 +4,11 @@ part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_sec
 /// it reaches its pinned slot. The frost is full once the header is pinned.
 const _frostRampPx = 20.0;
 
-class _GroupHeaderRow extends HookWidget {
+class _GroupHeaderRow extends HookConsumerWidget {
   const _GroupHeaderRow({
-    required this.index,
+    required this.location,
     required this.name,
     required this.enabled,
-    required this.device,
     required this.isCollapsed,
     required this.scrollBuilder,
     required this.gestureCount,
@@ -27,10 +26,9 @@ class _GroupHeaderRow extends HookWidget {
     super.key,
   });
 
-  final int index;
+  final GestureGroupLocation location;
   final String name;
   final bool enabled;
-  final DeviceType device;
   final bool isCollapsed;
 
   /// Builds header content against scroll position, applied to the content only
@@ -53,13 +51,16 @@ class _GroupHeaderRow extends HookWidget {
   final VoidCallback onOpenSettings;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final isDisabled = !enabled;
     final isHovered = useState(false);
     final menuController = useFPopoverController();
     useListenable(menuController);
+    final isSelected = ref.watch(
+      selectedGroupProvider.select((open) => open == location),
+    );
 
     // The disabled dimming wraps only the content, or no blur
     final content = Opacity(
@@ -71,7 +72,7 @@ class _GroupHeaderRow extends HookWidget {
           splashFactory: InkSparkle.splashFactory,
           onTap: onToggleCollapse,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: EdgeInsets.fromLTRB(isSelected ? 10 : 12, 4, 12, 4),
             child: Row(
               children: [
                 AnimatedRotation(
@@ -89,6 +90,8 @@ class _GroupHeaderRow extends HookWidget {
                   size: 15,
                   color: isDisabled
                       ? colors.mutedForeground
+                      : isSelected
+                      ? colors.primary
                       : colors.foreground,
                 ),
                 const SizedBox(width: 8),
@@ -99,7 +102,11 @@ class _GroupHeaderRow extends HookWidget {
                       fontWeight: FontWeight.w600,
                       color: isDisabled
                           ? colors.mutedForeground
-                          : colors.foreground,
+                          : Color.lerp(
+                              colors.primary,
+                              colors.foreground,
+                              isSelected ? 0.5 : 1,
+                            ),
                       decoration: isDisabled
                           ? TextDecoration.lineThrough
                           : null,
@@ -126,13 +133,21 @@ class _GroupHeaderRow extends HookWidget {
                 ),
                 const SizedBox(width: 2),
                 AnimatedOpacity(
-                  opacity: isHovered.value ? 0.8 : 0.5,
+                  opacity: isSelected
+                      ? 1
+                      : isHovered.value
+                      ? 0.8
+                      : 0.5,
                   duration: Durations.short2,
                   child: FButton.icon(
                     size: .xs,
                     variant: FButtonVariant.ghost,
                     onPress: onOpenSettings,
-                    child: const Icon(FLucideIcons.settings2, size: 12),
+                    child: Icon(
+                      FLucideIcons.settings2,
+                      size: 12,
+                      color: isSelected ? colors.primary : null,
+                    ),
                   ),
                 ),
                 if (reorderHandle != null) ...[
@@ -178,6 +193,7 @@ class _GroupHeaderRow extends HookWidget {
               frostT: frostT,
               borderColor: borderColor,
               isExpanded: !isCollapsed,
+              isSelected: isSelected,
               child: Opacity(
                 opacity: (1.0 - (scroll.scrolledUnder / 0.6)).clamp(0.0, 1.0),
                 child: child,
@@ -199,6 +215,7 @@ class _PinnedHeaderBacking extends StatelessWidget {
     required this.borderColor,
     required this.child,
     required this.isExpanded,
+    required this.isSelected,
   });
 
   /// 0 = plain in-flow tint, 1 = fully frosted (app-bar look). Driven directly
@@ -208,6 +225,7 @@ class _PinnedHeaderBacking extends StatelessWidget {
   final Color borderColor;
   final Widget child;
   final bool isExpanded;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -218,12 +236,25 @@ class _PinnedHeaderBacking extends StatelessWidget {
       colors.background,
     ).withAlpha(100);
 
-    final bgColor = Color.lerp(tint, resolvedTint, frostT);
+    final bgColor = Color.lerp(tint, resolvedTint, frostT)!;
+    final baseColor = isExpanded ? bgColor : tint;
     final decorated = DecoratedBox(
       decoration: BoxDecoration(
-        color: isExpanded ? bgColor : tint,
-        border: isExpanded
-            ? Border(bottom: BorderSide(color: borderColor))
+        color: isSelected
+            ? Color.alphaBlend(
+                colors.primary.withValues(alpha: 0.08),
+                baseColor,
+              )
+            : baseColor,
+        border: isExpanded || isSelected
+            ? Border(
+                left: isSelected
+                    ? BorderSide(color: colors.primary, width: 2)
+                    : BorderSide.none,
+                bottom: isExpanded
+                    ? BorderSide(color: borderColor)
+                    : BorderSide.none,
+              )
             : null,
       ),
       child: child,
