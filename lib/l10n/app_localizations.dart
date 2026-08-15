@@ -991,7 +991,7 @@ abstract class AppLocalizations {
   /// Explains group property inheritance and the daemon's lack of override support.
   ///
   /// In en, this message translates to:
-  /// **'Every gesture in this group inherits these. A gesture that sets the same property does not override it, the result is undefined.'**
+  /// **'Every gesture in this group inherits these.'**
   String get groupSettingsDescription;
 
   /// No description provided for @configIssuesDeviceRule.

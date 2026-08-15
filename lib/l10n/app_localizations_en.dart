@@ -489,7 +489,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupSettingsDescription =>
-      'Every gesture in this group inherits these. A gesture that sets the same property does not override it, the result is undefined.';
+      'Every gesture in this group inherits these.';
 
   @override
   String get configIssuesDeviceRule => 'Device rules';

@@ -235,7 +235,7 @@
       }
     }
   },
-  "groupSettingsDescription": "Every gesture in this group inherits these. A gesture that sets the same property does not override it, the result is undefined.",
+  "groupSettingsDescription": "Every gesture in this group inherits these.",
   "@groupSettingsDescription": {
     "description": "Explains group property inheritance and the daemon's lack of override support."
   },

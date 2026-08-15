@@ -119,9 +119,7 @@ class _GroupHeaderRow extends HookWidget {
                   duration: Durations.short2,
                   child: FButton.icon(
                     size: .xs,
-                    variant: isHovered.value
-                        ? FButtonVariant.primary
-                        : FButtonVariant.ghost,
+                    variant: FButtonVariant.ghost,
                     onPress: onAddGesture,
                     child: const Icon(FLucideIcons.plus, size: 12),
                   ),
@@ -138,7 +136,7 @@ class _GroupHeaderRow extends HookWidget {
                   ),
                 ),
                 if (reorderHandle != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   reorderHandle!,
                 ],
               ],

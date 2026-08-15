@@ -57,15 +57,14 @@ class GroupSettingsView extends HookConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 16,
         children: [
           Text(
             l10n.groupSettingsDescription,
             style: context.theme.typography.body.xs.copyWith(
               color: colors.mutedForeground,
-              height: 1.4,
             ),
           ),
+          const SizedBox(height: 4),
           if (pinnedFields.isNotEmpty)
             TriggerAdvancedFields(
               fields: pinnedFields,
