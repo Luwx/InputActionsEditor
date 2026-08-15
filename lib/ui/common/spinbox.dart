@@ -26,6 +26,7 @@ class FSpinBox extends HookWidget {
     required this.min,
     required this.max,
     this.label,
+    this.prefix,
     this.unit,
     this.width = 110,
     this.step = 1,
@@ -38,6 +39,9 @@ class FSpinBox extends HookWidget {
   final double width;
   final ValueChanged<double> onChanged;
   final Widget? label;
+
+  /// Muted text shown inside the field, before the value.
+  final String? prefix;
   final String? unit;
   final double min;
   final double max;
@@ -231,8 +235,19 @@ class FSpinBox extends HookWidget {
               decimal: decimalPlaces > 0,
               signed: min < 0,
             ),
-            textAlign: TextAlign.center,
+            textAlign: prefix == null ? TextAlign.center : TextAlign.start,
             hint: hint,
+            prefixBuilder: prefix == null
+                ? null
+                : (context, _, _) => Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Text(
+                      prefix!,
+                      style: context.theme.typography.body.sm.copyWith(
+                        color: context.theme.colors.mutedForeground,
+                      ),
+                    ),
+                  ),
             inputFormatters: [
               formatter,
               LengthLimitingTextInputFormatter(maxInputLength),
