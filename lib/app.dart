@@ -13,6 +13,7 @@ import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
+import 'package:input_actions_editor/ui/common/theme/popup_glass.dart';
 import 'package:input_actions_editor/ui/common/theme/switch_style.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
@@ -106,7 +107,7 @@ FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
 
   if (colorPair == null) {
     // KDE theme is handled separately
-    return FThemes.zinc.dark.desktop;
+    return withGlassPopups(FThemes.zinc.dark.desktop);
   }
 
   final baseTheme = switch (settings.themeMode) {
@@ -135,7 +136,7 @@ FThemeData _withAppChromeStyle(
   final selectedHoverColor = colors.primary.withValues(alpha: 0.38);
   final selectedPressedColor = colors.primary.withValues(alpha: 0.34);
 
-  return baseTheme.copyWith(
+  return withGlassPopups(baseTheme).copyWith(
     switchStyle: switchContrastDelta(baseTheme),
     scaffoldStyle: transparentSidebar
         ? const .delta(
