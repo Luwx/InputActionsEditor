@@ -1,14 +1,13 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/bounce_free_scroll_physics.dart';
-import 'package:input_actions_editor/ui/common/reorderable_groupable_list/marquee_overlay.dart';
-import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_controller.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/shrink_compensated_sliver.dart';
+import 'package:input_actions_editor/ui/common/tree_list/auto_scroller.dart';
+import 'package:input_actions_editor/ui/common/tree_list/marquee_engine.dart';
+import 'package:input_actions_editor/ui/common/tree_list/marquee_overlay.dart';
+import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:pixel_snap/widgets.dart' as ps;
 
 part 'list_state.dart';
@@ -129,6 +128,21 @@ typedef ReorderableHeaderScrollBuilder =
 
 typedef ReorderableGroupableItemOverlayBuilder<I, G> =
     Widget? Function(BuildContext context, ReorderableGroupableItem<I, G> item);
+
+/// A completed item drag: [orderedItemIds] is the full new order of every item
+/// in the list, and [movedItemIds] — the subset that was dragged — now belongs
+/// to [groupId] (null = ungrouped).
+final class ReorderableItemsResult<I, G> {
+  const ReorderableItemsResult({
+    required this.orderedItemIds,
+    required this.movedItemIds,
+    required this.groupId,
+  });
+
+  final List<I> orderedItemIds;
+  final Set<I> movedItemIds;
+  final G? groupId;
+}
 
 typedef ReorderableGroupableItemsReorderedCallback<I, G> =
     void Function(ReorderableItemsResult<I, G> result);

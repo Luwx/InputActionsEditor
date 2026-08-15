@@ -23,6 +23,14 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
+/// Horizontal room the multi-select checkbox takes in a gesture row, gap
+/// included. The gesture list panel grows by this while select mode is on.
+const double kGestureSelectionSlotWidth = 28;
+
+const Duration kGestureSelectionSlotDuration = Durations.medium2;
+
+const Curve kGestureSelectionSlotCurve = Curves.easeOutCubic;
+
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
     required this.location,
@@ -122,22 +130,15 @@ class GestureListTile extends ConsumerWidget {
             },
             child: Row(
               children: [
-                if (isMultiSelectMode)
-                  SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: Center(
-                      child: FCheckbox(
-                        value: isMultiSelected,
-                        onChange: (_) => onTap(),
-                      ),
-                    ),
-                  )
-                else
-                  _GestureTypeIcon(
-                    gesture: gesture,
-                    isSelected: isSelected,
-                  ),
+                _SelectionCheckboxSlot(
+                  visible: isMultiSelectMode,
+                  checked: isMultiSelected,
+                  onToggle: onTap,
+                ),
+                _GestureTypeIcon(
+                  gesture: gesture,
+                  isSelected: effectiveSelected,
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -309,6 +310,56 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
       expression.trim().isEmpty ? 'function' : expression.trim(),
     RawAction() => 'raw yaml',
   };
+}
+
+// ---------------------------------------------------------------------------
+
+class _SelectionCheckboxSlot extends StatelessWidget {
+  const _SelectionCheckboxSlot({
+    required this.visible,
+    required this.checked,
+    required this.onToggle,
+  });
+
+  final bool visible;
+  final bool checked;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = visible ? 1.0 : 0.0;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: target, end: target),
+      duration: kGestureSelectionSlotDuration,
+      curve: kGestureSelectionSlotCurve,
+      builder: (context, t, child) {
+        if (t <= 0) return const SizedBox.shrink();
+        return Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: t,
+          child: Opacity(opacity: t, child: child),
+        );
+      },
+      child: SizedBox(
+        width: kGestureSelectionSlotWidth,
+        height: 42,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          // FCheckbox reserves 8px on either side of the box for its (absent)
+          // label; without clearing it the box gets squeezed in this slot.
+          child: FCheckbox(
+            style: const FCheckboxStyleDelta.delta(
+              trailingLabelStyle: FLabelStyleDelta.delta(
+                childPadding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
+              ),
+            ),
+            value: checked,
+            onChange: (_) => onToggle(),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

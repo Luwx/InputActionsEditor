@@ -1,24 +1,33 @@
 part of 'reorderable_groupable_list.dart';
 
+/// Item and group ids in one space, so both kinds of drag run through the same
+/// [moveTreeNodes] call.
+@immutable
+final class _NodeId<I, G> {
+  const _NodeId.item(I this.item) : group = null, isItem = true;
+  const _NodeId.group(G this.group) : item = null, isItem = false;
+
+  final I? item;
+  final G? group;
+  final bool isItem;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _NodeId<I, G> &&
+      other.isItem == isItem &&
+      other.item == item &&
+      other.group == group;
+
+  @override
+  int get hashCode => Object.hash(isItem, item, group);
+}
+
 class _ReorderableGroupableListState<I, G>
     extends State<ReorderableGroupableList<I, G>> {
-  static const _autoScrollEdge = 64.0;
-  static const _autoScrollMaxStep = 18.0;
-  static const _autoScrollFrame = Duration(milliseconds: 16);
-
-  // The pointer must travel at least this far (roughly one row height) before a
-  // press becomes a marquee, so a click or small drag stays a row interaction.
-  static const _marqueeStartThreshold = 44.0;
-  // Pressing within this band of the right edge grabs the scrollbar, not a
-  // marquee.
-  static const _scrollbarEdge = 16.0;
-
-  final _controller = ReorderableGroupableController<I, G>();
+  late final ListAutoScroller _autoScroll;
+  late final MarqueeSelectionEngine<I> _marquee;
 
   Set<I> _activeItemDragIds = const {};
-  Timer? _autoScrollTimer;
-  double _autoScrollVelocity = 0;
-  int? _activePointer;
   int? _routedPointer;
   bool _isDragging = false;
 
@@ -26,39 +35,22 @@ class _ReorderableGroupableListState<I, G>
   // measurement can read a header's painted position frame by frame.
   final Map<G, GlobalKey> _headerKeys = {};
 
-  // Per-item measurement keys and the last content-space rect we saw for each,
-  // so the marquee can hit-test rows that scrolled out of view after passing
-  // under the box.
-  final Map<I, GlobalKey> _itemMeasureKeys = {};
-  final Map<I, Rect> _itemContentRects = {};
-
-  // Box in viewport-local coordinates, fed to the overlay without rebuilding
-  // the list.
-  final ValueNotifier<Rect?> _marqueeRect = ValueNotifier(null);
-  final ValueNotifier<MarqueeSweepCorner> _marqueeSweepCorner = ValueNotifier(
-    MarqueeSweepCorner.bottomLeft,
-  );
-
-  // A press that may become a marquee once it passes the start slop.
-  bool _marqueePending = false;
-  bool _marqueeActive = false;
-  bool _marqueeAdditive = false;
-  int? _marqueeRoutedPointer;
-  Offset? _marqueeDownGlobal;
-  // Anchor in content space (viewport-local + scroll offset) so the box stays
-  // pinned to content while auto-scrolling.
-  Offset? _marqueeAnchorContent;
-  Offset? _marqueeLastGlobal;
-  // Last reported covered set. Moves that don't change which rows the box spans
-  // skip the (expensive) host rebuild — only the box visual updates per frame.
-  Set<I>? _lastCovered;
-
-  GlobalKey _measureKeyFor(I id) =>
-      _itemMeasureKeys.putIfAbsent(id, GlobalKey.new);
-
   @override
   void initState() {
     super.initState();
+    _autoScroll = ListAutoScroller(
+      controller: widget.scrollController,
+      onScrolled: () => _marquee.refresh(),
+    );
+    _marquee = MarqueeSelectionEngine<I>(
+      autoScroller: _autoScroll,
+      topInset: () => widget.leadingPinnedExtent,
+      isBlocked: (pointer) => _isDragging || _routedPointer == pointer,
+      onStart: (additive) => widget.onMarqueeStart?.call(additive),
+      onUpdate: (covered) => widget.onMarqueeUpdate?.call(covered),
+      onEnd: (covered, {required canceled}) =>
+          widget.onMarqueeEnd?.call(covered, canceled: canceled),
+    );
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
   }
 
@@ -66,17 +58,15 @@ class _ReorderableGroupableListState<I, G>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _removePointerRoute();
-    _removeMarqueeRoute();
-    _stopAutoScroll();
-    _marqueeRect.dispose();
-    _marqueeSweepCorner.dispose();
+    _marquee.dispose();
+    _autoScroll.dispose();
     super.dispose();
   }
 
   bool _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      final pointer = _activePointer;
+      final pointer = _routedPointer ?? _marquee.activePointer;
       if (pointer != null) {
         GestureBinding.instance.handlePointerEvent(
           PointerCancelEvent(pointer: pointer),
@@ -92,7 +82,6 @@ class _ReorderableGroupableListState<I, G>
   // the sliver mid-scroll, which detaches the Draggable and silences its
   // onDragUpdate.
   void _registerPointer(int pointer) {
-    _activePointer = pointer;
     _removePointerRoute();
     _routedPointer = pointer;
     GestureBinding.instance.pointerRouter.addRoute(
@@ -103,7 +92,7 @@ class _ReorderableGroupableListState<I, G>
 
   void _handlePointerRoute(PointerEvent event) {
     if (event is PointerMoveEvent) {
-      _updateAutoScroll(event.position);
+      if (_isDragging) _autoScroll.update(event.position);
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
       _endDrag();
     }
@@ -130,9 +119,8 @@ class _ReorderableGroupableListState<I, G>
   }
 
   void _endDrag() {
-    _stopAutoScroll();
+    _autoScroll.stop();
     _removePointerRoute();
-    _activePointer = null;
     _isDragging = false;
     if (!mounted) return;
     setState(() {
@@ -140,373 +128,150 @@ class _ReorderableGroupableListState<I, G>
     });
   }
 
-  void _updateAutoScroll(Offset globalPosition) {
-    if ((!_isDragging && !_marqueeActive) ||
-        !widget.scrollController.hasClients) {
-      return;
-    }
+  List<TreeListNode<_NodeId<I, G>>> _nodes = const [];
 
-    // This widget now sits above the CustomScrollView it owns, so the viewport
-    // is reached through the scroll position rather than Scrollable.of.
-    final scrollableContext =
-        widget.scrollController.position.context.notificationContext;
-    final box = scrollableContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
+  List<TreeListNode<_NodeId<I, G>>> _toNodes(
+    List<ReorderableGroupableListEntry<I, G>> entries,
+  ) => [
+    for (final entry in entries)
+      switch (entry) {
+        ReorderableGroupableGroup<I, G>(
+          :final id,
+          :final parentId,
+          :final depth,
+        ) =>
+          TreeListNode<_NodeId<I, G>>(
+            id: _NodeId<I, G>.group(id),
+            parentId: parentId == null ? null : _NodeId<I, G>.group(parentId),
+            depth: depth,
+            canContain: true,
+          ),
+        ReorderableGroupableItem<I, G>(
+          :final id,
+          :final groupId,
+          :final depth,
+        ) =>
+          TreeListNode<_NodeId<I, G>>(
+            id: _NodeId<I, G>.item(id),
+            parentId: groupId == null ? null : _NodeId<I, G>.group(groupId),
+            depth: depth,
+          ),
+      },
+  ];
 
-    final local = box.globalToLocal(globalPosition);
-    final topDistance = local.dy;
-    final bottomDistance = box.size.height - local.dy;
-    final velocity = switch ((topDistance, bottomDistance)) {
-      (final top, _) when top < _autoScrollEdge =>
-        -(_autoScrollEdge - top) / _autoScrollEdge * _autoScrollMaxStep,
-      (_, final bottom) when bottom < _autoScrollEdge =>
-        (_autoScrollEdge - bottom) / _autoScrollEdge * _autoScrollMaxStep,
-      _ => 0.0,
-    };
-
-    _autoScrollVelocity = velocity;
-    if (velocity == 0) {
-      _stopAutoScroll();
-      return;
-    }
-
-    _autoScrollTimer ??= Timer.periodic(_autoScrollFrame, (_) {
-      if (!widget.scrollController.hasClients || _autoScrollVelocity == 0) {
-        _stopAutoScroll();
-        return;
-      }
-      final position = widget.scrollController.position;
-      final next = (position.pixels + _autoScrollVelocity).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
-      if (next == position.pixels) return;
-      widget.scrollController.jumpTo(next);
-      // The content moved under a stationary pointer, so the box (anchored in
-      // content space) and its covered set must be recomputed this frame.
-      final last = _marqueeLastGlobal;
-      if (_marqueeActive && last != null) _updateMarquee(last);
-    });
-  }
-
-  void _stopAutoScroll() {
-    _autoScrollVelocity = 0;
-    _autoScrollTimer?.cancel();
-    _autoScrollTimer = null;
-  }
-
-  RenderBox? get _viewportBox {
-    if (!widget.scrollController.hasClients) return null;
-    final ctx = widget.scrollController.position.context.notificationContext;
-    final box = ctx?.findRenderObject();
-    return box is RenderBox && box.hasSize ? box : null;
-  }
-
-  // A press lands here before the row's own gesture recognizers settle. Held as
-  // pending until the pointer travels past the start slop so a click still taps
-  // the row. Skips presses on a drag handle (which already claimed the pointer
-  // via [_registerPointer]), on the app header, or over the scrollbar gutter.
-  void _onMarqueePointerDown(PointerDownEvent event) {
-    if (!widget.marqueeEnabled || _marqueeActive || _marqueePending) return;
-    if (event.kind != PointerDeviceKind.mouse) return;
-    if (event.buttons != kPrimaryButton) return;
-    if (_routedPointer == event.pointer || _isDragging) return;
-    final box = _viewportBox;
-    if (box == null) return;
-    final local = box.globalToLocal(event.position);
-    if (local.dy < widget.leadingPinnedExtent) return;
-    if (local.dx > box.size.width - _scrollbarEdge) return;
-
-    _marqueePending = true;
-    _marqueeDownGlobal = event.position;
-    _marqueeAdditive = _hasSelectionModifier;
-    _activePointer = event.pointer;
-    _marqueeRoutedPointer = event.pointer;
-    GestureBinding.instance.pointerRouter.addRoute(
-      event.pointer,
-      _handleMarqueeRoute,
+  // Null means the move changes nothing or cannot be applied; the drop targets
+  // consult these so a dead slot shows no indicator and accepts no drop.
+  ReorderableItemsResult<I, G>? _itemsMove(
+    List<I> itemIds,
+    TreeMoveTarget<_NodeId<I, G>> target,
+  ) {
+    final move = moveTreeNodes(
+      _nodes,
+      {for (final id in itemIds) _NodeId<I, G>.item(id)},
+      target,
+    );
+    if (move == null) return null;
+    return ReorderableItemsResult<I, G>(
+      orderedItemIds: [
+        for (final id in move.orderedIds)
+          if (id.isItem) id.item as I,
+      ],
+      movedItemIds: {
+        for (final id in move.movedIds)
+          if (id.isItem) id.item as I,
+      },
+      groupId: move.newParentId?.group,
     );
   }
 
-  bool get _hasSelectionModifier {
-    final keys = HardwareKeyboard.instance.logicalKeysPressed;
-    return keys.contains(LogicalKeyboardKey.shiftLeft) ||
-        keys.contains(LogicalKeyboardKey.shiftRight) ||
-        keys.contains(LogicalKeyboardKey.controlLeft) ||
-        keys.contains(LogicalKeyboardKey.controlRight) ||
-        keys.contains(LogicalKeyboardKey.metaLeft) ||
-        keys.contains(LogicalKeyboardKey.metaRight);
-  }
-
-  void _handleMarqueeRoute(PointerEvent event) {
-    if (event is PointerMoveEvent) {
-      if (_marqueeActive) {
-        _updateMarquee(event.position);
-        return;
-      }
-      if (!_marqueePending) return;
-      // A reorder drag winning the arena cancels a pending marquee.
-      if (_isDragging) {
-        _cancelMarqueePending();
-        return;
-      }
-      final down = _marqueeDownGlobal;
-      if (down != null &&
-          (event.position - down).distance >= _marqueeStartThreshold) {
-        _activateMarquee();
-        _updateMarquee(event.position);
-      }
-    } else if (event is PointerUpEvent) {
-      if (_marqueeActive) {
-        _endMarquee(canceled: false);
-      } else {
-        _cancelMarqueePending();
-      }
-    } else if (event is PointerCancelEvent) {
-      if (_marqueeActive) {
-        _endMarquee(canceled: true);
-      } else {
-        _cancelMarqueePending();
-      }
-    }
-  }
-
-  void _activateMarquee() {
-    final box = _viewportBox;
-    final down = _marqueeDownGlobal;
-    if (box == null || down == null) {
-      _cancelMarqueePending();
-      return;
-    }
-    final pixels = widget.scrollController.position.pixels;
-    final local = box.globalToLocal(down);
-    _marqueeAnchorContent = Offset(local.dx, local.dy + pixels);
-    _marqueePending = false;
-    _marqueeActive = true;
-    _itemContentRects.clear();
-    _lastCovered = null;
-    widget.onMarqueeStart?.call(_marqueeAdditive);
-  }
-
-  void _updateMarquee(Offset globalPosition) {
-    final box = _viewportBox;
-    final anchor = _marqueeAnchorContent;
-    if (box == null || anchor == null) return;
-    _marqueeLastGlobal = globalPosition;
-    final pixels = widget.scrollController.position.pixels;
-    final local = box.globalToLocal(globalPosition);
-    final currentContent = Offset(local.dx, local.dy + pixels);
-    final contentRect = Rect.fromPoints(anchor, currentContent);
-    _marqueeSweepCorner.value = _sweepCornerForDrag(anchor, currentContent);
-
-    _measureItems(box, pixels);
-    final covered = <I>{
-      for (final entry in _itemContentRects.entries)
-        if (_overlaps(contentRect, entry.value)) entry.key,
-    };
-
-    // Translate back to viewport space for painting; the overlay's ClipRect
-    // trims any part that runs past the viewport edges. This updates every
-    // frame so the box tracks the pointer smoothly.
-    _marqueeRect.value = Rect.fromLTRB(
-      contentRect.left,
-      contentRect.top - pixels,
-      contentRect.right,
-      contentRect.bottom - pixels,
-    );
-
-    // The host rebuild (selection highlight) only fires when the spanned rows
-    // actually change, not on every sub-row pixel of movement.
-    if (_lastCovered == null || !setEquals(_lastCovered, covered)) {
-      _lastCovered = covered;
-      widget.onMarqueeUpdate?.call(covered);
-    }
-    _updateAutoScroll(globalPosition);
-  }
-
-  // Records the content-space rect of every mounted, interactive row. Rows that
-  // later scroll out keep their last rect, so the box still counts them.
-  void _measureItems(RenderBox viewport, double pixels) {
-    final viewportTop = viewport.localToGlobal(Offset.zero);
-    for (final entry in _itemMeasureKeys.entries) {
-      final ctx = entry.value.currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject();
-      if (box is! RenderBox || !box.hasSize) continue;
-      final topLeft = box.localToGlobal(Offset.zero);
-      _itemContentRects[entry.key] = Rect.fromLTWH(
-        topLeft.dx - viewportTop.dx,
-        topLeft.dy - viewportTop.dy + pixels,
-        box.size.width,
-        box.size.height,
-      );
-    }
-  }
-
-  // Inclusive overlap so a zero-width box (a straight vertical drag) still
-  // catches the full-width rows it runs through.
-  bool _overlaps(Rect a, Rect b) =>
-      a.left <= b.right &&
-      a.right >= b.left &&
-      a.top <= b.bottom &&
-      a.bottom >= b.top;
-
-  MarqueeSweepCorner _sweepCornerForDrag(Offset anchor, Offset current) {
-    final movedRight = current.dx >= anchor.dx;
-    final movedDown = current.dy >= anchor.dy;
-    return switch ((movedRight, movedDown)) {
-      (true, true) => MarqueeSweepCorner.bottomRight,
-      (true, false) => MarqueeSweepCorner.topRight,
-      (false, true) => MarqueeSweepCorner.bottomLeft,
-      (false, false) => MarqueeSweepCorner.topLeft,
-    };
-  }
-
-  void _cancelMarqueePending() {
-    _marqueePending = false;
-    _marqueeDownGlobal = null;
-    _activePointer = null;
-    _removeMarqueeRoute();
-  }
-
-  void _endMarquee({required bool canceled}) {
-    final box = _viewportBox;
-    final anchor = _marqueeAnchorContent;
-    var covered = <I>{};
-    if (box != null && anchor != null && _marqueeLastGlobal != null) {
-      final pixels = widget.scrollController.position.pixels;
-      final local = box.globalToLocal(_marqueeLastGlobal!);
-      final contentRect = Rect.fromPoints(
-        anchor,
-        Offset(local.dx, local.dy + pixels),
-      );
-      covered = {
-        for (final entry in _itemContentRects.entries)
-          if (_overlaps(contentRect, entry.value)) entry.key,
-      };
-    }
-
-    _stopAutoScroll();
-    _removeMarqueeRoute();
-    _marqueeActive = false;
-    _marqueePending = false;
-    _activePointer = null;
-    _marqueeAnchorContent = null;
-    _marqueeDownGlobal = null;
-    _marqueeLastGlobal = null;
-    _lastCovered = null;
-    _itemContentRects.clear();
-    // Drop the box so the overlay plays its pop-out animation.
-    _marqueeRect.value = null;
-    widget.onMarqueeEnd?.call(covered, canceled: canceled);
-  }
-
-  void _removeMarqueeRoute() {
-    final pointer = _marqueeRoutedPointer;
-    if (pointer == null) return;
-    _marqueeRoutedPointer = null;
-    GestureBinding.instance.pointerRouter.removeRoute(
-      pointer,
-      _handleMarqueeRoute,
+  ReorderableGroupMove<G>? _groupMove(
+    G draggedGroupId,
+    TreeMoveTarget<_NodeId<I, G>> target,
+  ) {
+    final move = moveTreeNodes(_nodes, {
+      _NodeId<I, G>.group(draggedGroupId),
+    }, target);
+    if (move == null) return null;
+    final before = move.beforeId;
+    // A group landing before an item has no expressible destination: the group
+    // ops position relative to sibling groups only.
+    if (before != null && before.isItem) return null;
+    return (
+      groupId: draggedGroupId,
+      beforeGroupId: before?.group,
+      newParentId: move.newParentId?.group,
     );
   }
 
-  void _moveItemsBeforeItem(List<I> itemIds, I targetItemId) {
-    final result = _controller.moveItemsBeforeItem(
-      widget.entries,
-      itemIds.toSet(),
-      targetItemId,
-    );
+  void _applyItemsMove(
+    List<I> itemIds,
+    TreeMoveTarget<_NodeId<I, G>> target,
+  ) {
+    final result = _itemsMove(itemIds, target);
     if (result != null) widget.onItemsReordered(result);
   }
 
-  // The controller returns null for moves that change nothing; the drop targets
-  // consult these so a no-op slot shows no indicator and accepts no drop.
+  void _applyGroupMove(
+    G draggedGroupId,
+    TreeMoveTarget<_NodeId<I, G>> target,
+  ) {
+    final move = _groupMove(draggedGroupId, target);
+    if (move != null) widget.onGroupMoved(move);
+  }
+
+  void _moveItemsBeforeItem(List<I> itemIds, I targetItemId) => _applyItemsMove(
+    itemIds,
+    MoveBeforeNode(_NodeId<I, G>.item(targetItemId)),
+  );
+
   bool _wouldMoveBeforeItem(List<I> itemIds, I targetItemId) =>
-      _controller.moveItemsBeforeItem(
-        widget.entries,
-        itemIds.toSet(),
-        targetItemId,
-      ) !=
+      _itemsMove(itemIds, MoveBeforeNode(_NodeId<I, G>.item(targetItemId))) !=
       null;
 
   bool _wouldMoveIntoGroup(List<I> itemIds, G groupId) =>
-      _controller.moveItemsIntoGroup(
-        widget.entries,
-        itemIds.toSet(),
-        groupId,
-      ) !=
-      null;
+      _itemsMove(itemIds, MoveIntoNode(_NodeId<I, G>.group(groupId))) != null;
 
   bool _wouldMoveAfterGroup(List<I> itemIds, G groupId) =>
-      _controller.moveItemsAfterGroup(
-        widget.entries,
-        itemIds.toSet(),
-        groupId,
-      ) !=
+      _itemsMove(itemIds, MoveAfterSubtree(_NodeId<I, G>.group(groupId))) !=
       null;
 
-  void _moveItemsIntoGroup(List<I> itemIds, G groupId) {
-    final result = _controller.moveItemsIntoGroup(
-      widget.entries,
-      itemIds.toSet(),
-      groupId,
-    );
-    if (result != null) widget.onItemsReordered(result);
-  }
+  void _moveItemsIntoGroup(List<I> itemIds, G groupId) =>
+      _applyItemsMove(itemIds, MoveIntoNode(_NodeId<I, G>.group(groupId)));
 
-  void _moveItemsAfterGroup(List<I> itemIds, G groupId) {
-    final result = _controller.moveItemsAfterGroup(
-      widget.entries,
-      itemIds.toSet(),
-      groupId,
-    );
-    if (result != null) widget.onItemsReordered(result);
-  }
+  void _moveItemsAfterGroup(List<I> itemIds, G groupId) =>
+      _applyItemsMove(itemIds, MoveAfterSubtree(_NodeId<I, G>.group(groupId)));
 
-  void _moveItemsToEnd(List<I> itemIds) {
-    final result = _controller.moveItemsToEnd(widget.entries, itemIds.toSet());
-    if (result != null) widget.onItemsReordered(result);
-  }
+  void _moveItemsToEnd(List<I> itemIds) =>
+      _applyItemsMove(itemIds, const MoveToRootEnd());
 
-  void _moveGroupBeforeGroup(G draggedGroupId, G targetGroupId) {
-    final move = _controller.moveGroupBeforeGroup(
-      widget.entries,
-      draggedGroupId,
-      targetGroupId,
-    );
-    if (move != null) widget.onGroupMoved(move);
-  }
+  void _moveGroupBeforeGroup(G draggedGroupId, G targetGroupId) =>
+      _applyGroupMove(
+        draggedGroupId,
+        MoveBeforeNode(_NodeId<I, G>.group(targetGroupId)),
+      );
 
   bool _wouldMoveGroupBeforeGroup(G draggedGroupId, G targetGroupId) =>
-      _controller.moveGroupBeforeGroup(
-        widget.entries,
+      _groupMove(
         draggedGroupId,
-        targetGroupId,
+        MoveBeforeNode(_NodeId<I, G>.group(targetGroupId)),
       ) !=
       null;
 
-  void _moveGroupIntoGroup(G draggedGroupId, G targetGroupId) {
-    final move = _controller.moveGroupIntoGroup(
-      widget.entries,
-      draggedGroupId,
-      targetGroupId,
-    );
-    if (move != null) widget.onGroupMoved(move);
-  }
+  void _moveGroupIntoGroup(G draggedGroupId, G targetGroupId) =>
+      _applyGroupMove(
+        draggedGroupId,
+        MoveIntoNode(_NodeId<I, G>.group(targetGroupId)),
+      );
 
   bool _wouldMoveGroupIntoGroup(G draggedGroupId, G targetGroupId) =>
-      _controller.moveGroupIntoGroup(
-        widget.entries,
+      _groupMove(
         draggedGroupId,
-        targetGroupId,
+        MoveIntoNode(_NodeId<I, G>.group(targetGroupId)),
       ) !=
       null;
 
-  void _moveGroupToEnd(G draggedGroupId) {
-    final move = _controller.moveGroupToEnd(widget.entries, draggedGroupId);
-    if (move != null) widget.onGroupMoved(move);
-  }
+  void _moveGroupToEnd(G draggedGroupId) =>
+      _applyGroupMove(draggedGroupId, const MoveToRootEnd());
 
   /// parentId per group id, rebuilt each build for ancestor-chain walks.
   Map<G, G?> _groupParents = const {};
@@ -525,9 +290,16 @@ class _ReorderableGroupableListState<I, G>
       for (final entry in entries)
         if (entry is ReorderableGroupableGroup<I, G>) entry.id: entry.parentId,
     };
+    _nodes = _toNodes(entries);
     final segments = _segmentEntries(entries);
 
-    if (widget.marqueeEnabled) _pruneMeasureKeys(entries);
+    if (widget.marqueeEnabled) {
+      _marquee.pruneKeys({
+        for (final entry in entries)
+          if (entry is ReorderableGroupableItem<I, G> && entry.interactive)
+            entry.id,
+      });
+    }
 
     final scrollView = CustomScrollView(
       controller: widget.scrollController,
@@ -596,34 +368,19 @@ class _ReorderableGroupableListState<I, G>
       // Translucent so a press on empty viewport area (below the last row,
       // where no sliver is hit) still reaches the marquee without blocking it.
       behavior: HitTestBehavior.translucent,
-      onPointerDown: _onMarqueePointerDown,
+      onPointerDown: _marquee.handlePointerDown,
       child: Stack(
         children: [
           scrollView,
           MarqueeSelectionOverlay(
-            rect: _marqueeRect,
-            sweepCorner: _marqueeSweepCorner,
+            rect: _marquee.rect,
+            sweepCorner: _marquee.sweepCorner,
             color: widget.marqueeColor,
             topInset: widget.leadingPinnedExtent,
           ),
         ],
       ),
     );
-  }
-
-  // Forget keys/rects for ids no longer in the list so the maps don't grow
-  // without bound. Rows merely scrolled out of view stay in [entries], so their
-  // cached rect survives for the duration of a marquee.
-  void _pruneMeasureKeys(
-    List<ReorderableGroupableListEntry<I, G>> entries,
-  ) {
-    final liveIds = <I>{
-      for (final entry in entries)
-        if (entry is ReorderableGroupableItem<I, G> && entry.interactive)
-          entry.id,
-    };
-    _itemMeasureKeys.removeWhere((id, _) => !liveIds.contains(id));
-    _itemContentRects.removeWhere((id, _) => !liveIds.contains(id));
   }
 
   Widget _scrollingSeparatorSliver() => SliverToBoxAdapter(
@@ -691,7 +448,7 @@ class _ReorderableGroupableListState<I, G>
               indexed.entry is ReorderableGroupableItem<I, G> &&
               (indexed.entry as ReorderableGroupableItem<I, G>).interactive) {
             row = KeyedSubtree(
-              key: _measureKeyFor(
+              key: _marquee.measureKeyFor(
                 (indexed.entry as ReorderableGroupableItem<I, G>).id,
               ),
               child: row,
