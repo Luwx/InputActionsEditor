@@ -27,6 +27,21 @@ ImageFilter _popupBlur(BuildContext context, double animation) =>
       tileMode: TileMode.decal,
     );
 
+/// Dim applied behind an open menu. Zero keeps the barrier invisible.
+const _menuBarrierAlpha = 0.0;
+
+/// Barrier behind an open menu. Forui only renders one when a filter is given,
+/// so the filter is what buys the barrier's hit testing: the click that
+/// dismisses a menu is swallowed instead of also pressing whatever it landed
+/// on, the way desktop menus behave.
+ImageFilter _menuBarrier(BuildContext context, double animation) =>
+    ColorFilter.mode(
+      context.theme.colors.barrier.withValues(
+        alpha: animation * _menuBarrierAlpha,
+      ),
+      BlendMode.srcOver,
+    );
+
 /// Returns [theme] with glassmorphic popups: a translucent card surface over a
 /// backdrop blur, for popovers, menus, select dropdowns and tooltips.
 ///
@@ -48,6 +63,7 @@ FThemeData withGlassPopups(FThemeData theme) {
     popoverMenuStyle: .delta(
       decoration: .shapeDelta(color: popupSurface),
       backgroundFilter: () => _popupBlur,
+      barrierFilter: () => _menuBarrier,
       // FPopoverMenuStyle.inherit paints an opaque `colors.card` behind the
       // item group *and* behind every item, which would sit on top of the
       // translucent popover surface and hide it. Clear both so the popover's
