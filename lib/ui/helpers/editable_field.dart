@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:edit_schema_generator/edit_schema_generator.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
@@ -10,6 +10,12 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
+
+/// See [ConfigController.tagEdits].
+void tagEdits(BuildContext context, Object source, VoidCallback run) =>
+    ProviderScope.containerOf(context)
+        .read(configControllerProvider.notifier)
+        .tagEdits(source, run);
 
 class EditableField<T> {
   const EditableField({

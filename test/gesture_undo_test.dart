@@ -3,8 +3,10 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
@@ -130,6 +132,96 @@ void main() {
       expect(thresholdAt(c, 0), '1');
     });
 
+    SetLens<String?> setThresholdByLens(GestureLocation loc, String value) =>
+        SetLens<String?>(gestureThresholdLens(loc), value);
+
+    test('a burst tagged with one editor source folds into one step', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      var t = DateTime(2020);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceWindow = const Duration(milliseconds: 500)
+        ..clock = () => t;
+      final loc = locAt(c, 0);
+
+      for (final value in ['a', 'b', 'c']) {
+        notifier.tagEdits(
+          'row-1',
+          () => notifier.add(setThresholdByLens(loc, value), scope: loc),
+        );
+        t = t.add(const Duration(milliseconds: 100));
+      }
+      expect(thresholdAt(c, 0), 'c');
+
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), '1');
+      expect(notifier.canUndo(scope: loc), isFalse);
+    });
+
+    test('bursts from different editor sources stay separate', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      var t = DateTime(2020);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceWindow = const Duration(milliseconds: 500)
+        ..clock = () => t;
+      final loc = locAt(c, 0);
+
+      notifier.tagEdits(
+        'row-1',
+        () => notifier.add(setThresholdByLens(loc, 'a'), scope: loc),
+      );
+      t = t.add(const Duration(milliseconds: 100));
+      notifier.tagEdits(
+        'row-2',
+        () => notifier.add(setThresholdByLens(loc, 'b'), scope: loc),
+      );
+
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), 'a');
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), '1');
+    });
+
+    test('the innermost source names the editor of a nested tag', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      var t = DateTime(2020);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceWindow = const Duration(milliseconds: 500)
+        ..clock = () => t;
+      final loc = locAt(c, 0);
+
+      // A row edit bubbling up through its parent group.
+      void edit(String row, String value) => notifier.tagEdits(
+        row,
+        () => notifier.tagEdits(
+          'group',
+          () => notifier.add(setThresholdByLens(loc, value), scope: loc),
+        ),
+      );
+
+      edit('row-1', 'a');
+      t = t.add(const Duration(milliseconds: 100));
+      edit('row-2', 'b');
+
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), 'a');
+    });
+
+    test('untagged field edits are one step each', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      final notifier = c.read(configControllerProvider.notifier);
+      final loc = locAt(c, 0);
+
+      notifier.add(setThresholdByLens(loc, 'a'), scope: loc);
+      notifier.add(setThresholdByLens(loc, 'b'), scope: loc);
+
+      notifier.undo(scope: loc);
+      expect(thresholdAt(c, 0), 'a');
+    });
+
     test('a gesture edit undoes correctly after a later reorder', () async {
       // Edit gesture 1, then reorder it to the front — both on the global
       // stack. The inverse is a whole-document restore, so undo is correct
@@ -220,6 +312,33 @@ void main() {
         remapped.mouseGestures[1].common.editId,
         saved.mouseGestures[1].common.editId,
       );
+    });
+
+    test('preserveEditIds carries nested action ids too', () {
+      const actions = [
+        TriggerAction(
+          action: ActionGroup(
+            actions: [TriggerAction(action: SleepAction(milliseconds: 1))],
+          ),
+        ),
+      ];
+      const config = Config(
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(common: TriggerCommon(actions: actions)),
+          ),
+        ],
+      );
+      final saved = assignEditIds(config);
+
+      List<int?> keysOf(Config c) {
+        final root = c.mouseGestures.single.common.actions.single;
+        final child = (root.action as ActionGroup).actions.single;
+        return [root.editId, child.editId];
+      }
+
+      expect(keysOf(saved).whereType<int>(), hasLength(2));
+      expect(keysOf(preserveEditIds(from: saved, to: config)), keysOf(saved));
     });
   });
 }

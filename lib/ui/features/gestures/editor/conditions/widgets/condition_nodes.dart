@@ -16,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/type_icon_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/value_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Three columns shared by every condition table (variable / operator / value).
@@ -64,6 +65,11 @@ TreeTableNode buildConditionNode(
   required List<VariableGroup>? groups,
   bool readOnly = false,
 }) {
+  // The whole tree writes through one lens; the row identifies itself so its
+  // burst can't fold into another row's.
+  void edit(Condition updated) =>
+      tagEdits(context, (context, path), () => onChanged(updated));
+
   switch (condition) {
     case final VariableCondition c:
       return _leafNode(
@@ -72,7 +78,7 @@ TreeTableNode buildConditionNode(
         key: ValueKey(path),
         groups: groups,
         readOnly: readOnly,
-        onChanged: (updated) => onChanged(updated),
+        onChanged: edit,
         onDelete: onDelete,
       );
     case final ConditionGroup group:
@@ -91,7 +97,7 @@ TreeTableNode buildConditionNode(
         c,
         key: ValueKey(path),
         readOnly: readOnly,
-        onChanged: onChanged,
+        onChanged: edit,
         onDelete: onDelete,
       );
     case final RawCondition raw:

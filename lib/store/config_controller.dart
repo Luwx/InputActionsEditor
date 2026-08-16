@@ -94,6 +94,23 @@ class ConfigController extends AsyncNotifier<EditSession> {
     }
   }
 
+  Object? _editSource;
+
+  /// Tags edits added inside [run] as coming from the editor [source], so only
+  /// that editor's own burst folds into one undo step. Innermost tag wins.
+  void tagEdits(Object source, VoidCallback run) {
+    if (_editSource != null) {
+      run();
+      return;
+    }
+    _editSource = source;
+    try {
+      run();
+    } finally {
+      _editSource = null;
+    }
+  }
+
   /// Apply [edit] to draft, then push undo in [scope].
   /// null scope means shared stack.
   /// Same coalesce key in [coalesceWindow] merge to one undo step.
@@ -101,8 +118,8 @@ class ConfigController extends AsyncNotifier<EditSession> {
     final before = _draft;
     if (before == null) return;
     _applyConfig(edit.apply(before));
-    final coalesceKey = (coalesceEnabled && edit is CoalescingEdit)
-        ? edit.coalesceKeyFor(before)
+    final coalesceKey = coalesceEnabled
+        ? _coalesceKey(edit, before, _editSource)
         : null;
     _editStacks
         .putIfAbsent(scope, () => EditHistory(coalesceWindow: coalesceWindow))
@@ -112,6 +129,12 @@ class ConfigController extends AsyncNotifier<EditSession> {
           coalesceKey: coalesceKey,
           at: clock(),
         );
+  }
+
+  static Object? _coalesceKey(ConfigEdit edit, Config before, Object? source) {
+    final slot = edit is CoalescingEdit ? edit.coalesceKeyFor(before) : null;
+    if (source == null) return slot;
+    return (slot, source);
   }
 
   void undo({Object? scope}) {

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,7 +7,11 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show gestureAt, gestureConditionsLens, gestureLocationAt;
+    show
+        GestureLocation,
+        gestureAt,
+        gestureConditionsLens,
+        gestureLocationAt;
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -21,6 +26,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart';
 
 /// Resolves config synchronously to AsyncData, these widgets read config
@@ -531,6 +537,60 @@ void main() {
 
       expect(opened?.groupEditId, 7);
     });
+  });
+
+  testWidgets('dragging the point preview is a single undo step', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_pointDirtyHost());
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(_PointDirtyEditor)),
+    );
+    // Pinned so the drag can't outrun the coalescing window.
+    final notifier = container.read(configControllerProvider.notifier)
+      ..clock = () => DateTime(2020);
+
+    ({double x, double y}) point() {
+      final draft = container.read(configControllerProvider).requireValue.draft;
+      final location = gestureLocationAt(draft, DeviceType.mouse, 0)!;
+      final condition =
+          gestureAt(draft, location)!.common.conditions! as VariableCondition;
+      final (x, y) = condition.value.pointOrNull!;
+      return (x: x, y: y);
+    }
+
+    GestureLocation location() => gestureLocationAt(
+      container.read(configControllerProvider).requireValue.draft,
+      DeviceType.mouse,
+      0,
+    )!;
+
+    await tester.tap(find.textContaining('.33,'));
+    await tester.pumpAndSettle();
+
+    final origin = tester.getTopLeft(find.byType(PointPreview));
+    final gesture = await tester.startGesture(
+      origin + const Offset(20, 20),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pump();
+    for (final dx in [40.0, 60.0, 80.0]) {
+      await gesture.moveTo(origin + Offset(dx, dx));
+      await tester.pump();
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(point().x, isNot(closeTo(0.33, 0.001)));
+
+    notifier.undo(scope: location());
+    await tester.pumpAndSettle();
+
+    expect(point().x, closeTo(0.33, 0.001));
+    expect(point().y, closeTo(0.02, 0.001));
+    expect(notifier.canUndo(scope: location()), isFalse);
   });
 
   testWidgets('text value detect popover closes on submit', (tester) async {
