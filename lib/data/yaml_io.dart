@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
@@ -74,10 +75,15 @@ Future<(Config, String)> loadConfigFromPath(String path) async {
   return (decodeConfig(text), text);
 }
 
-Future<void> saveConfig(Config config, String originalText) async {
+Future<void> saveConfig(
+  Config config,
+  String originalText, {
+  BackupPolicy backups = const BackupPolicy.disabled(),
+}) async {
   final path = configFilePath();
   final file = File(path);
   if (!file.parent.existsSync()) await file.parent.create(recursive: true);
+  await backupConfigFile(path, backups);
   await file.writeAsString(encodeConfig(config, originalText));
 }
 

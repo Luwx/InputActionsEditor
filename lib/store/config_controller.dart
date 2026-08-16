@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/data/config_repository.dart';
 import 'package:input_actions_editor/domain/config_issues.dart';
 import 'package:input_actions_editor/domain/diff/config_slices.dart';
@@ -271,7 +272,11 @@ class ConfigController extends AsyncNotifier<EditSession> {
   }
 
   Future<Config> _writeAndReload(Config toWrite) async {
-    await _repository.save(toWrite, _originalText);
+    await _repository.save(
+      toWrite,
+      _originalText,
+      backups: ref.read(backupPolicyProvider),
+    );
     final (reloaded, text) = await _repository.load();
     _originalText = text;
     return reloaded;

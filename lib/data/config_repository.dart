@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart' show decodeConfig;
 import 'package:input_actions_editor/data/yaml_io.dart' as yaml_io;
 import 'package:input_actions_editor/model/config.dart';
@@ -18,8 +19,11 @@ class ConfigRepository {
 
   Future<String?> pickSavePath() => yaml_io.pickSaveFilePath();
 
-  Future<void> save(Config config, String originalText) =>
-      yaml_io.saveConfig(config, originalText);
+  Future<void> save(
+    Config config,
+    String originalText, {
+    BackupPolicy backups = const BackupPolicy.disabled(),
+  }) => yaml_io.saveConfig(config, originalText, backups: backups);
 
   Future<void> saveToPath(Config config, String originalText, String path) =>
       yaml_io.saveConfigToPath(config, originalText, path);

@@ -349,7 +349,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsInterface.
   ///
   /// In en, this message translates to:
-  /// **'Interface'**
+  /// **'Editor'**
   String get settingsInterface;
 
   /// No description provided for @settingsDeviceRules.
@@ -2785,8 +2785,14 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Appearance'**
+  /// **'Editor'**
   String get appearanceTitle;
+
+  /// No description provided for @appearanceGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceGroupTitle;
 
   /// No description provided for @appearanceMinimizeToTrayLabel.
   ///
@@ -2901,6 +2907,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yellow'**
   String get appearanceColorThemeYellow;
+
+  /// No description provided for @backupsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Config backups'**
+  String get backupsLabel;
+
+  /// No description provided for @backupsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep copies of the previous config in .backups'**
+  String get backupsSubtitle;
+
+  /// No description provided for @backupsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups kept'**
+  String get backupsCountLabel;
 
   /// No description provided for @historyTitle.
   ///

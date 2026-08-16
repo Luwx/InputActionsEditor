@@ -3,7 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
+import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/reveal_tile.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
@@ -59,13 +61,14 @@ class AppearanceSettingsScreen extends ConsumerWidget {
         slivers: [
           SliverFrostedAppBar(title: l10n.appearanceTitle),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             sliver: SliverToBoxAdapter(
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: FTileGroup(
                     divider: .full,
+                    label: Text(l10n.settingsGeneral),
                     children: [
                       FTile(
                         prefix: const Icon(FLucideIcons.appWindow),
@@ -79,6 +82,60 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           onChange: notifier.setMinimizeToTray,
                         ),
                       ),
+                      FTile(
+                        prefix: const Icon(FLucideIcons.archive),
+                        title: Text(l10n.backupsLabel),
+                        subtitle: Text(l10n.backupsSubtitle),
+                        onPress: () => notifier.setBackupsEnabled(
+                          !settings.backupsEnabled,
+                        ),
+                        suffix: FSwitch(
+                          value: settings.backupsEnabled,
+                          onChange: notifier.setBackupsEnabled,
+                        ),
+                      ),
+                      RevealTile(
+                        visible: settings.backupsEnabled,
+                        child: FTile(
+                          prefix: const Icon(FLucideIcons.history),
+                          title: Text(l10n.backupsCountLabel),
+                          suffix: SizedBox(
+                            width: 150,
+                            child: FSelect<int>(
+                              key: ValueKey(settings.backupCount),
+                              items: {
+                                for (final count in BackupPolicy.keepOptions)
+                                  '$count': count,
+                              },
+                              control: FSelectManagedControl<int>(
+                                initial: settings.backupCount,
+                                onChange: (value) {
+                                  if (value != null) {
+                                    notifier.setBackupCount(value);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(top: 20)),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: FTileGroup(
+                    divider: .full,
+                    label: Text(l10n.appearanceGroupTitle),
+                    children: [
                       FTile(
                         prefix: const Icon(FLucideIcons.panelLeftDashed),
                         title: Text(l10n.appearanceTransparentSidebarLabel),

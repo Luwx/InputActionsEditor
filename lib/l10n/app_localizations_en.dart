@@ -135,7 +135,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsEffect => 'Effect';
 
   @override
-  String get settingsInterface => 'Interface';
+  String get settingsInterface => 'Editor';
 
   @override
   String get settingsDeviceRules => 'Device Rules';
@@ -1551,7 +1551,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keyboard keys that can be pressed in any order and held for 2 seconds to suspend InputActions until the next config reload. Set to empty to disable.';
 
   @override
-  String get appearanceTitle => 'Appearance';
+  String get appearanceTitle => 'Editor';
+
+  @override
+  String get appearanceGroupTitle => 'Appearance';
 
   @override
   String get appearanceMinimizeToTrayLabel => 'Minimize to tray';
@@ -1610,6 +1613,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appearanceColorThemeYellow => 'Yellow';
+
+  @override
+  String get backupsLabel => 'Config backups';
+
+  @override
+  String get backupsSubtitle =>
+      'Keep copies of the previous config in .backups';
+
+  @override
+  String get backupsCountLabel => 'Backups kept';
 
   @override
   String get historyTitle => 'Recognition History';
