@@ -30,10 +30,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
+  String get actionReload => 'Reload';
+
+  @override
   String get actionOk => 'OK';
 
   @override
   String get actionCancel => 'Cancel';
+
+  @override
+  String get actionCreate => 'Create';
+
+  @override
+  String get actionRename => 'Rename';
 
   @override
   String get actionAdd => 'Add';
@@ -43,6 +52,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionDuplicate => 'Duplicate';
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
+  String get actionPaste => 'Paste';
 
   @override
   String get actionUndo => 'Undo';
@@ -864,6 +879,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionMetaRawSubtitle => 'Hand-authored unsupported action config';
+
+  @override
+  String get actionMetaGroupLabel => 'First match';
+
+  @override
+  String get actionMetaGroupSubtitle =>
+      'Runs the first nested action whose conditions match';
+
+  @override
+  String actionGroupSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+      zero: 'No actions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionGroupExplanation =>
+      'Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.';
+
+  @override
+  String get actionGroupAddAction => 'Add action to group';
+
+  @override
+  String get actionGroupFlowTitle => 'What runs';
+
+  @override
+  String get actionGroupFlowIf => 'If';
+
+  @override
+  String get actionGroupFlowElseIf => 'Else if';
+
+  @override
+  String get actionGroupFlowThen => 'Then';
+
+  @override
+  String get actionGroupFlowVerbRun => 'run';
+
+  @override
+  String get actionGroupFlowVerbSend => 'send';
+
+  @override
+  String get actionGroupFlowVerbTrigger => 'trigger';
+
+  @override
+  String get actionGroupFlowAlways => 'Always';
+
+  @override
+  String get actionGroupFlowOtherwise => 'Otherwise';
+
+  @override
+  String get actionGroupFlowNeverRuns => 'never runs';
+
+  @override
+  String get actionGroupFlowDisabled => 'disabled';
+
+  @override
+  String get actionGroupFlowEmpty =>
+      'No actions yet. Add a few and give them conditions to pick between them.';
+
+  @override
+  String get actionGroupFlowFirstAlwaysNote =>
+      'The first action has no conditions, so it always runs.';
+
+  @override
+  String get actionGroupFlowFirstAlwaysNoteRest =>
+      'The first action has no conditions, so it always runs and the ones below it never do.';
+
+  @override
+  String get conditionSummaryNot => 'not';
+
+  @override
+  String get conditionSummaryAnd => 'and';
+
+  @override
+  String get conditionSummaryOr => 'or';
+
+  @override
+  String get conditionSummaryNoneOf => 'none of';
+
+  @override
+  String get conditionSummaryNoRules => 'no rules';
+
+  @override
+  String get conditionSummaryFunction => 'custom function';
+
+  @override
+  String get conditionSummaryEmptyValue => '(empty)';
+
+  @override
+  String actionsSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions selected',
+      one: '1 action selected',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get actionSummaryNoCommand => 'No command';
@@ -2094,6 +2212,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionFunctionHint => '() => initialDirection = \"l\"';
+
+  @override
+  String get dialogNewGroupTitle => 'New group';
+
+  @override
+  String get dialogNewSubgroupTitle => 'New subgroup';
+
+  @override
+  String get dialogRenameGroupTitle => 'Rename group';
+
+  @override
+  String get gesturePasteEmpty =>
+      'The clipboard holds no gestures for this device.';
 
   @override
   String get groupMenuRename => 'Rename';

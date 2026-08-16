@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -12,12 +13,13 @@ import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/add_action_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/keyboard_gesture_editor.dart';
@@ -39,6 +41,9 @@ import 'package:scroll_animator/scroll_animator.dart';
 // Flip to enable the magnetic float-and-dock add button. Off = app bar mirror
 // only, no floating button.
 const bool _dockingAddButton = false;
+
+/// Widest the editor's sections grow, however wide the pane gets.
+const double _editorMaxWidth = 900;
 
 class GestureDetailSection extends ConsumerWidget {
   const GestureDetailSection({super.key});
@@ -313,7 +318,15 @@ class _GestureEditorView extends HookConsumerWidget {
                   buttonKey: addActionButtonKey,
                   floating: _dockingAddButton ? addActionFloating : null,
                   callbackRef: addActionCallbackRef,
-                  child: _GestureEditorBody(location: location),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _editorMaxWidth,
+                      ),
+                      child: _GestureEditorBody(location: location),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -591,7 +604,7 @@ class _MultiSelectPanel extends ConsumerWidget {
   }
 }
 
-class _GestureHeaderMenu extends StatelessWidget {
+class _GestureHeaderMenu extends HookWidget {
   const _GestureHeaderMenu({
     required this.isEnabled,
     required this.onToggleEnabled,
@@ -610,7 +623,15 @@ class _GestureHeaderMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final menuController = useFPopoverController();
+    useMenuShortcuts(menuController, {
+      duplicateShortcut: onDuplicate,
+      copyYamlShortcut: () => unawaited(onCopyYaml()),
+      deleteShortcut: onDelete,
+    });
+
     return FPopoverMenu(
+      control: FPopoverControl.managed(controller: menuController),
       menuAnchor: .topLeft,
       childAnchor: .bottomRight,
       menuBuilder: (context, controller, _) => [
@@ -651,9 +672,7 @@ class _GestureHeaderMenu extends StatelessWidget {
             .item(
               prefix: const Icon(Icons.copy_all),
               title: Text(context.l10n.gestureMenuDuplicate),
-              details: const MenuShortcutHint(
-                SingleActivator(LogicalKeyboardKey.keyD, control: true),
-              ),
+              details: const MenuShortcutHint(duplicateShortcut),
               onPress: () async {
                 await controller.hide();
                 onDuplicate();
@@ -662,13 +681,7 @@ class _GestureHeaderMenu extends StatelessWidget {
             .item(
               prefix: const Icon(FLucideIcons.code),
               title: Text(context.l10n.gestureMenuCopyYaml),
-              details: const MenuShortcutHint(
-                SingleActivator(
-                  LogicalKeyboardKey.keyC,
-                  control: true,
-                  shift: true,
-                ),
-              ),
+              details: const MenuShortcutHint(copyYamlShortcut),
               onPress: () async {
                 await controller.hide();
                 await onCopyYaml();
@@ -678,9 +691,7 @@ class _GestureHeaderMenu extends StatelessWidget {
               variant: FItemVariant.destructive,
               prefix: const Icon(Icons.delete_outline),
               title: Text(context.l10n.gestureMenuDelete),
-              details: const MenuShortcutHint(
-                SingleActivator(LogicalKeyboardKey.delete),
-              ),
+              details: const MenuShortcutHint(deleteShortcut),
               onPress: () async {
                 await controller.hide();
                 onDelete();

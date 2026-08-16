@@ -15,16 +15,38 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/action_list_editor.dart';
+import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 const ValueKey<String> _viewportKey = ValueKey('action-list-viewport');
-const ValueKey<String> _targetRowFooterKey = ValueKey('action-footer-4');
-const ValueKey<String> _duplicatedRowFooterKey = ValueKey('action-footer-5');
 
-Finder get _lastRowChevron => find.byIcon(FLucideIcons.chevronDown).last;
-Finder _rowChevron(int index) =>
-    find.byIcon(FLucideIcons.chevronDown).at(index);
+/// Footers are keyed by action editId, so they are found by position: only an
+/// expanded row renders one.
+Finder get _rowFooters => find.byWidgetPredicate((widget) {
+  final key = widget.key;
+  return key is ValueKey<String> && key.value.startsWith('action-footer-');
+});
+
+/// Rows expand on a tap anywhere in their header band, which sits one card gap
+/// plus half a header down from the row's top.
+const double _headerBand = 29;
+
+Finder _row(int index) => find.byType(CollapsibleListRow).at(index);
+
+Finder get _lastRow => find.byType(CollapsibleListRow).last;
+
+Future<void> _tapRow(
+  WidgetTester tester,
+  Finder row, {
+  int buttons = kPrimaryButton,
+}) async {
+  final rect = tester.getRect(row);
+  await tester.tapAt(
+    Offset(rect.center.dx, rect.top + _headerBand),
+    buttons: buttons,
+  );
+}
 
 Future<void> _jumpNearBottom(
   WidgetTester tester,
@@ -214,7 +236,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(_rowChevron(4));
+      await tester.ensureVisible(_row(4));
       await tester.pumpAndSettle();
 
       controller.jumpTo(
@@ -226,15 +248,15 @@ void main() {
       await tester.pump();
       final initialOffset = controller.offset;
       final viewportRect = _viewportRect(tester);
-      tester.getRect(_rowChevron(4));
+      tester.getRect(_row(4));
 
-      await tester.tap(_rowChevron(4));
+      await _tapRow(tester, _row(4));
       await tester.pump();
       await tester.pumpAndSettle();
 
       expect(controller.offset, greaterThanOrEqualTo(initialOffset));
 
-      final footerRect = tester.getRect(find.byKey(_targetRowFooterKey));
+      final footerRect = tester.getRect(_rowFooters.last);
       expect(
         footerRect.bottom,
         greaterThanOrEqualTo(viewportRect.bottom - 12),
@@ -259,7 +281,7 @@ void main() {
 
       await _jumpNearBottom(tester, controller);
 
-      await tester.tap(_lastRowChevron);
+      await _tapRow(tester, _lastRow);
       await tester.pumpAndSettle();
       _expectVisibleInViewport(
         tester,
@@ -267,12 +289,12 @@ void main() {
         'The first expansion should reveal the footer.',
       );
 
-      await tester.tap(find.byIcon(FLucideIcons.chevronUp).last);
+      await _tapRow(tester, _lastRow);
       await tester.pumpAndSettle();
 
       await _scrollUpABit(tester, controller);
 
-      await tester.tap(_lastRowChevron);
+      await _tapRow(tester, _lastRow);
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -295,7 +317,7 @@ void main() {
 
       await _jumpNearBottom(tester, controller);
 
-      await tester.tap(_lastRowChevron);
+      await _tapRow(tester, _lastRow);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Other Options'));
@@ -324,7 +346,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(_rowChevron(4));
+      await tester.ensureVisible(_row(4));
       await tester.pumpAndSettle();
 
       controller.jumpTo(
@@ -335,7 +357,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(_rowChevron(4), buttons: kSecondaryButton);
+      await _tapRow(tester, _row(4), buttons: kSecondaryButton);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Duplicate'));
       await tester.pump();
@@ -343,7 +365,7 @@ void main() {
 
       _expectVisibleInViewport(
         tester,
-        find.byKey(_duplicatedRowFooterKey),
+        _rowFooters.last,
         'The duplicated action footer should scroll into view.',
       );
     },
@@ -360,7 +382,7 @@ void main() {
 
       await _jumpNearBottom(tester, controller);
 
-      await tester.tap(_lastRowChevron);
+      await _tapRow(tester, _lastRow);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Other Options'));
@@ -389,6 +411,80 @@ void main() {
   );
 
   testWidgets(
+    'a fold taller than the viewport never takes its group off the top',
+    (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        _ActionsEditorHost(
+          controller: controller,
+          common: TriggerCommon(
+            actions: [
+              const TriggerAction(action: CommandAction(command: 'before')),
+              TriggerAction(
+                action: ActionGroup(
+                  actions: List.generate(
+                    16,
+                    (index) => TriggerAction(
+                      action: CommandAction(command: 'child $index'),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final groupRow = find
+          .ancestor(
+            of: find.text('First match'),
+            matching: find.byType(CollapsibleListRow),
+          )
+          .first;
+      // The group's disclosure is the leading chevron inside its own card.
+      final disclosure = find
+          .descendant(
+            of: find
+                .ancestor(
+                  of: find.text('First match'),
+                  matching: find.byType(AnimatedContainer),
+                )
+                .first,
+            matching: find.byIcon(FLucideIcons.chevronDown),
+          )
+          .first;
+
+      // Fold it away, then open the card: that unfolds the children again, all
+      // of them at once, which is more than the viewport can hold.
+      await tester.ensureVisible(groupRow);
+      await tester.pumpAndSettle();
+      await tester.tap(disclosure);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('First match'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final viewportRect = _viewportRect(tester);
+      expect(
+        tester.getRect(groupRow).top,
+        greaterThanOrEqualTo(viewportRect.top - 1),
+        reason:
+            'The anchor may not spend more than the headroom above the '
+            'group; the rest of the fold spills off the bottom.',
+      );
+      // Which is only meaningful because the fold cannot fit below it.
+      expect(
+        tester.getRect(find.byType(CollapsibleListRow).last).bottom,
+        greaterThan(viewportRect.bottom),
+      );
+    },
+  );
+
+  testWidgets(
     'opening Other Options does not reverse-scroll upward first',
     (tester) async {
       final controller = ScrollController();
@@ -399,7 +495,7 @@ void main() {
 
       await _jumpNearBottom(tester, controller);
 
-      await tester.tap(_lastRowChevron);
+      await _tapRow(tester, _lastRow);
       await tester.pumpAndSettle();
 
       await _scrollUpABit(tester, controller, delta: 10);

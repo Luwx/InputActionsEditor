@@ -7,16 +7,8 @@ import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
-/// Stateless facade for the *structural* gesture/group operations the list view
-/// triggers — add / remove / duplicate / reorder / (un)group. These are the
-/// edits a single lens cannot express.
-///
-/// It is deliberately not a `Notifier`: a list section owns no state of its own
-/// (selection, multi-select, collapsed groups, the added-marker all live in
-/// their own providers, and the structure it renders is derived by
-/// [gestureListStructureProvider]). Single-address reads/writes go through
-/// `ref.field(lens)` and the per-row gesture watch; only the irreducible
-/// structural intents live here.
+/// Stateless facade for the structural gesture/group operations the list view
+/// triggers, edits a single lens cannot express.
 class GestureCommands {
   const GestureCommands(this._ref);
 
@@ -30,6 +22,18 @@ class GestureCommands {
 
   void duplicateGesture(GestureLocation location) {
     _config.add(DuplicateGesture(location));
+  }
+
+  void insertGestures(
+    DeviceType device,
+    List<Gesture> gestures, {
+    GestureLocation? after,
+    int? groupKey,
+  }) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      InsertGestures(device, gestures, after: after, groupKey: groupKey),
+    );
   }
 
   void renameGesture(GestureLocation location, String name) {

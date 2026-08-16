@@ -26,6 +26,13 @@ class ScrollAnchorController {
   /// Height of the content below the anchor, in the child's coordinate space,
   /// or null when no anchor session is active.
   double? belowExtent;
+
+  /// How far the sliver may scroll the content up over the whole session, or
+  /// null for no limit. Keeping the anchor's bottom in view costs the content
+  /// above it: past some point the row that owns the growth has itself left the
+  /// top of the viewport, and what is on screen no longer says what it belongs
+  /// to. The caller measures that headroom when the session starts.
+  double? correctionBudget;
 }
 
 /// Exposes a [ScrollAnchorController] to the subtree below a
@@ -107,8 +114,16 @@ class RenderSliverSmartAnchor extends RenderSliverSingleBoxAdapter {
 
   double? _lastChildExtent;
 
+  /// Correction applied so far in the current session, against
+  /// [ScrollAnchorController.correctionBudget].
+  double _corrected = 0;
+
   @override
   void performLayout() {
+    // A null belowExtent means no session is running, so the next one starts
+    // with its full budget.
+    if (_controller.belowExtent == null) _corrected = 0;
+
     if (child == null) {
       geometry = SliverGeometry.zero;
       return;
@@ -178,6 +193,19 @@ class RenderSliverSmartAnchor extends RenderSliverSingleBoxAdapter {
     final spaceDown = rawSpaceDown < 0 ? 0.0 : rawSpaceDown;
 
     final allowedMove = math.min(delta, spaceDown);
-    return delta - allowedMove;
+    final correction = delta - allowedMove;
+
+    final budget = _controller.correctionBudget;
+    if (budget == null) {
+      _corrected += correction;
+      return correction;
+    }
+    // Out of headroom: the growth spills off the bottom from here on, which is
+    // the lesser loss.
+    final remaining = budget - _corrected;
+    if (remaining <= 0) return null;
+    final capped = math.min(correction, remaining);
+    _corrected += capped;
+    return capped;
   }
 }

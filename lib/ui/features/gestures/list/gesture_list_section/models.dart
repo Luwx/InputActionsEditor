@@ -2,6 +2,9 @@ part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_sec
 
 sealed class _FlatItem extends Equatable {
   const _FlatItem();
+
+  /// False while an ancestor group is collapsed.
+  bool get isVisible;
 }
 
 final class _GroupHeaderItem extends _FlatItem {
@@ -36,6 +39,7 @@ final class _GroupHeaderItem extends _FlatItem {
   final int? parentKey;
 
   /// False while an ancestor group is collapsed.
+  @override
   final bool isVisible;
 
   /// Per ancestor level (outermost first): whether that ancestor has more
@@ -90,6 +94,8 @@ final class _GestureRowItem extends _FlatItem {
   final int depth;
   final int? localGroupIndex;
   final bool isLastInGroup;
+
+  @override
   final bool isVisible;
 
   /// Per ancestor level (outermost first, length [depth]): whether that

@@ -42,6 +42,22 @@ Future<void> loadConfigDocument(BuildContext context, WidgetRef ref) async {
   );
 }
 
+/// Throws away the session and reads the file on disk again.
+Future<void> reloadConfigDocument(BuildContext context, WidgetRef ref) async {
+  final configController = ref.read(configControllerProvider.notifier);
+
+  if (ref.read(configControllerProvider).value?.isDirty ?? false) {
+    final action = await showUnsavedChangesDialog(context);
+    if (action == null) return;
+    if (action == UnsavedChangesAction.apply) {
+      await configController.save();
+    }
+  }
+
+  ref.read(navProvider.notifier).reset();
+  await configController.reload();
+}
+
 Future<void> loadConfigFromClipboard(
   BuildContext context,
   WidgetRef ref,

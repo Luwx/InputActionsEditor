@@ -39,12 +39,21 @@ class _ReorderableGroupableListState<I, G>
   void initState() {
     super.initState();
     _autoScroll = ListAutoScroller(
-      controller: widget.scrollController,
+      position: () => widget.scrollController.hasClients
+          ? widget.scrollController.position
+          : null,
       onScrolled: () => _marquee.refresh(),
     );
     _marquee = MarqueeSelectionEngine<I>(
       autoScroller: _autoScroll,
+      frame: () => (
+        box: _autoScroll.viewportBox,
+        offset: widget.scrollController.hasClients
+            ? widget.scrollController.position.pixels
+            : 0.0,
+      ),
       topInset: () => widget.leadingPinnedExtent,
+      trailingInset: 16,
       isBlocked: (pointer) => _isDragging || _routedPointer == pointer,
       onStart: (additive) => widget.onMarqueeStart?.call(additive),
       onUpdate: (covered) => widget.onMarqueeUpdate?.call(covered),

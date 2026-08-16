@@ -90,6 +90,8 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           fields: [prop(FunctionActionMeta.expression)],
         ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
+        // The nested actions are the list's recursion, not a field here.
+        valueCase<ActionGroup>('group'),
         valueCase<InputAction>(
           'input',
           fields: [prop('inputEntries', property: InputActionMeta.entries)],
@@ -137,7 +139,23 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
       scope: 'action',
       location: 'ActionLocation',
       parentField: 'gesture',
-      indexField: 'actionIndex',
+      key: listKey<TriggerAction, int>(
+        field: 'editId',
+        get: (action) => action.editId,
+        set: (action, key) => action.copyWith(editId: key),
+      ),
+      children: childList<TriggerAction>(
+        get: (action) => switch (action.action) {
+          ActionGroup(:final actions) => actions,
+          _ => null,
+        },
+        set: (action, children) => switch (action.action) {
+          ActionGroup() => action.copyWith(
+            action: ActionGroup(actions: children),
+          ),
+          _ => action,
+        },
+      ),
     ),
   ],
   groups: [

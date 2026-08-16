@@ -7,11 +7,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show
-        GestureLocation,
-        gestureAt,
-        gestureConditionsLens,
-        gestureLocationAt;
+    show GestureLocation, gestureAt, gestureConditionsLens, gestureLocationAt;
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';

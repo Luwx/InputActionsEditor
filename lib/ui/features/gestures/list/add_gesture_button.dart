@@ -72,7 +72,7 @@ Future<void> _showTypePicker(
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(ctx).pop(),
           child: Text(context.l10n.actionCancel),
         ),
@@ -221,7 +221,7 @@ class _AddGestureDialogContentState extends State<_AddGestureDialogContent> {
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),

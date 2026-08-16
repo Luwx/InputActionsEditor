@@ -282,6 +282,9 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final (config, text) = await _repository.load();
       final normalized = assignEditIds(config);
       _originalText = text;
+      // The reload hands out fresh editIds, so the stacked inverses no longer
+      // address anything in the draft.
+      _editStacks.clear();
       ref.read(configLoadErrorProvider.notifier).clear();
       ref.read(configIssuesProvider.notifier).report(normalized, text);
       state = AsyncData(EditSession(draft: normalized, saved: normalized));

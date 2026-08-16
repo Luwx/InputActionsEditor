@@ -10,6 +10,8 @@ import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
+import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Editor for the properties every gesture in a group inherits.
@@ -116,10 +118,18 @@ class GroupSettingsView extends HookConsumerWidget {
           SliverPersistentHeader(
             pinned: true,
             delegate: GrowingFrostedHeaderDelegate(
-              titleBuilder: (style) => Text(
-                group.name.isEmpty ? l10n.gestureGroupUnnamed : group.name,
-                style: style,
-                overflow: TextOverflow.ellipsis,
+              titleBuilder: (style) => RenameableTitle(
+                name: group.name.isEmpty
+                    ? l10n.gestureGroupUnnamed
+                    : group.name,
+                editingName: group.name,
+                titleStyle: style,
+                onRename: (name) => ref
+                    .read(gestureCommandsProvider)
+                    .updateGroup(
+                      location,
+                      (g) => g.copyWith(name: name.trim()),
+                    ),
               ),
               subtitle: l10n.groupSettingsSubtitle(
                 _gestureCount(group),

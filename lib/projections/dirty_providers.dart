@@ -78,7 +78,7 @@ gestureTriggerConfigDirtyStateProvider =
     Provider.family<DirtyMarkState, GestureLocation>(
       (ref, location) => selectSession(
         ref,
-        (s) => _gestureTriggerConfigDirtyState(s, location),
+        (s) => gestureTriggerConfigDirtyState(s, location),
       ),
     );
 
@@ -151,7 +151,7 @@ DirtyMarkState _gestureSectionDirtyState(
   );
 }
 
-DirtyMarkState _gestureTriggerConfigDirtyState(
+DirtyMarkState gestureTriggerConfigDirtyState(
   EditSession session,
   GestureLocation location,
 ) {

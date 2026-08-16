@@ -8,8 +8,6 @@ import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
-import 'package:input_actions_editor/projections/dirty_saved_providers.dart'
-    show savedGestureProvider;
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
@@ -51,15 +49,18 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
 
   @override
   GestureEditorState build() {
-    final gesture = ref.watch(
-      configControllerProvider.select(
-        (state) => gestureAt(state.requireValue.draft, location),
-      ),
+    final gesture = selectSession(
+      ref,
+      (session) => gestureAt(session.draft, location),
     );
-    final triggerDirtyState = ref.watch(
-      gestureTriggerConfigDirtyStateProvider(location),
+    final triggerDirtyState = selectSession(
+      ref,
+      (session) => gestureTriggerConfigDirtyState(session, location),
     );
-    final savedGesture = ref.watch(savedGestureProvider(location));
+    final savedGesture = selectSession(
+      ref,
+      (session) => gestureAt(session.saved, location),
+    );
     return GestureEditorState(
       location: location,
       gesture: gesture,

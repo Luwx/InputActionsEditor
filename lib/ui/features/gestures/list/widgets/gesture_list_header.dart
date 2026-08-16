@@ -1,11 +1,15 @@
-part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
+import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
+/// Height of the list's own pinned header.
+const double kGestureListHeaderHeight = 65;
 
-class _GestureListHeader extends StatelessWidget {
-  const _GestureListHeader({
+class GestureListHeader extends StatelessWidget {
+  const GestureListHeader({
     required this.title,
     required this.countLabel,
     required this.deviceFilter,
@@ -13,6 +17,7 @@ class _GestureListHeader extends StatelessWidget {
     required this.onGestureAdded,
     required this.onAddGroup,
     required this.onExitMultiSelect,
+    super.key,
   });
 
   final String title;

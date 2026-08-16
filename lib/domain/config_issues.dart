@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -303,9 +304,9 @@ class _Locator {
   /// `- ` entry indented less than the key itself.
   ({int start, int end})? _enclosingItem(int line) {
     if (line < 0 || line >= lines.length) return null;
-    final keyIndent = _indentOf(lines[line]);
+    final keyIndent = indentOf(lines[line]);
     for (var i = line; i >= 0; i--) {
-      final indent = _indentOf(lines[i]);
+      final indent = indentOf(lines[i]);
       if (indent >= keyIndent) continue;
       if (!lines[i].substring(indent).startsWith('- ')) continue;
       return _blockFrom(i);
@@ -326,11 +327,11 @@ class _Locator {
 
   ({int start, int end})? _blockFrom(int start) {
     if (start < 0 || start >= lines.length) return null;
-    final baseIndent = _indentOf(lines[start]);
+    final baseIndent = indentOf(lines[start]);
     var end = start;
     for (var i = start + 1; i < lines.length; i++) {
       if (lines[i].trim().isEmpty) continue;
-      if (_indentOf(lines[i]) <= baseIndent) break;
+      if (indentOf(lines[i]) <= baseIndent) break;
       end = i;
     }
     return (start: start, end: end);
@@ -364,14 +365,6 @@ class _Locator {
     return found..sort(
       (a, b) => a.$1.span.start.offset.compareTo(b.$1.span.start.offset),
     );
-  }
-
-  static int _indentOf(String line) {
-    var i = 0;
-    while (i < line.length && line.codeUnitAt(i) == 0x20) {
-      i++;
-    }
-    return i;
   }
 
   ({int start, int end}) _window(({int start, int end}) block, int line) {

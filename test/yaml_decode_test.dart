@@ -538,6 +538,29 @@ mouse:
       expect(sleepAction.action, const SleepAction(milliseconds: 1));
     });
 
+    test('a blank line does not close the surrounding actions block', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - sleep: 1
+
+        # - command: echo hi
+        #   wait: true
+
+        - sleep: 2
+''');
+      final actions = c.mouseGestures.single.common.actions;
+      expect(actions.length, 3);
+      expect(actions[1].enabled, isFalse);
+      expect(
+        actions[1].action,
+        const CommandAction(command: 'echo hi', wait: true),
+      );
+      expect(actions[2].action, const SleepAction(milliseconds: 2));
+    });
+
     test('command action with wait', () {
       final c = decodeConfig('''
 mouse:
@@ -758,8 +781,8 @@ mouse:
       );
     });
 
-    test('unmodelled action (one:) becomes a RawAction', () {
-      final c = decodeConfig('''
+    test('one: parses as an action group', () {
+      final c = decodeConfig(r'''
 touchpad:
   gestures:
     - type: swipe
@@ -768,12 +791,36 @@ touchpad:
       actions:
         - on: begin
           one:
-            - plasma_shortcut: kwin,Window Maximize
+            - conditions: $window_class == konsole
+              plasma_shortcut: kwin,Window Maximize
             - plasma_shortcut: kwin,Window Minimize
 ''');
-      final a = c.touchpadGestures.single.common.actions.single.action;
-      expect(a, isA<RawAction>());
-      expect((a as RawAction).raw, contains('plasma_shortcut'));
+      final action = c.touchpadGestures.single.common.actions.single;
+      expect(action.on, TriggerOn.begin);
+      final group = action.action as ActionGroup;
+      expect(group.actions, hasLength(2));
+      expect(group.actions.first.conditions, isNotNull);
+      expect(group.actions.last.action, isA<PlasmaShortcutAction>());
+      expect(group.actions.last.conditions, isNull);
+    });
+
+    test('one: nests to any depth', () {
+      final c = decodeConfig('''
+touchpad:
+  gestures:
+    - type: swipe
+      fingers: 4
+      direction: down
+      actions:
+        - one:
+            - one:
+                - sleep: 5
+            - sleep: 10
+''');
+      final outer = c.touchpadGestures.single.common.actions.single.action;
+      final inner = (outer as ActionGroup).actions.first.action as ActionGroup;
+      expect(inner.actions.single.action, const SleepAction(milliseconds: 5));
+      expect(outer.actions.last.action, const SleepAction(milliseconds: 10));
     });
 
     test('per-action conditions parse', () {

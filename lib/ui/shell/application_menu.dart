@@ -76,6 +76,11 @@ class ApplicationMenu extends ConsumerWidget {
               onSelected: () => unawaited(loadConfigDocument(context, ref)),
             ),
             LinuxMenuItem(
+              label: l10n.actionReload,
+              iconName: 'view-refresh',
+              onSelected: () => unawaited(reloadConfigDocument(context, ref)),
+            ),
+            LinuxMenuItem(
               label: l10n.actionLoadFromClipboard,
               iconName: 'edit-paste',
               shortcut: const SingleActivator(

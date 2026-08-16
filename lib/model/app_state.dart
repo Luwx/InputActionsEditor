@@ -9,12 +9,14 @@ part 'app_state.freezed.dart';
 /// into an identity location against the draft on the first config load.
 typedef StoredGestureSelection = ({DeviceType device, int index});
 
+const kDefaultGestureListWidth = 300.0;
+
 @freezed
 abstract class AppState with _$AppState {
   const factory AppState({
     DeviceType? gestureFilter,
     StoredGestureSelection? selectedGesture,
-    @Default(0.3) double gestureListWidth,
+    @Default(kDefaultGestureListWidth) double gestureListWidth,
   }) = _AppState;
 
   const AppState._();
@@ -37,7 +39,9 @@ abstract class AppState with _$AppState {
     return AppState(
       gestureFilter: filter,
       selectedGesture: selectedGesture,
-      gestureListWidth: (json['gesture_list_width'] as num?)?.toDouble() ?? 0.3,
+      gestureListWidth:
+          (json['gesture_list_width_px'] as num?)?.toDouble() ??
+          kDefaultGestureListWidth,
     );
   }
 
@@ -47,6 +51,6 @@ abstract class AppState with _$AppState {
       'gesture_device': selectedGesture!.device.name,
       'gesture_index': selectedGesture!.index,
     },
-    'gesture_list_width': gestureListWidth,
+    'gesture_list_width_px': gestureListWidth,
   };
 }

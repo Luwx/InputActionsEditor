@@ -82,7 +82,7 @@ class _VariablePickerDialog extends HookWidget {
                   0,
                   (sum, e) => sum + 1 + e.variables.length,
                 ),
-                itemBuilder: (ctx, index) {
+                itemBuilder: (_, index) {
                   var offset = 0;
                   for (final entry in filteredList) {
                     if (index == offset) {
@@ -95,7 +95,7 @@ class _VariablePickerDialog extends HookWidget {
                         info: v,
                         groupIcon: entry.group.icon,
                         isSelected: v.name == currentVariable,
-                        onTap: () => Navigator.of(ctx).pop(v),
+                        onTap: () => Navigator.of(context).pop(v),
                       );
                     }
                     offset += entry.variables.length;

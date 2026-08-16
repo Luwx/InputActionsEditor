@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -20,9 +21,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 Future<(Config, String)> loadConfig() async {
   final path = configFilePath();
@@ -242,7 +241,7 @@ void _saveDeviceSection(
   final hasSection = doc is YamlMap && doc.containsKey(key);
   if (hasSection) {
     final sectionMap = doc[key] is YamlMap ? doc[key] as YamlMap : null;
-    if (!_yamlNodeMatches(sectionMap?['gestures'], gestures)) {
+    if (!yamlNodeMatches(sectionMap?['gestures'], gestures)) {
       editor.update([key, 'gestures'], gestures);
     }
     // The editor's old flat `groups:` list is read for compatibility but no
@@ -252,7 +251,7 @@ void _saveDeviceSection(
     }
     if (hasSpeed) {
       final speedMap = speedSettingsToMap(speed);
-      if (!_yamlNodeMatches(sectionMap?['speed'], speedMap)) {
+      if (!yamlNodeMatches(sectionMap?['speed'], speedMap)) {
         editor.update([key, 'speed'], speedMap);
       }
     } else if (sectionMap != null && sectionMap.containsKey('speed')) {
@@ -273,41 +272,9 @@ void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {
     return;
   }
   final existing = hasSection ? doc['device_rules'] : null;
-  if (!_yamlNodeMatches(existing, rules)) {
+  if (!yamlNodeMatches(existing, rules)) {
     editor.update(['device_rules'], rules);
   }
-}
-
-/// True when [node], as parsed from the original document, already serializes
-/// to exactly [value], same shape, same values, same key order.
-///
-/// [YamlEditor.update] rewrites the node's whole text range, so an update that
-/// changes nothing still discards blank lines (and comments) inside it. Callers
-/// use this to skip those no-op writes.
-bool _yamlNodeMatches(dynamic node, dynamic value) {
-  if (node is YamlMap) {
-    if (value is! Map) return false;
-    if (node.length != value.length) return false;
-    final nodeKeys = node.keys.toList();
-    final valueKeys = value.keys.toList();
-    for (var i = 0; i < nodeKeys.length; i++) {
-      if (nodeKeys[i] != valueKeys[i]) return false;
-      if (!_yamlNodeMatches(node[nodeKeys[i]], value[valueKeys[i]])) {
-        return false;
-      }
-    }
-    return true;
-  }
-  if (node is YamlList) {
-    if (value is! List) return false;
-    if (node.length != value.length) return false;
-    for (var i = 0; i < node.length; i++) {
-      if (!_yamlNodeMatches(node[i], value[i])) return false;
-    }
-    return true;
-  }
-  if (value is Map || value is List) return false;
-  return node == value;
 }
 
 void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
@@ -330,7 +297,7 @@ void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
     if (hasNotifications) {
       final notif = doc['notifications'];
       final existing = notif is YamlMap ? notif['config_error'] : null;
-      if (!_yamlNodeMatches(existing, gs.notificationsConfigError)) {
+      if (!yamlNodeMatches(existing, gs.notificationsConfigError)) {
         editor.update(
           ['notifications', 'config_error'],
           gs.notificationsConfigError,
@@ -361,7 +328,7 @@ void _saveOrRemoveKey(
 ) {
   if (value != null) {
     final hasKey = doc is YamlMap && doc.containsKey(key);
-    if (!hasKey || !_yamlNodeMatches(doc[key], value)) {
+    if (!hasKey || !yamlNodeMatches(doc[key], value)) {
       editor.update([key], value);
     }
   } else if (doc is YamlMap && doc.containsKey(key)) {
@@ -369,10 +336,8 @@ void _saveOrRemoveKey(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Encode  (model → plain Dart maps consumed by yaml_edit)
-// ---------------------------------------------------------------------------
 
+// Encode  (model → plain Dart maps consumed by yaml_edit)
 Map<String, dynamic> mouseGestureToMap(MouseGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.name};
   switch (g) {
@@ -510,6 +475,14 @@ void _writeMotion(Map<String, dynamic> m, MotionCommon mot) {
   if (mot.lockPointer != null) m['lock_pointer'] = mot.lockPointer;
 }
 
+/// Serializes [actions] as a standalone YAML snippet for the clipboard, in the
+/// same shape a gesture's `actions:` block has.
+String encodeActionsYaml(List<TriggerAction> actions) {
+  final editor = YamlEditor('$actionsClipboardKey: []')
+    ..update([actionsClipboardKey], actions.map(triggerActionToMap).toList());
+  return editor.toString();
+}
+
 Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   final m = <String, dynamic>{};
   if (ta.enabled != null) m['enabled'] = ta.enabled;
@@ -543,6 +516,9 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   },
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
   FunctionAction(:final expression) => {'function': expression},
+  ActionGroup(:final actions) => {
+    actionGroupYamlKey: actions.map(triggerActionToMap).toList(),
+  },
   RawAction(:final raw) => {'__raw': raw},
 };
 
@@ -563,20 +539,18 @@ dynamic textReplacementValueToYaml(TextReplacementValue value) =>
 String commentDisabledYamlItems(String yamlText) {
   final lines = yamlText.split('\n');
   final out = <String>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final indent = _indentOf(line);
-    _popContexts(contexts, indent);
-    final key = _blockKey(line);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    final indent = indentOf(line);
+    popContexts(contexts, indent);
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
-        _isListItemAt(line, parent.indent + 2)) {
+        isDisableableItemList(parent.key) &&
+        isListItemAt(line, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final block = <String>[];
       var j = i;
@@ -587,30 +561,29 @@ String commentDisabledYamlItems(String yamlText) {
           j++;
           continue;
         }
-        final candidateIndent = _indentOf(candidate);
+        final candidateIndent = indentOf(candidate);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidate, itemIndent)) break;
+        if (j > i && isListItemAt(candidate, itemIndent)) break;
         block.add(candidate);
         j++;
       }
       if (block.any(
         (l) =>
-            (_listItemKeyAt(l, 'enabled', itemIndent) ||
-                (_keyAt(l, 'enabled') && _indentOf(l) == parent.indent + 4)) &&
+            (listItemKeyAt(l, 'enabled', itemIndent) ||
+                (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4)) &&
             l.trimRight().endsWith('false'),
       )) {
-        final normalizedBlock = parent.key == 'gestures'
-            ? commentDisabledYamlItems(block.join('\n')).split('\n')
-            : block;
-        out.addAll(normalizedBlock.map(_commentYamlLine));
+        final normalizedBlock = commentDisabledYamlItems(
+          block.join('\n'),
+        ).split('\n');
+        out.addAll(normalizedBlock.map(commentYamlLine));
         i = j;
-      } else {
-        out.add(line);
-        i++;
+        continue;
       }
-      continue;
     }
 
+    final context = blockContext(line);
+    if (context != null) contexts.add(context);
     out.add(line);
     i++;
   }
@@ -627,37 +600,37 @@ String restoreOriginalDisabledItemComments(
 
   final lines = yamlText.split('\n');
   final out = <String>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
   var disabledIndex = 0;
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final uncommented = _uncommentYamlLine(line);
+    final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
-    final indent = _indentOf(parseLine);
-    _popContexts(contexts, indent);
-    final key = _blockKey(parseLine);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    final indent = indentOf(parseLine);
+    popContexts(contexts, indent);
+    final key = blockKey(parseLine);
+    if (key != null) contexts.add(YamlListContext(key, indent));
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
+        isDisableableItemList(parent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2)) {
+        isListItemAt(parseLine, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final block = <String>[];
       var j = i;
       while (j < lines.length) {
         final candidate = lines[j];
-        final candidateUncommented = _uncommentYamlLine(candidate);
+        final candidateUncommented = uncommentYamlLine(candidate);
         if (candidateUncommented == null && candidate.trim().isNotEmpty) {
           break;
         }
         final candidateParseLine = candidateUncommented ?? candidate;
-        final candidateIndent = _indentOf(candidateParseLine);
+        final candidateIndent = indentOf(candidateParseLine);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidateParseLine, itemIndent)) break;
+        if (j > i && isListItemAt(candidateParseLine, itemIndent)) break;
         block.add(candidate);
         j++;
       }
@@ -682,34 +655,34 @@ String restoreOriginalDisabledItemComments(
 List<List<String>> _disabledItemInnerComments(String yamlText) {
   final lines = yamlText.split('\n');
   final results = <List<String>>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final uncommented = _uncommentYamlLine(line);
+    final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
-    final indent = _indentOf(parseLine);
-    _popContexts(contexts, indent);
-    final key = _blockKey(parseLine);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    final indent = indentOf(parseLine);
+    popContexts(contexts, indent);
+    final key = blockKey(parseLine);
+    if (key != null) contexts.add(YamlListContext(key, indent));
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
+        isDisableableItemList(parent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2)) {
+        isListItemAt(parseLine, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final comments = <String>[];
       int? skippedNestedItemIndent;
       var j = i;
       while (j < lines.length) {
         final candidate = lines[j];
-        final candidateUncommented = _uncommentYamlLine(candidate);
+        final candidateUncommented = uncommentYamlLine(candidate);
         if (candidateUncommented == null) break;
-        final candidateIndent = _indentOf(candidateUncommented);
+        final candidateIndent = indentOf(candidateUncommented);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
+        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
         if (skippedNestedItemIndent != null) {
           if (candidateIndent > skippedNestedItemIndent) {
             j++;
@@ -737,61 +710,6 @@ List<List<String>> _disabledItemInnerComments(String yamlText) {
   }
 
   return results;
-}
-
-String? _uncommentYamlLine(String line) {
-  final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
-  if (match == null) return null;
-  return '${match.group(1)}${match.group(2)}';
-}
-
-final class _YamlListContext {
-  const _YamlListContext(this.key, this.indent);
-
-  final String key;
-  final int indent;
-}
-
-void _popContexts(List<_YamlListContext> contexts, int indent) {
-  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
-    contexts.removeLast();
-  }
-}
-
-int _indentOf(String line) {
-  var i = 0;
-  while (i < line.length && line.codeUnitAt(i) == 0x20) {
-    i++;
-  }
-  return i;
-}
-
-String? _blockKey(String line) {
-  final trimmed = line.trimRight();
-  final match = RegExp(
-    r'^(\s*)([A-Za-z_][A-Za-z0-9_]*):\s*$',
-  ).firstMatch(trimmed);
-  return match?.group(2);
-}
-
-bool _isListItemAt(String line, int indent) =>
-    _indentOf(line) == indent && line.substring(indent).startsWith('- ');
-
-bool _keyAt(String line, String key) {
-  final trimmed = line.trimLeft();
-  return trimmed == '$key:' || trimmed.startsWith('$key: ');
-}
-
-bool _listItemKeyAt(String line, String key, int indent) {
-  if (!_isListItemAt(line, indent)) return false;
-  final body = line.substring(indent + 2).trimLeft();
-  return body == '$key:' || body.startsWith('$key: ');
-}
-
-String _commentYamlLine(String line) {
-  if (line.trim().isEmpty) return line;
-  final indent = _indentOf(line);
-  return '${line.substring(0, indent)}# ${line.substring(indent)}';
 }
 
 dynamic _tokenFromString(String token) =>
@@ -823,10 +741,8 @@ dynamic conditionToYaml(Condition c) => switch (c) {
   RawCondition(:final raw) => raw,
 };
 
-// ---------------------------------------------------------------------------
+//
 // Device rule and speed encode helpers
-// ---------------------------------------------------------------------------
-
 Map<String, dynamic> deviceRuleToMap(DeviceRule rule) {
   final m = <String, dynamic>{};
   if (rule.conditions != null) {

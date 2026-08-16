@@ -95,6 +95,9 @@ class DeviceSidebar extends HookConsumerWidget {
                         ),
                         const Spacer(),
                         FPopoverMenu(
+                          // The default 250 cuts the longest labels off once
+                          // their shortcut hint is beside them.
+                          style: const .delta(maxWidth: 340),
                           menuAnchor: .topRight,
                           childAnchor: .bottomLeft,
                           menuBuilder: (context, controller, _) =>
@@ -233,6 +236,15 @@ List<FItemGroupMixin> _fileMenuItems({
             await controller.hide();
             if (!rootContext.mounted) return;
             await loadConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionReload),
+          prefix: const Icon(FLucideIcons.refreshCw),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await reloadConfigDocument(rootContext, ref);
           },
         ),
         FItem(

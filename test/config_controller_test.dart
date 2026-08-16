@@ -18,6 +18,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
         GestureGroupLocation,
         GestureLocation,
         actionComponentField,
+        actionsOf,
         gestureLocationAt;
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -275,36 +276,149 @@ void main() {
 
     GestureLocation locOf(Config c) => _at(c, DeviceType.mouse, 0);
 
+    /// The action list of the seeded gesture, flattened depth-first.
     List<int> msOf(Config c) => [
-      for (final a in c.mouseGestures[0].common.actions)
-        (a.action as SleepAction).milliseconds,
+      for (final a in actionsOf(c.mouseGestures[0].common))
+        if (a.action case SleepAction(:final milliseconds)) milliseconds,
     ];
+
+    ActionLocation actionAtIndex(Config c, int index) => ActionLocation(
+      gesture: locOf(c),
+      editId: c.mouseGestures[0].common.actions[index].editId!,
+    );
 
     test('AddAction appends to the gesture action list', () {
       final c = seed([1, 2]);
       expect(msOf(AddAction(locOf(c), sleep(9)).apply(c)), [1, 2, 9]);
     });
 
-    test('RemoveAction deletes at index, ignores out of bounds', () {
+    test('AddAction with a parent appends inside that group', () {
+      final c = assignEditIds(
+        Config(
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  actions: [
+                    TriggerAction(action: ActionGroup(actions: [sleep(1)])),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      final group = c.mouseGestures[0].common.actions.single.editId!;
+      final next = AddAction(locOf(c), sleep(9), parentKey: group).apply(c);
+
+      expect(msOf(next), [1, 9]);
+      expect(
+        (next.mouseGestures[0].common.actions.single.action as ActionGroup)
+            .actions,
+        hasLength(2),
+      );
+    });
+
+    test('RemoveActions deletes by key, ignores an unknown one', () {
       final c = seed([1, 2]);
-      expect(msOf(RemoveAction(locOf(c), 0).apply(c)), [2]);
-      expect(RemoveAction(locOf(c), 5).apply(c), c);
+      final keys = [
+        for (final a in c.mouseGestures[0].common.actions) a.editId!,
+      ];
+      expect(msOf(RemoveActions(locOf(c), [keys[0]]).apply(c)), [2]);
+      expect(RemoveActions(locOf(c), [9999]).apply(c), c);
+    });
+
+    test('RemoveActions deletes a whole selection as one edit', () {
+      final c = seed([1, 2, 3]);
+      final keys = [
+        for (final a in c.mouseGestures[0].common.actions) a.editId!,
+      ];
+      expect(msOf(RemoveActions(locOf(c), [keys[0], keys[2]]).apply(c)), [2]);
+    });
+
+    test('RemoveAction takes the nested actions with it', () {
+      final c = assignEditIds(
+        Config(
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  actions: [
+                    TriggerAction(action: ActionGroup(actions: [sleep(1)])),
+                    sleep(2),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      expect(
+        msOf(RemoveActions(locOf(c), [actionAtIndex(c, 0).editId]).apply(c)),
+        [2],
+      );
     });
 
     test('DuplicateAction inserts a copy after the original', () {
       final c = seed([1, 2]);
-      expect(msOf(DuplicateAction(locOf(c), 0).apply(c)), [1, 1, 2]);
+      expect(
+        msOf(
+          DuplicateActions(locOf(c), [actionAtIndex(c, 0).editId]).apply(c),
+        ),
+        [1, 1, 2],
+      );
     });
 
-    test('ReorderAction moves by plain list indices', () {
+    test('MoveActions reorders within a level', () {
       final c = seed([1, 2, 3]);
-      expect(msOf(ReorderAction(locOf(c), 0, 1).apply(c)), [2, 1, 3]);
+      final keys = [
+        for (final a in c.mouseGestures[0].common.actions) a.editId!,
+      ];
+      expect(
+        msOf(MoveActions(locOf(c), [keys[0]], beforeKey: keys[2]).apply(c)),
+        [2, 1, 3],
+      );
+    });
+
+    test('MoveActions moves an action into a group', () {
+      final c = assignEditIds(
+        Config(
+          mouseNodes: [
+            GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  actions: [
+                    const TriggerAction(action: ActionGroup()),
+                    sleep(2),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      final group = c.mouseGestures[0].common.actions[0].editId!;
+      final moved = c.mouseGestures[0].common.actions[1].editId!;
+      final next = MoveActions(
+        locOf(c),
+        [moved],
+        newParentKey: group,
+      ).apply(c);
+
+      expect(next.mouseGestures[0].common.actions, hasLength(1));
+      expect(
+        (next.mouseGestures[0].common.actions.single.action as ActionGroup)
+            .actions
+            .single
+            .editId,
+        moved,
+      );
     });
 
     test('edits no-op when the gesture is missing', () {
       const empty = Config();
       expect(AddAction(_missing, sleep(9)).apply(empty), empty);
-      expect(RemoveAction(_missing, 0).apply(empty), empty);
+      expect(RemoveActions(_missing, [1]).apply(empty), empty);
     });
 
     // A subtype lens (`Action` -> `PlasmaShortcutAction`) must report itself
@@ -325,7 +439,7 @@ void main() {
       );
 
       Lens<Config, String> lensFor(Config c) => actionComponentField.lens(
-        ActionLocation(gesture: locOf(c), actionIndex: 0),
+        actionAtIndex(c, 0),
       );
 
       final input = withAction(const Action.input());

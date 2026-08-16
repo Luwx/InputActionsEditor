@@ -5,18 +5,24 @@ import 'package:flutter/widgets.dart';
 import 'package:input_actions_editor/ui/common/tree_list/auto_scroller.dart';
 import 'package:input_actions_editor/ui/common/tree_list/marquee_overlay.dart';
 
+/// The box marquee coordinates are measured in, and the scroll offset folded
+/// into them. A list that owns its viewport measures against the viewport and
+/// folds in its scroll offset, so a row that scrolls away keeps its place; a
+/// list nested in a foreign viewport measures against its own box, which moves
+/// with the content, and folds in nothing.
+typedef MarqueeFrame = ({RenderBox? box, double offset});
+
 /// Rubber-band selection over a list of rows, independent of how the list is
 /// assembled: the host tags each selectable row with [measureKeyFor] and feeds
 /// pointer-downs to [handlePointerDown]; the engine reports the ids the box
 /// covers and drives [rect]/[sweepCorner] for [MarqueeSelectionOverlay].
-///
-/// Rows are measured in content space (viewport-local plus scroll offset), so a
-/// row that scrolls out of view after the box passed over it stays selected.
 class MarqueeSelectionEngine<Id> {
   MarqueeSelectionEngine({
     required this.autoScroller,
-    required this.topInset,
+    required this.frame,
     required this.isBlocked,
+    this.topInset,
+    this.trailingInset = 0,
     this.onStart,
     this.onUpdate,
     this.onEnd,
@@ -25,13 +31,16 @@ class MarqueeSelectionEngine<Id> {
   /// Travel before a press becomes a marquee, so a click stays a row tap.
   static const _startThreshold = 44.0;
 
-  /// Presses within this band of the right edge grab the scrollbar instead.
-  static const _scrollbarEdge = 16.0;
-
   final ListAutoScroller autoScroller;
 
-  /// Height of the pinned leading header; presses above it are ignored.
-  final ValueGetter<double> topInset;
+  /// The current coordinate frame, resolved per use.
+  final MarqueeFrame Function() frame;
+
+  /// Height of a pinned leading header; presses above it are ignored.
+  final ValueGetter<double>? topInset;
+
+  /// Width of a trailing band that belongs to something else (a scrollbar).
+  final double trailingInset;
 
   /// Whether the host already owns [pointer] (a row drag in progress).
   final bool Function(int pointer) isBlocked;
@@ -79,8 +88,8 @@ class MarqueeSelectionEngine<Id> {
     final box = autoScroller.viewportBox;
     if (box == null) return;
     final local = box.globalToLocal(event.position);
-    if (local.dy < topInset()) return;
-    if (local.dx > box.size.width - _scrollbarEdge) return;
+    if (local.dy < (topInset?.call() ?? 0)) return;
+    if (local.dx > box.size.width - trailingInset) return;
 
     _pending = true;
     _downGlobal = event.position;
@@ -143,14 +152,14 @@ class MarqueeSelectionEngine<Id> {
   }
 
   void _activate() {
-    final box = autoScroller.viewportBox;
+    final (:box, :offset) = frame();
     final down = _downGlobal;
     if (box == null || down == null) {
       _cancelPending();
       return;
     }
     final local = box.globalToLocal(down);
-    _anchorContent = Offset(local.dx, local.dy + _pixels);
+    _anchorContent = Offset(local.dx, local.dy + offset);
     _pending = false;
     _active = true;
     _contentRects.clear();
@@ -159,11 +168,10 @@ class MarqueeSelectionEngine<Id> {
   }
 
   void _update(Offset globalPosition) {
-    final box = autoScroller.viewportBox;
+    final (:box, offset: pixels) = frame();
     final anchor = _anchorContent;
     if (box == null || anchor == null) return;
     _lastGlobal = globalPosition;
-    final pixels = _pixels;
     final local = box.globalToLocal(globalPosition);
     final current = Offset(local.dx, local.dy + pixels);
     final contentRect = Rect.fromPoints(anchor, current);
@@ -184,12 +192,12 @@ class MarqueeSelectionEngine<Id> {
   void _end({required bool canceled}) {
     final anchor = _anchorContent;
     final last = _lastGlobal;
-    final box = autoScroller.viewportBox;
+    final (:box, :offset) = frame();
     var covered = <Id>{};
     if (box != null && anchor != null && last != null) {
       final local = box.globalToLocal(last);
       covered = _coveredBy(
-        Rect.fromPoints(anchor, Offset(local.dx, local.dy + _pixels)),
+        Rect.fromPoints(anchor, Offset(local.dx, local.dy + offset)),
       );
     }
 
@@ -219,10 +227,8 @@ class MarqueeSelectionEngine<Id> {
     GestureBinding.instance.pointerRouter.removeRoute(pointer, _handleRoute);
   }
 
-  double get _pixels => autoScroller.controller.position.pixels;
-
-  void _measure(RenderBox viewport, double pixels) {
-    final origin = viewport.localToGlobal(Offset.zero);
+  void _measure(RenderBox frameBox, double pixels) {
+    final origin = frameBox.localToGlobal(Offset.zero);
     for (final entry in _measureKeys.entries) {
       final context = entry.value.currentContext;
       if (context == null) continue;

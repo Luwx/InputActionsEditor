@@ -452,6 +452,74 @@ mouse:
     });
   });
 
+  group('action groups', () {
+    test('nested actions survive a round-trip at every depth', () {
+      const original = r'''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: begin
+          one:
+            - conditions: $window_class == konsole
+              command: echo konsole
+            - one:
+                - sleep: 5
+            - command: echo fallback
+''';
+      final decoded = decodeConfig(original);
+      final encoded = encodeConfig(decoded, original);
+
+      expect(decodeConfig(encoded), decoded);
+      expect(encoded, contains('one:'));
+    });
+
+    test('a disabled nested action is commented out and recovered', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - one:
+            - sleep: 5
+            - sleep: 10
+''';
+      final decoded = decodeConfig(original);
+      final group = decoded.mouseGestures.single.common.actions.single.action;
+      final disabled = (group as ActionGroup).actions.first.copyWith(
+        enabled: false,
+      );
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            decoded.mouseGestures.single.withCommon(
+              decoded.mouseGestures.single.common.copyWith(
+                actions: [
+                  TriggerAction(
+                    action: ActionGroup(
+                      actions: [disabled, group.actions.last],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(edited, original);
+      expect(encoded, contains('# sleep: 5'));
+      expect(encoded, contains('- sleep: 10'));
+
+      final reDecoded = decodeConfig(encoded);
+      final reGroup =
+          reDecoded.mouseGestures.single.common.actions.single.action
+              as ActionGroup;
+      expect(reGroup.actions.first.enabled, false);
+      expect(reGroup.actions.last.enabled, isNull);
+    });
+  });
+
   group('single-child none group', () {
     test('survives a round-trip instead of collapsing to its child', () {
       const original = r'''

@@ -40,7 +40,7 @@ class GestureSplitLayout extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fraction = ref.watch(gestureListWidthProvider);
+    final preferredWidth = ref.watch(gestureListWidthProvider);
     final isMultiSelectMode = ref.watch(
       multiSelectControllerProvider.select((selection) => selection != null),
     );
@@ -58,9 +58,9 @@ class GestureSplitLayout extends HookConsumerWidget {
       builder: (context, selectionExpansion, _) => LayoutBuilder(
         builder: (context, constraints) {
           final availableWidth = _availableWidth(constraints.maxWidth);
-          final baseGestureListWidth = _resolvedGestureListWidth(
+          final baseGestureListWidth = _clampWidth(
+            preferredWidth,
             availableWidth,
-            fraction,
           );
           final gestureListWidth = _clampWidth(
             baseGestureListWidth + selectionExpansion,
@@ -83,12 +83,17 @@ class GestureSplitLayout extends HookConsumerWidget {
               return;
             }
             final desiredWidth = startWidth + (globalX - startX);
-            final newFraction =
-                _clampWidth(desiredWidth, availableWidth) / availableWidth;
-            ref.read(gestureListWidthProvider.notifier).state = newFraction;
+            ref.read(gestureListWidthProvider.notifier).state = _clampWidth(
+              desiredWidth,
+              availableWidth,
+            );
           }
 
           void handleDragEnd() {
+            // settle on a whole pixel
+            ref.read(gestureListWidthProvider.notifier).state = ref
+                .read(gestureListWidthProvider)
+                .roundToDouble();
             dragStartMouseX.value = null;
             dragStartWidth.value = null;
           }
@@ -161,21 +166,6 @@ class GestureSplitLayout extends HookConsumerWidget {
     final minGestureWidth = math.min(_minGestureListWidth, availableWidth);
     final minDetailWidth = math.min(_minGestureDetailWidth, availableWidth);
     return (gestureList: minGestureWidth, gestureDetail: minDetailWidth);
-  }
-
-  double _resolvedGestureListWidth(double availableWidth, double fraction) {
-    if (availableWidth <= 0) {
-      return 0;
-    }
-
-    final preferredWidth = availableWidth * fraction;
-    final minimumWidths = _minimumWidths(availableWidth);
-    final maxGestureWidth = math.max(
-      minimumWidths.gestureList,
-      availableWidth - minimumWidths.gestureDetail,
-    );
-
-    return preferredWidth.clamp(minimumWidths.gestureList, maxGestureWidth);
   }
 
   double _clampWidth(double width, double availableWidth) {

@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart'
-    show TextEditingController, TextEditingValue, ValueChanged;
+    show TextEditingController, TextEditingValue, TextSelection, ValueChanged;
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 /// Creates a [TextEditingController] whose text is kept in sync with [text]
@@ -9,10 +9,14 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 /// that calls [onChange] for real user edits and suppresses it during the
 /// programmatic sync (e.g. revert-to-saved) so the update cannot
 /// round-trip back into the store.
+///
+/// Set [preserveSelection] to carry the caret across the sync, clamped into
+/// the new text, instead of dropping it.
 TextEditingController useSyncedTextController(
   String text,
-  ValueChanged<TextEditingValue> onChange,
-) {
+  ValueChanged<TextEditingValue> onChange, {
+  bool preserveSelection = false,
+}) {
   final controller = useTextEditingController(text: text);
   final syncing = useRef(false);
 
@@ -31,11 +35,30 @@ TextEditingController useSyncedTextController(
   useEffect(() {
     if (controller.text != text) {
       syncing.value = true;
-      controller.text = text;
+      if (preserveSelection) {
+        controller.value = TextEditingValue(
+          text: text,
+          selection: _clampSelection(controller.selection, text.length),
+        );
+      } else {
+        controller.text = text;
+      }
       syncing.value = false;
     }
     return null;
   }, [text]);
 
   return controller;
+}
+
+TextSelection _clampSelection(TextSelection selection, int textLength) {
+  if (!selection.isValid) {
+    return TextSelection.collapsed(offset: textLength);
+  }
+  return TextSelection(
+    baseOffset: selection.baseOffset.clamp(0, textLength),
+    extentOffset: selection.extentOffset.clamp(0, textLength),
+    affinity: selection.affinity,
+    isDirectional: selection.isDirectional,
+  );
 }

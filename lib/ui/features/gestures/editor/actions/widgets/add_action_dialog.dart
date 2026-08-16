@@ -34,7 +34,7 @@ Future<Action?> showAddActionDialog(BuildContext context) {
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(context).pop(),
           child: Text(context.l10n.actionCancel),
         ),
@@ -50,6 +50,7 @@ enum _ActionKind {
   activateWindow,
   replaceText,
   sleep,
+  group,
   function,
   raw;
 
@@ -72,6 +73,7 @@ enum _ActionKind {
       ],
     ),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
+    _ActionKind.group => const ActionGroup(),
     _ActionKind.function => const FunctionAction(expression: '() => '),
     _ActionKind.raw => const RawAction(raw: ''),
   };

@@ -26,9 +26,10 @@ void main() {
         ],
       ),
     );
+    final gesture = gestureLocationAt(config, DeviceType.mouse, 0)!;
     final location = ActionLocation(
-      gesture: gestureLocationAt(config, DeviceType.mouse, 0)!,
-      actionIndex: 0,
+      gesture: gesture,
+      editId: config.mouseGestures.first.common.actions.first.editId!,
     );
 
     test('actionCommandLens reads and writes a command action', () {

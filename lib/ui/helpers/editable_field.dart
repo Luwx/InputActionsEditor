@@ -13,9 +13,9 @@ import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_
 
 /// See [ConfigController.tagEdits].
 void tagEdits(BuildContext context, Object source, VoidCallback run) =>
-    ProviderScope.containerOf(context)
-        .read(configControllerProvider.notifier)
-        .tagEdits(source, run);
+    ProviderScope.containerOf(
+      context,
+    ).read(configControllerProvider.notifier).tagEdits(source, run);
 
 class EditableField<T> {
   const EditableField({

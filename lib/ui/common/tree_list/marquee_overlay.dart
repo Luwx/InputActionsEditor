@@ -183,7 +183,7 @@ class _MarqueePainter extends CustomPainter {
   final MarqueeSweepCorner sweepCorner;
   final Color color;
 
-  static const _cornerRadius = Radius.circular(5);
+  static const _cornerRadius = Radius.circular(8);
   static const _fillExitFraction = 0.1;
   static const _outlineFadeDuration = Duration(milliseconds: 200);
 
@@ -208,7 +208,7 @@ class _MarqueePainter extends CustomPainter {
       removedFraction: _outlineRemovedFraction,
       paint: Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
+        ..strokeWidth = 2
         ..strokeCap = StrokeCap.butt
         ..strokeJoin = StrokeJoin.round
         ..color = color.withValues(alpha: appearT * _outlineExitFade),

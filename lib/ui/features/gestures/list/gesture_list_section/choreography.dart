@@ -7,8 +7,10 @@ final class _GestureListChoreography {
   const _GestureListChoreography({
     required this.scrollTargetKey,
     required this.scrollTarget,
+    required this.scrollTargetGroup,
     required this.prepare,
     required this.scrollToGesture,
+    required this.scrollToGroup,
   });
 
   /// Attached to the row currently being scrolled to, so
@@ -19,6 +21,9 @@ final class _GestureListChoreography {
   /// wears [scrollTargetKey].
   final GestureLocation? scrollTarget;
 
+  /// The group header a scroll is currently targeting, or null.
+  final int? scrollTargetGroup;
+
   /// Call during build, after the view model is available: runs any pending
   /// auto-select and prepares a queued scroll target now that the flat list is
   /// known.
@@ -26,7 +31,17 @@ final class _GestureListChoreography {
 
   /// Immediately scroll a freshly-known gesture (e.g. just added) into view.
   final void Function(GestureLocation target) scrollToGesture;
+
+  /// Immediately scroll a freshly-added group into view.
+  final void Function(int groupKey) scrollToGroup;
 }
+
+/// Rough height of a gesture row, for scroll estimates made before the target
+/// row exists.
+const double _rowExtent = 62;
+
+/// How far short of the target a restored session lands before gliding in.
+const double _restoreGlide = 3 * _rowExtent;
 
 /// Wires up the gesture list's scroll / auto-select choreography. Must be called
 /// from the section's build (it registers [WidgetRef.listen] subscriptions and
@@ -39,6 +54,7 @@ _GestureListChoreography _useGestureListChoreography(
   final pendingAutoSelect = useRef(false);
   final pendingAutoSelectFilter = useRef<DeviceType?>(null);
   final scrollTarget = useState<GestureLocation?>(null);
+  final scrollTargetGroup = useState<int?>(null);
   final scrollTargetFlatIndex = useRef<int?>(null);
   final scrollTargetQueued = useRef(false);
   final scrollTargetAnimated = useRef(true);
@@ -46,6 +62,7 @@ _GestureListChoreography _useGestureListChoreography(
 
   void clearScrollTarget() {
     scrollTarget.value = null;
+    scrollTargetGroup.value = null;
     scrollTargetFlatIndex.value = null;
     scrollTargetQueued.value = false;
     scrollTargetAnimated.value = true;
@@ -62,40 +79,43 @@ _GestureListChoreography _useGestureListChoreography(
         return;
       }
       final animated = scrollTargetAnimated.value;
+      final position = scrollController.position;
       final ctx = scrollTargetKey.currentContext;
-      if (ctx != null) {
-        await Scrollable.ensureVisible(
-          ctx,
-          alignment: 1,
-          duration: Durations.medium2,
-          curve: Curves.easeOutCubic,
+      final box = ctx?.findRenderObject();
+      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
+      if (box != null && viewport != null) {
+        // getOffsetToReveal already discounts the pinned headers, so the row
+        // lands flush under them; back off one row for lead-in.
+        final destination =
+            (viewport.getOffsetToReveal(box, 0).offset - _rowExtent).clamp(
+              position.minScrollExtent,
+              position.maxScrollExtent,
+            );
+        await scrollController.animateTo(
+          destination,
+          duration: animated ? Durations.medium3 : Durations.long1,
+          curve: animated ? Easing.standard : Easing.emphasizedDecelerate,
         );
         clearScrollTarget();
         return;
       }
-      final position = scrollController.position;
       final flatIndex = scrollTargetFlatIndex.value;
       if (attempt < 12 && flatIndex != null) {
-        final viewport = position.viewportDimension;
-        final targetOffset =
-            GestureListSection._headerHeight + flatIndex * 62.0 - viewport / 3;
+        final targetOffset = (flatIndex - 1) * _rowExtent;
         final clamped = targetOffset.clamp(
           position.minScrollExtent,
           position.maxScrollExtent,
         );
         if (!animated) {
-          // Jump to a few items above the target, then glide the rest.
-          final jumpOffset = (targetOffset - 1 * 62.0).clamp(
-            position.minScrollExtent,
-            position.maxScrollExtent,
+          // Jump short of the target, then let the pass that finds it glide
+          // the rest — one motion, long enough to read as settling in.
+          scrollController.jumpTo(
+            (targetOffset - _restoreGlide).clamp(
+              position.minScrollExtent,
+              position.maxScrollExtent,
+            ),
           );
-          scrollController.jumpTo(jumpOffset);
-          await scrollController.animateTo(
-            clamped,
-            duration: Durations.extralong1,
-            curve: Easing.emphasizedDecelerate,
-          );
-          clearScrollTarget();
+          scrollToTarget(attempt + 1);
           return;
         }
         await scrollController.animateTo(
@@ -134,31 +154,36 @@ _GestureListChoreography _useGestureListChoreography(
 
   void queueScrollToGesture(GestureLocation target, {bool animated = true}) {
     scrollTarget.value = target;
+    scrollTargetGroup.value = null;
     scrollTargetFlatIndex.value = null;
     scrollTargetQueued.value = false;
     scrollTargetAnimated.value = animated;
   }
 
   void prepareScrollTarget(_GestureListViewModel viewModel) {
-    final target = scrollTarget.value;
-    if (target == null) return;
+    final gesture = scrollTarget.value;
+    final group = scrollTargetGroup.value;
+    if (gesture == null && group == null) return;
     final flatIndex = viewModel.flatItems.indexWhere(
-      (item) => item is _GestureRowItem && item.location == target,
+      (item) => switch (item) {
+        _GestureRowItem(:final location) => location == gesture,
+        _GroupHeaderItem(:final groupKey) => groupKey == group,
+      },
     );
     if (flatIndex < 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) => clearScrollTarget());
       return;
     }
-    final item = viewModel.flatItems[flatIndex] as _GestureRowItem;
-    final editId = item.editId;
-    if (!item.isVisible && editId != null) {
+    final item = viewModel.flatItems[flatIndex];
+    if (!item.isVisible) {
       // Expand the whole ancestor chain; a collapsed ancestor would keep the
-      // row hidden even with its own group open.
-      final ancestors = _ancestorGroupKeys(
-        ref.read(draftConfigProvider).nodesForDevice(item.device),
-        editId,
-      );
+      // target hidden even with its own group open.
+      final ancestors = _ancestorGroupKeys(viewModel.flatItems, flatIndex);
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ancestors.isEmpty) {
+          clearScrollTarget();
+          return;
+        }
         ancestors.forEach(ref.read(collapsedGroupsProvider.notifier).expand);
       });
       return;
@@ -239,6 +264,7 @@ _GestureListChoreography _useGestureListChoreography(
   return _GestureListChoreography(
     scrollTargetKey: scrollTargetKey,
     scrollTarget: scrollTarget.value,
+    scrollTargetGroup: scrollTargetGroup.value,
     prepare: (viewModel) {
       tryAutoSelectFirstGesture();
       prepareScrollTarget(viewModel);
@@ -246,6 +272,10 @@ _GestureListChoreography _useGestureListChoreography(
     scrollToGesture: (target) {
       scrollTarget.value = target;
       scrollToTarget();
+    },
+    scrollToGroup: (groupKey) {
+      clearScrollTarget();
+      scrollTargetGroup.value = groupKey;
     },
   );
 }

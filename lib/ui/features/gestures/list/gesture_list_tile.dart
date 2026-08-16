@@ -308,11 +308,10 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
     FunctionAction(:final expression) =>
       expression.trim().isEmpty ? 'function' : expression.trim(),
+    ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
     RawAction() => 'raw yaml',
   };
 }
-
-// ---------------------------------------------------------------------------
 
 class _SelectionCheckboxSlot extends StatelessWidget {
   const _SelectionCheckboxSlot({
@@ -361,8 +360,6 @@ class _SelectionCheckboxSlot extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
 
 class _GestureTypeIcon extends StatelessWidget {
   const _GestureTypeIcon({required this.gesture, required this.isSelected});
@@ -539,10 +536,7 @@ class _StrokeGestureIcon extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
 // 42×42 swipe direction/angle mini icon
-// ---------------------------------------------------------------------------
-
 class _SwipeIcon extends StatelessWidget {
   const _SwipeIcon({
     required this.mode,

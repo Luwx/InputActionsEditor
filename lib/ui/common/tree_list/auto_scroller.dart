@@ -3,21 +3,22 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 /// Scrolls a viewport while a pointer drag sits near its leading or trailing
-/// edge. Shell-agnostic: it only needs the [ScrollController] of the scrollable
-/// the drag happens in, so a list that owns its scroll view and one that lives
-/// inside a foreign viewport drive it the same way.
+/// edge. Shell-agnostic: it only needs the [ScrollPosition] the drag happens
+/// in, so a list that owns its scroll view and one that lives inside a foreign
+/// viewport drive it the same way.
 class ListAutoScroller {
-  ListAutoScroller({required this.controller, this.onScrolled});
+  ListAutoScroller({required this.position, this.onScrolled});
 
-  static const _edge = 64.0;
-  static const _maxStep = 18.0;
-  static const _frame = Duration(milliseconds: 16);
-
-  final ScrollController controller;
+  /// Resolves the scrollable to drive, or null before it is attached.
+  final ScrollPosition? Function() position;
 
   /// Runs after each scroll step, for state anchored in content space that has
   /// to be recomputed while the pointer itself stays still.
   final VoidCallback? onScrolled;
+
+  static const _edge = 64.0;
+  static const _maxStep = 18.0;
+  static const _frame = Duration(milliseconds: 16);
 
   Timer? _timer;
   double _velocity = 0;
@@ -26,8 +27,7 @@ class ListAutoScroller {
   /// out. Reached through the scroll position rather than `Scrollable.of` so a
   /// list sitting above the scroll view it owns can still find it.
   RenderBox? get viewportBox {
-    if (!controller.hasClients) return null;
-    final context = controller.position.context.notificationContext;
+    final context = position()?.context.notificationContext;
     final box = context?.findRenderObject();
     return box is RenderBox && box.hasSize ? box : null;
   }
@@ -52,17 +52,17 @@ class ListAutoScroller {
     }
 
     _timer ??= Timer.periodic(_frame, (_) {
-      if (!controller.hasClients || _velocity == 0) {
+      final scroll = position();
+      if (scroll == null || _velocity == 0) {
         stop();
         return;
       }
-      final position = controller.position;
-      final next = (position.pixels + _velocity).clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
+      final next = (scroll.pixels + _velocity).clamp(
+        scroll.minScrollExtent,
+        scroll.maxScrollExtent,
       );
-      if (next == position.pixels) return;
-      controller.jumpTo(next);
+      if (next == scroll.pixels) return;
+      scroll.jumpTo(next);
       onScrolled?.call();
     });
   }

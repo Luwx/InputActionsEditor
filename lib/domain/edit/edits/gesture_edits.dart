@@ -36,6 +36,48 @@ final class AddGesture extends ConfigEdit {
       RestoreConfig(config, label: 'remove gesture');
 }
 
+/// Inserts [gestures] into [device]'s tree: straight after [after] when it
+/// still resolves, otherwise inside the group [groupKey], otherwise at the
+/// root.
+final class InsertGestures extends ConfigEdit {
+  InsertGestures(this.device, this.gestures, {this.after, this.groupKey});
+
+  final DeviceType device;
+  final List<Gesture> gestures;
+  final GestureLocation? after;
+  final int? groupKey;
+
+  @override
+  String get label => 'insert ${device.name} gestures';
+
+  @override
+  Config apply(Config config) {
+    var next = config;
+    final anchor = after;
+    if (anchor != null && schema.gestureAt(config, anchor) != null) {
+      for (final gesture in gestures.reversed) {
+        next = schema.insertGestureAfter(next, anchor, gesture);
+      }
+      return next;
+    }
+    final key = groupKey;
+    for (final gesture in gestures) {
+      next = key == null
+          ? schema.addGesture(next, device, gesture)
+          : schema.addGestureToGestureGroup(
+              next,
+              schema.GestureGroupLocation(device: device, editId: key),
+              gesture,
+            );
+    }
+    return next;
+  }
+
+  @override
+  ConfigEdit inverse(Config config) =>
+      RestoreConfig(config, label: 'remove gestures');
+}
+
 /// Removes [location]'s gesture (no-op when it no longer exists).
 final class RemoveGesture extends ConfigEdit {
   RemoveGesture(this.location);

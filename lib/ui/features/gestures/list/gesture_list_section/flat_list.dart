@@ -116,20 +116,33 @@ List<_FlatItem> _buildDeviceFlatList(
   return items;
 }
 
-/// EditIds of the groups enclosing the gesture [editId], outermost first.
-List<int> _ancestorGroupKeys(List<GestureNode> nodes, int editId) {
-  List<int>? find(List<GestureNode> level, List<int> chain) {
-    for (final node in level) {
-      switch (node) {
-        case GestureLeaf(:final gesture):
-          if (gesture.common.editId == editId) return chain;
-        case GestureGroupNode(editId: final key, :final children):
-          final nested = find(children, [...chain, ?key]);
-          if (nested != null) return nested;
-      }
+/// Every group editId in [device]'s tree, nested ones included.
+Iterable<int> _groupKeysOf(Config config, DeviceType device) sync* {
+  Iterable<int> walk(List<GestureNode> nodes) sync* {
+    for (final node in nodes) {
+      if (node is! GestureGroupNode) continue;
+      if (node.editId case final key?) yield key;
+      yield* walk(node.children);
     }
-    return null;
   }
 
-  return find(nodes, const []) ?? const [];
+  yield* walk(config.nodesForDevice(device));
+}
+
+/// EditIds of the groups enclosing `items[index]`, outermost first.
+List<int> _ancestorGroupKeys(List<_FlatItem> items, int index) {
+  final parents = {
+    for (final item in items)
+      if (item is _GroupHeaderItem) item.groupKey: item.parentKey,
+  };
+  final chain = <int>[];
+  var key = switch (items[index]) {
+    _GestureRowItem(:final groupKey) => groupKey,
+    _GroupHeaderItem(:final parentKey) => parentKey,
+  };
+  while (key != null) {
+    chain.insert(0, key);
+    key = parents[key];
+  }
+  return chain;
 }

@@ -1,11 +1,24 @@
-part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:forui/forui.dart';
+import 'package:forui_hooks/forui_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/ui/common/attention_flash.dart';
+import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
+import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+
+/// Height of a group header, which pins to the top of the list as it scrolls.
+const double kGestureGroupHeaderExtent = 38;
 
 /// Scroll distance (px) over which a group header's frosted backing ramps in as
 /// it reaches its pinned slot. The frost is full once the header is pinned.
 const _frostRampPx = 20.0;
 
-class _GroupHeaderRow extends HookConsumerWidget {
-  const _GroupHeaderRow({
+class GestureGroupHeaderRow extends HookConsumerWidget {
+  const GestureGroupHeaderRow({
     required this.location,
     required this.name,
     required this.enabled,
@@ -23,6 +36,8 @@ class _GroupHeaderRow extends HookConsumerWidget {
     required this.onDelete,
     required this.onAddGesture,
     required this.onOpenSettings,
+    required this.flashTrigger,
+    required this.scrollKey,
     super.key,
   });
 
@@ -49,6 +64,14 @@ class _GroupHeaderRow extends HookConsumerWidget {
   /// Opens the group's shared properties, the ones every gesture in the
   /// subtree inherits from the daemon's trigger group.
   final VoidCallback onOpenSettings;
+
+  /// Set while this group is the one just added, which flashes the header.
+  final Object? flashTrigger;
+
+  /// Worn while a scroll is travelling here. It sits below [AttentionFlash]
+  /// because taking the key off remounts the subtree under it, and a flash
+  /// mid-run must not go down with it.
+  final GlobalKey? scrollKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -161,6 +184,33 @@ class _GroupHeaderRow extends HookConsumerWidget {
       ),
     );
 
+    final body = SizedBox(
+      height: kGestureGroupHeaderExtent,
+      // Fixed height so it fills the pinned header slot exactly.
+      child: MouseRegion(
+        onEnter: (_) => isHovered.value = true,
+        onExit: (_) => isHovered.value = false,
+        // Frost and content fade are driven straight from scroll position (no
+        // time tween): frost over [_frostRampPx], fade as it pushes past.
+        child: scrollBuilder((context, scroll, child) {
+          final canFrost = !isCollapsed && gestureCount > 0;
+          final frostT = canFrost
+              ? (1.0 - scroll.pinOffsetPx / _frostRampPx).clamp(0.0, 1.0)
+              : 0.0;
+          return _PinnedHeaderBacking(
+            frostT: frostT,
+            borderColor: borderColor,
+            isExpanded: !isCollapsed,
+            isSelected: isSelected,
+            child: Opacity(
+              opacity: (1.0 - (scroll.scrolledUnder / 0.6)).clamp(0.0, 1.0),
+              child: child,
+            ),
+          );
+        }, child: content),
+      ),
+    );
+
     return FContextMenu(
       control: FPopoverControl.managed(controller: menuController),
       builder: dismissibleContextMenuBuilder,
@@ -176,31 +226,11 @@ class _GroupHeaderRow extends HookConsumerWidget {
         onBreakdown: onBreakdown,
         onDelete: onDelete,
       ),
-      child: SizedBox(
-        height: GestureListSection._groupHeaderExtent,
-        // Fixed height so it fills the pinned header slot exactly.
-        child: MouseRegion(
-          onEnter: (_) => isHovered.value = true,
-          onExit: (_) => isHovered.value = false,
-          // Frost and content fade are driven straight from scroll position (no
-          // time tween): frost over [_frostRampPx], fade as it pushes past.
-          child: scrollBuilder((context, scroll, child) {
-            final canFrost = !isCollapsed && gestureCount > 0;
-            final frostT = canFrost
-                ? (1.0 - scroll.pinOffsetPx / _frostRampPx).clamp(0.0, 1.0)
-                : 0.0;
-            return _PinnedHeaderBacking(
-              frostT: frostT,
-              borderColor: borderColor,
-              isExpanded: !isCollapsed,
-              isSelected: isSelected,
-              child: Opacity(
-                opacity: (1.0 - (scroll.scrolledUnder / 0.6)).clamp(0.0, 1.0),
-                child: child,
-              ),
-            );
-          }, child: content),
-        ),
+      child: AttentionFlash(
+        trigger: flashTrigger,
+        child: scrollKey == null
+            ? body
+            : KeyedSubtree(key: scrollKey, child: body),
       ),
     );
   }

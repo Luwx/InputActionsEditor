@@ -136,6 +136,12 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get actionCopyToClipboard;
 
+  /// No description provided for @actionReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get actionReload;
+
   /// No description provided for @actionOk.
   ///
   /// In en, this message translates to:
@@ -147,6 +153,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get actionCancel;
+
+  /// No description provided for @actionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get actionCreate;
+
+  /// No description provided for @actionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get actionRename;
 
   /// No description provided for @actionAdd.
   ///
@@ -165,6 +183,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duplicate'**
   String get actionDuplicate;
+
+  /// No description provided for @actionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
+  /// No description provided for @actionPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get actionPaste;
 
   /// No description provided for @actionUndo.
   ///
@@ -1659,6 +1689,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hand-authored unsupported action config'**
   String get actionMetaRawSubtitle;
+
+  /// No description provided for @actionMetaGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First match'**
+  String get actionMetaGroupLabel;
+
+  /// No description provided for @actionMetaGroupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the first nested action whose conditions match'**
+  String get actionMetaGroupSubtitle;
+
+  /// No description provided for @actionGroupSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No actions} =1{1 action} other{{count} actions}}'**
+  String actionGroupSummary(int count);
+
+  /// No description provided for @actionGroupExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.'**
+  String get actionGroupExplanation;
+
+  /// No description provided for @actionGroupAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add action to group'**
+  String get actionGroupAddAction;
+
+  /// No description provided for @actionGroupFlowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What runs'**
+  String get actionGroupFlowTitle;
+
+  /// No description provided for @actionGroupFlowIf.
+  ///
+  /// In en, this message translates to:
+  /// **'If'**
+  String get actionGroupFlowIf;
+
+  /// No description provided for @actionGroupFlowElseIf.
+  ///
+  /// In en, this message translates to:
+  /// **'Else if'**
+  String get actionGroupFlowElseIf;
+
+  /// No description provided for @actionGroupFlowThen.
+  ///
+  /// In en, this message translates to:
+  /// **'Then'**
+  String get actionGroupFlowThen;
+
+  /// No description provided for @actionGroupFlowVerbRun.
+  ///
+  /// In en, this message translates to:
+  /// **'run'**
+  String get actionGroupFlowVerbRun;
+
+  /// No description provided for @actionGroupFlowVerbSend.
+  ///
+  /// In en, this message translates to:
+  /// **'send'**
+  String get actionGroupFlowVerbSend;
+
+  /// No description provided for @actionGroupFlowVerbTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'trigger'**
+  String get actionGroupFlowVerbTrigger;
+
+  /// No description provided for @actionGroupFlowAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get actionGroupFlowAlways;
+
+  /// No description provided for @actionGroupFlowOtherwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Otherwise'**
+  String get actionGroupFlowOtherwise;
+
+  /// No description provided for @actionGroupFlowNeverRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'never runs'**
+  String get actionGroupFlowNeverRuns;
+
+  /// No description provided for @actionGroupFlowDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get actionGroupFlowDisabled;
+
+  /// No description provided for @actionGroupFlowEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No actions yet. Add a few and give them conditions to pick between them.'**
+  String get actionGroupFlowEmpty;
+
+  /// No description provided for @actionGroupFlowFirstAlwaysNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The first action has no conditions, so it always runs.'**
+  String get actionGroupFlowFirstAlwaysNote;
+
+  /// No description provided for @actionGroupFlowFirstAlwaysNoteRest.
+  ///
+  /// In en, this message translates to:
+  /// **'The first action has no conditions, so it always runs and the ones below it never do.'**
+  String get actionGroupFlowFirstAlwaysNoteRest;
+
+  /// No description provided for @conditionSummaryNot.
+  ///
+  /// In en, this message translates to:
+  /// **'not'**
+  String get conditionSummaryNot;
+
+  /// No description provided for @conditionSummaryAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'and'**
+  String get conditionSummaryAnd;
+
+  /// No description provided for @conditionSummaryOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get conditionSummaryOr;
+
+  /// No description provided for @conditionSummaryNoneOf.
+  ///
+  /// In en, this message translates to:
+  /// **'none of'**
+  String get conditionSummaryNoneOf;
+
+  /// No description provided for @conditionSummaryNoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'no rules'**
+  String get conditionSummaryNoRules;
+
+  /// No description provided for @conditionSummaryFunction.
+  ///
+  /// In en, this message translates to:
+  /// **'custom function'**
+  String get conditionSummaryFunction;
+
+  /// No description provided for @conditionSummaryEmptyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get conditionSummaryEmptyValue;
+
+  /// No description provided for @actionsSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 action selected} other{{count} actions selected}}'**
+  String actionsSelectedCount(int count);
 
   /// No description provided for @actionSummaryNoCommand.
   ///
@@ -3735,6 +3927,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'() => initialDirection = \"l\"'**
   String get actionFunctionHint;
+
+  /// No description provided for @dialogNewGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get dialogNewGroupTitle;
+
+  /// No description provided for @dialogNewSubgroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New subgroup'**
+  String get dialogNewSubgroupTitle;
+
+  /// No description provided for @dialogRenameGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename group'**
+  String get dialogRenameGroupTitle;
+
+  /// No description provided for @gesturePasteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard holds no gestures for this device.'**
+  String get gesturePasteEmpty;
 
   /// No description provided for @groupMenuRename.
   ///

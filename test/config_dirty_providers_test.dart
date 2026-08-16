@@ -7,6 +7,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
         ActionLocation,
         GestureLocation,
         actionCommandLens,
+        gestureAt,
         gestureIdLens,
         gestureLocationAt;
 import 'package:input_actions_editor/model/action.dart';
@@ -237,7 +238,7 @@ void main() {
         expect(
           container.read(
             actionDirtyStateProvider(
-              ActionLocation(gesture: _mouse0(container), actionIndex: 0),
+              _mouseAction0(container),
             ),
           ),
           DirtyMarkState.clean,
@@ -280,10 +281,7 @@ void main() {
       addTearDown(container.dispose);
       await container.read(configControllerProvider.future);
 
-      final location = ActionLocation(
-        gesture: _mouse0(container),
-        actionIndex: 0,
-      );
+      final location = _mouseAction0(container);
       expect(
         container.read(lensDirtyStateProvider(actionCommandLens(location))),
         DirtyMarkState.changedFromSaved,
@@ -573,6 +571,16 @@ class _FakeConfigController extends ConfigController {
 }
 
 /// Identity location of the first mouse gesture in the live draft.
+/// The first action of the first mouse gesture, by identity.
+ActionLocation _mouseAction0(ProviderContainer container) {
+  final gesture = _mouse0(container);
+  final draft = container.read(configControllerProvider).requireValue.draft;
+  return ActionLocation(
+    gesture: gesture,
+    editId: gestureAt(draft, gesture)!.common.actions.first.editId!,
+  );
+}
+
 GestureLocation _mouse0(ProviderContainer container) => gestureLocationAt(
   container.read(configControllerProvider).requireValue.draft,
   DeviceType.mouse,

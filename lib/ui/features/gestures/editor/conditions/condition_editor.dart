@@ -6,6 +6,7 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -309,32 +310,36 @@ class ConditionEditor extends StatelessWidget {
     Condition? condition,
     BuildContext context,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: bodyBackgroundColor,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(6),
+    return AttentionFlash(
+      trigger: AttentionFlashScope.maybeOf(context),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bodyBackgroundColor,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: switch (condition) {
+          final RawCondition current when inherited.isEmpty => RawFallback(
+            raw: current.raw,
+          ),
+          null when inherited.isNotEmpty => _buildTable(context, null),
+          null => Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: bodyBackgroundColor,
+              border: Border.all(color: colors.border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'No conditions set. Add a condition or '
+              'group to specify when this gesture should trigger.',
+              style: typography.body.sm.copyWith(color: colors.mutedForeground),
+            ),
+          ),
+          _ => _buildTable(context, condition),
+        },
       ),
-      child: switch (condition) {
-        final RawCondition current when inherited.isEmpty => RawFallback(
-          raw: current.raw,
-        ),
-        null when inherited.isNotEmpty => _buildTable(context, null),
-        null => Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: bodyBackgroundColor,
-            border: Border.all(color: colors.border),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            'No conditions set. Add a condition or '
-            'group to specify when this gesture should trigger.',
-            style: typography.body.sm.copyWith(color: colors.mutedForeground),
-          ),
-        ),
-        _ => _buildTable(context, condition),
-      },
     );
   }
 

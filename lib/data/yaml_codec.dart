@@ -1,3 +1,4 @@
+import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -16,10 +17,6 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:yaml/yaml.dart';
-
-// ---------------------------------------------------------------------------
-// Decode  (yaml → model)
-// ---------------------------------------------------------------------------
 
 Config decodeConfig(String yamlText) {
   if (yamlText.trim().isEmpty) return const Config();
@@ -122,7 +119,7 @@ List<GestureNode> _parseDeviceNodes(
         final extra = <String, dynamic>{};
         for (final key in item.keys) {
           if (!_groupNodeKeys.contains(key)) {
-            extra[key as String] = _plainValue(item[key]);
+            extra[key as String] = plainYamlValue(item[key]);
           }
         }
         final sub = item['gestures'];
@@ -246,20 +243,7 @@ List<GestureNode> _migrateLegacyGroups(
   return out;
 }
 
-/// Converts a yaml node into plain Dart values so it can be held in the model
-/// and handed back to the emitter.
-dynamic _plainValue(dynamic node) {
-  if (node is YamlMap) {
-    return {for (final e in node.entries) e.key: _plainValue(e.value)};
-  }
-  if (node is YamlList) return node.map(_plainValue).toList();
-  return node;
-}
-
-// ---------------------------------------------------------------------------
 // Mouse
-// ---------------------------------------------------------------------------
-
 MouseGesture? _parseMouseGesture(YamlMap m) {
   final type = m['type'] as String?;
   if (type == null) return null;
@@ -296,10 +280,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Keyboard
-// ---------------------------------------------------------------------------
-
 KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
   final type = m['type'] as String?;
   if (type == null) return null;
@@ -308,16 +289,13 @@ KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
   return switch (type) {
     'shortcut' => ShortcutGesture(
       common: common,
-      keys: _parseStringList(m['shortcut']),
+      keys: yamlStringList(m['shortcut']),
     ),
     _ => null,
   };
 }
 
-// ---------------------------------------------------------------------------
 // Pointer
-// ---------------------------------------------------------------------------
-
 PointerGesture? _parsePointerGesture(YamlMap m) {
   final type = m['type'] as String?;
   if (type == null) return null;
@@ -329,10 +307,7 @@ PointerGesture? _parsePointerGesture(YamlMap m) {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Touchpad
-// ---------------------------------------------------------------------------
-
 TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
   final type = m['type'] as String?;
   if (type == null) return null;
@@ -384,10 +359,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Touchscreen
-// ---------------------------------------------------------------------------
-
 TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
   final type = m['type'] as String?;
   if (type == null) return null;
@@ -438,10 +410,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
   };
 }
 
-// ---------------------------------------------------------------------------
 // Shared parse helpers
-// ---------------------------------------------------------------------------
-
 TriggerCommon _parseTriggerCommon(YamlMap m) => TriggerCommon(
   name: m['name'] as String?,
   enabled: m['enabled'] as bool?,
@@ -478,12 +447,6 @@ List<MouseButtonValue> _parseMouseButtons(dynamic node) {
 
 List<String> _parseStrokes(dynamic node) {
   if (node is YamlList) return node.map((e) => e.toString()).toList();
-  return [];
-}
-
-List<String> _parseStringList(dynamic node) {
-  if (node is YamlList) return node.map((e) => e.toString()).toList();
-  if (node is String) return [node];
   return [];
 }
 
@@ -605,6 +568,32 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   );
 }
 
+/// The YAML key holding an [ActionGroup]'s nested actions.
+const actionGroupYamlKey = 'one';
+
+/// Top-level key of a copied action snippet, so pasted text is recognisably
+/// ours and a stray YAML document is rejected.
+const actionsClipboardKey = 'actions';
+
+/// Parses a clipboard snippet written by `encodeActionsYaml`. Returns an empty
+/// list for anything that is not a readable action list.
+List<TriggerAction> decodeActionsYaml(String text) {
+  if (text.trim().isEmpty) return const [];
+  final Object? doc;
+  try {
+    doc = loadYaml(materializeDisabledYamlCommentsRecursively(text));
+  } on Object {
+    return const [];
+  }
+  if (doc is! YamlMap) return const [];
+  return _parseActions(doc[actionsClipboardKey]);
+}
+
+/// Block keys whose list items carry an `enabled:` flag and are disabled by
+/// commenting them out.
+bool isDisableableItemList(String key) =>
+    key == 'gestures' || key == 'actions' || key == actionGroupYamlKey;
+
 String materializeDisabledYamlCommentsRecursively(String yamlText) {
   var current = yamlText;
   while (true) {
@@ -624,14 +613,20 @@ String materializeDisabledYamlCommentsRecursively(String yamlText) {
 String materializeDisabledYamlComments(String yamlText) {
   final lines = yamlText.split('\n');
   final out = <String>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final uncommented = _uncommentYamlLine(line);
+    // A blank line has no indentation to read, so it must not close a block.
+    if (line.trim().isEmpty) {
+      out.add(line);
+      i++;
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
-    final indent = _indentOf(parseLine);
+    final indent = indentOf(parseLine);
 
     // Before popping, check if this is a commented list item aligned with
     // its parent key (e.g., "      # - sleep: 1" when "      actions:" is at
@@ -639,25 +634,20 @@ String materializeDisabledYamlComments(String yamlText) {
     final peekParent = contexts.isEmpty ? null : contexts.last;
     final commentedAtKeyIndent =
         peekParent != null &&
-        (peekParent.key == 'gestures' || peekParent.key == 'actions') &&
+        isDisableableItemList(peekParent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, peekParent.indent);
+        isListItemAt(parseLine, peekParent.indent);
 
-    if (!commentedAtKeyIndent) _popContexts(contexts, indent);
-
-    final key = _blockKey(parseLine);
-    if (key != null) {
-      contexts.add(_YamlListContext(key, indent));
-    }
+    if (!commentedAtKeyIndent) popContexts(contexts, indent);
 
     final parent = commentedAtKeyIndent
         ? peekParent
         : (contexts.isEmpty ? null : contexts.last);
     final atNormalIndent =
         parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
+        isDisableableItemList(parent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2);
+        isListItemAt(parseLine, parent.indent + 2);
 
     if (atNormalIndent || commentedAtKeyIndent) {
       final itemIndent = parent!.indent + 2;
@@ -667,18 +657,18 @@ String materializeDisabledYamlComments(String yamlText) {
       var j = i;
       while (j < lines.length) {
         final candidate = lines[j];
-        final candidateUncommented = _uncommentYamlLine(candidate);
+        final candidateUncommented = uncommentYamlLine(candidate);
         if (candidateUncommented == null) break;
-        final candidateIndent = _indentOf(candidateUncommented);
+        final candidateIndent = indentOf(candidateUncommented);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
+        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
         block.add(' ' * indentOffset + candidateUncommented);
         j++;
       }
       final hasEnabled = block.any(
         (l) =>
-            _listItemKeyAt(l, 'enabled', itemIndent) ||
-            (_keyAt(l, 'enabled') && _indentOf(l) == parent.indent + 4),
+            listItemKeyAt(l, 'enabled', itemIndent) ||
+            (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4),
       );
       out.addAll(block);
       if (!hasEnabled) {
@@ -688,60 +678,13 @@ String materializeDisabledYamlComments(String yamlText) {
       continue;
     }
 
+    final context = blockContext(parseLine);
+    if (context != null) contexts.add(context);
     out.add(line);
     i++;
   }
 
   return out.join('\n');
-}
-
-final class _YamlListContext {
-  const _YamlListContext(this.key, this.indent);
-
-  final String key;
-  final int indent;
-}
-
-void _popContexts(List<_YamlListContext> contexts, int indent) {
-  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
-    contexts.removeLast();
-  }
-}
-
-String? _uncommentYamlLine(String line) {
-  final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
-  if (match == null) return null;
-  return '${match.group(1)}${match.group(2)}';
-}
-
-int _indentOf(String line) {
-  var i = 0;
-  while (i < line.length && line.codeUnitAt(i) == 0x20) {
-    i++;
-  }
-  return i;
-}
-
-String? _blockKey(String line) {
-  final trimmed = line.trimRight();
-  final match = RegExp(
-    r'^(\s*)([A-Za-z_][A-Za-z0-9_]*):\s*$',
-  ).firstMatch(trimmed);
-  return match?.group(2);
-}
-
-bool _isListItemAt(String line, int indent) =>
-    _indentOf(line) == indent && line.substring(indent).startsWith('- ');
-
-bool _keyAt(String line, String key) {
-  final trimmed = line.trimLeft();
-  return trimmed == '$key:' || trimmed.startsWith('$key: ');
-}
-
-bool _listItemKeyAt(String line, String key, int indent) {
-  if (!_isListItemAt(line, indent)) return false;
-  final body = line.substring(indent + 2).trimLeft();
-  return body == '$key:' || body.startsWith('$key: ');
 }
 
 Action? _parseAction(YamlMap m) {
@@ -775,7 +718,10 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey('function')) {
     return FunctionAction(expression: m['function'].toString());
   }
-  return RawAction(raw: _dumpYamlNode(m));
+  if (m.containsKey(actionGroupYamlKey)) {
+    return ActionGroup(actions: _parseActions(m[actionGroupYamlKey]));
+  }
+  return RawAction(raw: dumpYamlNode(m));
 }
 
 List<TextSubstitutionRule> _parseTextSubstitutionRules(dynamic node) {
@@ -831,22 +777,7 @@ String _tokenToString(dynamic token) {
   return token?.toString() ?? '';
 }
 
-String _dumpYamlNode(dynamic node) {
-  if (node is YamlList) {
-    return node.map((e) => '- ${_dumpYamlNode(e)}').join('\n');
-  }
-  if (node is YamlMap) {
-    return node.entries
-        .map((e) => '${e.key}: ${_dumpYamlNode(e.value)}')
-        .join('\n');
-  }
-  return node?.toString() ?? '';
-}
-
-// ---------------------------------------------------------------------------
 // Device rules
-// ---------------------------------------------------------------------------
-
 List<DeviceRule> _parseDeviceRules(dynamic node) {
   if (node is! YamlList) return [];
   return node.map(_parseDeviceRule).whereType<DeviceRule>().toList();
@@ -871,44 +802,38 @@ DeviceRuleProperties _parseDeviceRuleProperties(YamlMap m) {
   return DeviceRuleProperties(
     grab: m['grab'] as bool?,
     ignore: m['ignore'] as bool?,
-    motionTimeout: _toInt(m['motion_timeout']),
-    motionThreshold: _toDouble(m['motion_threshold']),
-    pressTimeout: _toInt(m['press_timeout']),
-    swipeAngleTolerance: _toDouble(swipeNode?['angle_tolerance']),
+    motionTimeout: yamlInt(m['motion_timeout']),
+    motionThreshold: yamlDouble(m['motion_threshold']),
+    pressTimeout: yamlInt(m['press_timeout']),
+    swipeAngleTolerance: yamlDouble(swipeNode?['angle_tolerance']),
     unblockButtonsOnTimeout: m['unblock_buttons_on_timeout'] as bool?,
     buttonpad: m['buttonpad'] as bool?,
-    clickTimeout: _toInt(m['click_timeout']),
+    clickTimeout: yamlInt(m['click_timeout']),
     handleEvdevEvents: m['handle_evdev_events'] as bool?,
-    motionThreshold2: _toDouble(m['motion_threshold_2']),
-    motionThreshold3: _toDouble(m['motion_threshold_3']),
-    pressureRangesFinger: _toInt(prNode?['finger']),
-    pressureRangesThumb: _toInt(prNode?['thumb']),
-    pressureRangesPalm: _toInt(prNode?['palm']),
+    motionThreshold2: yamlDouble(m['motion_threshold_2']),
+    motionThreshold3: yamlDouble(m['motion_threshold_3']),
+    pressureRangesFinger: yamlInt(prNode?['finger']),
+    pressureRangesThumb: yamlInt(prNode?['thumb']),
+    pressureRangesPalm: yamlInt(prNode?['palm']),
   );
 }
 
-// ---------------------------------------------------------------------------
 // Speed settings
-// ---------------------------------------------------------------------------
-
 SpeedSettings? _parseSpeedSettings(dynamic deviceNode) {
   if (deviceNode is! YamlMap) return null;
   final speedNode = deviceNode['speed'];
   if (speedNode is! YamlMap) return null;
   final s = SpeedSettings(
-    events: _toInt(speedNode['events']),
-    swipeThreshold: _toDouble(speedNode['swipe_threshold']),
-    pinchInThreshold: _toDouble(speedNode['pinch_in_threshold']),
-    pinchOutThreshold: _toDouble(speedNode['pinch_out_threshold']),
-    rotateThreshold: _toDouble(speedNode['rotate_threshold']),
+    events: yamlInt(speedNode['events']),
+    swipeThreshold: yamlDouble(speedNode['swipe_threshold']),
+    pinchInThreshold: yamlDouble(speedNode['pinch_in_threshold']),
+    pinchOutThreshold: yamlDouble(speedNode['pinch_out_threshold']),
+    rotateThreshold: yamlDouble(speedNode['rotate_threshold']),
   );
   return s.isEmpty ? null : s;
 }
 
-// ---------------------------------------------------------------------------
 // Global settings
-// ---------------------------------------------------------------------------
-
 GlobalSettings _parseGlobalSettings(YamlMap doc) {
   final notifNode = doc['notifications'] is YamlMap
       ? doc['notifications'] as YamlMap
@@ -922,22 +847,4 @@ GlobalSettings _parseGlobalSettings(YamlMap doc) {
     externalVariableAccess: doc['external_variable_access'] as bool?,
     notificationsConfigError: notifNode?['config_error'] as bool?,
   );
-}
-
-// ---------------------------------------------------------------------------
-// Type conversion helpers
-// ---------------------------------------------------------------------------
-
-int? _toInt(dynamic v) {
-  if (v == null) return null;
-  if (v is int) return v;
-  if (v is double) return v.toInt();
-  return int.tryParse(v.toString());
-}
-
-double? _toDouble(dynamic v) {
-  if (v == null) return null;
-  if (v is double) return v;
-  if (v is int) return v.toDouble();
-  return double.tryParse(v.toString());
 }

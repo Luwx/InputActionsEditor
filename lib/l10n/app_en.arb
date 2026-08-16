@@ -7,11 +7,16 @@
   "actionDiscardChanges": "Discard changes",
   "actionLoadFromClipboard": "Load from clipboard",
   "actionCopyToClipboard": "Copy to clipboard",
+  "actionReload": "Reload",
   "actionOk": "OK",
   "actionCancel": "Cancel",
+  "actionCreate": "Create",
+  "actionRename": "Rename",
   "actionAdd": "Add",
   "actionDelete": "Delete",
   "actionDuplicate": "Duplicate",
+  "actionCopy": "Copy",
+  "actionPaste": "Paste",
   "actionUndo": "Undo",
   "actionRedo": "Redo",
   "actionExit": "Exit",
@@ -396,6 +401,47 @@
   "actionMetaFunctionSubtitle": "Run a JavaScript function",
   "actionMetaRawLabel": "Raw YAML",
   "actionMetaRawSubtitle": "Hand-authored unsupported action config",
+  "actionMetaGroupLabel": "First match",
+  "actionMetaGroupSubtitle": "Runs the first nested action whose conditions match",
+  "actionGroupSummary": "{count, plural, =0{No actions} =1{1 action} other{{count} actions}}",
+  "@actionGroupSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "actionGroupExplanation": "Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.",
+  "actionGroupAddAction": "Add action to group",
+  "actionGroupFlowTitle": "What runs",
+  "actionGroupFlowIf": "If",
+  "actionGroupFlowElseIf": "Else if",
+  "actionGroupFlowThen": "Then",
+  "actionGroupFlowVerbRun": "run",
+  "actionGroupFlowVerbSend": "send",
+  "actionGroupFlowVerbTrigger": "trigger",
+  "actionGroupFlowAlways": "Always",
+  "actionGroupFlowOtherwise": "Otherwise",
+  "actionGroupFlowNeverRuns": "never runs",
+  "actionGroupFlowDisabled": "disabled",
+  "actionGroupFlowEmpty": "No actions yet. Add a few and give them conditions to pick between them.",
+  "actionGroupFlowFirstAlwaysNote": "The first action has no conditions, so it always runs.",
+  "actionGroupFlowFirstAlwaysNoteRest": "The first action has no conditions, so it always runs and the ones below it never do.",
+  "conditionSummaryNot": "not",
+  "conditionSummaryAnd": "and",
+  "conditionSummaryOr": "or",
+  "conditionSummaryNoneOf": "none of",
+  "conditionSummaryNoRules": "no rules",
+  "conditionSummaryFunction": "custom function",
+  "conditionSummaryEmptyValue": "(empty)",
+  "actionsSelectedCount": "{count, plural, =1{1 action selected} other{{count} actions selected}}",
+  "@actionsSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "actionSummaryNoCommand": "No command",
   "actionSummaryNotConfigured": "Not configured",
   "actionSummaryEmpty": "Empty",
@@ -787,6 +833,10 @@
   "actionSleepDurationHint": "500",
   "actionFunctionLabel": "Function",
   "actionFunctionHint": "() => initialDirection = \"l\"",
+  "dialogNewGroupTitle": "New group",
+  "dialogNewSubgroupTitle": "New subgroup",
+  "dialogRenameGroupTitle": "Rename group",
+  "gesturePasteEmpty": "The clipboard holds no gestures for this device.",
   "groupMenuRename": "Rename",
   "groupMenuNewSubgroup": "New subgroup",
   "groupMenuBreakdown": "Ungroup",

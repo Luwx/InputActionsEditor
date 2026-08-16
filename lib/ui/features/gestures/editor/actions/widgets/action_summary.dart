@@ -1,5 +1,6 @@
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
@@ -33,6 +34,7 @@ String actionValueSummary(
     expression.trim().isEmpty
         ? l10n.actionSummaryNotConfigured
         : expression.trim().split('\n').first,
+  ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
   RawAction(:final raw) =>
     raw.trim().isEmpty ? l10n.actionSummaryEmpty : raw.trim().split('\n').first,
 };
@@ -51,6 +53,7 @@ String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
   ReplaceTextAction() => l10n.actionMetaReplaceTextLabel,
   SleepAction() => l10n.actionMetaSleepLabel,
   FunctionAction() => l10n.actionMetaFunctionLabel,
+  ActionGroup() => actionMeta(action, l10n).label,
   RawAction() => l10n.actionMetaRawLabel,
 };
 

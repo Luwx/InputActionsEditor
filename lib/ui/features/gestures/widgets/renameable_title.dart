@@ -9,10 +9,15 @@ class RenameableTitle extends HookConsumerWidget {
     required this.name,
     required this.titleStyle,
     required this.onRename,
+    this.editingName,
     super.key,
   });
 
   final String name;
+
+  /// Seeds the field when the displayed [name] is a placeholder rather than the
+  /// stored value.
+  final String? editingName;
   final TextStyle? titleStyle;
   final void Function(String)? onRename;
 
@@ -38,11 +43,12 @@ class RenameableTitle extends HookConsumerWidget {
     });
 
     void startRename() {
+      final initial = editingName ?? name;
       controller
-        ..text = name
+        ..text = initial
         ..selection = TextSelection(
           baseOffset: 0,
-          extentOffset: name.length,
+          extentOffset: initial.length,
         );
       isRenaming.value = true;
       WidgetsBinding.instance.addPostFrameCallback(

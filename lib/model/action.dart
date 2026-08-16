@@ -22,6 +22,9 @@ abstract class TriggerAction with _$TriggerAction {
     @Default(true) bool conflicting,
     String? id,
     int? limit,
+
+    /// In-memory identity, filled in by `assignEditIds`; never serialized.
+    int? editId,
   }) = _TriggerAction;
 }
 
@@ -52,7 +55,13 @@ sealed class Action with _$Action {
   /// return value is ignored). [expression] is the raw `() => ...` source.
   const factory Action.function({required String expression}) = FunctionAction;
 
-  /// Raw YAML for action types we don't model (e.g. one:).
+  /// The daemon's `one:`: the first action whose conditions match runs.
+  /// Nesting is unbounded. The daemon parses children as plain actions, so
+  /// only `conditions`, `limit` and `id` apply to them.
+  const factory Action.group({@Default([]) List<TriggerAction> actions}) =
+      ActionGroup;
+
+  /// Raw YAML for action types we don't model.
   const factory Action.raw({required String raw}) = RawAction;
 }
 
