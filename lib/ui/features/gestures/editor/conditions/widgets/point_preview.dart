@@ -4,19 +4,25 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/condition.dart';
 
 /// Screen-shaped (16:9) canvas that shows where the normalized point(s) sit and
-/// lets them be dragged. With two points the area between them is drawn as a
-/// region that can also be moved as a whole.
+/// lets them be dragged. The area the condition matches under [operator] is
+/// shaded: comparisons apply to both axes, so `<` covers everything above and
+/// left of the point and `>` everything below and right of it. With two points
+/// the area between them is drawn as a region that can also be moved as a
+/// whole.
 class PointPreview extends HookWidget {
   const PointPreview({
     required this.points,
+    required this.operator,
     required this.onChanged,
     super.key,
   });
 
   /// One or two normalized (0..1) points.
   final List<(double, double)> points;
+  final ConditionOperator operator;
   final void Function(List<(double, double)> points) onChanged;
 
   static const int height = 128;
@@ -177,6 +183,7 @@ class PointPreview extends HookWidget {
           child: CustomPaint(
             painter: _PointPreviewPainter(
               points: points,
+              operator: operator,
               handleEmphasis: [first, second],
               regionEmphasis: region,
               primary: colors.primary,
@@ -195,6 +202,7 @@ class PointPreview extends HookWidget {
 class _PointPreviewPainter extends CustomPainter {
   const _PointPreviewPainter({
     required this.points,
+    required this.operator,
     required this.handleEmphasis,
     required this.regionEmphasis,
     required this.primary,
@@ -205,6 +213,7 @@ class _PointPreviewPainter extends CustomPainter {
   });
 
   final List<(double, double)> points;
+  final ConditionOperator operator;
 
   /// Hover/press emphasis (0..1) for each handle, by index.
   final List<double> handleEmphasis;
@@ -219,6 +228,40 @@ class _PointPreviewPainter extends CustomPainter {
 
   static const _handleRadius = 4;
   static const _activeExtra = 1.5;
+  static const _dashLength = 4.0;
+  static const _dashGap = 3.0;
+
+  /// Area a comparison matches: both axes are compared, so `<` keeps
+  /// everything above and left of the point and `>` everything below and right.
+  Rect? _quadrant(Offset corner, Size size) => switch (operator) {
+    ConditionOperator.lessThan ||
+    ConditionOperator.lessOrEqual => Rect.fromLTRB(0, 0, corner.dx, corner.dy),
+    ConditionOperator.greaterThan || ConditionOperator.greaterOrEqual =>
+      Rect.fromLTRB(corner.dx, corner.dy, size.width, size.height),
+    _ => null,
+  };
+
+  /// Solid for inclusive comparisons, dashed when the boundary itself is
+  /// excluded.
+  void _drawEdge(
+    Canvas canvas,
+    Offset from,
+    Offset to,
+    Paint paint, {
+    required bool dashed,
+  }) {
+    if (!dashed) {
+      canvas.drawLine(from, to, paint);
+      return;
+    }
+    final length = (to - from).distance;
+    if (length == 0) return;
+    final step = (to - from) / length;
+    for (var start = 0.0; start < length; start += _dashLength + _dashGap) {
+      final end = math.min(start + _dashLength, length);
+      canvas.drawLine(from + step * start, from + step * end, paint);
+    }
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -260,6 +303,32 @@ class _PointPreviewPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1,
         );
+    } else if (_quadrant(locals.first, size) case final region?) {
+      canvas.drawRect(
+        region,
+        Paint()..color = primary.withValues(alpha: 0.18),
+      );
+      final strict =
+          operator == ConditionOperator.lessThan ||
+          operator == ConditionOperator.greaterThan;
+      final edge = Paint()
+        ..color = primary.withValues(alpha: 0.7)
+        ..strokeWidth = 1;
+      final corner = locals.first;
+      _drawEdge(
+        canvas,
+        Offset(corner.dx, region.top),
+        Offset(corner.dx, region.bottom),
+        edge,
+        dashed: strict,
+      );
+      _drawEdge(
+        canvas,
+        Offset(region.left, corner.dy),
+        Offset(region.right, corner.dy),
+        edge,
+        dashed: strict,
+      );
     }
 
     for (var i = 0; i < locals.length; i++) {
@@ -302,6 +371,7 @@ class _PointPreviewPainter extends CustomPainter {
   @override
   bool shouldRepaint(_PointPreviewPainter old) =>
       !_samePoints(old.points, points) ||
+      old.operator != operator ||
       old.handleEmphasis[0] != handleEmphasis[0] ||
       old.handleEmphasis[1] != handleEmphasis[1] ||
       old.regionEmphasis != regionEmphasis ||

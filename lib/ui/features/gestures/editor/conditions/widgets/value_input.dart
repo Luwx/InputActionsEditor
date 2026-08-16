@@ -174,6 +174,7 @@ class ValueInput extends ConsumerWidget {
     if (type == ConditionValueType.point) {
       return PointInput(
         value: value.pointOrNull,
+        operator: condition.operator,
         onChanged: (x, y) => onChanged(ConditionValue.point(x, y)),
       );
     }

@@ -2,19 +2,25 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
 
 Widget _host({
   required List<(double, double)> points,
   required void Function(List<(double, double)>) onChanged,
+  ConditionOperator operator = ConditionOperator.lessThan,
 }) => MaterialApp(
   home: FTheme(
     data: AppThemes.zinc.dark.desktop,
     child: Scaffold(
       body: Align(
         alignment: Alignment.topLeft,
-        child: PointPreview(points: points, onChanged: onChanged),
+        child: PointPreview(
+          points: points,
+          operator: operator,
+          onChanged: onChanged,
+        ),
       ),
     ),
   ),

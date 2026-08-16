@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/state/preview_resolution_provider.dart';
@@ -15,11 +16,15 @@ import 'package:pixel_snap/widgets.dart' as ps;
 class PointInput extends StatelessWidget {
   const PointInput({
     required this.value,
+    required this.operator,
     required this.onChanged,
     super.key,
   });
 
   final (double, double)? value;
+
+  /// Decides which area of the preview is shaded as matching.
+  final ConditionOperator operator;
   final void Function(double x, double y) onChanged;
 
   @override
@@ -33,6 +38,7 @@ class PointInput extends StatelessWidget {
         label: label,
         isPlaceholder: value == null,
         points: [point],
+        operator: operator,
         onOpen: () {
           if (value == null) onChanged(point.$1, point.$2);
         },
@@ -70,6 +76,7 @@ class PointBetweenInput extends StatelessWidget {
         label: label,
         isPlaceholder: value.from == null && value.to == null,
         points: [from, to],
+        operator: ConditionOperator.between,
         onOpen: () {
           if (value.from == null || value.to == null) onChanged(from, to);
         },
@@ -109,6 +116,7 @@ class _PointPopoverChip extends HookWidget {
     required this.label,
     required this.isPlaceholder,
     required this.points,
+    required this.operator,
     required this.onOpen,
     required this.onChanged,
   });
@@ -116,6 +124,7 @@ class _PointPopoverChip extends HookWidget {
   final String label;
   final bool isPlaceholder;
   final List<(double, double)> points;
+  final ConditionOperator operator;
   final VoidCallback onOpen;
   final void Function(List<(double, double)> points) onChanged;
 
@@ -152,6 +161,7 @@ class _PointPopoverChip extends HookWidget {
         padding: const EdgeInsets.all(12),
         child: _PointEditor(
           points: points,
+          operator: operator,
           onChanged: onChanged,
           menuOpen: menuOpen,
         ),
@@ -171,11 +181,13 @@ class _PointPopoverChip extends HookWidget {
 class _PointEditor extends StatelessWidget {
   const _PointEditor({
     required this.points,
+    required this.operator,
     required this.onChanged,
     required this.menuOpen,
   });
 
   final List<(double, double)> points;
+  final ConditionOperator operator;
   final void Function(List<(double, double)> points) onChanged;
   final ValueNotifier<bool> menuOpen;
 
@@ -213,10 +225,16 @@ class _PointEditor extends StatelessWidget {
         ],
         const SizedBox(height: 16),
         ps.Center(
-          child: PointPreview(points: points, onChanged: onChanged),
+          child: PointPreview(
+            points: points,
+            operator: operator,
+            onChanged: onChanged,
+          ),
         ),
         const SizedBox(height: 8),
-        Center(child: _PixelReadout(points: points, menuOpen: menuOpen)),
+        Center(
+          child: _PixelReadout(points: points, menuOpen: menuOpen),
+        ),
       ],
     );
   }

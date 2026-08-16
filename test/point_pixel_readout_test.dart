@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
@@ -39,7 +40,13 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(500, 520));
     await tester.pumpWidget(
-      _host(PointInput(value: const (0.5, 0.25), onChanged: (_, _) {})),
+      _host(
+        PointInput(
+          value: const (0.5, 0.25),
+          operator: ConditionOperator.equals,
+          onChanged: (_, _) {},
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -58,7 +65,13 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(500, 520));
     await tester.pumpWidget(
-      _host(PointInput(value: const (0.5, 0.25), onChanged: (_, _) {})),
+      _host(
+        PointInput(
+          value: const (0.5, 0.25),
+          operator: ConditionOperator.equals,
+          onChanged: (_, _) {},
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
