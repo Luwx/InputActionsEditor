@@ -8,6 +8,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
+import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
 
@@ -17,18 +18,11 @@ typedef ActionGhostRow = ({TriggerAction action, ActionRow row});
 
 typedef ActionTransitions = ListTransitions<ActionGhostRow>;
 
-/// Captures [keys] at their current slots. Call before the edit lands. Set
-/// [reenters] when the rows stay in the list at a new position.
-void captureActionGhosts(
-  ActionTransitions transitions,
-  WidgetRef ref,
-  GestureLocation location,
-  List<int> keys, {
-  required bool reenters,
-}) {
-  final rows = ref.read(actionListEditorProvider(location)).rows;
-  final draft = ref.read(draftConfigProvider);
-
+List<ListGhost<ActionGhostRow>> _actionGhosts(
+  List<ActionRow> rows,
+  Set<int> keys,
+  TriggerAction? Function(ActionRow row) actionOf,
+) {
   /// The first row after [index] that is staying put, which is the row the
   /// ghost has to sit in front of once the edit has landed.
   int? nextSurvivor(int index) {
@@ -38,19 +32,69 @@ void captureActionGhosts(
     return null;
   }
 
+  return [
+    for (var index = 0; index < rows.length; index++)
+      if (keys.contains(rows[index].editId))
+        if (actionOf(rows[index]) case final action?)
+          ListGhost<ActionGhostRow>(
+            id: rows[index].editId,
+            payload: (action: action, row: rows[index]),
+            beforeId: nextSurvivor(index),
+          ),
+  ];
+}
+
+/// Captures [keys] at the slots they are leaving for good. Call before the
+/// edit lands.
+void captureActionGhosts(
+  ActionTransitions transitions,
+  WidgetRef ref,
+  GestureLocation location,
+  List<int> keys,
+) {
+  final draft = ref.read(draftConfigProvider);
   transitions.capture(
-    [
-      for (var index = 0; index < rows.length; index++)
-        if (keys.contains(rows[index].editId))
-          if (actionAt(draft, rows[index].location) case final action?)
-            ListGhost<ActionGhostRow>(
-              id: rows[index].editId,
-              payload: (action: action, row: rows[index]),
-              beforeId: nextSurvivor(index),
-            ),
-    ],
-    reenters: reenters,
+    _actionGhosts(
+      ref.read(actionListEditorProvider(location)).rows,
+      keys.toSet(),
+      (row) => actionAt(draft, row.location),
+    ),
+    reenters: false,
   );
+}
+
+/// Ghosts for the rows that changed slot between two shapes of the list, so a
+/// reorder animates whatever caused it: a drop, an undo, a redo.
+void captureActionMotion(
+  ActionTransitions transitions,
+  ActionListEditorVm before,
+  ActionListEditorVm after,
+) {
+  final moved = findMovedNodes(
+    actionTreeNodes(before.rows),
+    actionTreeNodes(after.rows),
+  );
+  if (moved.isEmpty) return;
+  final actions = _actionsByEditId(before.actions);
+  transitions.capture(
+    _actionGhosts(before.rows, moved, (row) => actions[row.editId]),
+    reenters: true,
+  );
+}
+
+Map<int, TriggerAction> _actionsByEditId(List<TriggerAction> actions) {
+  final byEditId = <int, TriggerAction>{};
+  void walk(List<TriggerAction> level) {
+    for (final action in level) {
+      if (action.editId case final editId?) byEditId[editId] = action;
+      if (action.action case ActionGroup(actions: final children)) {
+        walk(children);
+      }
+    }
+  }
+
+  walk(actions);
+  return byEditId;
 }
 
 /// A list slot: either a live row or a ghost collapsing at a vacated one.

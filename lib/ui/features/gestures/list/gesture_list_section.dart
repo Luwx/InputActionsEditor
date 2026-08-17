@@ -20,12 +20,15 @@ import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/rename_dialog.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
+import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
+import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
@@ -404,7 +407,6 @@ class GestureListSection extends HookConsumerWidget {
               onItemsReordered: (result) => transitions.requestItemsReorder(
                 device: viewModel.deviceFilter!,
                 result: result,
-                flatItems: viewModel.flatItems,
               ),
               onGroupMoved: (move) => listNotifier.moveGroup(
                 GestureGroupLocation(

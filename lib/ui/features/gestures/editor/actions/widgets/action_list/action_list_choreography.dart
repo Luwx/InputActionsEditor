@@ -16,9 +16,12 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/tree_list/auto_scroller.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
 import 'package:input_actions_editor/ui/common/tree_list/marquee_engine.dart';
+import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
@@ -47,6 +50,7 @@ final class ActionListChoreography {
     required this.anchor,
     required this.revealKey,
     required this.revealTarget,
+    required this.flashTarget,
     required this.revealTick,
     required this.reveal,
     required this.draggingKeys,
@@ -96,11 +100,14 @@ final class ActionListChoreography {
   /// The row wearing [revealKey].
   final int? revealTarget;
 
+  /// The row whose card the reveal is tinting, when it tints one at all.
+  final int? flashTarget;
+
   /// Bumped per reveal, so the same row can flash twice.
   final int revealTick;
 
   /// Unfolds, opens and travels to a row.
-  final Future<void> Function(int editId) reveal;
+  final Future<void> Function(int editId, {bool flash, bool scroll}) reveal;
 
   /// The rows currently being dragged; empty while idle. A multi-row drag
   /// carries the whole selection, so every one of them dims.
@@ -149,6 +156,9 @@ ActionListChoreography useActionListChoreography(
 }) {
   final anchor = useActionScrollAnchor(context);
   final transitions = useListTransitions<ActionGhostRow>(context);
+  ref.listen(actionListEditorProvider(location), (previous, next) {
+    if (previous != null) captureActionMotion(transitions, previous, next);
+  });
   final expanded = useState(<int>{});
   final collapsedGroups = useState(<int>{});
   // Groups whose children were unfolded by their card opening, so shutting the
@@ -165,6 +175,7 @@ ActionListChoreography useActionListChoreography(
   }, const []);
   final selected = useState(<int>{});
   final revealTarget = useState<int?>(null);
+  final flashTarget = useState<int?>(null);
   final revealTick = useState(0);
   final revealKey = useMemoized(GlobalKey.new);
   final revealScroll = useAnimationController(
@@ -377,7 +388,7 @@ ActionListChoreography useActionListChoreography(
       ..removeWhere((key, _) => keys.contains(key));
     selected.value = {...selected.value}..removeAll(keys);
     anchor.clear();
-    captureActionGhosts(transitions, ref, location, keys, reenters: false);
+    captureActionGhosts(transitions, ref, location, keys);
     notifier().remove(keys);
   }
 
@@ -464,6 +475,14 @@ ActionListChoreography useActionListChoreography(
 
     final start = position.pixels;
     void follow() {
+      // The row can go away mid-travel: an undo rebuilds the list, and a
+      // detached box has no offset in this viewport.
+      if (!box.attached ||
+          !box.hasSize ||
+          !position.hasContentDimensions ||
+          RenderAbstractViewport.maybeOf(box) != viewport) {
+        return;
+      }
       final t = Easing.standard.transform(revealScroll.value);
       position.jumpTo(start + (destination() - start) * t);
     }
@@ -477,8 +496,14 @@ ActionListChoreography useActionListChoreography(
   }
 
   /// Brings a row into view. Fold, card and travel start in the same frame, so
-  /// it reads as one movement.
-  Future<void> reveal(int editId) async {
+  /// it reads as one movement. [flash] tints the whole card and [scroll] parks
+  /// it near the top; both are wrong when the caller already marks, and aims
+  /// at, the field that changed.
+  Future<void> reveal(
+    int editId, {
+    bool flash = true,
+    bool scroll = true,
+  }) async {
     final parents = {for (final row in rows()) row.editId: row.parentKey};
     final ancestors = <int>{};
     for (var parent = parents[editId]; parent != null;) {
@@ -492,7 +517,10 @@ ActionListChoreography useActionListChoreography(
       collapsedGroups.value = {...collapsedGroups.value}..removeAll(ancestors);
     }
     revealTarget.value = editId;
-    revealTick.value++;
+    if (flash) {
+      flashTarget.value = editId;
+      revealTick.value++;
+    }
 
     if (!expanded.value.contains(editId)) {
       // The travel owns the scroll offset from here.
@@ -504,11 +532,14 @@ ActionListChoreography useActionListChoreography(
     await WidgetsBinding.instance.endOfFrame;
     if (!context.mounted) return;
 
-    await scrollToReveal();
-    if (!context.mounted) return;
+    if (scroll) {
+      await scrollToReveal();
+      if (!context.mounted) return;
+    }
 
     // Else it flashes again on reopen.
     revealTarget.value = null;
+    flashTarget.value = null;
   }
 
   TreeMove<int>? resolve(List<int> editIds, TreeMoveTarget<int> target) =>
@@ -516,16 +547,6 @@ ActionListChoreography useActionListChoreography(
 
   void move(List<int> editIds, TreeMove<int> result) {
     anchor.clear();
-    captureActionGhosts(
-      transitions,
-      ref,
-      location,
-      [
-        for (final id in result.orderedIds)
-          if (result.movedIds.contains(id)) id,
-      ],
-      reenters: true,
-    );
     notifier().move(
       [
         for (final id in result.orderedIds)
@@ -571,6 +592,31 @@ ActionListChoreography useActionListChoreography(
     );
   }
 
+  final revealedTicket = useRef<int?>(null);
+  final pending = ref.watch(editRevealProvider);
+  useEffect(() {
+    final target = pending;
+    final actionEditId = target?.actionEditId;
+    if (target == null ||
+        actionEditId == null ||
+        target.gesture != location ||
+        revealedTicket.value == target.ticket) {
+      return null;
+    }
+    revealedTicket.value = target.ticket;
+    // A move shows itself where it lands; opening the card of the group it
+    // shuffled would bury the row that travelled.
+    if (_revealedAMove(target, location)) return null;
+    // The rows for a freshly selected gesture land a frame later.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // The field marks and aims at itself; this only has to open the card.
+      if (context.mounted) {
+        unawaited(reveal(actionEditId, flash: false, scroll: false));
+      }
+    });
+    return null;
+  }, [pending]);
+
   return ActionListChoreography(
     expanded: expanded.value,
     collapsedGroups: collapsedGroups.value,
@@ -582,6 +628,7 @@ ActionListChoreography useActionListChoreography(
     anchor: anchor,
     revealKey: revealKey,
     revealTarget: revealTarget.value,
+    flashTarget: flashTarget.value,
     revealTick: revealTick.value,
     reveal: reveal,
     draggingKeys: draggingKeys.value,
@@ -608,6 +655,20 @@ ActionListChoreography useActionListChoreography(
     move: move,
     resolve: resolve,
   );
+}
+
+bool _revealedAMove(EditReveal reveal, GestureLocation location) {
+  List<TreeListNode<int>> nodes(Config config) => actionTreeNodes(
+    flattenActionRows(
+      location,
+      gestureAt(config, location)?.common.actions ?? const [],
+    ),
+  );
+
+  return findMovedNodes(
+    nodes(reveal.before),
+    nodes(reveal.after),
+  ).isNotEmpty;
 }
 
 Map<int, Set<ActionTriggerOptionField>> _initialPinnedActionTriggerOptions(

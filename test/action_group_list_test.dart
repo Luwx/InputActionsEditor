@@ -875,4 +875,134 @@ void main() {
       expect(find.text('beta'), findsOneWidget);
     });
   });
+
+  group('undoing a move', () {
+    final flat = TriggerCommon(
+      actions: [_cmd('alpha'), _cmd('beta'), _cmd('gamma')],
+    );
+
+    Future<void> dragLastRowToTop(WidgetTester tester) async {
+      final handles = find.byIcon(FLucideIcons.gripVertical);
+      final gesture = await tester.startGesture(
+        tester.getCenter(handles.at(2)),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getCenter(find.text('alpha')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
+
+    ConfigController controllerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(
+          tester.element(find.byType(ActionListEditor)),
+        ).read(configControllerProvider.notifier);
+
+    testWidgets('the row travels back with a ghost in the slot it leaves', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1000, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host(flat));
+      await tester.pumpAndSettle();
+      await dragLastRowToTop(tester);
+      expect(_order(tester), ['gamma', 'alpha', 'beta']);
+
+      controllerOf(tester).undo();
+      await tester.pump();
+
+      // gamma is back at the end, and its ghost holds the slot it left.
+      expect(_order(tester), ['gamma', 'alpha', 'beta', 'gamma']);
+
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(_order(tester), ['alpha', 'beta', 'gamma']);
+    });
+
+    testWidgets('redoing it animates the same way', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1000, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host(flat));
+      await tester.pumpAndSettle();
+      await dragLastRowToTop(tester);
+
+      controllerOf(tester).undo();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      controllerOf(tester).redo();
+      await tester.pump();
+
+      expect(_order(tester), ['gamma', 'alpha', 'beta', 'gamma']);
+
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(_order(tester), ['gamma', 'alpha', 'beta']);
+    });
+
+    testWidgets('the group the rows sit in keeps its card shut', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1000, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host(nested));
+      await tester.pumpAndSettle();
+
+      // Drag 'root two' into the group, past its top strip.
+      final card = tester.getRect(_rowFor('First match').first);
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(FLucideIcons.gripVertical).at(5)),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(Offset(card.center.dx, card.top + 20));
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(_rowFooters, findsNothing);
+
+      controllerOf(tester).undo();
+      await tester.pumpAndSettle();
+
+      expect(_rowFooters, findsNothing);
+
+      controllerOf(tester).redo();
+      await tester.pumpAndSettle();
+
+      expect(_rowFooters, findsNothing);
+    });
+
+    testWidgets('an undone delete leaves no ghost behind', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1000, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host(flat));
+      await tester.pumpAndSettle();
+
+      await _deleteViaMenu(tester, find.text('beta'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      controllerOf(tester).undo();
+      await tester.pump();
+
+      expect(_order(tester), ['alpha', 'beta', 'gamma']);
+
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    });
+  });
 }

@@ -316,17 +316,65 @@ void main() {
   testWidgets('dragging a row onto another reorders the list', (tester) async {
     await _pumpList(tester);
 
-    final handles = find.byIcon(FLucideIcons.gripVertical);
-    final gesture = await tester.startGesture(
-      tester.getCenter(handles.at(2)),
-    );
-    await tester.pump(const Duration(milliseconds: 200));
-    await gesture.moveTo(tester.getCenter(find.text('First')));
-    await tester.pump(const Duration(milliseconds: 200));
-    await gesture.up();
+    await _dragLastRowToTop(tester);
+
+    expect(_order(tester), ['Third', 'First', 'Second']);
+  });
+
+  testWidgets('undoing a move leaves a ghost in the slot the row leaves', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    await _dragLastRowToTop(tester);
+
+    _controllerOf(tester).undo();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Third is back at the end, and its ghost holds the slot it left.
+    expect(_order(tester), ['Third', 'First', 'Second', 'Third']);
+
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(_order(tester), ['First', 'Second', 'Third']);
+  });
+
+  testWidgets('redoing a move animates the same way', (tester) async {
+    await _pumpList(tester);
+    await _dragLastRowToTop(tester);
+
+    _controllerOf(tester).undo();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    _controllerOf(tester).redo();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(_order(tester), ['Third', 'First', 'Second', 'Third']);
+
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
     expect(_order(tester), ['Third', 'First', 'Second']);
   });
+}
+
+ConfigController _controllerOf(WidgetTester tester) =>
+    ProviderScope.containerOf(
+      tester.element(find.byType(GestureListSection)),
+    ).read(configControllerProvider.notifier);
+
+Future<void> _dragLastRowToTop(WidgetTester tester) async {
+  final handles = find.byIcon(FLucideIcons.gripVertical);
+  final gesture = await tester.startGesture(tester.getCenter(handles.at(2)));
+  await tester.pump(const Duration(milliseconds: 200));
+  await gesture.moveTo(tester.getCenter(find.text('First')));
+  await tester.pump(const Duration(milliseconds: 200));
+  await gesture.up();
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pumpAndSettle();
 }

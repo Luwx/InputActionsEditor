@@ -29,7 +29,6 @@ final class _GestureTransitions {
   final void Function({
     required DeviceType device,
     required ReorderableItemsResult<GestureLocation, int> result,
-    required List<_FlatItem> flatItems,
   })
   requestItemsReorder;
 
@@ -61,6 +60,26 @@ Object? _ghostNeighbour(
     }
   }
   return null;
+}
+
+/// Headers carry their own key, so a whole group moving is blamed on the group
+/// rather than on the rows it travelled past.
+List<TreeListNode<int>> _flatTreeNodes(List<_FlatItem> items) {
+  TreeListNode<int>? node(_FlatItem item) => switch (item) {
+    _GroupHeaderItem(:final groupKey, :final parentKey) => TreeListNode<int>(
+      id: groupKey,
+      parentId: parentKey,
+    ),
+    _GestureRowItem(:final editId?, :final groupKey) => TreeListNode<int>(
+      id: editId,
+      parentId: groupKey,
+    ),
+    _GestureRowItem() => null,
+  };
+
+  return [
+    for (final item in items) ?node(item),
+  ];
 }
 
 _GestureRowItem? _ghostRowItem(List<_FlatItem> items, int editId) {
@@ -125,19 +144,11 @@ _GestureTransitions _useGestureTransitions(
   void requestItemsReorder({
     required DeviceType device,
     required ReorderableItemsResult<GestureLocation, int> result,
-    required List<_FlatItem> flatItems,
   }) {
-    final draft = ref.read(draftConfigProvider);
-    final moving = {for (final id in result.movedItemIds) id.editId};
-    final captured = [
-      for (final id in result.movedItemIds)
-        if (gestureAt(draft, id) case final gesture?)
-          ?ghostFor(gesture, device, flatItems, moving),
-    ];
-
     // Commit the reorder immediately so the drop feels instant. Item ids are
     // identity-keyed, so the result passes straight through and the selection
-    // keeps pointing at the moved rows by itself.
+    // keeps pointing at the moved rows by itself. The ghosts come from the
+    // draft change itself, so a drop, an undo and a redo all animate alike.
     ref.read(gestureCommandsProvider).reorderGesturesAndGroups(
       device,
       result.orderedItemIds,
@@ -145,8 +156,28 @@ _GestureTransitions _useGestureTransitions(
         for (final id in result.movedItemIds) id: result.groupId,
       },
     );
-    transitions.capture(captured, reenters: true);
   }
+
+  ref.listen(draftConfigProvider, (previous, next) {
+    if (previous == null) return;
+    final filter = ref.read(deviceFilterProvider);
+    final collapsed = ref.read(collapsedGroupsProvider);
+    final before = _buildFlatList(previous, filter, collapsed);
+    final moved = findMovedNodes(
+      _flatTreeNodes(before),
+      _flatTreeNodes(_buildFlatList(next, filter, collapsed)),
+    );
+    if (moved.isEmpty) return;
+    transitions.capture(
+      [
+        for (final item in before)
+          if (item is _GestureRowItem && moved.contains(item.editId))
+            if (gestureAt(previous, item.location) case final gesture?)
+              ?ghostFor(gesture, item.device, before, moved),
+      ],
+      reenters: true,
+    );
+  });
 
   return _GestureTransitions(
     transitions: transitions,
