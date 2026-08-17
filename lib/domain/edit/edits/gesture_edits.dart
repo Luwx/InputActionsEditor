@@ -33,7 +33,7 @@ final class AddGesture extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove gesture');
+      RestoreGestures(config, label: 'remove gesture');
 }
 
 /// Inserts [gestures] into [device]'s tree: straight after [after] when it
@@ -75,7 +75,7 @@ final class InsertGestures extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove gestures');
+      RestoreGestures(config, label: 'remove gestures');
 }
 
 /// Removes [location]'s gesture (no-op when it no longer exists).
@@ -92,7 +92,7 @@ final class RemoveGesture extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'add gesture');
+      RestoreGestures(config, label: 'add gesture');
 }
 
 /// Inserts a copy of [location]'s gesture right after it.
@@ -116,7 +116,7 @@ final class DuplicateGesture extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove duplicate');
+      RestoreGestures(config, label: 'remove duplicate');
 }
 
 /// Reorders [device]'s flat gesture order using Flutter's `ReorderableList`
@@ -155,7 +155,8 @@ final class ReorderGesture extends ConfigEdit {
   }
 
   @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'reorder');
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'reorder');
 }
 
 /// Transforms [location]'s gesture in place.
@@ -173,7 +174,7 @@ final class UpdateGesture extends ConfigEdit with CoalescingEdit {
       schema.updateGesture(config, location, transform);
 
   @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'update');
+  ConfigEdit inverse(Config config) => RestoreGestures(config, label: 'update');
 
   @override
   Object coalesceKeyFor(Config before) => location;
@@ -197,7 +198,7 @@ final class UpdateGestureCommon extends ConfigEdit with CoalescingEdit {
   );
 
   @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'update');
+  ConfigEdit inverse(Config config) => RestoreGestures(config, label: 'update');
 
   @override
   Object coalesceKeyFor(Config before) => location;

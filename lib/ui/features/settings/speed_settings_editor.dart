@@ -33,27 +33,27 @@ class SpeedSettingsEditor extends ConsumerWidget {
         _ => RootConfigDirtyField.mouseSpeed,
       }),
     );
-    final sectionField = ref.field(
+    final sectionField = ref.settingsField(
       speedSettingsLens(device),
       fallbackValue: () => s,
     );
-    final eventsField = ref.field(
+    final eventsField = ref.settingsField(
       speedEventsLens(device),
       fallbackValue: () => s.events,
     );
-    final swipeThresholdField = ref.field(
+    final swipeThresholdField = ref.settingsField(
       speedSwipeThresholdLens(device),
       fallbackValue: () => s.swipeThreshold,
     );
-    final pinchInThresholdField = ref.field(
+    final pinchInThresholdField = ref.settingsField(
       speedPinchInThresholdLens(device),
       fallbackValue: () => s.pinchInThreshold,
     );
-    final pinchOutThresholdField = ref.field(
+    final pinchOutThresholdField = ref.settingsField(
       speedPinchOutThresholdLens(device),
       fallbackValue: () => s.pinchOutThreshold,
     );
-    final rotateThresholdField = ref.field(
+    final rotateThresholdField = ref.settingsField(
       speedRotateThresholdLens(device),
       fallbackValue: () => s.rotateThreshold,
     );

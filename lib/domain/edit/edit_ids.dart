@@ -11,6 +11,11 @@ int _editIdSequence = 0;
 
 int _nextEditId() => ++_editIdSequence;
 
+/// Takes an id up front, for a command that adds a node: the id then travels
+/// with the edit, so replaying it puts the node back under the identity later
+/// steps address it by.
+int reserveEditId() => _nextEditId();
+
 /// Ensures every gesture, group node and action carries a unique, non-null
 /// editId. Fills nulls (freshly parsed or added) and de-duplicates collisions
 /// (a duplicated gesture initially shares its source's id). Returns the same

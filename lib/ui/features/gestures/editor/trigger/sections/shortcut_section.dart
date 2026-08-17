@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_scancodes.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Modifier key descriptor - a canonical logical name and its left/right variants.
@@ -57,92 +58,96 @@ class ShortcutSection extends ConsumerWidget {
       keysField.onChanged(updated);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LabelWithTooltip(
-          label: context.l10n.sectionModifierLabel,
-          tooltip: context.l10n.sectionModifierTooltip,
-          textStyle: context.theme.typography.body.sm.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Modifier chips
-        Row(
-          spacing: 6,
-          // runSpacing: 6,
-          children: [
-            for (final mod in _modifiers)
-              _ModifierChip(
-                modifier: mod,
-                activeKeys: currentKeys,
-                onToggle: (key) {
-                  final updated = List<String>.of(currentKeys);
-                  if (updated.contains(key)) {
-                    updated.remove(key);
-                  } else {
-                    updated.add(key);
-                  }
-                  keysField.onChanged(updated);
-                },
-                onSetModifier: (key) {
-                  final updated = currentKeys
-                      .where(
-                        (k) => k != mod.left && k != mod.right,
-                      )
-                      .toList();
-                  if (key != null) updated.add(key);
-                  keysField.onChanged(updated);
-                },
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Main key picker
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            SizedBox(
-              width: 240,
-              child: FSelect<String>.searchBuilder(
-                key: ValueKey(mainKey),
-                format: (v) => v,
-                filter: (query) => query.isEmpty
-                    ? _nonModifierKeys
-                    : _nonModifierKeys
-                          .where(
-                            (k) => k.toLowerCase().contains(
-                              query.toLowerCase(),
-                            ),
-                          )
-                          .toList(),
-                contentBuilder: (_, _, values) => [
-                  for (final k in values) FSelectItem(value: k, title: Text(k)),
-                ],
-                control: FSelectManagedControl<String>(
-                  initial: mainKey,
-                  onChange: setMainKey,
-                ),
-                label: LabelWithTooltip(
-                  label: context.l10n.sectionKeyLabel,
-                  tooltip: context.l10n.sectionKeyTooltip,
-                ),
-              ),
+    return RevealedField(
+      field: ConfigDirtyField.shortcutKeys,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabelWithTooltip(
+            label: context.l10n.sectionModifierLabel,
+            tooltip: context.l10n.sectionModifierTooltip,
+            textStyle: context.theme.typography.body.sm.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-            if (mainKey != null) ...[
-              const SizedBox(width: 8),
-              FButton.icon(
-                onPress: () => setMainKey(null),
-                child: const Icon(FLucideIcons.delete),
-              ),
+          ),
+          const SizedBox(height: 8),
+          // Modifier chips
+          Row(
+            spacing: 6,
+            // runSpacing: 6,
+            children: [
+              for (final mod in _modifiers)
+                _ModifierChip(
+                  modifier: mod,
+                  activeKeys: currentKeys,
+                  onToggle: (key) {
+                    final updated = List<String>.of(currentKeys);
+                    if (updated.contains(key)) {
+                      updated.remove(key);
+                    } else {
+                      updated.add(key);
+                    }
+                    keysField.onChanged(updated);
+                  },
+                  onSetModifier: (key) {
+                    final updated = currentKeys
+                        .where(
+                          (k) => k != mod.left && k != mod.right,
+                        )
+                        .toList();
+                    if (key != null) updated.add(key);
+                    keysField.onChanged(updated);
+                  },
+                ),
             ],
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Preview
-        if (currentKeys.isNotEmpty) _ShortcutPreview(keys: currentKeys),
-      ],
+          ),
+          const SizedBox(height: 12),
+          // Main key picker
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              SizedBox(
+                width: 240,
+                child: FSelect<String>.searchBuilder(
+                  key: ValueKey(mainKey),
+                  format: (v) => v,
+                  filter: (query) => query.isEmpty
+                      ? _nonModifierKeys
+                      : _nonModifierKeys
+                            .where(
+                              (k) => k.toLowerCase().contains(
+                                query.toLowerCase(),
+                              ),
+                            )
+                            .toList(),
+                  contentBuilder: (_, _, values) => [
+                    for (final k in values)
+                      FSelectItem(value: k, title: Text(k)),
+                  ],
+                  control: FSelectManagedControl<String>(
+                    initial: mainKey,
+                    onChange: setMainKey,
+                  ),
+                  label: LabelWithTooltip(
+                    label: context.l10n.sectionKeyLabel,
+                    tooltip: context.l10n.sectionKeyTooltip,
+                  ),
+                ),
+              ),
+              if (mainKey != null) ...[
+                const SizedBox(width: 8),
+                FButton.icon(
+                  onPress: () => setMainKey(null),
+                  child: const Icon(FLucideIcons.delete),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Preview
+          if (currentKeys.isNotEmpty) _ShortcutPreview(keys: currentKeys),
+        ],
+      ),
     );
   }
 }

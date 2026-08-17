@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -20,14 +21,17 @@ class EditorRaw extends HookConsumerWidget {
       schemaField.text,
       schemaField.onTextChanged,
     );
-    return FTextField(
-      control: FTextFieldControl.managed(controller: controller),
-      label: UnsavedLabel(
-        state: schemaField.dirty,
-        onRevert: schemaField.onRevert,
-        child: Text(l10n.actionMetaRawLabel),
+    return RevealedField(
+      field: ConfigDirtyField.actionRaw,
+      child: FTextField(
+        control: FTextFieldControl.managed(controller: controller),
+        label: UnsavedLabel(
+          state: schemaField.dirty,
+          onRevert: schemaField.onRevert,
+          child: Text(l10n.actionMetaRawLabel),
+        ),
+        maxLines: null,
       ),
-      maxLines: null,
     );
   }
 }

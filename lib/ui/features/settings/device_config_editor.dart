@@ -145,13 +145,13 @@ class _DevicePropertiesSection extends ConsumerWidget {
         _ => RootConfigDirtyField.mouseDeviceProperties,
       }),
     );
-    final propertiesField = ref.field(
+    final propertiesField = ref.settingsField(
       defaultDevicePropertiesLens(device),
     );
 
     EditableField<T> field<T>(
       Lens<Config, T> Function(DeviceType device) lens,
-    ) => ref.field(lens(device));
+    ) => ref.settingsField(lens(device));
 
     Widget dirtyTitle<T>(EditableField<T> field, String label) {
       return UnsavedLabel(

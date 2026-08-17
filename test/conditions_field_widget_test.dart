@@ -6,8 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation, gestureAt, gestureConditionsLens, gestureLocationAt;
+    show gestureAt, gestureConditionsLens, gestureLocationAt;
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -155,7 +156,7 @@ class _PointDirtyEditor extends ConsumerWidget {
             .read(configControllerProvider.notifier)
             .add(
               SetLens(gestureConditionsLens(location), next),
-              scope: location,
+              scope: const GesturesScope(),
             );
       },
       dirtyState: ref.watch(
@@ -557,12 +558,6 @@ void main() {
       return (x: x, y: y);
     }
 
-    GestureLocation location() => gestureLocationAt(
-      container.read(configControllerProvider).requireValue.draft,
-      DeviceType.mouse,
-      0,
-    )!;
-
     await tester.tap(find.textContaining('.33,'));
     await tester.pumpAndSettle();
 
@@ -581,12 +576,12 @@ void main() {
 
     expect(point().x, isNot(closeTo(0.33, 0.001)));
 
-    notifier.undo(scope: location());
+    notifier.undo(scope: const GesturesScope());
     await tester.pumpAndSettle();
 
     expect(point().x, closeTo(0.33, 0.001));
     expect(point().y, closeTo(0.02, 0.001));
-    expect(notifier.canUndo(scope: location()), isFalse);
+    expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
   });
 
   testWidgets('text value detect popover closes on submit', (tester) async {

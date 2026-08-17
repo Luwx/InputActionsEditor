@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class PressSection extends ConsumerWidget {
@@ -23,13 +24,16 @@ class PressSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        FCheckbox(
-          label: LabelWithTooltip(
-            label: l10n.pressInstantLabel,
-            tooltip: l10n.pressInstantTooltip,
+        RevealedField(
+          field: ConfigDirtyField.pressInstant,
+          child: FCheckbox(
+            label: LabelWithTooltip(
+              label: l10n.pressInstantLabel,
+              tooltip: l10n.pressInstantTooltip,
+            ),
+            value: instantField.value,
+            onChange: instantField.onChanged,
           ),
-          value: instantField.value,
-          onChange: instantField.onChanged,
         ),
         const SizedBox(height: 4),
       ],

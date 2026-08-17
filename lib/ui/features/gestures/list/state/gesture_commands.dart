@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -17,11 +18,14 @@ class GestureCommands {
   ConfigController get _config => _ref.read(configControllerProvider.notifier);
 
   void addGesture(DeviceType device, Gesture gesture, {int? groupKey}) {
-    _config.add(AddGesture(device, gesture, groupKey: groupKey));
+    _config.add(
+      AddGesture(device, gesture, groupKey: groupKey),
+      scope: const GesturesScope(),
+    );
   }
 
   void duplicateGesture(GestureLocation location) {
-    _config.add(DuplicateGesture(location));
+    _config.add(DuplicateGesture(location), scope: const GesturesScope());
   }
 
   void insertGestures(
@@ -33,6 +37,7 @@ class GestureCommands {
     if (gestures.isEmpty) return;
     _config.add(
       InsertGestures(device, gestures, after: after, groupKey: groupKey),
+      scope: const GesturesScope(),
     );
   }
 
@@ -42,11 +47,12 @@ class GestureCommands {
         location,
         (common) => common.copyWith(name: name.isEmpty ? null : name),
       ),
+      scope: const GesturesScope(),
     );
   }
 
   void removeGesture(GestureLocation location) {
-    _config.add(RemoveGesture(location));
+    _config.add(RemoveGesture(location), scope: const GesturesScope());
   }
 
   void enableGestures(Iterable<GestureLocation> gestures) {
@@ -56,6 +62,7 @@ class GestureCommands {
           gesture,
           (common) => common.copyWith(enabled: null),
         ),
+        scope: const GesturesScope(),
       );
     }
   }
@@ -67,27 +74,40 @@ class GestureCommands {
           gesture,
           (common) => common.copyWith(enabled: false),
         ),
+        scope: const GesturesScope(),
       );
     }
   }
 
   void addGroup(DeviceType device, GestureGroupNode group, {int? parentKey}) {
-    _config.add(AddGestureGroup(device, group, parentKey: parentKey));
+    _config.add(
+      AddGestureGroup(device, group, parentKey: parentKey),
+      scope: const GesturesScope(),
+    );
   }
 
   void updateGroup(
     GestureGroupLocation location,
     GestureGroupNode Function(GestureGroupNode) update,
   ) {
-    _config.add(UpdateGestureGroup(location, update));
+    _config.add(
+      UpdateGestureGroup(location, update),
+      scope: const GesturesScope(),
+    );
   }
 
   void removeGroupAndUngroup(GestureGroupLocation location) {
-    _config.add(RemoveGestureGroupAndUngroup(location));
+    _config.add(
+      RemoveGestureGroupAndUngroup(location),
+      scope: const GesturesScope(),
+    );
   }
 
   void deleteGroupWithGestures(GestureGroupLocation location) {
-    _config.add(DeleteGestureGroupWithGestures(location));
+    _config.add(
+      DeleteGestureGroupWithGestures(location),
+      scope: const GesturesScope(),
+    );
   }
 
   void moveGroup(
@@ -101,6 +121,7 @@ class GestureCommands {
         beforeKey: beforeKey,
         newParentKey: newParentKey,
       ),
+      scope: const GesturesScope(),
     );
   }
 
@@ -109,7 +130,10 @@ class GestureCommands {
     List<GestureLocation> newOrder,
     Map<GestureLocation, int?> assignments,
   ) {
-    _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
+    _config.add(
+      ReorderAndUpdateGroups(device, newOrder, assignments),
+      scope: const GesturesScope(),
+    );
   }
 }
 

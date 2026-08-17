@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -16,7 +17,6 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/mouse_b
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Undo/redo scope key for bulk-edit fan-out writes.
-const Object bulkEditScope = #bulkEditScope;
 
 /// `id` is intentionally excluded from bulk editing, it must stay unique per
 /// gesture. Everything else in [TriggerAdvancedField] is a shared-value field.
@@ -122,13 +122,13 @@ class BulkEditView extends HookConsumerWidget {
         actions: <Type, Action<Intent>>{
           _UndoIntent: CallbackAction<_UndoIntent>(
             onInvoke: (_) {
-              controller.undo(scope: bulkEditScope);
+              controller.undo(scope: const GesturesScope());
               return null;
             },
           ),
           _RedoIntent: CallbackAction<_RedoIntent>(
             onInvoke: (_) {
-              controller.redo(scope: bulkEditScope);
+              controller.redo(scope: const GesturesScope());
               return null;
             },
           ),

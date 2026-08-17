@@ -6,6 +6,9 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
@@ -32,6 +35,9 @@ class ApplicationMenu extends ConsumerWidget {
     final canSave = ref.watch(isDirtyProvider);
     final canDiscard = ref.watch(canDiscardChangesProvider);
     final location = ref.watch(selectedGestureProvider);
+    final undoScope = ref.watch(currentViewProvider) == AppView.settings
+        ? const SettingsScope()
+        : const GesturesScope();
     final gestureState = location == null
         ? null
         : ref.watch(gestureEditorProvider(location));
@@ -157,23 +163,23 @@ class ApplicationMenu extends ConsumerWidget {
             LinuxMenuItem(
               label: l10n.actionUndo,
               iconName: 'edit-undo',
-              enabled: configController.canUndo(scope: location),
+              enabled: configController.canUndo(scope: undoScope),
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyZ,
                 control: true,
               ),
-              onSelected: () => configController.undo(scope: location),
+              onSelected: () => configController.undo(scope: undoScope),
             ),
             LinuxMenuItem(
               label: l10n.actionRedo,
               iconName: 'edit-redo',
-              enabled: configController.canRedo(scope: location),
+              enabled: configController.canRedo(scope: undoScope),
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyZ,
                 control: true,
                 shift: true,
               ),
-              onSelected: () => configController.redo(scope: location),
+              onSelected: () => configController.redo(scope: undoScope),
             ),
             LinuxMenuSection(
               label: l10n.menuGesture,

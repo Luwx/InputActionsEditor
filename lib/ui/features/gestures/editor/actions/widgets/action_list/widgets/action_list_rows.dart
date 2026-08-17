@@ -8,6 +8,8 @@ import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/reveal_providers.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
@@ -95,7 +97,7 @@ class ActionListRows extends StatelessWidget {
                   revealKey: choreo.revealTarget == row.editId
                       ? choreo.revealKey
                       : null,
-                  flashTrigger: choreo.revealTarget == row.editId
+                  flashTrigger: choreo.flashTarget == row.editId
                       ? choreo.revealTick
                       : null,
                 ),
@@ -154,6 +156,15 @@ class ActionRowCard extends HookConsumerWidget {
           ? colors.foreground.withValues(alpha: 0.03)
           : Colors.transparent;
     });
+
+    // Stands in for the field's own highlight while the card is shut, where
+    // the field that changed cannot be seen.
+    final revealTicket = ref.watch(
+      editRevealProvider.select((reveal) => reveal?.ticket),
+    );
+    final cardRevealed = ref
+        .watch(revealedActionFieldsProvider(actionLocation))
+        .isNotEmpty;
 
     final card = AnimatedContainer(
       duration: Durations.medium1,
@@ -247,25 +258,19 @@ class ActionRowCard extends HookConsumerWidget {
 
     return ActionIndentGuides(
       row: row,
-      child: ActionRowDropTarget(
-        row: row,
-        choreo: choreo,
-        child: AnimatedOpacity(
-          duration: Durations.short2,
-          opacity: isDragging ? 0.4 : 1,
-          child: Stack(
-            children: [
-              card,
-              // Positioned(
-              //   left: 0,
-              //   top: actionCardGap,
-              //   bottom: 0,
-              //   child: SelectionEdge(
-              //     selected: selected,
-              //     color: colors.primary,
-              //   ),
-              // ),
-            ],
+      child: AttentionFlash(
+        trigger: cardRevealed && !expanded ? revealTicket : null,
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(actionCardRadius),
+        strength: 0.05,
+        pulseDuration: const Duration(milliseconds: 900),
+        child: ActionRowDropTarget(
+          row: row,
+          choreo: choreo,
+          child: AnimatedOpacity(
+            duration: Durations.short2,
+            opacity: isDragging ? 0.4 : 1,
+            child: card,
           ),
         ),
       ),

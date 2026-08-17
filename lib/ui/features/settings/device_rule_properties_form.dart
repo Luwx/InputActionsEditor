@@ -34,7 +34,7 @@ class DeviceRulePropertiesForm extends ConsumerWidget {
     ) {
       final index = ruleIndex;
       if (index == null) return null;
-      return ref.field(
+      return ref.settingsField(
         lens(DeviceRuleLocation(deviceRuleIndex: index)),
         fallbackValue: () => fallback,
       );

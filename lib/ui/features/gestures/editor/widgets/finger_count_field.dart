@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class FingerCountField extends ConsumerWidget {
@@ -30,34 +31,40 @@ class FingerCountField extends ConsumerWidget {
     );
     final value = field.value;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LabelWithTooltip(
-          label: context.l10n.sectionFingersLabel,
-          tooltip: context.l10n.sectionFingersTooltip,
-          textStyle: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          spacing: 6,
-          children: [
-            FButton(
-              variant: value == null ? .primary : .outline,
-              size: .sm,
-              onPress: () => field.onChanged(null),
-              child: Text(context.l10n.sectionFingersAny),
-            ),
-            for (int n = minFingers; n <= maxFingers; n++)
+    return RevealedField(
+      field: switch (context.gestureLocation.device) {
+        DeviceType.touchscreen => ConfigDirtyField.touchscreenFingers,
+        _ => ConfigDirtyField.touchpadFingers,
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabelWithTooltip(
+            label: context.l10n.sectionFingersLabel,
+            tooltip: context.l10n.sectionFingersTooltip,
+            textStyle: typography.body.sm.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            spacing: 6,
+            children: [
               FButton(
-                variant: value == n ? .primary : .outline,
+                variant: value == null ? .primary : .outline,
                 size: .sm,
-                onPress: () => field.onChanged(n),
-                child: Text('$n'),
+                onPress: () => field.onChanged(null),
+                child: Text(context.l10n.sectionFingersAny),
               ),
-          ],
-        ),
-      ],
+              for (int n = minFingers; n <= maxFingers; n++)
+                FButton(
+                  variant: value == n ? .primary : .outline,
+                  size: .sm,
+                  onPress: () => field.onChanged(n),
+                  child: Text('$n'),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

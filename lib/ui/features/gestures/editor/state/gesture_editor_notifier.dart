@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -71,7 +72,10 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void updateCommon(TriggerCommon Function(TriggerCommon) update) {
-    _config.add(UpdateGestureCommon(location, update), scope: location);
+    _config.add(
+      UpdateGestureCommon(location, update),
+      scope: const GesturesScope(),
+    );
   }
 
   void rename(String name) {
@@ -97,7 +101,7 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   void updateGesture(Object Function(Object) update) {
     _config.add(
       UpdateGesture(location, (gesture) => update(gesture) as Gesture),
-      scope: location,
+      scope: const GesturesScope(),
     );
   }
 
@@ -117,8 +121,4 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
       );
     });
   }
-
-  void undo() => _config.undo(scope: location);
-
-  void redo() => _config.redo(scope: location);
 }

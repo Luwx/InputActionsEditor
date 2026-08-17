@@ -25,6 +25,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
@@ -80,79 +81,83 @@ class EditorInputAction extends HookConsumerWidget {
     );
     final currentEntries = entriesField.value;
     // final colors = context.theme.colors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            UnsavedLabel(
-              state: entriesField.dirty,
-              onRevert: entriesField.onRevert,
-              child: Text(
-                context.l10n.inputDevicesLabel,
-                style: context.theme.typography.body.sm.copyWith(
-                  fontWeight: FontWeight.w600,
+    return RevealedField(
+      field: ConfigDirtyField.actionInputEntries,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              UnsavedLabel(
+                state: entriesField.dirty,
+                onRevert: entriesField.onRevert,
+                child: Text(
+                  context.l10n.inputDevicesLabel,
+                  style: context.theme.typography.body.sm.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            const Spacer(),
-            FButton(
-              variant: .outline,
-              size: .sm,
-              onPress: () => _addEntry(currentEntries, entriesField.onChanged),
-              prefix: const Icon(FLucideIcons.plus, size: 14),
-              child: Text(context.l10n.inputAddDevice),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            // border: Border.all(color: colors.border),
-            borderRadius: BorderRadius.circular(10),
+              const Spacer(),
+              FButton(
+                variant: .outline,
+                size: .sm,
+                onPress: () =>
+                    _addEntry(currentEntries, entriesField.onChanged),
+                prefix: const Icon(FLucideIcons.plus, size: 14),
+                child: Text(context.l10n.inputAddDevice),
+              ),
+            ],
           ),
-          child: Padding(
-            // padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            padding: const EdgeInsets.only(top: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final (index, entry) in currentEntries.indexed)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _InputEntryEditor(
-                        index: index,
-                        entry: entry,
-                        deviceOptions: deviceOptions,
-                        onChanged: (updated) => _updateEntry(
-                          currentEntries,
-                          entriesField.onChanged,
-                          index,
-                          updated,
-                        ),
-                        onDelete: () => _removeEntry(
-                          currentEntries,
-                          entriesField.onChanged,
-                          index,
-                        ),
-                      ),
-                      if (index != currentEntries.length - 1)
-                        const FDivider(
-                          style: .delta(
-                            padding: .value(
-                              EdgeInsets.only(bottom: 12, top: 16),
-                            ),
+          const SizedBox(height: 8),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              // border: Border.all(color: colors.border),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              // padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final (index, entry) in currentEntries.indexed)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _InputEntryEditor(
+                          index: index,
+                          entry: entry,
+                          deviceOptions: deviceOptions,
+                          onChanged: (updated) => _updateEntry(
+                            currentEntries,
+                            entriesField.onChanged,
+                            index,
+                            updated,
+                          ),
+                          onDelete: () => _removeEntry(
+                            currentEntries,
+                            entriesField.onChanged,
+                            index,
                           ),
                         ),
-                    ],
-                  ),
-              ],
+                        if (index != currentEntries.length - 1)
+                          const FDivider(
+                            style: .delta(
+                              padding: .value(
+                                EdgeInsets.only(bottom: 12, top: 16),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

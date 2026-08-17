@@ -69,7 +69,8 @@ class MainShell extends HookConsumerWidget {
           final action = await showUnsavedChangesDialog(ctx);
           if (action == null) return false;
           if (action == UnsavedChangesAction.apply) {
-            await controller.save();
+            // Closing on a failed write would drop the edits for good.
+            if (!await controller.save()) return false;
           } else {
             controller.discardChanges();
           }

@@ -13,6 +13,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/a
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -101,6 +102,9 @@ class ActionTriggerFields extends HookConsumerWidget {
       fallbackValue: () => null,
     );
 
+    Widget revealable(ActionTriggerOptionField field, Widget child) =>
+        RevealedField(field: field.dirtyField, child: child);
+
     final intervalController = useSyncedTextController(
       intervalField.text,
       intervalField.onTextChanged,
@@ -128,99 +132,114 @@ class ActionTriggerFields extends HookConsumerWidget {
             runSpacing: 8,
             children: [
               if (visibleFields.contains(ActionTriggerOptionField.triggerOn))
-                SizedBox(
-                  width: 180,
-                  child: FSelect<TriggerOn>(
-                    label: UnsavedLabel(
-                      state: triggerOnField.dirty,
-                      onRevert: triggerOnField.onRevert,
-                      child: LabelWithTooltip(
-                        label: context.l10n.actionTriggerOnLabel,
-                        tooltipContent: const ActionTriggerOnTooltip(),
+                revealable(
+                  ActionTriggerOptionField.triggerOn,
+                  SizedBox(
+                    width: 180,
+                    child: FSelect<TriggerOn>(
+                      label: UnsavedLabel(
+                        state: triggerOnField.dirty,
+                        onRevert: triggerOnField.onRevert,
+                        child: LabelWithTooltip(
+                          label: context.l10n.actionTriggerOnLabel,
+                          tooltipContent: const ActionTriggerOnTooltip(),
+                        ),
                       ),
-                    ),
-                    key: ValueKey(displayOnValue),
-                    items: supportedOnOptions,
-                    control: FSelectManagedControl<TriggerOn>(
-                      initial: displayOnValue,
-                      onChange: (value) {
-                        if (value != null) triggerOnField.onChanged(value);
-                      },
+                      key: ValueKey(displayOnValue),
+                      items: supportedOnOptions,
+                      control: FSelectManagedControl<TriggerOn>(
+                        initial: displayOnValue,
+                        onChange: (value) {
+                          if (value != null) triggerOnField.onChanged(value);
+                        },
+                      ),
                     ),
                   ),
                 ),
               if (showInterval &&
                   visibleFields.contains(ActionTriggerOptionField.interval))
-                SizedBox(
-                  width: 180,
-                  child: FTextField(
-                    label: UnsavedLabel(
-                      state: intervalField.dirty,
-                      onRevert: intervalField.onRevert,
-                      child: LabelWithTooltip(
-                        label: context.l10n.actionIntervalLabel,
-                        tooltipContent: const ActionIntervalTooltip(),
+                revealable(
+                  ActionTriggerOptionField.interval,
+                  SizedBox(
+                    width: 180,
+                    child: FTextField(
+                      label: UnsavedLabel(
+                        state: intervalField.dirty,
+                        onRevert: intervalField.onRevert,
+                        child: LabelWithTooltip(
+                          label: context.l10n.actionIntervalLabel,
+                          tooltipContent: const ActionIntervalTooltip(),
+                        ),
                       ),
+                      keyboardType: TextInputType.number,
+                      control: FTextFieldControl.managed(
+                        controller: intervalController,
+                      ),
+                      hint: context.l10n.actionIntervalHint,
                     ),
-                    keyboardType: TextInputType.number,
-                    control: FTextFieldControl.managed(
-                      controller: intervalController,
-                    ),
-                    hint: context.l10n.actionIntervalHint,
                   ),
                 ),
               if (showThreshold &&
                   visibleFields.contains(ActionTriggerOptionField.threshold))
-                SizedBox(
-                  width: 180,
-                  child: FTextField(
-                    label: UnsavedLabel(
-                      state: thresholdField.dirty,
-                      onRevert: thresholdField.onRevert,
-                      child: LabelWithTooltip(
-                        label: context.l10n.actionThresholdLabel,
-                        tooltipContent: const ActionThresholdTooltip(),
+                revealable(
+                  ActionTriggerOptionField.threshold,
+                  SizedBox(
+                    width: 180,
+                    child: FTextField(
+                      label: UnsavedLabel(
+                        state: thresholdField.dirty,
+                        onRevert: thresholdField.onRevert,
+                        child: LabelWithTooltip(
+                          label: context.l10n.actionThresholdLabel,
+                          tooltipContent: const ActionThresholdTooltip(),
+                        ),
                       ),
+                      control: FTextFieldControl.managed(
+                        controller: thresholdController,
+                      ),
+                      hint: context.l10n.triggerFieldThresholdHint,
                     ),
-                    control: FTextFieldControl.managed(
-                      controller: thresholdController,
-                    ),
-                    hint: context.l10n.triggerFieldThresholdHint,
                   ),
                 ),
               if (visibleFields.contains(ActionTriggerOptionField.limit))
-                SizedBox(
-                  width: 180,
-                  child: FTextField(
-                    label: UnsavedLabel(
-                      state: limitField.dirty,
-                      onRevert: limitField.onRevert,
-                      child: LabelWithTooltip(
-                        label: context.l10n.actionLimitLabel,
-                        tooltipContent: const ActionLimitTooltip(),
+                revealable(
+                  ActionTriggerOptionField.limit,
+                  SizedBox(
+                    width: 180,
+                    child: FTextField(
+                      label: UnsavedLabel(
+                        state: limitField.dirty,
+                        onRevert: limitField.onRevert,
+                        child: LabelWithTooltip(
+                          label: context.l10n.actionLimitLabel,
+                          tooltipContent: const ActionLimitTooltip(),
+                        ),
                       ),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      keyboardType: TextInputType.number,
+                      control: FTextFieldControl.managed(
+                        controller: limitController,
+                      ),
+                      hint: context.l10n.actionLimitHint,
                     ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    keyboardType: TextInputType.number,
-                    control: FTextFieldControl.managed(
-                      controller: limitController,
-                    ),
-                    hint: context.l10n.actionLimitHint,
                   ),
                 ),
             ],
           ),
         if (visibleFields.contains(ActionTriggerOptionField.conflicting)) ...[
           const SizedBox(height: 8),
-          FCheckbox(
-            value: conflictingField.value,
-            onChange: conflictingField.onChanged,
-            label: UnsavedLabel(
-              state: conflictingField.dirty,
-              onRevert: conflictingField.onRevert,
-              child: LabelWithTooltip(
-                label: context.l10n.actionConflictingLabel,
-                tooltipContent: const ActionConflictingTooltip(),
+          revealable(
+            ActionTriggerOptionField.conflicting,
+            FCheckbox(
+              value: conflictingField.value,
+              onChange: conflictingField.onChanged,
+              label: UnsavedLabel(
+                state: conflictingField.dirty,
+                onRevert: conflictingField.onRevert,
+                child: LabelWithTooltip(
+                  label: context.l10n.actionConflictingLabel,
+                  tooltipContent: const ActionConflictingTooltip(),
+                ),
               ),
             ),
           ),
@@ -235,6 +254,7 @@ class ActionTriggerFields extends HookConsumerWidget {
             titleTooltipContent: const ActionConditionsTooltip(),
             condition: conditionsField.value,
             onConditionChanged: conditionsField.onChanged,
+            revealField: ActionTriggerOptionField.conditions.dirtyField,
           ),
         ],
       ],
@@ -249,4 +269,15 @@ enum ActionTriggerOptionField {
   limit,
   conflicting,
   conditions,
+}
+
+extension ActionTriggerOptionFieldSchema on ActionTriggerOptionField {
+  ConfigDirtyField get dirtyField => switch (this) {
+    ActionTriggerOptionField.triggerOn => ConfigDirtyField.actionTriggerOn,
+    ActionTriggerOptionField.interval => ConfigDirtyField.actionInterval,
+    ActionTriggerOptionField.threshold => ConfigDirtyField.actionThreshold,
+    ActionTriggerOptionField.limit => ConfigDirtyField.actionLimit,
+    ActionTriggerOptionField.conflicting => ConfigDirtyField.actionConflicting,
+    ActionTriggerOptionField.conditions => ConfigDirtyField.actionConditions,
+  };
 }

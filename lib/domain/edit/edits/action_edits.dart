@@ -45,7 +45,7 @@ final class AddAction extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove action');
+      RestoreGestures(config, label: 'remove action');
 }
 
 /// Removes [keys], each together with its nested actions, as one edit. A key
@@ -70,7 +70,7 @@ final class RemoveActions extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'add action');
+      RestoreGestures(config, label: 'add action');
 }
 
 /// Inserts a copy of each of [keys] right after it. The copies carry their
@@ -98,7 +98,7 @@ final class DuplicateActions extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove duplicate action');
+      RestoreGestures(config, label: 'remove duplicate action');
 }
 
 /// Enables or disables [keys] as one edit.
@@ -123,7 +123,7 @@ final class SetActionsEnabled extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'toggle actions');
+      RestoreGestures(config, label: 'toggle actions');
 }
 
 /// Inserts [actions] after [afterKey] (keeping their order), or as the last
@@ -162,7 +162,7 @@ final class InsertActions extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove pasted actions');
+      RestoreGestures(config, label: 'remove pasted actions');
 }
 
 /// Moves [keys] (each with its nested actions) before [beforeKey], or to the
@@ -192,5 +192,5 @@ final class MoveActions extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'move actions');
+      RestoreGestures(config, label: 'move actions');
 }

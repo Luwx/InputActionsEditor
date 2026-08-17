@@ -250,6 +250,34 @@ _GestureListChoreography _useGestureListChoreography(
       queueScrollToGesture(next);
       ref.read(gestureRedirectTargetProvider.notifier).clear();
     })
+    ..listen(editRevealProvider, (_, next) {
+      if (next == null) return;
+      final filter = ref.read(deviceFilterProvider);
+      final group = next.group;
+      if (group != null) {
+        if (filter != null && filter != group.device) {
+          ref
+              .read(navProvider.notifier)
+              .go(GesturesDestination(filter: group.device), replace: true);
+        }
+        ref.read(selectedGroupProvider.notifier).open(group);
+        scrollTargetGroup.value = group.editId;
+        return;
+      }
+      final target = next.gesture!;
+      ref
+          .read(navProvider.notifier)
+          .go(
+            GesturesDestination(
+              open: target,
+              filter: filter == null || filter == target.device
+                  ? filter
+                  : target.device,
+            ),
+            replace: true,
+          );
+      queueScrollToGesture(target);
+    })
     ..listen(navProvider, (prev, next) {
       if (prev == null) return;
       final isHistoryCursorMove =

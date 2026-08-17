@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -14,6 +15,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cond
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inherited_field_note.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -106,7 +108,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
         : ref.schemaField(
             groupF,
             location: scope,
-            scope: scope,
+            scope: const GesturesScope(),
             canRead: (config) => gestureGroupAt(config, scope) != null,
           );
 
@@ -163,22 +165,35 @@ class TriggerAdvancedFields extends HookConsumerWidget {
       return note.value is bool ? note.value! as bool : own;
     }
 
-    /// Appends the inheritance note, when there is one, under [child].
-    Widget withNote(TriggerAdvancedField field, Widget child) {
+    ConfigDirtyField dirtyFieldFor(TriggerAdvancedField field) =>
+        scope == null ? field.dirtyField : field.groupDirtyField;
+
+    /// Appends the inheritance note, when there is one, under [child], and
+    /// marks the field an undo just changed.
+    Widget withNote(
+      TriggerAdvancedField field,
+      Widget child, {
+      bool reveal = true,
+    }) {
       final note = inherited[field];
-      if (note == null) return child;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          child,
-          InheritedFieldNote(
-            inherited: note,
-            onOpenGroup: onOpenGroup == null || note.groupEditId == null
-                ? null
-                : () => onOpenGroup!(note.groupEditId!),
-          ),
-        ],
-      );
+      final row = note == null
+          ? child
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                child,
+                InheritedFieldNote(
+                  inherited: note,
+                  onOpenGroup: onOpenGroup == null || note.groupEditId == null
+                      ? null
+                      : () => onOpenGroup!(note.groupEditId!),
+                ),
+              ],
+            );
+      // A group's fields are edited through the group node, which no reveal
+      // ever points at.
+      if (!reveal) return row;
+      return RevealedField(field: dirtyFieldFor(field), child: row);
     }
 
     return Column(
@@ -367,7 +382,9 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                       final editId = source.groupEditId;
                       if (editId != null) onOpenGroup!(editId);
                     },
+              revealField: dirtyFieldFor(TriggerAdvancedField.conditions),
             ),
+            reveal: false,
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.endConditions)) ...[
@@ -382,7 +399,9 @@ class TriggerAdvancedFields extends HookConsumerWidget {
               bodyBackgroundColor: conditionsBodyBackgroundColor,
               onConditionChanged: endConditionsField.onChanged,
               mixed: endConditionsField.mixed,
+              revealField: dirtyFieldFor(TriggerAdvancedField.endConditions),
             ),
+            reveal: false,
           ),
         ],
       ],
@@ -400,4 +419,53 @@ enum TriggerAdvancedField {
   setLastTrigger,
   conditions,
   endConditions,
+}
+
+/// The row a shared property is edited in. Conditions have no counterpart
+/// here: a group merges them into its subtree instead of sharing a value.
+TriggerAdvancedField triggerAdvancedFieldFor(
+  SharedTriggerProperty property,
+) => switch (property) {
+  SharedTriggerProperty.id => TriggerAdvancedField.id,
+  SharedTriggerProperty.threshold => TriggerAdvancedField.threshold,
+  SharedTriggerProperty.resumeTimeout => TriggerAdvancedField.resumeTimeout,
+  SharedTriggerProperty.accelerated => TriggerAdvancedField.accelerated,
+  SharedTriggerProperty.blockEvents => TriggerAdvancedField.blockEvents,
+  SharedTriggerProperty.clearModifiers => TriggerAdvancedField.clearModifiers,
+  SharedTriggerProperty.setLastTrigger => TriggerAdvancedField.setLastTrigger,
+  SharedTriggerProperty.endConditions => TriggerAdvancedField.endConditions,
+};
+
+extension TriggerAdvancedFieldSchema on TriggerAdvancedField {
+  ConfigDirtyField get dirtyField => switch (this) {
+    TriggerAdvancedField.id => ConfigDirtyField.gestureId,
+    TriggerAdvancedField.threshold => ConfigDirtyField.gestureThreshold,
+    TriggerAdvancedField.resumeTimeout => ConfigDirtyField.gestureResumeTimeout,
+    TriggerAdvancedField.accelerated => ConfigDirtyField.gestureAccelerated,
+    TriggerAdvancedField.blockEvents => ConfigDirtyField.gestureBlockEvents,
+    TriggerAdvancedField.clearModifiers =>
+      ConfigDirtyField.gestureClearModifiers,
+    TriggerAdvancedField.setLastTrigger =>
+      ConfigDirtyField.gestureSetLastTrigger,
+    TriggerAdvancedField.conditions => ConfigDirtyField.gestureConditions,
+    TriggerAdvancedField.endConditions => ConfigDirtyField.gestureEndConditions,
+  };
+
+  ConfigDirtyField get groupDirtyField => switch (this) {
+    TriggerAdvancedField.id => ConfigDirtyField.gestureGroupId,
+    TriggerAdvancedField.threshold => ConfigDirtyField.gestureGroupThreshold,
+    TriggerAdvancedField.resumeTimeout =>
+      ConfigDirtyField.gestureGroupResumeTimeout,
+    TriggerAdvancedField.accelerated =>
+      ConfigDirtyField.gestureGroupAccelerated,
+    TriggerAdvancedField.blockEvents =>
+      ConfigDirtyField.gestureGroupBlockEvents,
+    TriggerAdvancedField.clearModifiers =>
+      ConfigDirtyField.gestureGroupClearModifiers,
+    TriggerAdvancedField.setLastTrigger =>
+      ConfigDirtyField.gestureGroupSetLastTrigger,
+    TriggerAdvancedField.conditions => ConfigDirtyField.gestureGroupConditions,
+    TriggerAdvancedField.endConditions =>
+      ConfigDirtyField.gestureGroupEndConditions,
+  };
 }

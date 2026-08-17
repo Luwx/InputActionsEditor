@@ -29,7 +29,6 @@ Future<(Config, String)> loadConfig() async {
   final file = File(path);
   if (!file.existsSync()) return (const Config(), '');
   final text = await file.readAsString();
-  await Future<void>.delayed(const Duration(milliseconds: 500));
   final config = await compute(decodeConfig, text);
   return (config, text);
 }
@@ -75,7 +74,8 @@ Future<(Config, String)> loadConfigFromPath(String path) async {
   return (decodeConfig(text), text);
 }
 
-Future<void> saveConfig(
+/// Writes [config] and returns the YAML text now on disk.
+Future<String> saveConfig(
   Config config,
   String originalText, {
   BackupPolicy backups = const BackupPolicy.disabled(),
@@ -84,7 +84,9 @@ Future<void> saveConfig(
   final file = File(path);
   if (!file.parent.existsSync()) await file.parent.create(recursive: true);
   await backupConfigFile(path, backups);
-  await file.writeAsString(encodeConfig(config, originalText));
+  final text = encodeConfig(config, originalText);
+  await file.writeAsString(text);
+  return text;
 }
 
 Future<String?> pickSaveFilePath() async {
@@ -341,7 +343,6 @@ void _saveOrRemoveKey(
     editor.remove([key]);
   }
 }
-
 
 // Encode  (model → plain Dart maps consumed by yaml_edit)
 Map<String, dynamic> mouseGestureToMap(MouseGesture g) {

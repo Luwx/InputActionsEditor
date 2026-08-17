@@ -15,6 +15,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/swipe_mode_selector.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_count_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 
 class TouchscreenGestureEditor extends StatelessWidget {
   const TouchscreenGestureEditor({
@@ -52,9 +53,12 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
       }),
     );
     final motionField = ref.gestureField(context, touchscreenMotionLens);
-    final motion = MotionField(
-      motion: motionField.value,
-      onChanged: motionField.onChanged,
+    final motion = RevealedField(
+      field: ConfigDirtyField.touchscreenMotion,
+      child: MotionField(
+        motion: motionField.value,
+        onChanged: motionField.onChanged,
+      ),
     );
 
     return switch (kind) {
@@ -68,9 +72,12 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
                 context,
                 touchscreenSwipeModeLens,
               );
-              return SwipeModeSelector(
-                mode: modeField.value,
-                onModeChanged: modeField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchscreenSwipeMode,
+                child: SwipeModeSelector(
+                  mode: modeField.value,
+                  onModeChanged: modeField.onChanged,
+                ),
               );
             },
           ),
@@ -87,9 +94,12 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
                 context,
                 touchscreenPinchDirectionLens,
               );
-              return PinchSection(
-                direction: directionField.value,
-                onDirectionChanged: directionField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchscreenPinchDirection,
+                child: PinchSection(
+                  direction: directionField.value,
+                  onDirectionChanged: directionField.onChanged,
+                ),
               );
             },
           ),
@@ -106,9 +116,12 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
                 context,
                 touchscreenRotateDirectionLens,
               );
-              return RotateSection(
-                direction: directionField.value,
-                onDirectionChanged: directionField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchscreenRotateDirection,
+                child: RotateSection(
+                  direction: directionField.value,
+                  onDirectionChanged: directionField.onChanged,
+                ),
               );
             },
           ),
@@ -140,10 +153,13 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
                 context,
                 touchscreenStrokeStrokesLens,
               );
-              return StrokesField(
-                strokes: strokesField.value,
-                onStrokesChanged: strokesField.onChanged,
-                deviceType: DeviceType.touchscreen,
+              return RevealedField(
+                field: ConfigDirtyField.touchscreenStrokeStrokes,
+                child: StrokesField(
+                  strokes: strokesField.value,
+                  onStrokesChanged: strokesField.onChanged,
+                  deviceType: DeviceType.touchscreen,
+                ),
               );
             },
           ),

@@ -4,10 +4,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
+import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -64,17 +67,35 @@ void main() {
         ..coalesceEnabled = false;
       final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(loc, '99'), scope: loc);
+      notifier.add(setThreshold(loc, '99'), scope: const GesturesScope());
       expect(thresholdAt(c, 0), '99');
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '1');
 
-      notifier.redo(scope: loc);
+      notifier.redo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '99');
     });
 
-    test('scopes are isolated', () async {
+    SetLens<List<String>?> setEmergency(List<String> keys) =>
+        SetLens<List<String>?>(
+          globalSettingsEmergencyCombinationLens(),
+          keys,
+        );
+
+    test('the gestures scope does not see a settings step', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
+
+      notifier.add(setEmergency(['ctrl']), scope: const SettingsScope());
+
+      expect(notifier.canUndo(scope: const SettingsScope()), isTrue);
+      expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
+    });
+
+    test('a scopeless undo takes the newest step of any scope', () async {
       final c = makeContainer(seed);
       await c.read(configControllerProvider.future);
       final notifier = c.read(configControllerProvider.notifier)
@@ -82,10 +103,96 @@ void main() {
       final loc = locAt(c, 0);
       final loc1 = locAt(c, 1);
 
-      notifier.add(setThreshold(loc, '99'), scope: loc);
-      expect(notifier.canUndo(scope: loc), isTrue);
-      expect(notifier.canUndo(scope: loc1), isFalse);
+      notifier
+        ..add(setThreshold(loc, '99'), scope: const GesturesScope())
+        ..add(setThreshold(loc1, '88'), scope: const GesturesScope())
+        ..undo();
+
+      expect(thresholdAt(c, 1), '2');
+      expect(thresholdAt(c, 0), '99');
+
+      notifier.undo();
+      expect(thresholdAt(c, 0), '1');
+      expect(notifier.canUndo(), isFalse);
     });
+
+    test(
+      'a scopeless undo leaves nothing stale in the scope it took from',
+      () async {
+        final c = makeContainer(seed);
+        await c.read(configControllerProvider.future);
+        final notifier = c.read(configControllerProvider.notifier)
+          ..coalesceEnabled = false;
+        final loc = locAt(c, 0);
+
+        notifier
+          ..add(setThreshold(loc, '99'), scope: const GesturesScope())
+          ..undo();
+
+        expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
+        expect(notifier.canRedo(scope: const GesturesScope()), isTrue);
+
+        notifier.redo(scope: const GesturesScope());
+        expect(thresholdAt(c, 0), '99');
+      },
+    );
+
+    test('undoing a gesture step leaves a newer settings step alone', () async {
+      final c = makeContainer(seed);
+      await c.read(configControllerProvider.future);
+      final notifier = c.read(configControllerProvider.notifier)
+        ..coalesceEnabled = false;
+      final loc = locAt(c, 0);
+
+      notifier
+        ..add(setThreshold(loc, '99'), scope: const GesturesScope())
+        ..add(setEmergency(['ctrl']), scope: const SettingsScope());
+
+      final settings = c
+          .read(configControllerProvider)
+          .requireValue
+          .draft
+          .globalSettings;
+      expect(settings.emergencyCombination, ['ctrl']);
+
+      notifier.undo(scope: const GesturesScope());
+
+      expect(thresholdAt(c, 0), '1');
+      expect(
+        c
+            .read(configControllerProvider)
+            .requireValue
+            .draft
+            .globalSettings
+            .emergencyCombination,
+        ['ctrl'],
+      );
+    });
+
+    test(
+      'undoing a device rule step leaves newer gesture edits alone',
+      () async {
+        final c = makeContainer(seed);
+        await c.read(configControllerProvider.future);
+        final notifier = c.read(configControllerProvider.notifier)
+          ..coalesceEnabled = false;
+        final loc = locAt(c, 0);
+
+        notifier
+          ..add(
+            AddDeviceRule(const DeviceRule()),
+            scope: const SettingsScope(),
+          )
+          ..add(setThreshold(loc, '99'), scope: const GesturesScope())
+          ..undo(scope: const SettingsScope());
+
+        expect(thresholdAt(c, 0), '99');
+        expect(
+          c.read(configControllerProvider).requireValue.draft.deviceRules,
+          isEmpty,
+        );
+      },
+    );
 
     test('rapid edits to the same gesture coalesce into one step', () async {
       final c = makeContainer(seed);
@@ -96,20 +203,20 @@ void main() {
         ..clock = () => t;
       final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(loc, 'a'), scope: loc);
+      notifier.add(setThreshold(loc, 'a'), scope: const GesturesScope());
       t = t.add(const Duration(milliseconds: 100));
-      notifier.add(setThreshold(loc, 'b'), scope: loc);
+      notifier.add(setThreshold(loc, 'b'), scope: const GesturesScope());
       t = t.add(const Duration(milliseconds: 100));
-      notifier.add(setThreshold(loc, 'c'), scope: loc);
+      notifier.add(setThreshold(loc, 'c'), scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'c');
 
       // One undo jumps the whole burst back to the pre-burst value.
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '1');
-      expect(notifier.canUndo(scope: loc), isFalse);
+      expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
 
       // One redo replays the latest value.
-      notifier.redo(scope: loc);
+      notifier.redo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'c');
     });
 
@@ -122,13 +229,13 @@ void main() {
         ..clock = () => t;
       final loc = locAt(c, 0);
 
-      notifier.add(setThreshold(loc, 'a'), scope: loc);
+      notifier.add(setThreshold(loc, 'a'), scope: const GesturesScope());
       t = t.add(const Duration(seconds: 1));
-      notifier.add(setThreshold(loc, 'b'), scope: loc);
+      notifier.add(setThreshold(loc, 'b'), scope: const GesturesScope());
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'a');
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '1');
     });
 
@@ -147,15 +254,18 @@ void main() {
       for (final value in ['a', 'b', 'c']) {
         notifier.tagEdits(
           'row-1',
-          () => notifier.add(setThresholdByLens(loc, value), scope: loc),
+          () => notifier.add(
+            setThresholdByLens(loc, value),
+            scope: const GesturesScope(),
+          ),
         );
         t = t.add(const Duration(milliseconds: 100));
       }
       expect(thresholdAt(c, 0), 'c');
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '1');
-      expect(notifier.canUndo(scope: loc), isFalse);
+      expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
     });
 
     test('bursts from different editor sources stay separate', () async {
@@ -169,17 +279,23 @@ void main() {
 
       notifier.tagEdits(
         'row-1',
-        () => notifier.add(setThresholdByLens(loc, 'a'), scope: loc),
+        () => notifier.add(
+          setThresholdByLens(loc, 'a'),
+          scope: const GesturesScope(),
+        ),
       );
       t = t.add(const Duration(milliseconds: 100));
       notifier.tagEdits(
         'row-2',
-        () => notifier.add(setThresholdByLens(loc, 'b'), scope: loc),
+        () => notifier.add(
+          setThresholdByLens(loc, 'b'),
+          scope: const GesturesScope(),
+        ),
       );
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'a');
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), '1');
     });
 
@@ -197,7 +313,10 @@ void main() {
         row,
         () => notifier.tagEdits(
           'group',
-          () => notifier.add(setThresholdByLens(loc, value), scope: loc),
+          () => notifier.add(
+            setThresholdByLens(loc, value),
+            scope: const GesturesScope(),
+          ),
         ),
       );
 
@@ -205,7 +324,7 @@ void main() {
       t = t.add(const Duration(milliseconds: 100));
       edit('row-2', 'b');
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'a');
     });
 
@@ -215,10 +334,10 @@ void main() {
       final notifier = c.read(configControllerProvider.notifier);
       final loc = locAt(c, 0);
 
-      notifier.add(setThresholdByLens(loc, 'a'), scope: loc);
-      notifier.add(setThresholdByLens(loc, 'b'), scope: loc);
+      notifier.add(setThresholdByLens(loc, 'a'), scope: const GesturesScope());
+      notifier.add(setThresholdByLens(loc, 'b'), scope: const GesturesScope());
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(thresholdAt(c, 0), 'a');
     });
 
@@ -250,10 +369,10 @@ void main() {
       final loc = locAt(c, 0);
       bool isDirty() => c.read(configControllerProvider).value!.isDirty;
       expect(isDirty(), isFalse);
-      notifier.add(setThreshold(loc, '99'), scope: loc);
+      notifier.add(setThreshold(loc, '99'), scope: const GesturesScope());
       expect(isDirty(), isTrue);
 
-      notifier.undo(scope: loc);
+      notifier.undo(scope: const GesturesScope());
       expect(isDirty(), isFalse);
     });
   });

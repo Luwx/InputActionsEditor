@@ -19,7 +19,8 @@ class ConfigRepository {
 
   Future<String?> pickSavePath() => yaml_io.pickSaveFilePath();
 
-  Future<void> save(
+  /// Writes [config] and returns the YAML text now on disk.
+  Future<String> save(
     Config config,
     String originalText, {
     BackupPolicy backups = const BackupPolicy.disabled(),

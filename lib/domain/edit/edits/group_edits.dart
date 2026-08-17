@@ -25,7 +25,7 @@ final class AddGestureGroup extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove group');
+      RestoreGestures(config, label: 'remove group');
 }
 
 /// Transforms the group at [location] (no-op when it no longer exists).
@@ -47,7 +47,7 @@ final class UpdateGestureGroup extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'update group');
+      RestoreGestures(config, label: 'update group');
 }
 
 /// Moves the group at [location] (with its subtree) under [newParentKey]
@@ -72,7 +72,7 @@ final class MoveGestureGroup extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'move group');
+      RestoreGestures(config, label: 'move group');
 }
 
 /// Dissolves the group at [location]: its children take its place.
@@ -88,7 +88,8 @@ final class RemoveGestureGroupAndUngroup extends ConfigEdit {
   Config apply(Config config) => schema.spliceGestureGroup(config, location);
 
   @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'ungroup');
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'ungroup');
 }
 
 /// Deletes the group at [location] together with its whole subtree.
@@ -105,7 +106,7 @@ final class DeleteGestureGroupWithGestures extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'delete group');
+      RestoreGestures(config, label: 'delete group');
 }
 
 /// Reorders [device]'s gestures to [newOrder] (identity locations in their
@@ -130,5 +131,6 @@ final class ReorderAndUpdateGroups extends ConfigEdit {
   );
 
   @override
-  ConfigEdit inverse(Config config) => RestoreConfig(config, label: 'regroup');
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'regroup');
 }

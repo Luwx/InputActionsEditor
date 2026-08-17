@@ -442,6 +442,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configSaveSuccess => 'Config saved.';
 
   @override
+  String get configSaveFailedTitle => 'Couldn\'t save your configuration';
+
+  @override
   String get configCopyToClipboardSuccess => 'Config copied to clipboard.';
 
   @override

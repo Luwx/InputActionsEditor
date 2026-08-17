@@ -359,57 +359,13 @@ class _GestureEditorView extends HookConsumerWidget {
             ],
           );
 
-    return Shortcuts(
-      shortcuts: const <ShortcutActivator, Intent>{
-        SingleActivator(LogicalKeyboardKey.keyZ, control: true): _UndoIntent(),
-        SingleActivator(LogicalKeyboardKey.keyZ, control: true, shift: true):
-            _RedoIntent(),
-        SingleActivator(LogicalKeyboardKey.keyY, control: true): _RedoIntent(),
-        SingleActivator(LogicalKeyboardKey.keyS, control: true): _SaveIntent(),
-      },
-      child: Actions(
-        actions: <Type, Action<Intent>>{
-          _UndoIntent: CallbackAction<_UndoIntent>(
-            onInvoke: (_) {
-              gestureEditor.undo();
-              return null;
-            },
-          ),
-          _RedoIntent: CallbackAction<_RedoIntent>(
-            onInvoke: (_) {
-              gestureEditor.redo();
-              return null;
-            },
-          ),
-          _SaveIntent: CallbackAction<_SaveIntent>(
-            onInvoke: (_) async {
-              final isDirty =
-                  ref.read(configControllerProvider).value?.isDirty ?? false;
-              if (!isDirty) return null;
-              await ref.read(configControllerProvider.notifier).save();
-              if (!context.mounted) return null;
-              showFToast(
-                context: context,
-                title: Text(context.l10n.configSaveSuccess),
-                suffixBuilder: (context, entry) => FButton.icon(
-                  onPress: entry.dismiss,
-                  child: const Icon(FLucideIcons.x),
-                ),
-                duration: const Duration(seconds: 3),
-              );
-              return null;
-            },
-          ),
-        },
-        child: Focus(
-          focusNode: undoFocusNode,
-          autofocus: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: undoFocusNode.requestFocus,
-            child: editorBody,
-          ),
-        ),
+    return Focus(
+      focusNode: undoFocusNode,
+      autofocus: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: undoFocusNode.requestFocus,
+        child: editorBody,
       ),
     );
   }
@@ -494,18 +450,6 @@ class _GestureSelectPrompt extends StatelessWidget {
       ),
     );
   }
-}
-
-class _UndoIntent extends Intent {
-  const _UndoIntent();
-}
-
-class _RedoIntent extends Intent {
-  const _RedoIntent();
-}
-
-class _SaveIntent extends Intent {
-  const _SaveIntent();
 }
 
 class _MultiSelectPanel extends ConsumerWidget {

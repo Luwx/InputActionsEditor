@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
@@ -701,18 +702,18 @@ void main() {
       final notifier = _notifier(c)
         ..add(
           SetLens<SpeedSettings?>(_mouseSpeedLens, _speed1),
-          scope: 'settings',
+          scope: const SettingsScope(),
         );
 
       expect(_config(c).mouseSpeed?.events, 4);
-      expect(notifier.canUndo(scope: 'settings'), isTrue);
-      expect(notifier.canUndo(scope: 'other'), isFalse);
+      expect(notifier.canUndo(scope: const SettingsScope()), isTrue);
+      expect(notifier.canUndo(scope: const GesturesScope()), isFalse);
 
-      notifier.undo(scope: 'settings');
+      notifier.undo(scope: const SettingsScope());
       expect(_config(c).mouseSpeed, isNull);
-      expect(notifier.canRedo(scope: 'settings'), isTrue);
+      expect(notifier.canRedo(scope: const SettingsScope()), isTrue);
 
-      notifier.redo(scope: 'settings');
+      notifier.redo(scope: const SettingsScope());
       expect(_config(c).mouseSpeed?.events, 4);
     });
 

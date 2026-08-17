@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -278,18 +280,8 @@ List<FItemGroupMixin> _fileMenuItems({
             ),
           ),
           onPress: () async {
-            await controller.hide();
-            await configController.save();
-            if (!rootContext.mounted) return;
-            showFToast(
-              context: rootContext,
-              title: Text(l10n.configSaveSuccess),
-              suffixBuilder: (context, entry) => FButton.icon(
-                onPress: entry.dismiss,
-                child: const Icon(FLucideIcons.x),
-              ),
-              duration: const Duration(seconds: 3),
-            );
+            unawaited(controller.hide());
+            await saveConfigDocument(rootContext, ref);
           },
         ),
         FItem(

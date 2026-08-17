@@ -352,6 +352,7 @@ class _HistoryChip extends StatelessWidget {
     );
   }
 }
+
 class _InfoLine extends StatelessWidget {
   const _InfoLine({required this.event});
 

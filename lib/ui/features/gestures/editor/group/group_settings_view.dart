@@ -5,9 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/projections/inheritance_provider.dart';
+import 'package:input_actions_editor/projections/reveal_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
@@ -51,6 +53,16 @@ class GroupSettingsView extends HookConsumerWidget {
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinned.value.contains(field))
         .toList();
+
+    final revealed = ref.watch(revealedGroupFieldsProvider(location));
+    useEffect(() {
+      if (accordionFields.any(
+        (field) => revealed.contains(field.groupDirtyField),
+      )) {
+        optionsExpanded.value = true;
+      }
+      return null;
+    }, [revealed]);
 
     final body = SectionCard(
       color: colors.card.withValues(alpha: 0.55),
@@ -111,46 +123,49 @@ class GroupSettingsView extends HookConsumerWidget {
       ),
     );
 
-    return ScrollbarMediaPadding(
-      topInset: GrowingFrostedHeaderDelegate.maxHeight,
-      child: CustomScrollView(
-        slivers: [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: GrowingFrostedHeaderDelegate(
-              titleBuilder: (style) => RenameableTitle(
-                name: group.name.isEmpty
-                    ? l10n.gestureGroupUnnamed
-                    : group.name,
-                editingName: group.name,
-                titleStyle: style,
-                onRename: (name) => ref
-                    .read(gestureCommandsProvider)
-                    .updateGroup(
-                      location,
-                      (g) => g.copyWith(name: name.trim()),
-                    ),
-              ),
-              subtitle: l10n.groupSettingsSubtitle(
-                _gestureCount(group),
-              ),
-              leading: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: FButton.icon(
-                  variant: .ghost,
-                  size: .sm,
-                  onPress: ref.read(selectedGroupProvider.notifier).close,
-                  child: const Icon(FLucideIcons.arrowLeft),
+    return EditLocationScope(
+      group: location,
+      child: ScrollbarMediaPadding(
+        topInset: GrowingFrostedHeaderDelegate.maxHeight,
+        child: CustomScrollView(
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: GrowingFrostedHeaderDelegate(
+                titleBuilder: (style) => RenameableTitle(
+                  name: group.name.isEmpty
+                      ? l10n.gestureGroupUnnamed
+                      : group.name,
+                  editingName: group.name,
+                  titleStyle: style,
+                  onRename: (name) => ref
+                      .read(gestureCommandsProvider)
+                      .updateGroup(
+                        location,
+                        (g) => g.copyWith(name: name.trim()),
+                      ),
                 ),
+                subtitle: l10n.groupSettingsSubtitle(
+                  _gestureCount(group),
+                ),
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: FButton.icon(
+                    variant: .ghost,
+                    size: .sm,
+                    onPress: ref.read(selectedGroupProvider.notifier).close,
+                    child: const Icon(FLucideIcons.arrowLeft),
+                  ),
+                ),
+                horizontalPadding: 8,
               ),
-              horizontalPadding: 8,
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            sliver: SliverToBoxAdapter(child: body),
-          ),
-        ],
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              sliver: SliverToBoxAdapter(child: body),
+            ),
+          ],
+        ),
       ),
     );
   }

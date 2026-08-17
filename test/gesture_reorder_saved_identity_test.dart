@@ -7,6 +7,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -92,7 +93,7 @@ void main() {
                   direction: WheelDirection.up,
                 ),
               ),
-              scope: wheel1,
+              scope: const GesturesScope(),
             );
         expect(
           container.read(lensDirtyStateProvider(wheelDirectionLens(wheel1))),
@@ -106,7 +107,7 @@ void main() {
         // …and revert restores Wheel #1's own saved value, in its new slot.
         container
             .read(configControllerProvider.notifier)
-            .revert(wheelDirectionLens(wheel1), scope: wheel1);
+            .revert(wheelDirectionLens(wheel1), scope: const GesturesScope());
         expect(
           (draft().mouseGestures[1] as WheelGesture).direction,
           WheelDirection.left,
@@ -123,7 +124,7 @@ void main() {
                   direction: WheelDirection.up,
                 ),
               ),
-              scope: wheel1,
+              scope: const GesturesScope(),
             );
 
         final savedForRevert = container

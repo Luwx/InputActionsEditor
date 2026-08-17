@@ -940,6 +940,12 @@ abstract class AppLocalizations {
   /// **'Config saved.'**
   String get configSaveSuccess;
 
+  /// No description provided for @configSaveFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your configuration'**
+  String get configSaveFailedTitle;
+
   /// No description provided for @configCopyToClipboardSuccess.
   ///
   /// In en, this message translates to:

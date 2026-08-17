@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/clipboard_load_dialog.dart';
@@ -18,7 +21,8 @@ Future<void> newConfigDocument(BuildContext context, WidgetRef ref) async {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return;
     if (action == UnsavedChangesAction.apply) {
-      await configController.save();
+      // A failed write must not be followed by throwing the document away.
+      if (!await configController.save()) return;
     }
   }
 
@@ -33,7 +37,8 @@ Future<void> loadConfigDocument(BuildContext context, WidgetRef ref) async {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return;
     if (action == UnsavedChangesAction.apply) {
-      await configController.save();
+      // A failed write must not be followed by throwing the document away.
+      if (!await configController.save()) return;
     }
   }
 
@@ -50,7 +55,8 @@ Future<void> reloadConfigDocument(BuildContext context, WidgetRef ref) async {
     final action = await showUnsavedChangesDialog(context);
     if (action == null) return;
     if (action == UnsavedChangesAction.apply) {
-      await configController.save();
+      // A failed write must not be followed by throwing the document away.
+      if (!await configController.save()) return;
     }
   }
 
@@ -137,7 +143,7 @@ Future<void> loadConfigFromClipboard(
         final unsavedAction = await showUnsavedChangesDialog(context);
         if (unsavedAction == null) return;
         if (unsavedAction == UnsavedChangesAction.apply) {
-          await configController.save();
+          if (!await configController.save()) return;
         }
       }
       ref.read(navProvider.notifier).reset();
@@ -145,6 +151,42 @@ Future<void> loadConfigFromClipboard(
     case ClipboardLoadAction.merge:
       configController.mergeFromText(text);
   }
+}
+
+/// Saves what the current view owns: in settings that is the settings slice
+/// alone, so pending gesture edits stay unsaved.
+Future<void> saveConfigDocument(BuildContext context, WidgetRef ref) async {
+  final controller = ref.read(configControllerProvider.notifier);
+  final l10n = context.l10n;
+  final bool saved;
+  if (ref.read(currentViewProvider) == AppView.settings) {
+    if (!ref.read(settingsDirtyStateProvider).isDirty) return;
+    saved = await controller.saveSettings();
+  } else {
+    if (!(ref.read(configControllerProvider).value?.isDirty ?? false)) return;
+    saved = await controller.save();
+  }
+  if (!context.mounted) return;
+  if (!saved) {
+    showFToast(
+      context: context,
+      variant: .destructive,
+      icon: const Icon(FLucideIcons.triangleAlert),
+      title: Text(l10n.configSaveFailedTitle),
+      description: Text('${ref.read(configSaveErrorProvider)}'),
+      duration: const Duration(seconds: 8),
+    );
+    return;
+  }
+  showFToast(
+    context: context,
+    title: Text(l10n.configSaveSuccess),
+    suffixBuilder: (context, entry) => FButton.icon(
+      onPress: entry.dismiss,
+      child: const Icon(FLucideIcons.x),
+    ),
+    duration: const Duration(seconds: 3),
+  );
 }
 
 Future<void> copyConfigToClipboard(

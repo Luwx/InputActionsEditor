@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
+    show changedActionFields;
 import 'package:input_actions_editor/model/action.dart'
     show ActionGroup, TriggerAction;
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
@@ -65,6 +68,24 @@ class ActionExpandedEditor extends HookConsumerWidget {
     final accordionFields = available
         .where((field) => !pinned.contains(field))
         .toList();
+
+    final reveal = ref.watch(editRevealProvider);
+    useEffect(() {
+      if (reveal == null ||
+          reveal.gesture != actionLocation.gesture ||
+          reveal.actionEditId != actionLocation.editId) {
+        return null;
+      }
+      final changed = changedActionFields(
+        reveal.before,
+        reveal.after,
+        actionLocation,
+      );
+      if (accordionFields.any((field) => changed.contains(field.dirtyField))) {
+        optionsExpanded.value = true;
+      }
+      return null;
+    }, [reveal]);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),

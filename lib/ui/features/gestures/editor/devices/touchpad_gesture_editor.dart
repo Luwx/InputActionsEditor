@@ -15,6 +15,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/swipe_mode_selector.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_count_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 
 class TouchpadGestureEditor extends StatelessWidget {
   const TouchpadGestureEditor({
@@ -52,9 +53,12 @@ class _TouchpadTriggerSection extends ConsumerWidget {
       }),
     );
     final motionField = ref.gestureField(context, touchpadMotionLens);
-    final motion = MotionField(
-      motion: motionField.value,
-      onChanged: motionField.onChanged,
+    final motion = RevealedField(
+      field: ConfigDirtyField.touchpadMotion,
+      child: MotionField(
+        motion: motionField.value,
+        onChanged: motionField.onChanged,
+      ),
     );
 
     return switch (kind) {
@@ -68,9 +72,12 @@ class _TouchpadTriggerSection extends ConsumerWidget {
                 context,
                 touchpadSwipeModeLens,
               );
-              return SwipeModeSelector(
-                mode: modeField.value,
-                onModeChanged: modeField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchpadSwipeMode,
+                child: SwipeModeSelector(
+                  mode: modeField.value,
+                  onModeChanged: modeField.onChanged,
+                ),
               );
             },
           ),
@@ -87,9 +94,12 @@ class _TouchpadTriggerSection extends ConsumerWidget {
                 context,
                 touchpadPinchDirectionLens,
               );
-              return PinchSection(
-                direction: directionField.value,
-                onDirectionChanged: directionField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchpadPinchDirection,
+                child: PinchSection(
+                  direction: directionField.value,
+                  onDirectionChanged: directionField.onChanged,
+                ),
               );
             },
           ),
@@ -106,9 +116,12 @@ class _TouchpadTriggerSection extends ConsumerWidget {
                 context,
                 touchpadRotateDirectionLens,
               );
-              return RotateSection(
-                direction: directionField.value,
-                onDirectionChanged: directionField.onChanged,
+              return RevealedField(
+                field: ConfigDirtyField.touchpadRotateDirection,
+                child: RotateSection(
+                  direction: directionField.value,
+                  onDirectionChanged: directionField.onChanged,
+                ),
               );
             },
           ),
@@ -150,10 +163,13 @@ class _TouchpadTriggerSection extends ConsumerWidget {
                 context,
                 touchpadStrokeStrokesLens,
               );
-              return StrokesField(
-                strokes: strokesField.value,
-                onStrokesChanged: strokesField.onChanged,
-                deviceType: DeviceType.touchpad,
+              return RevealedField(
+                field: ConfigDirtyField.touchpadStrokeStrokes,
+                child: StrokesField(
+                  strokes: strokesField.value,
+                  onStrokesChanged: strokesField.onChanged,
+                  deviceType: DeviceType.touchpad,
+                ),
               );
             },
           ),

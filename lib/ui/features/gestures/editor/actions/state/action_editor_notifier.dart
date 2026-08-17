@@ -4,6 +4,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_ids.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -114,12 +116,18 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   }
 
   void _dispatch(ConfigEdit edit) {
-    ref.read(configControllerProvider.notifier).add(edit, scope: location);
+    ref
+        .read(configControllerProvider.notifier)
+        .add(edit, scope: const GesturesScope());
   }
 
   void add(Action action, {int? parentKey}) {
     _dispatch(
-      AddAction(location, TriggerAction(action: action), parentKey: parentKey),
+      AddAction(
+        location,
+        TriggerAction(action: action, editId: reserveEditId()),
+        parentKey: parentKey,
+      ),
     );
   }
 
@@ -220,7 +228,7 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
             entries,
             label: 'Edit input entries',
           ),
-          scope: location.gesture,
+          scope: const GesturesScope(),
         );
   }
 
@@ -233,7 +241,7 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
             rules,
             label: 'Edit replace text rules',
           ),
-          scope: location.gesture,
+          scope: const GesturesScope(),
         );
   }
 }

@@ -6,6 +6,7 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -21,24 +22,27 @@ class EditorFunction extends HookConsumerWidget {
       schemaField.text,
       schemaField.onTextChanged,
     );
-    return FTextField(
-      control: FTextFieldControl.managed(controller: controller),
-      label: UnsavedLabel(
-        state: schemaField.dirty,
-        onRevert: schemaField.onRevert,
-        child: LabelWithTooltip(
-          label: l10n.actionFunctionLabel,
-          tooltipContent: const ActionFunctionTooltip(),
-        ),
-      ),
-      hint: l10n.actionFunctionHint,
-      maxLines: 10,
-      style: .delta(
-        contentTextStyle: FVariantsDelta.delta([
-          FVariantOperation.all(
-            const TextStyleDelta.delta(fontFamily: 'monospace'),
+    return RevealedField(
+      field: ConfigDirtyField.actionExpression,
+      child: FTextField(
+        control: FTextFieldControl.managed(controller: controller),
+        label: UnsavedLabel(
+          state: schemaField.dirty,
+          onRevert: schemaField.onRevert,
+          child: LabelWithTooltip(
+            label: l10n.actionFunctionLabel,
+            tooltipContent: const ActionFunctionTooltip(),
           ),
-        ]),
+        ),
+        hint: l10n.actionFunctionHint,
+        maxLines: 10,
+        style: .delta(
+          contentTextStyle: FVariantsDelta.delta([
+            FVariantOperation.all(
+              const TextStyleDelta.delta(fontFamily: 'monospace'),
+            ),
+          ]),
+        ),
       ),
     );
   }

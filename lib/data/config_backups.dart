@@ -37,7 +37,7 @@ Future<void> backupConfigFile(String configPath, BackupPolicy policy) async {
   if (!dir.existsSync()) await dir.create(recursive: true);
 
   final name = _basename(configPath);
-  await source.copy('${dir.path}/${_freeName(dir, name, DateTime.now())}');
+  await source.copy('${dir.path}/${_freeName(dir, name, _nextStamp())}');
 
   final existing = listConfigBackups(configPath);
   for (final stale in existing.skip(policy.keep)) {
@@ -60,8 +60,7 @@ List<File> listConfigBackups(String configPath) {
   return files;
 }
 
-String _freeName(Directory dir, String name, DateTime at) {
-  final stamp = _stamp(at);
+String _freeName(Directory dir, String name, String stamp) {
   var candidate = '$name.$stamp.bak';
   var counter = 1;
   while (File('${dir.path}/$candidate').existsSync()) {
@@ -71,11 +70,28 @@ String _freeName(Directory dir, String name, DateTime at) {
   return candidate;
 }
 
+DateTime? _lastStamp;
+
+/// Never repeats and never goes back, so pruning can't free a name a later
+/// backup would take, which would put the two out of order. Names are the sort
+/// key in [listConfigBackups].
+String _nextStamp() {
+  // Truncated to the resolution the name is rendered at, so "after" means a
+  // different name.
+  final now = DateTime.fromMillisecondsSinceEpoch(
+    DateTime.now().millisecondsSinceEpoch,
+  );
+  final last = _lastStamp;
+  final stamp = last != null && !now.isAfter(last)
+      ? last.add(const Duration(milliseconds: 1))
+      : now;
+  _lastStamp = stamp;
+  return _stamp(stamp);
+}
+
 RegExp _backupPattern(String name) =>
     RegExp('^${RegExp.escape(name)}\\.\\d{8}-\\d{9}(_\\d+)?\\.bak\$');
 
-/// Millisecond precision keeps the stamps unique and, since [listConfigBackups]
-/// orders by name, keeps a burst of saves in the order they happened.
 String _stamp(DateTime at) {
   String pad(int value, [int width = 2]) =>
       value.toString().padLeft(width, '0');

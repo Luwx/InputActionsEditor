@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart'
     show RootConfigDirtyField;
@@ -56,15 +57,16 @@ class EffectSettingsScreen extends ConsumerWidget {
 
     void revertGlobalSettings(GlobalSettings next) => controller.add(
       SetLens<GlobalSettings>(globalSettingsLens(), next),
+      scope: const SettingsScope(),
     );
-    final autoreloadField = ref.field(globalSettingsAutoreloadLens());
-    final externalVariableAccessField = ref.field(
+    final autoreloadField = ref.settingsField(globalSettingsAutoreloadLens());
+    final externalVariableAccessField = ref.settingsField(
       globalSettingsExternalVariableAccessLens(),
     );
-    final notificationsConfigErrorField = ref.field(
+    final notificationsConfigErrorField = ref.settingsField(
       globalSettingsNotificationsConfigErrorLens(),
     );
-    final emergencyCombinationField = ref.field(
+    final emergencyCombinationField = ref.settingsField(
       globalSettingsEmergencyCombinationLens(),
     );
 

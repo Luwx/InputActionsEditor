@@ -9,6 +9,7 @@ import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/projections/inheritance_provider.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -52,6 +53,19 @@ class TriggerEditor extends HookConsumerWidget {
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinnedFields.value.contains(field))
         .toList();
+    final reveal = ref.watch(editRevealProvider);
+    useEffect(() {
+      if (reveal == null || reveal.gesture != location) return null;
+      final changed = changedGestureFields(
+        reveal.before,
+        reveal.after,
+        location,
+      );
+      if (accordionFields.any((field) => changed.contains(field.dirtyField))) {
+        optionsExpanded.value = true;
+      }
+      return null;
+    }, [reveal]);
     final conflicts = ref.watch(conflictReportProvider).forGesture(location);
 
     void openGroup(int editId) {
@@ -153,18 +167,7 @@ Map<TriggerAdvancedField, InheritedProperty> _byField(
   List<InheritedProperty> inherited,
 ) => {
   for (final property in inherited)
-    switch (property.property) {
-      SharedTriggerProperty.id => TriggerAdvancedField.id,
-      SharedTriggerProperty.threshold => TriggerAdvancedField.threshold,
-      SharedTriggerProperty.resumeTimeout => TriggerAdvancedField.resumeTimeout,
-      SharedTriggerProperty.accelerated => TriggerAdvancedField.accelerated,
-      SharedTriggerProperty.blockEvents => TriggerAdvancedField.blockEvents,
-      SharedTriggerProperty.clearModifiers =>
-        TriggerAdvancedField.clearModifiers,
-      SharedTriggerProperty.setLastTrigger =>
-        TriggerAdvancedField.setLastTrigger,
-      SharedTriggerProperty.endConditions => TriggerAdvancedField.endConditions,
-    }: property,
+    triggerAdvancedFieldFor(property.property): property,
 };
 
 class _TriggerConflictBadge extends StatelessWidget {

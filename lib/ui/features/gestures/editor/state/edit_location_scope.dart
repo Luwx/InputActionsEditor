@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
@@ -12,15 +13,19 @@ class EditLocationScope extends InheritedWidget {
     required super.child,
     this.gesture,
     this.action,
+    this.group,
     this.bulk,
     super.key,
   }) : assert(
-         gesture != null || action != null || bulk != null,
-         'EditLocationScope requires a gesture, action, or bulk target.',
+         gesture != null || action != null || group != null || bulk != null,
+         'EditLocationScope requires a gesture, action, group, or bulk target.',
        );
 
   final GestureLocation? gesture;
   final ActionLocation? action;
+
+  /// The group whose shared properties this subtree edits.
+  final GestureGroupLocation? group;
 
   /// When set, scoped field reads/writes apply across this whole selection (the
   /// bulk-edit page). Resolved before the single-location targets.
@@ -54,6 +59,7 @@ class EditLocationScope extends InheritedWidget {
   bool updateShouldNotify(EditLocationScope oldWidget) =>
       gesture != oldWidget.gesture ||
       action != oldWidget.action ||
+      group != oldWidget.group ||
       !setEquals(bulk, oldWidget.bulk);
 }
 
@@ -78,7 +84,7 @@ extension ScopedFieldAccess on WidgetRef {
       lensFor(location),
       dirty: dirty,
       fallbackValue: fallbackValue,
-      scope: location,
+      scope: const GesturesScope(),
       canRead: (config) => gestureAt(config, location) != null,
     );
   }
@@ -94,7 +100,7 @@ extension ScopedFieldAccess on WidgetRef {
       lensFor(location),
       dirty: dirty,
       fallbackValue: fallbackValue,
-      scope: location.gesture,
+      scope: const GesturesScope(),
       canRead: (config) => actionAt(config, location) != null,
     );
   }
@@ -113,7 +119,7 @@ extension ScopedFieldAccess on WidgetRef {
       field,
       location: location,
       dirty: dirty,
-      scope: location,
+      scope: const GesturesScope(),
       canRead: (config) => gestureAt(config, location) != null,
     );
   }
@@ -128,7 +134,7 @@ extension ScopedFieldAccess on WidgetRef {
       field,
       location: location,
       dirty: dirty,
-      scope: location.gesture,
+      scope: const GesturesScope(),
       canRead: (config) => actionAt(config, location) != null,
     );
   }

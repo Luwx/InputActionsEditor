@@ -33,28 +33,28 @@ void main() {
 
   test('undo/redo round-trips and reports availability', () {
     final h = makeHistory();
-    expect(h.canUndo, isFalse);
+    expect(h.canUndo(), isFalse);
 
     h.push(const _Edit('e1'), const _Edit('i1'), at: t0);
-    expect(h.canUndo, isTrue);
-    expect(h.canRedo, isFalse);
+    expect(h.canUndo(), isTrue);
+    expect(h.canRedo(), isFalse);
 
     expect(h.popUndo()?.label, 'i1');
-    expect(h.canUndo, isFalse);
-    expect(h.canRedo, isTrue);
+    expect(h.canUndo(), isFalse);
+    expect(h.canRedo(), isTrue);
 
     expect(h.popRedo()?.label, 'e1');
-    expect(h.canRedo, isFalse);
+    expect(h.canRedo(), isFalse);
   });
 
   test('a new push clears the redo stack', () {
     final h = makeHistory();
     h.push(const _Edit('e1'), const _Edit('i1'), at: t0);
     h.popUndo();
-    expect(h.canRedo, isTrue);
+    expect(h.canRedo(), isTrue);
 
     h.push(const _Edit('e2'), const _Edit('i2'), at: t0);
-    expect(h.canRedo, isFalse);
+    expect(h.canRedo(), isFalse);
   });
 
   test('same-key pushes within the window fold to one step', () {
@@ -80,7 +80,7 @@ void main() {
 
     // One undo jumps the whole burst back to the pre-burst inverse...
     expect(h.popUndo()?.label, 'pre-burst');
-    expect(h.canUndo, isFalse);
+    expect(h.canUndo(), isFalse);
     // ...and one redo replays the latest forward edit.
     expect(h.popRedo()?.label, 'e-c');
   });

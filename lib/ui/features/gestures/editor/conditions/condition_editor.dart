@@ -3,6 +3,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -17,6 +18,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/inherited_condition_nodes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/raw_fallback.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 
 class ConditionEditor extends StatelessWidget {
   /// Convenience constructor that reads/writes from [TriggerCommon.conditions].
@@ -35,6 +37,7 @@ class ConditionEditor extends StatelessWidget {
     this.inherited = const [],
     this.inheritedForGroup = false,
     this.onOpenInheritedGroup,
+    this.revealField,
     super.key,
   }) : condition = null,
        onConditionChanged = null,
@@ -63,6 +66,7 @@ class ConditionEditor extends StatelessWidget {
     this.inherited = const [],
     this.inheritedForGroup = false,
     this.onOpenInheritedGroup,
+    this.revealField,
     super.key,
   }) : common = null,
        onCommonChanged = null;
@@ -112,6 +116,9 @@ class ConditionEditor extends StatelessWidget {
 
   /// Opens the group an inherited branch comes from.
   final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
+
+  /// The field an undo lights up, marking the body rather than the title.
+  final ConfigDirtyField? revealField;
 
   Condition? get _effectiveCondition => condition ?? common?.conditions;
 
@@ -305,6 +312,22 @@ class ConditionEditor extends StatelessWidget {
   }
 
   Widget _buildBody(
+    FColors colors,
+    FTypography typography,
+    Condition? condition,
+    BuildContext context,
+  ) {
+    final field = revealField;
+    if (field != null) {
+      return RevealedField(
+        field: field,
+        child: _buildFlashableBody(colors, typography, condition, context),
+      );
+    }
+    return _buildFlashableBody(colors, typography, condition, context);
+  }
+
+  Widget _buildFlashableBody(
     FColors colors,
     FTypography typography,
     Condition? condition,

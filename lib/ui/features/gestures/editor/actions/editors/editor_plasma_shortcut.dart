@@ -16,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/k
         kGlobalAccelShortcutsProvider,
         shortcutFilterProvider;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -109,34 +110,40 @@ class EditorPlasmaShortcut extends HookConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FTextField(
-            control: FTextFieldControl.managed(
-              controller: componentController,
-            ),
-            label: UnsavedLabel(
-              state: componentField.dirty,
-              onRevert: componentField.onRevert,
-              child: LabelWithTooltip(
-                label: l10n.actionPlasmaComponentLabel,
-                tooltip: l10n.actionPlasmaComponentTooltip,
+          RevealedField(
+            field: ConfigDirtyField.actionComponent,
+            child: FTextField(
+              control: FTextFieldControl.managed(
+                controller: componentController,
               ),
+              label: UnsavedLabel(
+                state: componentField.dirty,
+                onRevert: componentField.onRevert,
+                child: LabelWithTooltip(
+                  label: l10n.actionPlasmaComponentLabel,
+                  tooltip: l10n.actionPlasmaComponentTooltip,
+                ),
+              ),
+              hint: l10n.actionPlasmaComponentHint,
             ),
-            hint: l10n.actionPlasmaComponentHint,
           ),
           const SizedBox(height: 6),
-          FTextField(
-            control: FTextFieldControl.managed(
-              controller: shortcutController,
-            ),
-            label: UnsavedLabel(
-              state: shortcutField.dirty,
-              onRevert: shortcutField.onRevert,
-              child: LabelWithTooltip(
-                label: l10n.actionPlasmaShortcutLabel,
-                tooltip: l10n.actionPlasmaShortcutTooltip,
+          RevealedField(
+            field: ConfigDirtyField.actionShortcut,
+            child: FTextField(
+              control: FTextFieldControl.managed(
+                controller: shortcutController,
               ),
+              label: UnsavedLabel(
+                state: shortcutField.dirty,
+                onRevert: shortcutField.onRevert,
+                child: LabelWithTooltip(
+                  label: l10n.actionPlasmaShortcutLabel,
+                  tooltip: l10n.actionPlasmaShortcutTooltip,
+                ),
+              ),
+              hint: l10n.actionPlasmaShortcutHint,
             ),
-            hint: l10n.actionPlasmaShortcutHint,
           ),
           const SizedBox(height: 6),
           manualLink,

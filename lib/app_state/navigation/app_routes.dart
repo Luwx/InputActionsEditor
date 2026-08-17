@@ -15,6 +15,7 @@ import 'package:input_actions_editor/ui/features/settings/device_rules_editor.da
 import 'package:input_actions_editor/ui/features/settings/effect_settings_screen.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/ui/mini_router/mini_router.dart';
+import 'package:input_actions_editor/ui/shell/document_shortcuts.dart';
 import 'package:input_actions_editor/ui/shell/main_shell.dart';
 import 'package:input_actions_editor/ui/shell/settings_shell.dart';
 
@@ -79,22 +80,24 @@ MiniRouter<AppDestination> buildAppRouter(
               context,
               shell,
               children,
-            ) => AnimatedBranchContainer(
-              currentIndex: shell.currentIndex,
-              transitionsBuilder:
-                  (
-                    context,
-                    animation,
-                    secondaryAnimation,
-                    child,
-                  ) => CustomFadeForwardsTransition(
-                    animation: animation,
-                    secondaryAnimation: secondaryAnimation,
-                    axis: Axis.horizontal,
-                    backgroundColor: Colors.transparent,
-                    child: child,
-                  ),
-              children: children,
+            ) => DocumentShortcuts(
+              child: AnimatedBranchContainer(
+                currentIndex: shell.currentIndex,
+                transitionsBuilder:
+                    (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) => CustomFadeForwardsTransition(
+                      animation: animation,
+                      secondaryAnimation: secondaryAnimation,
+                      axis: Axis.horizontal,
+                      backgroundColor: Colors.transparent,
+                      child: child,
+                    ),
+                children: children,
+              ),
             ),
         branches: [
           // Branch 0 > main: gestures + history share the FScaffold sidebar.
