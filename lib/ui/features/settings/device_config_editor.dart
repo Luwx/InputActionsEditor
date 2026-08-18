@@ -1,5 +1,4 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
-import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +14,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/settings/number_input_formatters.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
@@ -402,14 +402,6 @@ class _NullableBoolToggle extends StatelessWidget {
   }
 }
 
-final TextInputFormatter _integerOnly = _accepting(RegExp(r'^\d*$'));
-final TextInputFormatter _decimalOnly = _accepting(RegExp(r'^\d*\.?\d*$'));
-
-TextInputFormatter _accepting(RegExp pattern) =>
-    TextInputFormatter.withFunction(
-      (old, next) => pattern.hasMatch(next.text) ? next : old,
-    );
-
 class _NumberField extends HookWidget {
   const _NumberField({
     required this.value,
@@ -482,7 +474,9 @@ class _NumberField extends HookWidget {
           if (!f) commit(controller.text);
         },
         child: FTextField(
-          inputFormatters: [if (isInt) _integerOnly else _decimalOnly],
+          inputFormatters: [
+            if (isInt) integerOnlyFormatter else decimalOnlyFormatter,
+          ],
           control: FTextFieldControl.managed(
             controller: controller,
             onChange: (value) => emit(value.text),

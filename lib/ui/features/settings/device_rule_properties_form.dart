@@ -6,6 +6,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
+import 'package:input_actions_editor/ui/features/settings/number_input_formatters.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 
 /// A compact form for editing all device rule properties.
@@ -311,16 +312,25 @@ class _NumberChip extends HookWidget {
       ctrl.text = _fmt(value);
     }
 
+    void set(double? next) {
+      if (next != value) onChanged(next);
+    }
+
+    void emit(String text) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        set(null);
+        return;
+      }
+      final parsed = double.tryParse(trimmed);
+      if (parsed != null) set(parsed);
+    }
+
     // Keep the "commit" logic in a ref so the focus listener stays fresh.
     final commitRef = useRef<void Function()>(() {})
       ..value = () {
-        final trimmed = ctrl.text.trim();
         editing.value = false;
-        if (trimmed.isEmpty) {
-          onChanged(null);
-        } else {
-          onChanged(double.tryParse(trimmed));
-        }
+        emit(ctrl.text);
       };
 
     useEffect(() {
@@ -340,9 +350,12 @@ class _NumberChip extends HookWidget {
         child: Focus(
           focusNode: focus,
           child: FTextField(
+            inputFormatters: [
+              if (isInt) integerOnlyFormatter else decimalOnlyFormatter,
+            ],
             control: FTextFieldControl.managed(
               controller: ctrl,
-              onChange: (_) {},
+              onChange: (value) => emit(value.text),
             ),
             hint: label,
             onSubmit: (_) => commitRef.value(),
