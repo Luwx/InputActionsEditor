@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
+import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -401,6 +402,14 @@ class _NullableBoolToggle extends StatelessWidget {
   }
 }
 
+final TextInputFormatter _integerOnly = _accepting(RegExp(r'^\d*$'));
+final TextInputFormatter _decimalOnly = _accepting(RegExp(r'^\d*\.?\d*$'));
+
+TextInputFormatter _accepting(RegExp pattern) =>
+    TextInputFormatter.withFunction(
+      (old, next) => pattern.hasMatch(next.text) ? next : old,
+    );
+
 class _NumberField extends HookWidget {
   const _NumberField({
     required this.value,
@@ -459,6 +468,7 @@ class _NumberField extends HookWidget {
           if (!f) commit(controller.text);
         },
         child: FTextField(
+          inputFormatters: [if (isInt) _integerOnly else _decimalOnly],
           control: FTextFieldControl.managed(
             controller: controller,
             onChange: (_) {},
