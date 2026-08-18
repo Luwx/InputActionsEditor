@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -23,6 +24,7 @@ class GestureEditorLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     printBuild(4, 'gestureEditorLayout build');
+    ref.watch(revealPaneProvider(location));
     final advancedFields = ref.watch(
       gestureEditorProvider(location).select(
         (s) => TriggerAdvancedFields.nonDefaultFields(

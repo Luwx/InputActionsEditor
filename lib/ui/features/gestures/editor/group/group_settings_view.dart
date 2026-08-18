@@ -7,6 +7,7 @@ import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/projections/reveal_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -32,6 +33,7 @@ class GroupSettingsView extends HookConsumerWidget {
     final l10n = context.l10n;
     final colors = context.theme.colors;
 
+    ref.watch(revealPaneProvider(location));
     final group = ref.watch(
       draftConfigProvider.select((config) => gestureGroupAt(config, location)),
     );
