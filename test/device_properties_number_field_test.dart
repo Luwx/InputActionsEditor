@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/settings/device_config_editor.dart';
@@ -19,9 +21,10 @@ mouse:
 ''';
 
   late AppLocalizations l10n;
+  late ProviderContainer container;
 
   Future<void> pumpEditor(WidgetTester tester) async {
-    final container = await configTestContainer(FakeConfigRepository(source));
+    container = await configTestContainer(FakeConfigRepository(source));
     addTearDown(container.dispose);
     await container.read(configControllerProvider.future);
 
@@ -77,5 +80,20 @@ mouse:
     expect(await type(tester, label, '1.5.2'), '9');
     expect(await type(tester, label, '1,5'), '9');
     expect(await type(tester, label, '1.5'), '1.5');
+  });
+
+  testWidgets('a typed value reaches the draft without leaving the field', (
+    tester,
+  ) async {
+    await pumpEditor(tester);
+
+    await type(tester, l10n.devicePropertiesMotionTimeoutLabel, '250');
+
+    expect(
+      defaultDeviceMotionTimeoutLens(
+        DeviceType.mouse,
+      ).get(container.read(draftConfigProvider)),
+      250,
+    );
   });
 }

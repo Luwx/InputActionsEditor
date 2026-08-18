@@ -440,10 +440,24 @@ class _NumberField extends HookWidget {
       controller.text = _fmt(value);
     }
 
+    void set(double? next) {
+      if (next != value) onChanged(next);
+    }
+
+    void emit(String text) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        set(null);
+        return;
+      }
+      final parsed = double.tryParse(trimmed);
+      if (parsed != null) set(parsed);
+    }
+
     void commit(String text) {
       final trimmed = text.trim();
       if (trimmed.isEmpty) {
-        onChanged(null);
+        set(null);
         return;
       }
       final parsed = double.tryParse(trimmed);
@@ -456,8 +470,8 @@ class _NumberField extends HookWidget {
       final mx = max;
       if (mn != null && clamped < mn) clamped = mn;
       if (mx != null && clamped > mx) clamped = mx;
-      onChanged(clamped);
-      if (clamped != parsed) controller.text = _fmt(clamped);
+      set(clamped);
+      controller.text = _fmt(clamped);
     }
 
     return SizedBox(
@@ -471,7 +485,7 @@ class _NumberField extends HookWidget {
           inputFormatters: [if (isInt) _integerOnly else _decimalOnly],
           control: FTextFieldControl.managed(
             controller: controller,
-            onChange: (_) {},
+            onChange: (value) => emit(value.text),
           ),
           hint: context.l10n.fieldDefaultHint,
           onSubmit: commit,
