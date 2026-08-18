@@ -77,7 +77,7 @@ class RevealedField extends HookConsumerWidget {
         trigger: trigger,
         borderRadius: BorderRadius.circular(12),
         strength: 0.15,
-        pulseDuration: const Duration(milliseconds: 800),
+        pulseDuration: const Duration(seconds: 1),
         child: child,
       ),
     );

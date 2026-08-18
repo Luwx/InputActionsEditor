@@ -618,10 +618,15 @@ String restoreOriginalDisabledItemComments(
     final indent = indentOf(parseLine);
     popContexts(contexts, indent);
     final key = blockKey(parseLine);
-    if (key != null) contexts.add(YamlListContext(key, indent));
+    if (key != null) {
+      contexts.add(
+        YamlListContext(key, indent, commented: uncommented != null),
+      );
+    }
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
+        !parent.commented &&
         isDisableableItemList(parent.key) &&
         uncommented != null &&
         isListItemAt(parseLine, parent.indent + 2)) {
@@ -672,10 +677,15 @@ List<List<String>> _disabledItemInnerComments(String yamlText) {
     final indent = indentOf(parseLine);
     popContexts(contexts, indent);
     final key = blockKey(parseLine);
-    if (key != null) contexts.add(YamlListContext(key, indent));
+    if (key != null) {
+      contexts.add(
+        YamlListContext(key, indent, commented: uncommented != null),
+      );
+    }
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
+        !parent.commented &&
         isDisableableItemList(parent.key) &&
         uncommented != null &&
         isListItemAt(parseLine, parent.indent + 2)) {

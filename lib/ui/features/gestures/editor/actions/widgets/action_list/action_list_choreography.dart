@@ -44,6 +44,7 @@ final class ActionListChoreography {
     required this.collapsedGroups,
     required this.toggleGroup,
     required this.selected,
+    required this.selectMode,
     required this.marquee,
     required this.transitions,
     required this.pinnedTriggerOptions,
@@ -83,6 +84,10 @@ final class ActionListChoreography {
   /// EditIds of currently selected rows. A drag on any of them carries the
   /// whole set, and so do delete and duplicate.
   final Set<int> selected;
+
+  /// Whether the list is picking rows. Stays on with nothing selected, until
+  /// escape or a command drops it.
+  final bool selectMode;
 
   /// Rows [editIds] would drag: the selection when the row is part of it.
   List<int> dragBundle(int editId) =>
@@ -174,6 +179,10 @@ ActionListChoreography useActionListChoreography(
     };
   }, const []);
   final selected = useState(<int>{});
+  // Kept separate from [selected]: emptying the selection leaves the mode on,
+  // so the checkboxes stay put and the next tap picks a row instead of
+  // opening it.
+  final selectMode = useState(false);
   final revealTarget = useState<int?>(null);
   final flashTarget = useState<int?>(null);
   final revealTick = useState(0);
@@ -216,11 +225,16 @@ ActionListChoreography useActionListChoreography(
           draggingKeys.value.isNotEmpty || blockedPointer.value == pointer,
       onStart: (additive) =>
           marqueeBase.value = additive ? {...selected.value} : <int>{},
-      onUpdate: (covered) =>
-          selected.value = {...marqueeBase.value, ...covered},
-      onEnd: (covered, {required canceled}) => selected.value = canceled
-          ? marqueeBase.value
-          : {...marqueeBase.value, ...covered},
+      onUpdate: (covered) {
+        selected.value = {...marqueeBase.value, ...covered};
+        if (selected.value.isNotEmpty) selectMode.value = true;
+      },
+      onEnd: (covered, {required canceled}) {
+        selected.value = canceled
+            ? marqueeBase.value
+            : {...marqueeBase.value, ...covered};
+        if (selected.value.isNotEmpty) selectMode.value = true;
+      },
     );
   }, [listKey]);
   useEffect(() {
@@ -281,6 +295,7 @@ ActionListChoreography useActionListChoreography(
 
   void clearSelection() {
     if (selected.value.isNotEmpty) selected.value = const {};
+    selectMode.value = false;
   }
 
   // Escape cancels a running marquee, else drops the selection.
@@ -297,7 +312,7 @@ ActionListChoreography useActionListChoreography(
         );
         return true;
       }
-      if (selected.value.isEmpty) return false;
+      if (selected.value.isEmpty && !selectMode.value) return false;
       clearSelection();
       return true;
     }
@@ -607,6 +622,15 @@ ActionListChoreography useActionListChoreography(
     // A move shows itself where it lands; opening the card of the group it
     // shuffled would bury the row that travelled.
     if (_revealedAMove(target, location)) return null;
+    final changed = changedActionFields(
+      target.before,
+      target.after,
+      ActionLocation(gesture: location, editId: actionEditId),
+    );
+    // The switch sits on the header, so its step has nothing to show inside.
+    if (changed.isNotEmpty && changed.every(_headerFields.contains)) {
+      return null;
+    }
     // The rows for a freshly selected gesture land a frame later.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // The field marks and aims at itself; this only has to open the card.
@@ -622,6 +646,7 @@ ActionListChoreography useActionListChoreography(
     collapsedGroups: collapsedGroups.value,
     toggleGroup: toggleGroup,
     selected: selected.value,
+    selectMode: selectMode.value,
     marquee: marquee,
     transitions: transitions,
     pinnedTriggerOptions: pinnedTriggerOptions.value,
@@ -636,11 +661,15 @@ ActionListChoreography useActionListChoreography(
     beginDrag: (editId) => draggingKeys.value = bundle(editId).toSet(),
     endDrag: () => draggingKeys.value = const {},
     toggle: toggle,
-    select: (editIds) => selected.value = editIds,
+    select: (editIds) {
+      selected.value = editIds;
+      if (editIds.isNotEmpty) selectMode.value = true;
+    },
     toggleSelected: (editId) {
       final next = {...selected.value};
       if (!next.add(editId)) next.remove(editId);
       selected.value = next;
+      selectMode.value = true;
     },
     clearSelection: clearSelection,
     copy: copy,
@@ -656,6 +685,8 @@ ActionListChoreography useActionListChoreography(
     resolve: resolve,
   );
 }
+
+const Set<ConfigDirtyField> _headerFields = {ConfigDirtyField.actionEnabled};
 
 bool _revealedAMove(EditReveal reveal, GestureLocation location) {
   List<TreeListNode<int>> nodes(Config config) => actionTreeNodes(

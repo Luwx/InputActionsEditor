@@ -12,10 +12,14 @@ String? uncommentYamlLine(String line) {
 }
 
 final class YamlListContext {
-  const YamlListContext(this.key, this.indent);
+  const YamlListContext(this.key, this.indent, {this.commented = false});
 
   final String key;
   final int indent;
+
+  /// Whether the line opening this block was itself commented out. Items under
+  /// such a key are prose, not disabled entries.
+  final bool commented;
 }
 
 void popContexts(List<YamlListContext> contexts, int indent) {
@@ -42,14 +46,20 @@ String? blockKey(String line) {
 
 /// The block a line opens. A list item that is itself a block (`- one:`) holds
 /// its children two columns in from the dash, so its context sits there.
-YamlListContext? blockContext(String line) {
+YamlListContext? blockContext(String line, {bool commented = false}) {
   final key = blockKey(line);
-  if (key != null) return YamlListContext(key, indentOf(line));
+  if (key != null) {
+    return YamlListContext(key, indentOf(line), commented: commented);
+  }
   final match = RegExp(
     r'^(\s*)-\s+([A-Za-z_][A-Za-z0-9_]*):\s*$',
   ).firstMatch(line.trimRight());
   if (match == null) return null;
-  return YamlListContext(match.group(2)!, match.group(1)!.length + 2);
+  return YamlListContext(
+    match.group(2)!,
+    match.group(1)!.length + 2,
+    commented: commented,
+  );
 }
 
 bool isListItemAt(String line, int indent) =>

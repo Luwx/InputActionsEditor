@@ -189,7 +189,7 @@ class ActionRowCard extends HookConsumerWidget {
               actionOverride: actionOverride,
               expanded: expanded,
               selected: selected,
-              selectMode: !_isGhost && choreo.selected.isNotEmpty,
+              selectMode: !_isGhost && choreo.selectMode,
               onCopy: () => choreo.copy(actionLocation),
               onPaste: () => choreo.paste(actionLocation),
               groupCollapsed: choreo.collapsedGroups.contains(editId),
@@ -198,7 +198,7 @@ class ActionRowCard extends HookConsumerWidget {
               onToggleSelected: () => choreo.toggleSelected(editId),
               onToggleExpanded: () => choreo.toggle(editId),
               onToggle: () {
-                if (choreo.selected.isNotEmpty || _selectionModifierHeld) {
+                if (choreo.selectMode || _selectionModifierHeld) {
                   choreo.toggleSelected(editId);
                 } else {
                   choreo.toggle(editId);
@@ -437,19 +437,26 @@ class ActionRowHeader extends HookConsumerWidget {
                       ),
                       const SizedBox(width: 14),
                       Expanded(
-                        child: Text(
-                          actionValueSummary(action.action, l10n),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.body.sm.copyWith(
-                            color: colors.mutedForeground,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                actionValueSummary(action.action, l10n),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.body.sm.copyWith(
+                                  color: colors.mutedForeground,
+                                ),
+                              ),
+                            ),
+                            if (chips.isNotEmpty) ...[
+                              const SizedBox(width: 14),
+                              Flexible(child: _MetaChips(chips: chips)),
+                            ],
+                          ],
                         ),
                       ),
-                      if (chips.isNotEmpty) ...[
-                        const SizedBox(width: 14),
-                        _MetaChips(chips: chips),
-                      ],
                     ],
                   ),
                 ),
@@ -508,25 +515,29 @@ class _MetaChips extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final chip in chips)
-          Padding(
-            padding: const EdgeInsets.only(left: 14),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${chip.label}: ',
-                    style: typography.body.xs.copyWith(
-                      color: colors.mutedForeground,
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 14),
+              child: Text.rich(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${chip.label}: ',
+                      style: typography.body.xs.copyWith(
+                        color: colors.mutedForeground,
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: chip.value,
-                    style: typography.body.xs.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colors.foreground,
+                    TextSpan(
+                      text: chip.value,
+                      style: typography.body.xs.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.foreground,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

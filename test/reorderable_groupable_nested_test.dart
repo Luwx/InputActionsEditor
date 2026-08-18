@@ -169,4 +169,36 @@ void main() {
       expect(tester.getSize(item1Finder).height, 0);
     }
   });
+
+  testWidgets('every group but the last is followed by a separator', (
+    tester,
+  ) async {
+    const groups = ['a', 'b', 'c', 'd'];
+    await tester.pumpWidget(
+      _host([
+        for (final id in groups)
+          ReorderableGroupableGroup<int, String>(
+            key: ValueKey('g:$id'),
+            id: id,
+          ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    Rect headerOf(String id) => tester.getRect(find.text('group:$id'));
+    final lines = tester
+        .widgetList<Container>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Container && widget.constraints?.maxHeight == 1,
+          ),
+        )
+        .length;
+    expect(lines, groups.length - 1);
+
+    // And each line lands between two headers.
+    for (var i = 1; i < groups.length; i++) {
+      expect(headerOf(groups[i]).top, greaterThan(headerOf(groups[i - 1]).top));
+    }
+  });
 }

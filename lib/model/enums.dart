@@ -1,3 +1,9 @@
+/// Matches a YAML token against [values], ignoring case as the daemon does.
+T? _fromYaml<T>(List<T> values, String s, String Function(T) toYaml) {
+  final token = s.toLowerCase();
+  return values.where((v) => toYaml(v).toLowerCase() == token).firstOrNull;
+}
+
 enum DeviceType { mouse, touchpad, keyboard, touchscreen, pointer }
 
 enum MouseTriggerType { stroke, swipe, circle, press, wheel }
@@ -8,7 +14,7 @@ enum KeyboardTriggerType {
   String toYaml() => name;
 
   static KeyboardTriggerType? fromYaml(String s) =>
-      KeyboardTriggerType.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(KeyboardTriggerType.values, s, (v) => v.name);
 }
 
 enum PointerTriggerType {
@@ -17,7 +23,7 @@ enum PointerTriggerType {
   String toYaml() => name;
 
   static PointerTriggerType? fromYaml(String s) =>
-      PointerTriggerType.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(PointerTriggerType.values, s, (v) => v.name);
 }
 
 enum TouchpadTriggerType {
@@ -33,7 +39,7 @@ enum TouchpadTriggerType {
   String toYaml() => name;
 
   static TouchpadTriggerType? fromYaml(String s) =>
-      TouchpadTriggerType.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(TouchpadTriggerType.values, s, (v) => v.name);
 }
 
 enum TouchscreenTriggerType {
@@ -48,7 +54,7 @@ enum TouchscreenTriggerType {
   String toYaml() => name;
 
   static TouchscreenTriggerType? fromYaml(String s) =>
-      TouchscreenTriggerType.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(TouchscreenTriggerType.values, s, (v) => v.name);
 }
 
 enum PinchDirection {
@@ -63,7 +69,7 @@ enum PinchDirection {
   };
 
   static PinchDirection? fromYaml(String s) =>
-      PinchDirection.values.where((v) => v.toYaml() == s).firstOrNull;
+      _fromYaml(PinchDirection.values, s, (v) => v.toYaml());
 }
 
 enum RotateDirection {
@@ -74,7 +80,7 @@ enum RotateDirection {
   String toYaml() => name;
 
   static RotateDirection? fromYaml(String s) =>
-      RotateDirection.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(RotateDirection.values, s, (v) => v.name);
 }
 
 enum MouseButtonValue {
@@ -89,8 +95,19 @@ enum MouseButtonValue {
 
   String toYaml() => name;
 
+  /// Names the daemon keeps for backwards compatibility. Each maps to the same
+  /// scan code as the modern name it points at.
+  static const Map<String, MouseButtonValue> _legacyNames = {
+    'extra1': MouseButtonValue.back,
+    'extra2': MouseButtonValue.forward,
+    'extra3': MouseButtonValue.task,
+    'extra4': MouseButtonValue.side,
+    'extra5': MouseButtonValue.extra,
+  };
+
   static MouseButtonValue? fromYaml(String s) =>
-      MouseButtonValue.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(MouseButtonValue.values, s, (v) => v.name) ??
+      _legacyNames[s.toLowerCase()];
 }
 
 enum SwipeDirection {
@@ -121,7 +138,7 @@ enum SwipeDirection {
   };
 
   static SwipeDirection? fromYaml(String s) =>
-      SwipeDirection.values.where((v) => v.toYaml() == s).firstOrNull;
+      _fromYaml(SwipeDirection.values, s, (v) => v.toYaml());
 }
 
 enum WheelDirection {
@@ -140,7 +157,7 @@ enum WheelDirection {
   };
 
   static WheelDirection? fromYaml(String s) =>
-      WheelDirection.values.where((v) => v.toYaml() == s).firstOrNull;
+      _fromYaml(WheelDirection.values, s, (v) => v.toYaml());
 }
 
 enum CircleDirection {
@@ -151,7 +168,7 @@ enum CircleDirection {
   String toYaml() => name;
 
   static CircleDirection? fromYaml(String s) =>
-      CircleDirection.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(CircleDirection.values, s, (v) => v.name);
 }
 
 enum TriggerSpeed {
@@ -162,7 +179,7 @@ enum TriggerSpeed {
   String toYaml() => name;
 
   static TriggerSpeed? fromYaml(String s) =>
-      TriggerSpeed.values.where((v) => v.name == s).firstOrNull;
+      _fromYaml(TriggerSpeed.values, s, (v) => v.name);
 }
 
 enum TriggerOn {
@@ -179,5 +196,5 @@ enum TriggerOn {
   };
 
   static TriggerOn? fromYaml(String s) =>
-      TriggerOn.values.where((v) => v.toYaml() == s).firstOrNull;
+      _fromYaml(TriggerOn.values, s, (v) => v.toYaml());
 }

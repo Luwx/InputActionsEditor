@@ -21,6 +21,19 @@ import 'package:yaml/yaml.dart';
 Config decodeConfig(String yamlText) {
   if (yamlText.trim().isEmpty) return const Config();
   final parseText = materializeDisabledYamlCommentsRecursively(yamlText);
+  if (parseText != yamlText) {
+    try {
+      return _decodeConfigText(parseText);
+    } on Object {
+      // Comments that merely resemble disabled items must not make the file
+      // unloadable. Reading the text as written loses only their disabled
+      // state, and any error then points at a line the user can see.
+    }
+  }
+  return _decodeConfigText(yamlText);
+}
+
+Config _decodeConfigText(String parseText) {
   final doc = loadYaml(parseText);
   if (doc == null) return const Config();
   final map = doc as YamlMap;
@@ -634,6 +647,7 @@ String materializeDisabledYamlComments(String yamlText) {
     final peekParent = contexts.isEmpty ? null : contexts.last;
     final commentedAtKeyIndent =
         peekParent != null &&
+        !peekParent.commented &&
         isDisableableItemList(peekParent.key) &&
         uncommented != null &&
         isListItemAt(parseLine, peekParent.indent);
@@ -645,6 +659,7 @@ String materializeDisabledYamlComments(String yamlText) {
         : (contexts.isEmpty ? null : contexts.last);
     final atNormalIndent =
         parent != null &&
+        !parent.commented &&
         isDisableableItemList(parent.key) &&
         uncommented != null &&
         isListItemAt(parseLine, parent.indent + 2);
@@ -678,7 +693,7 @@ String materializeDisabledYamlComments(String yamlText) {
       continue;
     }
 
-    final context = blockContext(parseLine);
+    final context = blockContext(parseLine, commented: uncommented != null);
     if (context != null) contexts.add(context);
     out.add(line);
     i++;

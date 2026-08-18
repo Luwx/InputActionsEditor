@@ -108,7 +108,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
             ActionKind.raw => const EditorRaw(),
             ActionKind.missing => const SizedBox.shrink(),
           },
-          SizedBox(height: kind == .input ? 4 : 16),
+          SizedBox(height: (kind == .input && pinned.isEmpty) ? 4 : 12),
           if (pinned.isNotEmpty) ...[
             ActionTriggerFields(fields: pinned),
             const SizedBox(height: 16),

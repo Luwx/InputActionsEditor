@@ -347,7 +347,11 @@ class _ReorderableGroupableListState<I, G>
                         ),
                       ),
                       ..._buildGroupContentSlivers(context, rows, 1),
-                      if (s < segments.length - 2) _scrollingSeparatorSliver(),
+                      // Rows draw their own top border, so only a group
+                      // header coming next needs the line drawn for it.
+                      if (s < segments.length - 1 &&
+                          segments[s + 1] is _GroupSegment<I, G>)
+                        _scrollingSeparatorSliver(),
                     ],
                   ),
                 ),
