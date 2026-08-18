@@ -193,7 +193,10 @@ class _InputEntryEditor extends HookWidget {
 
     final mode = inferInputEntryMode(entry);
 
+    final syncing = useRef(false);
+
     void replaceTokens(List<String> tokens) {
+      if (syncing.value) return;
       onChanged(entry.copyWith(tokens: tokens));
     }
 
@@ -206,18 +209,24 @@ class _InputEntryEditor extends HookWidget {
 
     final tokenKey = entry.tokens.join(', ');
     useEffect(() {
-      if (KeySequenceParser.toTokens(
-            KeySequenceParser.parse(keySeqController.text),
-          ).join(', ') !=
-          tokenKey) {
-        unawaited(Future.microtask(() => keySeqController.text = tokenKey));
+      void resync(TextEditingController controller) {
+        if (KeySequenceParser.toTokens(
+              KeySequenceParser.parse(controller.text),
+            ).join(', ') ==
+            tokenKey) {
+          return;
+        }
+        unawaited(
+          Future.microtask(() {
+            syncing.value = true;
+            controller.text = tokenKey;
+            syncing.value = false;
+          }),
+        );
       }
-      if (KeySequenceParser.toTokens(
-            KeySequenceParser.parse(mouseSeqController.text),
-          ).join(', ') !=
-          tokenKey) {
-        unawaited(Future.microtask(() => mouseSeqController.text = tokenKey));
-      }
+
+      resync(keySeqController);
+      resync(mouseSeqController);
       return null;
     }, [tokenKey]);
 

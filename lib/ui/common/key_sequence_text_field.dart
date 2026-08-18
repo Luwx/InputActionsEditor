@@ -1,4 +1,5 @@
 import 'package:extended_text_field/extended_text_field.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart'
     show Colors, InputDecoration, Material, OutlineInputBorder;
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
@@ -23,10 +24,12 @@ import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 /// such as `ctrl`, `shift`, `alt`, `super`, `win`, `pgup`, `del`, `ins` are
 /// resolved automatically.
 ///
-/// [onChanged] is called with the normalised `List<String>` token list every
-/// time the text changes.  A chord typed in chord format is kept as a single
-/// combo token (`leftctrl+c`); explicit `+key` / `-key` tokens are preserved
-/// as-is — so the saved tokens mirror what the user actually typed.
+/// [onChanged] is called with the normalised `List<String>` token list
+/// whenever that list changes.  Text edits the tokens do not depend on, such
+/// as a half-typed or unrecognised key name, or a caret move, emit nothing.
+/// A chord typed in chord format is kept as a single combo token
+/// (`leftctrl+c`); explicit `+key` / `-key` tokens are preserved as-is, so the
+/// saved tokens mirror what the user actually typed.
 class KeySequenceTextField extends HookWidget {
   const KeySequenceTextField({
     super.key,
@@ -84,12 +87,21 @@ class KeySequenceTextField extends HookWidget {
 
     useListenable(effectiveController);
 
+    final onChangedRef = useRef(onChanged)..value = onChanged;
+    final lastTokens = useRef<List<String>>(const []);
+
     useEffect(() {
+      List<String> tokensOf(String text) =>
+          KeySequenceParser.toTokens(KeySequenceParser.parse(text));
+
       void onTextChanged() {
-        final segs = KeySequenceParser.parse(effectiveController.text);
-        onChanged?.call(KeySequenceParser.toTokens(segs));
+        final tokens = tokensOf(effectiveController.text);
+        if (listEquals(tokens, lastTokens.value)) return;
+        lastTokens.value = tokens;
+        onChangedRef.value?.call(tokens);
       }
 
+      lastTokens.value = tokensOf(effectiveController.text);
       effectiveController.addListener(onTextChanged);
       return () => effectiveController.removeListener(onTextChanged);
     }, [effectiveController]);
