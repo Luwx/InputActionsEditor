@@ -27,10 +27,14 @@ class _SeededGestures extends ConfigController {
   static const config = Config(
     mouseNodes: [
       GestureNode.leaf(
-        PressGesture(common: TriggerCommon(name: 'one', editId: _first)),
+        PressGesture(
+          common: TriggerCommon(name: 'one', editId: _first),
+        ),
       ),
       GestureNode.leaf(
-        PressGesture(common: TriggerCommon(name: 'two', editId: _second)),
+        PressGesture(
+          common: TriggerCommon(name: 'two', editId: _second),
+        ),
       ),
     ],
   );

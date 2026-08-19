@@ -11,6 +11,7 @@ class RenameDialog extends HookWidget {
     required this.confirmLabel,
     required this.allowEmpty,
     required this.onConfirm,
+    this.animation,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class RenameDialog extends HookWidget {
   final String confirmLabel;
   final bool allowEmpty;
   final void Function(String) onConfirm;
+  final Animation<double>? animation;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,7 @@ class RenameDialog extends HookWidget {
 
     final l10n = context.l10n;
     return AppDialog(
+      animation: animation,
       title: Text(title),
       body: FTextField(
         control: .managed(controller: controller),
@@ -67,7 +70,8 @@ Future<void> showRenameDialog(
   await showFDialog<void>(
     context: context,
     useRootNavigator: true,
-    builder: (ctx, style, anim) => RenameDialog(
+    builder: (ctx, style, animation) => RenameDialog(
+      animation: animation,
       title: title,
       initial: initial,
       confirmLabel: confirmLabel,

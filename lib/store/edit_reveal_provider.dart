@@ -32,8 +32,8 @@ final editRevealProvider = NotifierProvider<EditRevealController, EditReveal?>(
   EditRevealController.new,
 );
 
-final ProviderFamily<void, Object> revealPaneProvider =
-    Provider.autoDispose.family<void, Object>((ref, pane) {
+final ProviderFamily<void, Object> revealPaneProvider = Provider.autoDispose
+    .family<void, Object>((ref, pane) {
       final reveal = ref.read(editRevealProvider.notifier);
       // Riverpod forbids touching another provider from inside a life-cycle.
       ref.onDispose(() => scheduleMicrotask(() => reveal.clearFor(pane)));

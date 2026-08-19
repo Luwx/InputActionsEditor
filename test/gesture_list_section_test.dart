@@ -205,7 +205,6 @@ void _reveal(WidgetTester tester, int index) {
       );
 }
 
-
 /// Puts the list in select mode over [names], the first by long press and the
 /// rest by tap.
 Future<void> _selectRows(WidgetTester tester, List<String> names) async {
@@ -838,8 +837,9 @@ void main() {
 }
 
 /// Every mouse gesture's name, in draft order.
-List<String?> _draftNames(WidgetTester tester) =>
-    [for (final gesture in _draftOf(tester).mouseGestures) gesture.common.name];
+List<String?> _draftNames(WidgetTester tester) => [
+  for (final gesture in _draftOf(tester).mouseGestures) gesture.common.name,
+];
 
 /// The `enabled` field of every mouse gesture, in list order. Null is the
 /// unset default, which reads as enabled.

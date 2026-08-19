@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart'
-    show Dialog, Divider, InputBorder, InputDecoration, TextField;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -17,19 +15,25 @@ Future<VariableInfo?> showVariablePicker(
   return showFDialog<VariableInfo>(
     context: context,
     useRootNavigator: true,
-    builder: (ctx, _, _) => FTheme(
+    builder: (ctx, _, animation) => FTheme(
       data: FTheme.of(context),
       child: _VariablePickerDialog(
         groups: groups ?? kVariableGroups,
         currentVariable: currentVariable,
+        animation: animation,
       ),
     ),
   );
 }
 
 class _VariablePickerDialog extends HookWidget {
-  const _VariablePickerDialog({required this.groups, this.currentVariable});
+  const _VariablePickerDialog({
+    required this.groups,
+    required this.animation,
+    this.currentVariable,
+  });
   final List<VariableGroup> groups;
+  final Animation<double> animation;
   final String? currentVariable;
 
   @override
@@ -59,8 +63,35 @@ class _VariablePickerDialog extends HookWidget {
 
     final colors = context.theme.colors;
     final filteredList = filtered();
+    final motion = context.theme.dialogStyle.motion;
 
-    return Dialog(
+    final expand = useMemoized(
+      () => CurvedAnimation(
+        parent: animation,
+        curve: motion.expandCurve,
+        reverseCurve: motion.collapseCurve,
+      ),
+      [animation, motion],
+    );
+    final opacity = useMemoized(
+      () => CurvedAnimation(
+        parent: animation,
+        curve: motion.fadeInCurve,
+        reverseCurve: motion.fadeOutCurve,
+      ),
+      [animation, motion],
+    );
+    useEffect(
+      () => () {
+        expand.dispose();
+        opacity.dispose();
+      },
+      [expand, opacity],
+    );
+
+    final accessibility = context.accessibility.motion;
+
+    Widget dialog = Dialog(
       backgroundColor: colors.background,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
@@ -108,6 +139,21 @@ class _VariablePickerDialog extends HookWidget {
         ),
       ),
     );
+
+    if (accessibility != FAccessibilityMotion.disabled) {
+      dialog = FadeTransition(
+        opacity: motion.fadeTween.animate(opacity),
+        child: dialog,
+      );
+    }
+    if (accessibility == FAccessibilityMotion.all) {
+      dialog = ScaleTransition(
+        scale: motion.scaleTween.animate(expand),
+        child: dialog,
+      );
+    }
+
+    return dialog;
   }
 }
 

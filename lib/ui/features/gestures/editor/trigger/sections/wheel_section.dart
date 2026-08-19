@@ -51,8 +51,10 @@ class WheelSection extends ConsumerWidget {
           key: ValueKey(directionField.value),
           format: (value) => value.label(l10n),
           prefixBuilder: switch (_icon(directionField.value)) {
-            final icon? => (_, _, _) =>
-              Padding(padding: const EdgeInsets.only(left: 8), child: icon),
+            final icon? => (_, _, _) => Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: icon,
+            ),
             null => null,
           },
           control: FSelectManagedControl<WheelDirection>(

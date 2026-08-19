@@ -346,8 +346,7 @@ class GestureListSection extends HookConsumerWidget {
               final anchor = selectionInOrder().lastOrNull;
               if (anchor != null) unawaited(pasteGestures(anchor));
             },
-            duplicateShortcut: () =>
-                rowCommands.duplicate(selectionInOrder()),
+            duplicateShortcut: () => rowCommands.duplicate(selectionInOrder()),
             deleteShortcut: () => rowCommands.delete(selectionInOrder()),
           },
           child: ScrollbarMediaPadding(

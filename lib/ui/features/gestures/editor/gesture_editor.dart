@@ -462,17 +462,21 @@ class _MultiSelectPanel extends ConsumerWidget {
   final Set<GestureLocation> selected;
 
   void _enable(WidgetRef ref) {
-    ref.read(gestureCommandsProvider).setGesturesEnabled(
-      selected,
-      enabled: true,
-    );
+    ref
+        .read(gestureCommandsProvider)
+        .setGesturesEnabled(
+          selected,
+          enabled: true,
+        );
   }
 
   void _disable(WidgetRef ref) {
-    ref.read(gestureCommandsProvider).setGesturesEnabled(
-      selected,
-      enabled: false,
-    );
+    ref
+        .read(gestureCommandsProvider)
+        .setGesturesEnabled(
+          selected,
+          enabled: false,
+        );
   }
 
   void _delete(BuildContext context, WidgetRef ref) {
