@@ -418,7 +418,7 @@ class GestureListSection extends HookConsumerWidget {
                   device: viewModel.deviceFilter!,
                   editId: move.groupId,
                 ),
-                beforeKey: move.beforeGroupId,
+                beforeKey: move.beforeGroupId ?? move.beforeItemId?.editId,
                 newParentKey: move.newParentId,
               ),
               groupBuilder:

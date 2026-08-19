@@ -147,16 +147,18 @@ final class ReorderableItemsResult<I, G> {
 typedef ReorderableGroupableItemsReorderedCallback<I, G> =
     void Function(ReorderableItemsResult<I, G> result);
 
-/// A completed group drag: [groupId] moves to just before [beforeGroupId]
-/// under [newParentId]; a null [beforeGroupId] appends at the top level's end.
-typedef ReorderableGroupMove<G> = ({
+/// A completed group drag: [groupId] lands under [newParentId], just before
+/// the group [beforeGroupId] or the row [beforeItemId]; with neither it goes
+/// to that level's end.
+typedef ReorderableGroupMove<I, G> = ({
   G groupId,
   G? beforeGroupId,
+  I? beforeItemId,
   G? newParentId,
 });
 
-typedef ReorderableGroupableGroupMovedCallback<G> =
-    void Function(ReorderableGroupMove<G> move);
+typedef ReorderableGroupableGroupMovedCallback<I, G> =
+    void Function(ReorderableGroupMove<I, G> move);
 
 class ReorderableGroupableList<I, G> extends StatefulWidget {
   const ReorderableGroupableList({
@@ -204,7 +206,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   groupDragLabelBuilder;
   final bool showTrailingDropZone;
   final ReorderableGroupableItemsReorderedCallback<I, G> onItemsReordered;
-  final ReorderableGroupableGroupMovedCallback<G> onGroupMoved;
+  final ReorderableGroupableGroupMovedCallback<I, G> onGroupMoved;
 
   /// Slivers placed before the list content (e.g. a pinned app header). This
   /// widget owns the [CustomScrollView], so they are supplied here rather than

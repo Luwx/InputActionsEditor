@@ -60,6 +60,18 @@ const _ts1 = TouchscreenSwipeGesture(
   mode: SwipeDirectionMode(direction: SwipeDirection.up),
 );
 
+const _leaf1 = GestureNode.leaf(
+  PressGesture(common: TriggerCommon(name: 'm1', editId: 1)),
+);
+const _leaf2 = GestureNode.leaf(
+  PressGesture(common: TriggerCommon(name: 'm2', editId: 2)),
+);
+
+String _nodeName(GestureNode node) => switch (node) {
+  GestureLeaf(:final gesture) => gesture.common.name ?? '',
+  GestureGroupNode(:final name) => name,
+};
+
 const _group1 = GestureGroupNode(name: 'G1', editId: 901);
 const _group2 = GestureGroupNode(name: 'G2', editId: 902);
 
@@ -456,20 +468,34 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('Gesture group edits', () {
-    test('AddGestureGroup appends at root or under a parent', () {
-      final out = AddGestureGroup(
+    test('AddGestureGroup lands after the last group of its level', () {
+      const c = Config(mouseNodes: [_group2, _leaf1]);
+      final out = AddGestureGroup(DeviceType.mouse, _group1).apply(c);
+      expect(
+        [for (final n in out.mouseNodes) _nodeName(n)],
+        ['G2', 'G1', 'm1'],
+      );
+
+      final first = AddGestureGroup(
         DeviceType.mouse,
         _group1,
-      ).apply(const Config());
-      expect((out.mouseNodes.single as GestureGroupNode).name, 'G1');
+      ).apply(const Config(mouseNodes: [_leaf1]));
+      expect([for (final n in first.mouseNodes) _nodeName(n)], ['G1', 'm1']);
 
-      final nested = AddGestureGroup(
-        DeviceType.mouse,
-        _group2,
-        parentKey: 901,
-      ).apply(out);
+      final nested =
+          AddGestureGroup(
+            DeviceType.mouse,
+            _group2,
+            parentKey: 901,
+          ).apply(
+            const Config(
+              mouseNodes: [
+                GestureGroupNode(name: 'G1', editId: 901, children: [_leaf1]),
+              ],
+            ),
+          );
       final outer = nested.mouseNodes.single as GestureGroupNode;
-      expect((outer.children.single as GestureGroupNode).name, 'G2');
+      expect([for (final n in outer.children) _nodeName(n)], ['G2', 'm1']);
     });
 
     test('UpdateGestureGroup edits by location; unknown is a no-op', () {
@@ -490,6 +516,24 @@ void main() {
         [for (final n in out.mouseNodes) (n as GestureGroupNode).name],
         ['G2', 'G1'],
       );
+    });
+
+    test('MoveGestureGroup lands before a gesture', () {
+      const c = Config(mouseNodes: [_leaf1, _leaf2, _group1]);
+      final out = MoveGestureGroup(_groupAt(901), beforeKey: 1).apply(c);
+      expect(
+        [for (final n in out.mouseNodes) _nodeName(n)],
+        ['G1', 'm1', 'm2'],
+      );
+    });
+
+    test('MoveGestureGroup refuses to land before its own descendant', () {
+      const c = Config(
+        mouseNodes: [
+          GestureGroupNode(name: 'G1', editId: 901, children: [_leaf1]),
+        ],
+      );
+      expect(MoveGestureGroup(_groupAt(901), beforeKey: 1).apply(c), c);
     });
 
     test('MoveGestureGroup nests under a parent', () {

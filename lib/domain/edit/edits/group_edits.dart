@@ -7,8 +7,8 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 
-/// Appends a group node at the root of [device]'s tree, or inside the group
-/// [parentKey].
+/// Inserts a group node after the last group of its level: the root of
+/// [device]'s tree, or the children of [parentKey].
 final class AddGestureGroup extends ConfigEdit {
   AddGestureGroup(this.device, this.group, {this.parentKey});
 
@@ -20,8 +20,27 @@ final class AddGestureGroup extends ConfigEdit {
   String get label => 'add group';
 
   @override
-  Config apply(Config config) =>
-      schema.addGestureGroup(config, device, group, parentKey: parentKey);
+  Config apply(Config config) {
+    final parent = parentKey;
+    if (parent == null) {
+      return schema.withGestureNodesForDevice(
+        config,
+        device,
+        _afterLastGroup(schema.gestureNodesForDevice(config, device), group),
+      );
+    }
+    final location = GestureGroupLocation(device: device, editId: parent);
+    final container = schema.gestureGroupAt(config, location);
+    if (container == null) return config;
+    return schema
+        .gestureGroupLens(location)
+        .set(
+          config,
+          container.copyWith(
+            children: _afterLastGroup(container.children, group),
+          ),
+        );
+  }
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -50,8 +69,9 @@ final class UpdateGestureGroup extends ConfigEdit {
       RestoreGestures(config, label: 'update group');
 }
 
-/// Moves the group at [location] (with its subtree) under [newParentKey]
-/// (root when null), just before the sibling group [beforeKey] (or last).
+/// Moves the group at [location] (with its subtree) directly before the node
+/// [beforeKey], a gesture row as well as a group, wherever it sits; otherwise
+/// it goes last under [newParentKey], root when that is null too.
 final class MoveGestureGroup extends ConfigEdit {
   MoveGestureGroup(this.location, {this.beforeKey, this.newParentKey});
 
@@ -63,12 +83,28 @@ final class MoveGestureGroup extends ConfigEdit {
   String get label => 'move group';
 
   @override
-  Config apply(Config config) => schema.moveGestureGroup(
-    config,
-    location,
-    beforeKey: beforeKey,
-    newParentKey: newParentKey,
-  );
+  Config apply(Config config) {
+    final before = beforeKey;
+    if (before == null) {
+      return schema.moveGestureGroup(
+        config,
+        location,
+        newParentKey: newParentKey,
+      );
+    }
+    final moved = schema.gestureGroupAt(config, location);
+    if (moved == null) return config;
+    // Lifting the group out first is also the guard: a target inside its own
+    // subtree, or the group itself, is no longer there to be found.
+    final without = schema.removeGestureGroup(config, location);
+    final nodes = _insertBefore(
+      schema.gestureNodesForDevice(without, location.device),
+      before,
+      moved,
+    );
+    if (nodes == null) return config;
+    return schema.withGestureNodesForDevice(without, location.device, nodes);
+  }
 
   @override
   ConfigEdit inverse(Config config) =>
@@ -133,4 +169,38 @@ final class ReorderAndUpdateGroups extends ConfigEdit {
   @override
   ConfigEdit inverse(Config config) =>
       RestoreGestures(config, label: 'regroup');
+}
+
+List<GestureNode> _afterLastGroup(
+  List<GestureNode> nodes,
+  GestureGroupNode group,
+) {
+  var at = 0;
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i] is GestureGroupNode) at = i + 1;
+  }
+  return [...nodes.take(at), group, ...nodes.skip(at)];
+}
+
+int? _keyOf(GestureNode node) => switch (node) {
+  GestureLeaf(:final gesture) => gesture.common.editId,
+  GestureGroupNode(:final editId) => editId,
+};
+
+List<GestureNode>? _insertBefore(
+  List<GestureNode> nodes,
+  int key,
+  GestureGroupNode group,
+) {
+  for (var i = 0; i < nodes.length; i++) {
+    final node = nodes[i];
+    if (_keyOf(node) == key) {
+      return [...nodes.take(i), group, ...nodes.skip(i)];
+    }
+    if (node is! GestureGroupNode) continue;
+    final children = _insertBefore(node.children, key, group);
+    if (children == null) continue;
+    return [...nodes]..[i] = node.copyWith(children: children);
+  }
+  return null;
 }

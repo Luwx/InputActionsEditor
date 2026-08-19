@@ -193,7 +193,7 @@ class _ReorderableGroupableListState<I, G>
     );
   }
 
-  ReorderableGroupMove<G>? _groupMove(
+  ReorderableGroupMove<I, G>? _groupMove(
     G draggedGroupId,
     TreeMoveTarget<_NodeId<I, G>> target,
   ) {
@@ -202,12 +202,10 @@ class _ReorderableGroupableListState<I, G>
     }, target);
     if (move == null) return null;
     final before = move.beforeId;
-    // A group landing before an item has no expressible destination: the group
-    // ops position relative to sibling groups only.
-    if (before != null && before.isItem) return null;
     return (
       groupId: draggedGroupId,
-      beforeGroupId: before?.group,
+      beforeGroupId: before != null && !before.isItem ? before.group : null,
+      beforeItemId: before != null && before.isItem ? before.item : null,
       newParentId: move.newParentId?.group,
     );
   }
@@ -252,6 +250,19 @@ class _ReorderableGroupableListState<I, G>
 
   void _moveItemsToEnd(List<I> itemIds) =>
       _applyItemsMove(itemIds, const MoveToRootEnd());
+
+  void _moveGroupBeforeItem(G draggedGroupId, I targetItemId) =>
+      _applyGroupMove(
+        draggedGroupId,
+        MoveBeforeNode(_NodeId<I, G>.item(targetItemId)),
+      );
+
+  bool _wouldMoveGroupBeforeItem(G draggedGroupId, I targetItemId) =>
+      _groupMove(
+        draggedGroupId,
+        MoveBeforeNode(_NodeId<I, G>.item(targetItemId)),
+      ) !=
+      null;
 
   void _moveGroupBeforeGroup(G draggedGroupId, G targetGroupId) =>
       _applyGroupMove(
@@ -724,10 +735,10 @@ class _ReorderableGroupableListState<I, G>
             )
             as Widget;
 
-    // A grouped row is also a landing surface for group drags: dropping a
-    // group anywhere on its containing group's rows nests it there.
+    // A row is also a landing surface for group drags: a grouped one nests the
+    // dragged group in its own group, an ungrouped one takes it as predecessor.
+    final core = dropTarget;
     if (groupId != null) {
-      final core = dropTarget;
       dropTarget = DragTarget<_GroupDragData<G>>(
         onWillAcceptWithDetails: (details) =>
             item.isVisible &&
@@ -737,6 +748,19 @@ class _ReorderableGroupableListState<I, G>
         builder: (context, groupCandidates, _) => _GroupDropState(
           isItemDropActive: groupCandidates.isNotEmpty,
           isGroupDropActive: false,
+          child: core,
+        ),
+      );
+    } else {
+      dropTarget = DragTarget<_GroupDragData<G>>(
+        onWillAcceptWithDetails: (details) =>
+            item.isVisible &&
+            _wouldMoveGroupBeforeItem(details.data.groupId, item.id),
+        onAcceptWithDetails: (details) =>
+            _moveGroupBeforeItem(details.data.groupId, item.id),
+        builder: (context, groupCandidates, _) => _GroupDropState(
+          isItemDropActive: false,
+          isGroupDropActive: groupCandidates.isNotEmpty,
           child: core,
         ),
       );

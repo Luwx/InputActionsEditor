@@ -9,7 +9,8 @@ import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 Widget _host(
   List<ReorderableGroupableListEntry<int, String>> entries, {
   required void Function(ReorderableItemsResult<int, String>) onItemsReordered,
-  void Function(ReorderableGroupMove<String>)? onGroupMoved,
+  void Function(ReorderableGroupMove<int, String>)? onGroupMoved,
+  bool groupHandles = false,
 }) {
   final scrollController = ScrollController();
   return MaterialApp(
@@ -26,7 +27,15 @@ Widget _host(
         itemBuilder: (context, item, handle, isDragging) =>
             SizedBox(height: 40, child: Text('item:${item.id}')),
         groupBuilder: (context, group, handle, isPinned, scrollBuilder) =>
-            SizedBox(height: 38, child: Text('group:${group.id}')),
+            SizedBox(
+              height: 38,
+              child: Row(
+                children: [
+                  Text('group:${group.id}'),
+                  if (groupHandles) ?handle,
+                ],
+              ),
+            ),
       ),
     ),
   );
@@ -106,5 +115,28 @@ void main() {
     expect(result, isNotNull);
     expect(result!.orderedItemIds, [0, 2, 1]);
     expect(result!.groupId, 'a');
+  });
+
+  testWidgets('dropping a group on an ungrouped row lands it before that row', (
+    tester,
+  ) async {
+    ReorderableGroupMove<int, String>? move;
+    await tester.pumpWidget(
+      _host(
+        [_item(0), _item(1), _group('a'), _item(2, group: 'a', depth: 1)],
+        onItemsReordered: (_) {},
+        onGroupMoved: (m) => move = m,
+        groupHandles: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await _dragRow(tester, from: 2, onto: find.text('item:0'));
+
+    expect(move, isNotNull);
+    expect(move!.groupId, 'a');
+    expect(move!.beforeItemId, 0);
+    expect(move!.beforeGroupId, isNull);
+    expect(move!.newParentId, isNull);
   });
 }
