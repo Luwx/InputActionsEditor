@@ -24,8 +24,12 @@ class GestureCommands {
     );
   }
 
-  void duplicateGesture(GestureLocation location) {
-    _config.add(DuplicateGesture(location), scope: const GesturesScope());
+  void duplicateGestures(Iterable<GestureLocation> gestures) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      DuplicateGestures(gestures.toList()),
+      scope: const GesturesScope(),
+    );
   }
 
   void insertGestures(
@@ -51,32 +55,23 @@ class GestureCommands {
     );
   }
 
-  void removeGesture(GestureLocation location) {
-    _config.add(RemoveGesture(location), scope: const GesturesScope());
+  void removeGestures(Iterable<GestureLocation> gestures) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      RemoveGestures(gestures.toList()),
+      scope: const GesturesScope(),
+    );
   }
 
-  void enableGestures(Iterable<GestureLocation> gestures) {
-    for (final gesture in gestures) {
-      _config.add(
-        UpdateGestureCommon(
-          gesture,
-          (common) => common.copyWith(enabled: null),
-        ),
-        scope: const GesturesScope(),
-      );
-    }
-  }
-
-  void disableGestures(Iterable<GestureLocation> gestures) {
-    for (final gesture in gestures) {
-      _config.add(
-        UpdateGestureCommon(
-          gesture,
-          (common) => common.copyWith(enabled: false),
-        ),
-        scope: const GesturesScope(),
-      );
-    }
+  void setGesturesEnabled(
+    Iterable<GestureLocation> gestures, {
+    required bool enabled,
+  }) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      SetGesturesEnabled(gestures.toList(), enabled: enabled),
+      scope: const GesturesScope(),
+    );
   }
 
   void addGroup(DeviceType device, GestureGroupNode group, {int? parentKey}) {

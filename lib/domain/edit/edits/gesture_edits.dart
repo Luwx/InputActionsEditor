@@ -78,45 +78,88 @@ final class InsertGestures extends ConfigEdit {
       RestoreGestures(config, label: 'remove gestures');
 }
 
-/// Removes [location]'s gesture (no-op when it no longer exists).
-final class RemoveGesture extends ConfigEdit {
-  RemoveGesture(this.location);
+/// Removes every gesture in [locations] as one edit, skipping any that no
+/// longer resolve.
+final class RemoveGestures extends ConfigEdit {
+  RemoveGestures(this.locations);
 
-  final GestureLocation location;
-
-  @override
-  String get label => 'remove ${location.device.name} gesture';
+  final List<GestureLocation> locations;
 
   @override
-  Config apply(Config config) => schema.removeGesture(config, location);
-
-  @override
-  ConfigEdit inverse(Config config) =>
-      RestoreGestures(config, label: 'add gesture');
-}
-
-/// Inserts a copy of [location]'s gesture right after it.
-final class DuplicateGesture extends ConfigEdit {
-  DuplicateGesture(this.location);
-
-  final GestureLocation location;
-
-  @override
-  String get label => 'duplicate ${location.device.name} gesture';
+  String get label =>
+      locations.length == 1 ? 'remove gesture' : 'remove gestures';
 
   @override
   Config apply(Config config) {
-    final source = schema.gestureAt(config, location);
-    if (source == null) return config;
-    final copy = source.withCommon(
-      source.common.copyWith(name: '${source.common.name ?? ''}-copy'),
-    );
-    return schema.insertGestureAfter(config, location, copy);
+    var next = config;
+    for (final location in locations) {
+      next = schema.removeGesture(next, location);
+    }
+    return next;
   }
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreGestures(config, label: 'remove duplicate');
+      RestoreGestures(config, label: 'add gestures');
+}
+
+/// Inserts a copy of each of [locations] right after it, as one edit.
+final class DuplicateGestures extends ConfigEdit {
+  DuplicateGestures(this.locations);
+
+  final List<GestureLocation> locations;
+
+  @override
+  String get label =>
+      locations.length == 1 ? 'duplicate gesture' : 'duplicate gestures';
+
+  @override
+  Config apply(Config config) {
+    var next = config;
+    for (final location in locations) {
+      final source = schema.gestureAt(next, location);
+      if (source == null) continue;
+      final copy = source.withCommon(
+        source.common.copyWith(name: '${source.common.name ?? ''}-copy'),
+      );
+      next = schema.insertGestureAfter(next, location, copy);
+    }
+    return next;
+  }
+
+  @override
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'remove duplicates');
+}
+
+/// Enables or disables every gesture in [locations] as one edit.
+final class SetGesturesEnabled extends ConfigEdit {
+  SetGesturesEnabled(this.locations, {required this.enabled});
+
+  final List<GestureLocation> locations;
+  final bool enabled;
+
+  @override
+  String get label => enabled ? 'enable gestures' : 'disable gestures';
+
+  @override
+  Config apply(Config config) {
+    var next = config;
+    for (final location in locations) {
+      next = schema.updateGesture(
+        next,
+        location,
+        (gesture) => gesture.withCommon(
+          gesture.common.copyWith(enabled: enabled ? null : false),
+        ),
+      );
+    }
+    return next;
+  }
+
+  @override
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'toggle gestures');
 }
 
 /// Reorders [device]'s flat gesture order using Flutter's `ReorderableList`

@@ -128,7 +128,7 @@ void main() {
     final location = locationAt(0);
     controller()
       ..coalesceEnabled = false
-      ..add(RemoveGesture(location), scope: const GesturesScope())
+      ..add(RemoveGestures([location]), scope: const GesturesScope())
       ..undo(scope: const GesturesScope());
 
     expect(reveal()?.gesture, location);
@@ -157,7 +157,7 @@ void main() {
 
     controller()
       ..coalesceEnabled = false
-      ..add(RemoveGesture(location), scope: const GesturesScope());
+      ..add(RemoveGestures([location]), scope: const GesturesScope());
 
     // The gesture, and with it the action, is gone; the step must not throw.
     expect(edit.apply(draft()), draft());

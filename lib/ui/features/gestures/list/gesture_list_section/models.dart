@@ -131,3 +131,27 @@ final class _GestureRowItem extends _FlatItem {
     ancestorContinues,
   ];
 }
+
+/// The row commands the list's context menu and selection shortcuts run, each
+/// over the rows [targetsFor] resolves.
+final class _GestureRowCommands {
+  const _GestureRowCommands({
+    required this.targetsFor,
+    required this.copy,
+    required this.paste,
+    required this.duplicate,
+    required this.setEnabled,
+    required this.delete,
+  });
+
+  /// The rows a row command applies to: the selection when the row is part of
+  /// it, otherwise just that row.
+  final List<GestureLocation> Function(GestureLocation location) targetsFor;
+
+  final Future<void> Function(List<GestureLocation> targets) copy;
+  final Future<void> Function(GestureLocation anchor) paste;
+  final void Function(List<GestureLocation> targets) duplicate;
+  final void Function(List<GestureLocation> targets, {required bool enabled})
+  setEnabled;
+  final void Function(List<GestureLocation> targets) delete;
+}

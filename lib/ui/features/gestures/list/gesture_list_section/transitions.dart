@@ -131,12 +131,8 @@ _GestureTransitions _useGestureTransitions(
     ];
 
     // Commit the delete immediately.
-    final commands = ref.read(gestureCommandsProvider);
-    final nav = ref.read(navProvider.notifier);
-    for (final target in targets) {
-      commands.removeGesture(target);
-      nav.onGestureDeleted(target);
-    }
+    ref.read(gestureCommandsProvider).removeGestures(targets);
+    targets.forEach(ref.read(navProvider.notifier).onGestureDeleted);
 
     transitions.capture(ghosts, reenters: false);
   }

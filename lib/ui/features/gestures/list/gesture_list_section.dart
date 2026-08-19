@@ -187,6 +187,34 @@ class GestureListSection extends HookConsumerWidget {
       listNotifier.insertGestures(anchor.device, gestures, after: anchor);
     }
 
+    void dropFromSelection(List<GestureLocation> targets) {
+      if (multiSelect == null) return;
+      final next = {...multiSelect}..removeAll(targets);
+      if (next.isEmpty) {
+        multiSelectNotifier.exit();
+      } else {
+        multiSelectNotifier.state = next;
+      }
+    }
+
+    void deleteGestures(List<GestureLocation> targets) {
+      if (targets.isEmpty) return;
+      dropFromSelection(targets);
+      transitions.requestDelete(
+        locations: targets,
+        flatItems: viewModel.flatItems,
+      );
+    }
+
+    final rowCommands = _GestureRowCommands(
+      targetsFor: targetsFor,
+      copy: copyGestures,
+      paste: pasteGestures,
+      duplicate: listNotifier.duplicateGestures,
+      setEnabled: listNotifier.setGesturesEnabled,
+      delete: deleteGestures,
+    );
+
     // Esc exits select mode regardless of where focus currently sits (a
     // focus-scoped shortcut only fires when the list happens to hold focus).
     useEffect(() {
@@ -319,16 +347,8 @@ class GestureListSection extends HookConsumerWidget {
               if (anchor != null) unawaited(pasteGestures(anchor));
             },
             duplicateShortcut: () =>
-                selectionInOrder().forEach(listNotifier.duplicateGesture),
-            deleteShortcut: () {
-              final targets = selectionInOrder();
-              if (targets.isEmpty) return;
-              multiSelectNotifier.exit();
-              transitions.requestDelete(
-                locations: targets,
-                flatItems: viewModel.flatItems,
-              );
-            },
+                rowCommands.duplicate(selectionInOrder()),
+            deleteShortcut: () => rowCommands.delete(selectionInOrder()),
           },
           child: ScrollbarMediaPadding(
             topInset: kGestureListHeaderHeight,
@@ -458,9 +478,7 @@ class GestureListSection extends HookConsumerWidget {
                 transitions: transitions,
                 addedMarker: addedMarker,
                 isMultiSelectMode: isMultiSelectMode,
-                targetsFor: targetsFor,
-                copyGestures: copyGestures,
-                pasteGestures: pasteGestures,
+                rowCommands: rowCommands,
               ),
             ),
           ),
@@ -563,9 +581,7 @@ class GestureListSection extends HookConsumerWidget {
     required _GestureTransitions transitions,
     required AddedGestureMarker? addedMarker,
     required bool isMultiSelectMode,
-    required List<GestureLocation> Function(GestureLocation) targetsFor,
-    required Future<void> Function(List<GestureLocation>) copyGestures,
-    required Future<void> Function(GestureLocation) pasteGestures,
+    required _GestureRowCommands rowCommands,
   }) {
     if (ghost != null) {
       return GestureListTile(
@@ -589,6 +605,7 @@ class GestureListSection extends HookConsumerWidget {
     final location = itemEntry.id;
     final commands = ref.read(gestureCommandsProvider);
     final multiSelect = ref.read(multiSelectControllerProvider.notifier);
+    List<GestureLocation> targets() => rowCommands.targetsFor(location);
 
     return AnimatedOpacity(
       duration: Durations.short2,
@@ -603,6 +620,7 @@ class GestureListSection extends HookConsumerWidget {
         groupDisabled:
             row.groupKey != null &&
             viewModel.disabledGroupKeys.contains(row.groupKey),
+        targetCount: targets().length,
         scrollKey: choreo.scrollTarget == location
             ? choreo.scrollTargetKey
             : null,
@@ -636,9 +654,9 @@ class GestureListSection extends HookConsumerWidget {
             ),
           );
         },
-        onCopy: () => unawaited(copyGestures(targetsFor(location))),
-        onPaste: () => unawaited(pasteGestures(location)),
-        onDuplicate: () => commands.duplicateGesture(location),
+        onCopy: () => unawaited(rowCommands.copy(targets())),
+        onPaste: () => unawaited(rowCommands.paste(targets().last)),
+        onDuplicate: () => rowCommands.duplicate(targets()),
         onToggleEnabled: () {
           final enabled =
               gestureAt(
@@ -646,16 +664,9 @@ class GestureListSection extends HookConsumerWidget {
                 location,
               )?.common.enabled !=
               false;
-          if (enabled) {
-            commands.disableGestures([location]);
-          } else {
-            commands.enableGestures([location]);
-          }
+          rowCommands.setEnabled(targets(), enabled: !enabled);
         },
-        onDelete: () => transitions.requestDelete(
-          locations: [location],
-          flatItems: viewModel.flatItems,
-        ),
+        onDelete: () => rowCommands.delete(targets()),
       ),
     );
   }

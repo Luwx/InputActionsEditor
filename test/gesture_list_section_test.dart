@@ -205,6 +205,18 @@ void _reveal(WidgetTester tester, int index) {
       );
 }
 
+
+/// Puts the list in select mode over [names], the first by long press and the
+/// rest by tap.
+Future<void> _selectRows(WidgetTester tester, List<String> names) async {
+  await tester.longPress(find.text(names.first));
+  await tester.pumpAndSettle();
+  for (final name in names.skip(1)) {
+    await tester.tap(find.text(name));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   testWidgets('renders a row per gesture', (tester) async {
     await _pumpList(tester);
@@ -679,7 +691,165 @@ void main() {
 
     expect(_order(tester), ['Third', 'First', 'Second']);
   });
+
+  testWidgets('the menu copies the selection and pastes after its last row', (
+    tester,
+  ) async {
+    _mockClipboard(tester);
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+    await tester.pumpAndSettle();
+
+    expect(_order(tester), ['First', 'Second', 'First', 'Second', 'Third']);
+  });
+
+  testWidgets('the menu deletes the whole selection', (tester) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.trash2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(_order(tester), ['Third']);
+  });
+
+  testWidgets('the menu duplicates the whole selection', (tester) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.pumpAndSettle();
+
+    expect(_draftNames(tester), [
+      'First',
+      'First-copy',
+      'Second',
+      'Second-copy',
+      'Third',
+    ]);
+  });
+
+  testWidgets('a row outside the selection is acted on alone', (tester) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('Third'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.trash2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(_order(tester), ['First', 'Second']);
+  });
+
+  testWidgets('rename drops out of the menu over several rows', (tester) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(FLucideIcons.pencil), findsNothing);
+
+    await tester.tap(find.text('Third'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(FLucideIcons.pencil), findsOneWidget);
+  });
+
+  testWidgets('right-clicking in select mode leaves the selection alone', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('Third'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 gestures selected'), findsOneWidget);
+  });
+
+  testWidgets('one undo brings back the whole deleted selection', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.trash2));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(_order(tester), ['Third']);
+
+    _controllerOf(tester).undo();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(_order(tester), ['First', 'Second', 'Third']);
+  });
+
+  testWidgets('one undo takes back every copy of a duplicated selection', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.pumpAndSettle();
+
+    _controllerOf(tester).undo();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('First-copy'), findsNothing);
+    expect(find.text('Second-copy'), findsNothing);
+  });
+
+  testWidgets('one undo re-enables a disabled selection', (tester) async {
+    await _pumpList(tester);
+    await _selectRows(tester, ['First', 'Second']);
+
+    await tester.tap(find.text('First'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(FLucideIcons.eyeOff));
+    await tester.pumpAndSettle();
+    expect(_enabledFlags(tester), [false, false, null]);
+
+    _controllerOf(tester).undo();
+    await tester.pumpAndSettle();
+
+    expect(_enabledFlags(tester), [null, null, null]);
+  });
 }
+
+/// Every mouse gesture's name, in draft order.
+List<String?> _draftNames(WidgetTester tester) =>
+    [for (final gesture in _draftOf(tester).mouseGestures) gesture.common.name];
+
+/// The `enabled` field of every mouse gesture, in list order. Null is the
+/// unset default, which reads as enabled.
+List<bool?> _enabledFlags(WidgetTester tester) => [
+  for (final gesture in _draftOf(tester).mouseGestures) gesture.common.enabled,
+];
+
+Config _draftOf(WidgetTester tester) => ProviderScope.containerOf(
+  tester.element(find.byType(GestureListSection)),
+).read(configControllerProvider).requireValue.draft;
 
 ConfigController _controllerOf(WidgetTester tester) =>
     ProviderScope.containerOf(

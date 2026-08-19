@@ -19,6 +19,7 @@ class GestureContextMenuTile extends HookConsumerWidget {
     required this.location,
     required this.newlyAddedMarkerId,
     required this.groupDisabled,
+    required this.targetCount,
     required this.scrollKey,
     required this.onTap,
     required this.onLongPress,
@@ -34,6 +35,10 @@ class GestureContextMenuTile extends HookConsumerWidget {
   final GestureLocation location;
   final int? newlyAddedMarkerId;
   final bool groupDisabled;
+
+  /// How many rows this tile's menu commands would act on: the selection when
+  /// the row belongs to it, otherwise one.
+  final int targetCount;
 
   /// Worn while a scroll is travelling here. It sits below this widget's own
   /// state because taking the key off remounts the subtree under it, which
@@ -100,12 +105,13 @@ class GestureContextMenuTile extends HookConsumerWidget {
     return FContextMenu(
       control: FPopoverControl.managed(controller: controller),
       builder: dismissibleContextMenuBuilder,
-      secondaryPress: !isMultiSelectMode && !controller.isShown,
+      secondaryPress: !controller.isShown,
       longPress: false,
       menu: _gestureContextMenuItems(
         context,
         controller: controller,
         isGestureEnabled: isGestureEnabled,
+        canRename: targetCount == 1,
         onRename: onRename,
         onCopy: onCopy,
         onPaste: onPaste,
@@ -115,7 +121,9 @@ class GestureContextMenuTile extends HookConsumerWidget {
       ),
       child: Listener(
         onPointerDown: (event) {
-          if (event.buttons & kSecondaryButton != 0) onTap();
+          if (event.buttons & kSecondaryButton != 0 && !isMultiSelectMode) {
+            onTap();
+          }
         },
         child: GestureDetector(
           onLongPress: onLongPress,
@@ -131,6 +139,7 @@ List<FItemGroupMixin> _gestureContextMenuItems(
   BuildContext context, {
   required FPopoverController controller,
   required bool isGestureEnabled,
+  required bool canRename,
   required VoidCallback onRename,
   required VoidCallback onCopy,
   required VoidCallback onPaste,
@@ -142,11 +151,12 @@ List<FItemGroupMixin> _gestureContextMenuItems(
   return [
     FItemGroup(
       children: [
-        FItem(
-          prefix: const Icon(FLucideIcons.pencil),
-          title: Text(l10n.groupMenuRename),
-          onPress: dismissThen(controller, onRename),
-        ),
+        if (canRename)
+          FItem(
+            prefix: const Icon(FLucideIcons.pencil),
+            title: Text(l10n.groupMenuRename),
+            onPress: dismissThen(controller, onRename),
+          ),
         FItem(
           prefix: const Icon(FLucideIcons.clipboardCopy),
           title: Text(l10n.actionCopy),

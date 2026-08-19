@@ -175,11 +175,11 @@ void main() {
       );
       expect(
         _names(
-          RemoveGesture(_at(c, DeviceType.mouse, 0)).apply(c).mouseGestures,
+          RemoveGestures([_at(c, DeviceType.mouse, 0)]).apply(c).mouseGestures,
         ),
         ['m2'],
       );
-      expect(RemoveGesture(_missing).apply(c), c);
+      expect(RemoveGestures([_missing]).apply(c), c);
     });
 
     test('RemoveGesture follows the gesture across a reorder', () {
@@ -191,7 +191,7 @@ void main() {
       final m1 = _at(c, DeviceType.mouse, 0);
       final reordered = ReorderGesture(DeviceType.mouse, 0, 2).apply(c);
       expect(
-        _names(RemoveGesture(m1).apply(reordered).mouseGestures),
+        _names(RemoveGestures([m1]).apply(reordered).mouseGestures),
         ['m2'],
       );
     });
@@ -202,7 +202,7 @@ void main() {
           mouseNodes: [GestureNode.leaf(_mouse1), GestureNode.leaf(_mouse2)],
         ),
       );
-      final out = DuplicateGesture(_at(c, DeviceType.mouse, 0)).apply(c);
+      final out = DuplicateGestures([_at(c, DeviceType.mouse, 0)]).apply(c);
       expect(_names(out.mouseGestures), ['m1', 'm1-copy', 'm2']);
     });
 
