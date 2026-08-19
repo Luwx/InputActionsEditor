@@ -63,16 +63,18 @@ Widget _host(TriggerCommon common) => MaterialApp(
     ],
     child: FTheme(
       data: AppThemes.zinc.dark.desktop,
-      child: FScaffold(
-        child: SingleChildScrollView(
-          child: ScrollAnchorScope(
-            controller: ScrollAnchorController(),
-            child: const EditLocationScope(
-              gesture: GestureLocation(
-                device: DeviceType.mouse,
-                editId: _seedEditId,
+      child: FToaster(
+        child: FScaffold(
+          child: SingleChildScrollView(
+            child: ScrollAnchorScope(
+              controller: ScrollAnchorController(),
+              child: const EditLocationScope(
+                gesture: GestureLocation(
+                  device: DeviceType.mouse,
+                  editId: _seedEditId,
+                ),
+                child: ActionListEditor(),
               ),
-              child: ActionListEditor(),
             ),
           ),
         ),

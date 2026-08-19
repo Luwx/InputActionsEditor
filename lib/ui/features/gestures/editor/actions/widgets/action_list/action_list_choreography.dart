@@ -13,6 +13,7 @@ import 'package:flutter/material.dart' hide Action;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -29,6 +30,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/a
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_transitions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_scroll_anchor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_trigger_fields.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Where a revealed row parks, as a fraction of the viewport.
 const double _revealAlignment = 0.1;
@@ -132,7 +134,9 @@ final class ActionListChoreography {
 
   /// Clipboard commands over the row, or the selection it belongs to.
   final Future<void> Function(ActionLocation location) copy;
-  final Future<void> Function(ActionLocation location) paste;
+
+  /// A null location pastes at the end of the root level.
+  final Future<void> Function(ActionLocation? location) paste;
 
   /// The row a command aimed at the whole selection addresses: the first
   /// selected one in tree order, or null while nothing is selected.
@@ -423,10 +427,21 @@ ActionListChoreography useActionListChoreography(
   Future<void> copy(ActionLocation target) =>
       notifier().copy(bundle(target.editId));
 
-  Future<void> paste(ActionLocation target) async {
-    final anchorKey = anchorKeyFor(target.editId);
+  Future<void> paste(ActionLocation? target) async {
+    final anchorKey = target == null ? null : anchorKeyFor(target.editId);
     final before = {for (final row in rows()) row.editId};
-    await notifier().paste(anchorKey);
+    if (!await notifier().paste(anchorKey)) {
+      if (context.mounted) {
+        showFToast(
+          context: context,
+          icon: const Icon(FLucideIcons.clipboardX),
+          title: Text(context.l10n.actionPasteEmptyTitle),
+          description: Text(context.l10n.actionPasteEmptyDescription),
+          duration: const Duration(seconds: 4),
+        );
+      }
+      return;
+    }
     collapsedGroups.value = {
       ...collapsedGroups.value,
       // Pasted rows arrive shut, however open the rows they were copied from

@@ -164,11 +164,11 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
 
   /// Pastes the clipboard next to [anchorKey]: inside it when it is a group,
   /// otherwise straight after it, which keeps the actions in the anchor's own
-  /// group. A null anchor, or clipboard text that is not actions, appends to
-  /// the root level and does nothing respectively.
-  Future<void> paste(int? anchorKey) async {
+  /// group. A null anchor appends to the root level. False when the clipboard
+  /// holds no actions to paste.
+  Future<bool> paste(int? anchorKey) async {
     final actions = await ActionClipboard.read();
-    if (actions.isEmpty) return;
+    if (actions.isEmpty) return false;
     final anchor = state.rows
         .where((row) => row.editId == anchorKey)
         .firstOrNull;
@@ -177,6 +177,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     } else {
       insert(actions, afterKey: anchor?.editId);
     }
+    return true;
   }
 
   void setEnabled(List<int> keys, {required bool enabled}) =>

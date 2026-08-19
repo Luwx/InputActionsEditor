@@ -16,6 +16,8 @@
   "actionDelete": "Delete",
   "actionDuplicate": "Duplicate",
   "actionCopy": "Copy",
+  "actionPasteEmptyTitle": "Nothing pasted",
+  "actionPasteEmptyDescription": "The clipboard does not hold copied actions.",
   "actionPaste": "Paste",
   "actionUndo": "Undo",
   "actionRedo": "Redo",

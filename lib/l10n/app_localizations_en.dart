@@ -57,6 +57,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCopy => 'Copy';
 
   @override
+  String get actionPasteEmptyTitle => 'Nothing pasted';
+
+  @override
+  String get actionPasteEmptyDescription =>
+      'The clipboard does not hold copied actions.';
+
+  @override
   String get actionPaste => 'Paste';
 
   @override

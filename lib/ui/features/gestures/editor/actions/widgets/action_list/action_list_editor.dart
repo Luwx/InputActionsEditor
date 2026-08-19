@@ -22,6 +22,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/add_action_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_drop_targets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_header.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_paste_menu.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_rows.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/add_action_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
@@ -94,6 +95,11 @@ class ActionListEditor extends HookConsumerWidget {
         child: Stack(
           key: listKey,
           children: [
+            Positioned.fill(
+              child: ActionListPasteMenu(
+                onPaste: () => unawaited(choreo.paste(null)),
+              ),
+            ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

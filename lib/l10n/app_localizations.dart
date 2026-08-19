@@ -190,6 +190,18 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get actionCopy;
 
+  /// No description provided for @actionPasteEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing pasted'**
+  String get actionPasteEmptyTitle;
+
+  /// No description provided for @actionPasteEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard does not hold copied actions.'**
+  String get actionPasteEmptyDescription;
+
   /// No description provided for @actionPaste.
   ///
   /// In en, this message translates to:
