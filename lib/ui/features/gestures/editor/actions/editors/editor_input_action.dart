@@ -210,12 +210,13 @@ class _InputEntryEditor extends HookWidget {
     final tokenKey = entry.tokens.join(', ');
     useEffect(() {
       void resync(TextEditingController controller) {
-        if (KeySequenceParser.toTokens(
-              KeySequenceParser.parse(controller.text),
-            ).join(', ') ==
-            tokenKey) {
-          return;
-        }
+        if (controller.text == tokenKey) return;
+        final typed = KeySequenceParser.toTokens(
+          KeySequenceParser.parse(controller.text),
+        ).join(', ');
+        // Text the parser cannot read canonicalizes to nothing, which must not
+        // pass for an empty sequence.
+        if (typed.isNotEmpty && typed == tokenKey) return;
         unawaited(
           Future.microtask(() {
             syncing.value = true;
