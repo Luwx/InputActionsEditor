@@ -197,9 +197,11 @@ String encodeConfig(Config config, String originalText) {
   _saveDeviceRules(editor, doc, config);
   _saveGlobalSettings(editor, doc, config);
 
-  return restoreOriginalDisabledItemComments(
-    commentDisabledYamlItems(editor.toString()),
-    originalText,
+  return spaceOutGestures(
+    restoreOriginalDisabledItemComments(
+      commentDisabledYamlItems(editor.toString()),
+      originalText,
+    ),
   );
 }
 
@@ -540,6 +542,75 @@ dynamic textReplacementValueToYaml(TextReplacementValue value) =>
       CommandTextReplacementValue(:final command) => {'command': command},
     };
 
+const _deviceSectionKeys = {
+  'mouse',
+  'keyboard',
+  'pointer',
+  'touchpad',
+  'touchscreen',
+};
+
+/// Separates sibling gestures with a blank line and device sections with two.
+/// Blank lines are only added, never taken away, so spacing already in the
+/// file survives and a second pass changes nothing.
+String spaceOutGestures(String yamlText) {
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  final itemIndents = <int>[];
+  final seenItem = <bool>[];
+  final spaced = <bool>[];
+
+  for (final line in lines) {
+    if (line.trim().isEmpty) {
+      out.add(line);
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    final indent = indentOf(parseLine);
+    while (itemIndents.isNotEmpty && indent < itemIndents.last) {
+      itemIndents.removeLast();
+      spaced.removeLast();
+      seenItem.removeLast();
+    }
+
+    final key = blockKey(parseLine);
+    final startsSection =
+        indent == 0 && uncommented == null && _deviceSectionKeys.contains(key);
+    if (startsSection && !_endsWithComment(out)) {
+      _ensureBlankLines(out, 2);
+    } else if (itemIndents.isNotEmpty &&
+        spaced.last &&
+        indent == itemIndents.last &&
+        parseLine.substring(indent).startsWith('- ')) {
+      if (seenItem.last) _ensureBlankLines(out, 1);
+      seenItem[seenItem.length - 1] = true;
+    }
+    out.add(line);
+
+    if (key == 'gestures') {
+      itemIndents.add(indent + 2);
+      spaced.add(uncommented == null);
+      seenItem.add(false);
+    }
+  }
+
+  return out.join('\n');
+}
+
+bool _endsWithComment(List<String> out) =>
+    out.isNotEmpty && out.last.trimLeft().startsWith('#');
+
+void _ensureBlankLines(List<String> out, int count) {
+  final at = out.length;
+  var blanks = 0;
+  while (blanks < at && out[at - blanks - 1].trim().isEmpty) {
+    blanks++;
+  }
+  if (at - blanks == 0 || blanks >= count) return;
+  out.insertAll(at - blanks, List.filled(count - blanks, ''));
+}
+
 /// Comments out disabled gesture/action list items so the runtime ignores
 /// them. The normal YAML map still carries `enabled: false`, which lets
 /// [decodeConfig] recover the disabled state after stripping one comment layer.
@@ -551,6 +622,12 @@ String commentDisabledYamlItems(String yamlText) {
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
+    // A blank line has no indentation to read, so it must not close a block.
+    if (line.trim().isEmpty) {
+      out.add(line);
+      i++;
+      continue;
+    }
     final indent = indentOf(line);
     popContexts(contexts, indent);
 
@@ -613,6 +690,11 @@ String restoreOriginalDisabledItemComments(
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
+    if (line.trim().isEmpty) {
+      out.add(line);
+      i++;
+      continue;
+    }
     final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
     final indent = indentOf(parseLine);
@@ -672,6 +754,10 @@ List<List<String>> _disabledItemInnerComments(String yamlText) {
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
+    if (line.trim().isEmpty) {
+      i++;
+      continue;
+    }
     final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
     final indent = indentOf(parseLine);

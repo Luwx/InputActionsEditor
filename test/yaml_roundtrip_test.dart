@@ -546,6 +546,7 @@ mouse:
       const original = '''
 autoreload: true
 
+
 mouse:
 
   gestures:
@@ -595,6 +596,52 @@ touchpad:
       expect(encoded, contains('      name: A\n\n    - type: wheel'));
       // ...while the edited touchpad section is rewritten with the new value.
       expect(encoded, contains('fingers: 4'));
+    });
+
+    test('a rewritten section is spaced out again', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      name: A
+    - type: wheel
+      direction: up
+touchpad:
+  gestures:
+    - type: tap
+      fingers: 3
+''';
+      final decoded = decodeConfig(original);
+      final edited = decoded.withNodesForDevice(DeviceType.mouse, [
+        ...decoded.mouseNodes,
+        const GestureNode.leaf(
+          PressGesture(common: TriggerCommon(name: 'C')),
+        ),
+      ]);
+      final encoded = encodeConfig(edited, original);
+
+      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      expect(encoded, contains('      direction: up\n\n    - type: press'));
+      expect(encoded, contains('\n\n\ntouchpad:'));
+    });
+
+    test('a group nests its gestures with the same spacing', () {
+      const config = Config(
+        mouseNodes: [
+          GestureNode.group(
+            name: 'Nav',
+            children: [
+              GestureNode.leaf(PressGesture(common: TriggerCommon(name: 'A'))),
+              GestureNode.leaf(PressGesture(common: TriggerCommon(name: 'B'))),
+            ],
+          ),
+        ],
+      );
+
+      expect(
+        encodeConfig(config, ''),
+        contains('          name: A\n\n        - type: press'),
+      );
     });
   });
 }
