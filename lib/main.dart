@@ -11,6 +11,7 @@ import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/app/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/services/ui_scale_binding.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
 import 'package:input_actions_editor/services/window_service.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
@@ -19,7 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  UiScaleBinding.ensureInitialized();
   LinuxAppMenu.initialize();
   await windowManager.ensureInitialized();
 

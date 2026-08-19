@@ -10,6 +10,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/services/ui_scale_binding.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
@@ -84,7 +85,7 @@ class App extends ConsumerWidget {
               ref.read(navProvider.notifier).forward();
             }
           },
-          child: _ThemedShell(child: child!),
+          child: _ScaledMediaQuery(child: _ThemedShell(child: child!)),
         );
       },
     );
@@ -169,6 +170,32 @@ FThemeData _withAppChromeStyle(
       ),
     ),
   );
+}
+
+class _ScaledMediaQuery extends StatelessWidget {
+  const _ScaledMediaQuery({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = UiScaleBinding.scale;
+    if (scale == 1) return child;
+
+    // MediaQueryData.fromView reads the raw view, so it misses the scale the
+    // binding applies to the render view's configuration.
+    final data = MediaQuery.of(context);
+    return MediaQuery(
+      data: data.copyWith(
+        size: data.size / scale,
+        devicePixelRatio: data.devicePixelRatio * scale,
+        padding: data.padding / scale,
+        viewPadding: data.viewPadding / scale,
+        viewInsets: data.viewInsets / scale,
+      ),
+      child: child,
+    );
+  }
 }
 
 class _ThemedShell extends ConsumerWidget {
