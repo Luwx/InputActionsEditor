@@ -163,10 +163,14 @@ _GestureTransitions _useGestureTransitions(
     final filter = ref.read(deviceFilterProvider);
     final collapsed = ref.read(collapsedGroupsProvider);
     final before = _buildFlatList(previous, filter, collapsed);
-    final moved = findMovedNodes(
-      _flatTreeNodes(before),
-      _flatTreeNodes(_buildFlatList(next, filter, collapsed)),
-    );
+    final beforeNodes = _flatTreeNodes(before);
+    final afterNodes = _flatTreeNodes(_buildFlatList(next, filter, collapsed));
+    final held = {for (final node in beforeNodes) node.id};
+    transitions.enter([
+      for (final node in afterNodes)
+        if (!held.contains(node.id)) node.id,
+    ]);
+    final moved = findMovedNodes(beforeNodes, afterNodes);
     if (moved.isEmpty) return;
     transitions.capture(
       [

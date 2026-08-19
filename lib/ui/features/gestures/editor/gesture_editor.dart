@@ -123,18 +123,23 @@ class _GestureEditorView extends HookConsumerWidget {
     final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
 
     useEffect(() {
+      // The ticker outlives a swap of the editor by a frame, and an element on
+      // its way out has no render object to ask.
+      RenderBox? boxOf(GlobalKey key) {
+        final context = key.currentContext;
+        if (context == null || !context.mounted) return null;
+        final box = context.findRenderObject();
+        return box is RenderBox && box.attached && box.hasSize ? box : null;
+      }
+
       final ticker = tickerProvider.createTicker((_) {
-        final editorBox =
-            editorKey.currentContext?.findRenderObject() as RenderBox?;
-        if (editorBox == null || !editorBox.attached || !editorBox.hasSize) {
-          return;
-        }
+        final editorBox = boxOf(editorKey);
+        if (editorBox == null) return;
         final origin = editorBox.localToGlobal(Offset.zero);
 
         // App bar mirror: the inline slot scrolled up behind the header.
-        final headerBox =
-            addActionHeaderKey.currentContext?.findRenderObject() as RenderBox?;
-        if (headerBox != null && headerBox.attached && headerBox.hasSize) {
+        final headerBox = boxOf(addActionHeaderKey);
+        if (headerBox != null) {
           final headerBottom =
               headerBox.localToGlobal(Offset.zero).dy + headerBox.size.height;
           final above =
@@ -146,9 +151,8 @@ class _GestureEditorView extends HookConsumerWidget {
 
         // Float only while the slot sits below a line near the viewport bottom;
         // past it the inline button takes over and scrolls without lag.
-        final buttonBox =
-            addActionButtonKey.currentContext?.findRenderObject() as RenderBox?;
-        if (buttonBox == null || !buttonBox.attached || !buttonBox.hasSize) {
+        final buttonBox = boxOf(addActionButtonKey);
+        if (buttonBox == null) {
           addActionFloating.value = null;
           return;
         }

@@ -1,8 +1,6 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-/// Transient, render-coupled choreography for the gesture list: auto-selecting
-/// the first gesture when entering the screen / switching device filter, and
-/// scrolling a gesture into view after add / redirect / history navigation.
+/// Transient, render-coupled choreography for the gesture list.
 final class _GestureListChoreography {
   const _GestureListChoreography({
     required this.scrollTargetKey,
@@ -13,39 +11,56 @@ final class _GestureListChoreography {
     required this.scrollToGroup,
   });
 
-  /// Attached to the row currently being scrolled to, so
-  /// [Scrollable.ensureVisible] can find it once it is laid out.
   final GlobalKey scrollTargetKey;
 
-  /// The gesture a scroll is currently targeting, or null. The matching row
-  /// wears [scrollTargetKey].
+  /// Whichever row or header a scroll is targeting wears [scrollTargetKey].
   final GestureLocation? scrollTarget;
-
-  /// The group header a scroll is currently targeting, or null.
   final int? scrollTargetGroup;
 
-  /// Call during build, after the view model is available: runs any pending
-  /// auto-select and prepares a queued scroll target now that the flat list is
-  /// known.
+  /// Call from build, once the view model is available.
   final void Function(_GestureListViewModel viewModel) prepare;
 
-  /// Immediately scroll a freshly-known gesture (e.g. just added) into view.
   final void Function(GestureLocation target) scrollToGesture;
-
-  /// Immediately scroll a freshly-added group into view.
   final void Function(int groupKey) scrollToGroup;
 }
 
-/// Rough height of a gesture row, for scroll estimates made before the target
-/// row exists.
-const double _rowExtent = 62;
+/// The slots the list's items take, which place a target it has not laid out
+/// yet. A row grows by a line once it has an action to show.
+const double _rowExtent = 59;
+const double _tallRowExtent = 63;
+const double _groupHeaderExtent = 38;
 
 /// How far short of the target a restored session lands before gliding in.
 const double _restoreGlide = 3 * _rowExtent;
 
-/// Wires up the gesture list's scroll / auto-select choreography. Must be called
-/// from the section's build (it registers [WidgetRef.listen] subscriptions and
-/// uses hooks).
+/// A shorter one for arriving from another filter or view.
+const double _arriveGlide = _restoreGlide / 4;
+
+/// Time to cross [distance], so a nudge and a journey read at one speed.
+Duration _travelTime(double distance, double viewport) {
+  final t = viewport <= 0 ? 1.0 : (distance / (viewport * 2)).clamp(0.0, 1.0);
+  return Durations.short4 + (Durations.long2 - Durations.short4) * t;
+}
+
+/// Where an item sits in the list's own coordinates. Rows under a collapsed
+/// group take no space.
+double _slotExtent(_FlatItem item) => switch (item) {
+  _GroupHeaderItem() => _groupHeaderExtent,
+  _GestureRowItem(:final tall) => tall ? _tallRowExtent : _rowExtent,
+};
+
+double _contentOffset(List<_FlatItem> items, int index) {
+  var offset = 0.0;
+  for (var i = 0; i < index; i++) {
+    final item = items[i];
+    if (!item.isVisible) continue;
+    offset += _slotExtent(item);
+  }
+  return offset;
+}
+
+/// Must be called from the section's build: it registers [WidgetRef.listen]
+/// subscriptions and uses hooks.
 _GestureListChoreography _useGestureListChoreography(
   WidgetRef ref,
   BuildContext context,
@@ -55,78 +70,154 @@ _GestureListChoreography _useGestureListChoreography(
   final pendingAutoSelectFilter = useRef<DeviceType?>(null);
   final scrollTarget = useState<GestureLocation?>(null);
   final scrollTargetGroup = useState<int?>(null);
-  final scrollTargetFlatIndex = useRef<int?>(null);
+  final scrollTargetOffset = useRef<double?>(null);
+  final scrollTargetExtent = useRef<double>(_rowExtent);
+  final scrollTargetInset = useRef<double>(0);
+  final scrollTargetPark = useRef(true);
   final scrollTargetQueued = useRef(false);
-  final scrollTargetAnimated = useRef(true);
+  final scrollTargetExpanded = useRef(false);
+  final scrollTargetGlide = useRef(false);
   final scrollTargetKey = useMemoized(GlobalKey.new);
+  final arrival = useRef(0);
+  final restingAt = useRef(<DeviceType?, double>{});
+
+  /// How far the list has to scroll to bring the target row inside, or null
+  /// when it is already whole. The row's own slot and those above it place it
+  /// exactly, laid out or not, so nothing here waits for the list to build it.
+  double? scrollDelta(
+    ScrollPosition position,
+    double target,
+    double extent,
+    double inset,
+  ) {
+    // [inset] is the group header pinned under the list's own.
+    final atTop = target - inset;
+    final atBottom =
+        target + extent + kGestureListHeaderHeight - position.viewportDimension;
+    // An arrival has already landed near the row, so it is on its way whether
+    // the row is whole or not.
+    if (!scrollTargetGlide.value &&
+        position.pixels <= atTop &&
+        position.pixels >= atBottom) {
+      return null;
+    }
+    if (scrollTargetPark.value) return atTop - position.pixels;
+    return position.pixels > atTop
+        ? atTop - position.pixels
+        : atBottom - position.pixels;
+  }
+
+  /// How far the target row is hidden behind the pinned header or past the
+  /// bottom edge, as painted, and zero when it is whole. A row expanding in or
+  /// a group opening leaves the slots ahead of what is really on screen.
+  double hiddenExtent(ScrollPosition position) {
+    final row = scrollTargetKey.currentContext?.findRenderObject();
+    final viewport = row == null ? null : RenderAbstractViewport.maybeOf(row);
+    if (row is! RenderBox ||
+        !row.hasSize ||
+        !row.attached ||
+        row.size.height == 0 ||
+        viewport == null) {
+      return 0;
+    }
+    final top = row.localToGlobal(Offset.zero, ancestor: viewport).dy;
+    final bottom = top + row.size.height;
+    final under = kGestureListHeaderHeight + scrollTargetInset.value;
+    if (top < under) return top - under;
+    if (bottom > position.viewportDimension) {
+      return bottom - position.viewportDimension;
+    }
+    return 0;
+  }
 
   void clearScrollTarget() {
     scrollTarget.value = null;
     scrollTargetGroup.value = null;
-    scrollTargetFlatIndex.value = null;
+    scrollTargetOffset.value = null;
     scrollTargetQueued.value = false;
-    scrollTargetAnimated.value = true;
+    scrollTargetExpanded.value = false;
+    scrollTargetPark.value = true;
+    scrollTargetGlide.value = false;
   }
 
-  void scrollToTarget([int attempt = 0]) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+  void scrollToTarget({int attempt = 0}) {
+    Future<void> pass() async {
       if (!scrollController.hasClients) {
         if (attempt < 12) {
-          scrollToTarget(attempt + 1);
+          scrollToTarget(attempt: attempt + 1);
         } else {
           clearScrollTarget();
         }
         return;
       }
-      final animated = scrollTargetAnimated.value;
+      final glide = scrollTargetGlide.value;
       final position = scrollController.position;
-      final ctx = scrollTargetKey.currentContext;
-      final box = ctx?.findRenderObject();
-      final viewport = box == null ? null : RenderAbstractViewport.maybeOf(box);
-      if (box != null && viewport != null) {
-        // getOffsetToReveal already discounts the pinned headers, so the row
-        // lands flush under them; back off one row for lead-in.
-        final destination =
-            (viewport.getOffsetToReveal(box, 0).offset - _rowExtent).clamp(
-              position.minScrollExtent,
-              position.maxScrollExtent,
-            );
-        await scrollController.animateTo(
-          destination,
-          duration: animated ? Durations.medium3 : Durations.long1,
-          curve: animated ? Easing.standard : Easing.emphasizedDecelerate,
+      final target = scrollTargetOffset.value;
+      if (target != null) {
+        final delta = scrollDelta(
+          position,
+          target,
+          scrollTargetExtent.value,
+          scrollTargetInset.value,
         );
-        clearScrollTarget();
-        return;
-      }
-      final flatIndex = scrollTargetFlatIndex.value;
-      if (attempt < 12 && flatIndex != null) {
-        final targetOffset = (flatIndex - 1) * _rowExtent;
-        final clamped = targetOffset.clamp(
+        if (delta == null) {
+          clearScrollTarget();
+          return;
+        }
+        // A row added at the end is aimed past an end the list only grows as
+        // the row opens, so the scroll would stop into it and settle again.
+        if (attempt == 0 &&
+            !scrollTargetPark.value &&
+            position.pixels + delta > position.maxScrollExtent + 1) {
+          Future<void>.delayed(listTransitionLifetime, () {
+            if (!context.mounted) return;
+            WidgetsBinding.instance.ensureVisualUpdate();
+            scrollToTarget(attempt: attempt + 1);
+          });
+          return;
+        }
+        final to = (position.pixels + delta).clamp(
           position.minScrollExtent,
           position.maxScrollExtent,
         );
-        if (!animated) {
-          // Jump short of the target, then let the pass that finds it glide
-          // the rest — one motion, long enough to read as settling in.
+        // A pass that has already landed near the row is left where it is.
+        if (glide && (to - position.pixels).abs() > _restoreGlide) {
           scrollController.jumpTo(
-            (targetOffset - _restoreGlide).clamp(
+            (to - _restoreGlide).clamp(
               position.minScrollExtent,
               position.maxScrollExtent,
             ),
           );
-          scrollToTarget(attempt + 1);
-          return;
         }
+        // The curve gets the distance there is to cover, not the one that was
+        // asked for, so a landing against an end still eases out.
         await scrollController.animateTo(
-          clamped,
-          duration: Durations.short3,
-          curve: Curves.easeOut,
+          to,
+          duration: glide
+              ? Durations.long1
+              : _travelTime(
+                  (to - position.pixels).abs(),
+                  position.viewportDimension,
+                ),
+          curve: Easing.emphasizedDecelerate,
         );
-        scrollToTarget(attempt + 1);
+        for (var settle = 0; settle < 3; settle++) {
+          // An animation ends inside the pipeline: reading a render box or
+          // starting a scroll from there lands mid-frame.
+          await WidgetsBinding.instance.endOfFrame;
+          if (!scrollController.hasClients) break;
+          final hidden = hiddenExtent(scrollController.position);
+          if (hidden.abs() <= 1) break;
+          await scrollController.animateTo(
+            position.pixels + hidden,
+            duration: Durations.short3,
+            curve: Easing.emphasizedDecelerate,
+          );
+        }
+        clearScrollTarget();
       } else if (attempt < 12 &&
           position.pixels < position.maxScrollExtent - 1) {
-        if (animated) {
+        if (!glide) {
           await scrollController.animateTo(
             position.maxScrollExtent,
             duration: Durations.short3,
@@ -135,11 +226,112 @@ _GestureListChoreography _useGestureListChoreography(
         } else {
           scrollController.jumpTo(position.maxScrollExtent);
         }
-        scrollToTarget(attempt + 1);
+        scrollToTarget(attempt: attempt + 1);
       } else {
         clearScrollTarget();
       }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => pass());
+  }
+
+  /// Brings the list to where [target] belongs under [filter], before the
+  /// frame that opens it is drawn: the slots place the row without the list
+  /// having laid it out.
+  ///
+  /// A row that was on screen under [from] keeps the place it had there, so
+  /// the list changes around it rather than under it; failing that the list
+  /// resumes where [filter] was left, and failing that the row parks at the
+  /// top. False when it cannot place the row at all.
+  bool arriveAt(GestureLocation target, DeviceType? from, DeviceType? filter) {
+    if (!scrollController.hasClients) return false;
+    final config = ref.read(draftConfigProvider);
+    final collapsed = ref.read(collapsedGroupsProvider);
+    final items = _buildFlatList(config, filter, collapsed);
+    final index = items.indexWhere(
+      (item) => item is _GestureRowItem && item.location == target,
+    );
+    if (index < 0) return false;
+
+    final position = scrollController.position;
+    restingAt.value[from] = position.pixels;
+    final item = items[index] as _GestureRowItem;
+    final offset = _contentOffset(items, index);
+    final extent = _slotExtent(item);
+    final inset = filter != null && item.groupKey != null
+        ? _groupHeaderExtent
+        : 0.0;
+
+    // A row is at the header line when the list stands at its own offset,
+    // which is what puts both lists on one scale.
+    final was = _buildFlatList(config, from, collapsed);
+    final wasIndex = was.indexWhere(
+      (item) => item is _GestureRowItem && item.location == target,
+    );
+    final sat = wasIndex < 0
+        ? null
+        : kGestureListHeaderHeight +
+              _contentOffset(was, wasIndex) -
+              position.pixels;
+    final held =
+        sat != null &&
+            sat >= kGestureListHeaderHeight + inset &&
+            sat + extent <= position.viewportDimension
+        ? sat
+        : null;
+    final resting = restingAt.value[filter];
+    final restingTop = resting == null
+        ? null
+        : kGestureListHeaderHeight + offset - resting;
+    final resumed =
+        restingTop != null &&
+            restingTop >= kGestureListHeaderHeight + inset &&
+            restingTop + extent <= position.viewportDimension
+        ? restingTop
+        : null;
+    final lands = held ?? resumed ?? kGestureListHeaderHeight + inset;
+    final to = offset + kGestureListHeaderHeight - lands;
+
+    // What the row moves caps the glide, however far the list underneath had
+    // to travel.
+    final moved = sat == null ? _arriveGlide : (lands - sat).abs();
+    final glide = moved < _arriveGlide ? moved : _arriveGlide;
+    // The lists differ, so what carries over is how far down each the row
+    // sits: landing deeper glides forward, shallower glides back.
+    final stoodDeep = position.maxScrollExtent <= 0
+        ? 0.0
+        : position.pixels / position.maxScrollExtent;
+    final ends =
+        _contentOffset(items, items.length) +
+        kGestureListHeaderHeight -
+        position.viewportDimension;
+    final landsDeep = ends <= 0 ? 0.0 : to / ends;
+    final approach = landsDeep >= stoodDeep ? to - glide : to + glide;
+    final start = approach >= position.minScrollExtent ? approach : to + glide;
+    // A glide still running would drive on to its own landing and undo the
+    // correction below.
+    scrollController.jumpTo(position.pixels);
+    // The list this lands in has not been measured yet, so jumpTo would hold
+    // the offset inside the outgoing list's extent and paint one frame there.
+    // Correcting the pixels leaves the coming layout to bring it into range.
+    position.correctPixels(
+      start.clamp(position.minScrollExtent, double.infinity),
+    );
+    // A filter changed under a glide leaves that one settling towards a list
+    // no longer on screen.
+    final ticket = ++arrival.value;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ticket != arrival.value || !scrollController.hasClients) return;
+      final settled = scrollController.position;
+      unawaited(
+        settled.animateTo(
+          to.clamp(settled.minScrollExtent, settled.maxScrollExtent),
+          duration: Durations.long1,
+          curve: Easing.emphasizedDecelerate,
+        ),
+      );
     });
+    return true;
   }
 
   void queueAutoSelectFirstGesture(DeviceType? filter) {
@@ -152,12 +344,17 @@ _GestureListChoreography _useGestureListChoreography(
     pendingAutoSelectFilter.value = null;
   }
 
-  void queueScrollToGesture(GestureLocation target, {bool animated = true}) {
+  void queueScrollToGesture(
+    GestureLocation target, {
+    bool glide = false,
+    bool park = true,
+  }) {
     scrollTarget.value = target;
     scrollTargetGroup.value = null;
-    scrollTargetFlatIndex.value = null;
+    scrollTargetOffset.value = null;
     scrollTargetQueued.value = false;
-    scrollTargetAnimated.value = animated;
+    scrollTargetGlide.value = glide;
+    scrollTargetPark.value = park;
   }
 
   void prepareScrollTarget(_GestureListViewModel viewModel) {
@@ -184,13 +381,34 @@ _GestureListChoreography _useGestureListChoreography(
           clearScrollTarget();
           return;
         }
+        scrollTargetExpanded.value = true;
         ancestors.forEach(ref.read(collapsedGroupsProvider.notifier).expand);
       });
       return;
     }
-    scrollTargetFlatIndex.value = flatIndex;
+    scrollTargetOffset.value = _contentOffset(viewModel.flatItems, flatIndex);
+    scrollTargetExtent.value = _slotExtent(item);
+    // The all-devices view draws no group chrome, so nothing is pinned over a
+    // row there.
+    scrollTargetInset.value =
+        viewModel.deviceFilter != null &&
+            item is _GestureRowItem &&
+            item.groupKey != null
+        ? _groupHeaderExtent
+        : 0;
     if (scrollTargetQueued.value) return;
     scrollTargetQueued.value = true;
+    if (scrollTargetExpanded.value) {
+      // A group's rows take their extent only as it opens, so the scroll waits
+      // rather than aiming at slots the list has not made room for.
+      scrollTargetExpanded.value = false;
+      Future<void>.delayed(listTransitionLifetime, () {
+        if (!context.mounted) return;
+        WidgetsBinding.instance.ensureVisualUpdate();
+        scrollToTarget();
+      });
+      return;
+    }
     scrollToTarget();
   }
 
@@ -219,7 +437,7 @@ _GestureListChoreography _useGestureListChoreography(
 
   useEffect(() {
     final initial = ref.read(selectedGestureProvider);
-    if (initial != null) queueScrollToGesture(initial, animated: false);
+    if (initial != null) queueScrollToGesture(initial, glide: true);
     return null;
   }, const []);
 
@@ -261,6 +479,8 @@ _GestureListChoreography _useGestureListChoreography(
               .go(GesturesDestination(filter: group.device), replace: true);
         }
         ref.read(selectedGroupProvider.notifier).open(group);
+        // The row and the header share one scroll key.
+        scrollTarget.value = null;
         scrollTargetGroup.value = group.editId;
         return;
       }
@@ -280,12 +500,34 @@ _GestureListChoreography _useGestureListChoreography(
     })
     ..listen(navProvider, (prev, next) {
       if (prev == null) return;
-      final isHistoryCursorMove =
-          prev.history.length == next.history.length &&
-          prev.cursor != next.cursor;
-      if (!isHistoryCursorMove) return;
       if (next.current case GesturesDestination(open: final open?)) {
-        queueScrollToGesture(open);
+        // A replaced entry is the same stop patched in place, so whoever
+        // replaced it owns whatever scrolling it wants.
+        if (prev.history.length == next.history.length &&
+            prev.cursor == next.cursor) {
+          return;
+        }
+        final isHistoryCursorMove =
+            prev.history.length == next.history.length &&
+            prev.cursor != next.cursor;
+        // Picking a gesture inside the list is not an arrival: it is already
+        // in view.
+        final arrived = switch (prev.current) {
+          GesturesDestination(:final filter) =>
+            filter != (next.current as GesturesDestination).filter,
+          _ => true,
+        };
+        if (isHistoryCursorMove || arrived) {
+          final filter = (next.current as GesturesDestination).filter;
+          final from = switch (prev.current) {
+            GesturesDestination(filter: final was) => was,
+            // The list was showing this filter all along under another view.
+            _ => filter,
+          };
+          if (!arriveAt(open, from, filter)) {
+            queueScrollToGesture(open, glide: true);
+          }
+        }
       }
     });
 
@@ -297,13 +539,11 @@ _GestureListChoreography _useGestureListChoreography(
       tryAutoSelectFirstGesture();
       prepareScrollTarget(viewModel);
     },
-    scrollToGesture: (target) {
-      scrollTarget.value = target;
-      scrollToTarget();
-    },
+    scrollToGesture: (target) => queueScrollToGesture(target, park: false),
     scrollToGroup: (groupKey) {
       clearScrollTarget();
       scrollTargetGroup.value = groupKey;
+      scrollTargetPark.value = false;
     },
   );
 }

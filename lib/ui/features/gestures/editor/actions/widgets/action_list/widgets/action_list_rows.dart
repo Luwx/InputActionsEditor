@@ -167,7 +167,7 @@ class ActionRowCard extends HookConsumerWidget {
         .isNotEmpty;
 
     final card = AnimatedContainer(
-      duration: Durations.medium1,
+      duration: Durations.medium2,
       curve: Easing.standard,
       margin: const EdgeInsets.only(top: actionCardGap),
       decoration: BoxDecoration(
@@ -214,7 +214,7 @@ class ActionRowCard extends HookConsumerWidget {
             ),
           ),
           AnimatedSize(
-            duration: Durations.medium1,
+            duration: Durations.medium2,
             curve: Easing.standard,
             alignment: Alignment.topCenter,
             onEnd: expanded ? choreo.anchor.end : null,

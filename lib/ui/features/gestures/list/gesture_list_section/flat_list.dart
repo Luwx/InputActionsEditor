@@ -23,6 +23,7 @@ List<_FlatItem> _buildFlatList(
                 configIndex: index++,
                 groupKey: groupKey,
                 editId: gesture.common.editId,
+                tall: gesture.common.actions.isNotEmpty,
               ),
             );
           case GestureGroupNode(:final editId, :final children):
@@ -68,6 +69,7 @@ List<_FlatItem> _buildDeviceFlatList(
               configIndex: configIndex++,
               groupKey: parentKey,
               editId: gesture.common.editId,
+              tall: gesture.common.actions.isNotEmpty,
               depth: depth,
               localGroupIndex: parentKey == null ? null : localIndex,
               isLastInGroup: parentKey != null && localIndex == rowTotal - 1,

@@ -62,6 +62,7 @@ final class ListTransitions<T> {
     required this.entering,
     required this.enteringHidden,
     required this.capture,
+    required this.enter,
   });
 
   /// Ghosts collapsing out, each inserted at its [ListGhost.anchorIndex].
@@ -78,6 +79,11 @@ final class ListTransitions<T> {
   /// the list at a new position.
   final void Function(Iterable<ListGhost<T>> ghosts, {required bool reenters})
   capture;
+
+  /// Expands rows in without a ghost, for ids the list did not hold before.
+  /// Their keys are left alone: a row nothing built before has no element to
+  /// replace.
+  final void Function(Iterable<int> ids) enter;
 }
 
 ListTransitions<T> useListTransitions<T>(BuildContext context) {
@@ -114,26 +120,33 @@ ListTransitions<T> useListTransitions<T>(BuildContext context) {
     );
   }
 
+  void hideForOneFrame(Set<int> ids) {
+    if (ids.isEmpty) return;
+    enteringHidden.value = {...enteringHidden.value, ...ids};
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      enteringHidden.value = {...enteringHidden.value}..removeAll(ids);
+    });
+  }
+
+  void markEntering(Set<int> ids) {
+    entering.value = {...entering.value, ...ids};
+    hideForOneFrame(ids);
+    timers.value.add(
+      Timer(listTransitionLifetime, () {
+        if (!context.mounted) return;
+        entering.value = {...entering.value}..removeAll(ids);
+      }),
+    );
+  }
+
   void capture(Iterable<ListGhost<T>> captured, {required bool reenters}) {
     final added = captured.toList(growable: false);
     if (added.isEmpty) return;
     final ids = {for (final ghost in added) ghost.id};
 
     ghosts.value = [...ghosts.value, ...added];
-    if (reenters) {
-      entering.value = {...entering.value, ...ids};
-      enteringHidden.value = {...enteringHidden.value, ...ids};
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        enteringHidden.value = {...enteringHidden.value}..removeAll(ids);
-      });
-      timers.value.add(
-        Timer(listTransitionLifetime, () {
-          if (!context.mounted) return;
-          entering.value = {...entering.value}..removeAll(ids);
-        }),
-      );
-    }
+    if (reenters) markEntering(ids);
     scheduleCollapseAndRemoval(ids);
   }
 
@@ -142,6 +155,7 @@ ListTransitions<T> useListTransitions<T>(BuildContext context) {
     entering: entering.value,
     enteringHidden: enteringHidden.value,
     capture: capture,
+    enter: (ids) => hideForOneFrame(ids.toSet()),
   );
 }
 

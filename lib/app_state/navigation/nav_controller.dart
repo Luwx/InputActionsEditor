@@ -5,6 +5,7 @@ import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/app_state.dart'
     show StoredGestureSelection;
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
@@ -39,6 +40,24 @@ class NavController extends Notifier<NavState> {
     SettingsSection.deviceSettings,
     device: DeviceSettingsSection.mouse,
   );
+
+  /// The gesture last open under each filter, so coming back to a device (or
+  /// back from history) resumes where it was left rather than at its first
+  /// gesture.
+  final Map<DeviceType?, GestureLocation> _lastOpenByFilter = {};
+
+  /// Every route to a gesture goes through here, restores and history moves
+  /// included, so the per-filter memory never misses one.
+  @override
+  set state(NavState value) {
+    super.state = value;
+    if (value.current case GesturesDestination(
+      :final filter,
+      open: final open?,
+    )) {
+      _lastOpenByFilter[filter] = open;
+    }
+  }
 
   @override
   NavState build() {
@@ -108,8 +127,13 @@ class NavController extends Notifier<NavState> {
   /// open editor is keyed to a positional location that no longer refers to the
   /// same gesture/action, so nothing in the old history is safe to keep.
   void reset() {
+    _lastOpenByFilter.clear();
     state = const NavState(history: [GesturesDestination()], cursor: 0);
   }
+
+  /// The gesture to reopen when [filter] is shown again, or null when that
+  /// filter has not been visited.
+  GestureLocation? lastOpenFor(DeviceType? filter) => _lastOpenByFilter[filter];
 
   void _rememberCurrentSettings() {
     if (state.current case final SettingsDestination settings) {
@@ -120,6 +144,7 @@ class NavController extends Notifier<NavState> {
   /// Drops [deleted] from every history entry that has it open. Locations are
   /// identity-keyed, so other entries stay valid as-is — no index shifting.
   void onGestureDeleted(GestureLocation deleted) {
+    _lastOpenByFilter.removeWhere((_, open) => open == deleted);
     final patched = state.history.map((dest) {
       if (dest case GesturesDestination(
         open: final open?,

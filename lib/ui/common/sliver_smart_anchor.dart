@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+const double anchorBottomGap = 24;
+
 /// Drives a [SliverSmartAnchor]: while [belowExtent] is non-null, the sliver
 /// keeps the bottom of an expanding region visible, scrolling the content above
 /// it up only when the growing child would otherwise push that bottom past the
@@ -189,7 +191,8 @@ class RenderSliverSmartAnchor extends RenderSliverSingleBoxAdapter {
     final oldAnchorBottom =
         constraints.precedingScrollExtent + (anchorBottomInChild - delta);
     final anchorScreenBottom = oldAnchorBottom - position.pixels;
-    final rawSpaceDown = position.viewportDimension - anchorScreenBottom;
+    final rawSpaceDown =
+        position.viewportDimension - anchorScreenBottom - anchorBottomGap;
     final spaceDown = rawSpaceDown < 0 ? 0.0 : rawSpaceDown;
 
     final allowedMove = math.min(delta, spaceDown);

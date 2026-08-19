@@ -225,13 +225,18 @@ class GestureListSection extends HookConsumerWidget {
           switch (flatItem) {
             case _GroupHeaderItem():
               groupItemsByKey[flatItem.groupKey] = flatItem;
+              final groupKey = flatItem.groupKey;
+              final groupEnters = transitions.entering.contains(groupKey);
+              final groupHidden = transitions.enteringHidden.contains(groupKey);
               reorderEntries.add(
                 ReorderableGroupableGroup<GestureLocation, int>(
-                  key: ValueKey('group:${flatItem.groupKey}'),
-                  id: flatItem.groupKey,
+                  key: ValueKey(
+                    groupEnters ? 'group:$groupKey:enter' : 'group:$groupKey',
+                  ),
+                  id: groupKey,
                   parentId: flatItem.parentKey,
                   depth: flatItem.depth,
-                  isVisible: flatItem.isVisible,
+                  isVisible: flatItem.isVisible && !groupHidden,
                   ancestorContinues: flatItem.ancestorContinues,
                 ),
               );

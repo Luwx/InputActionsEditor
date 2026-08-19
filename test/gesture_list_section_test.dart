@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
+import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -14,28 +16,51 @@ import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
 
 class _SeededController extends ConfigController {
-  _SeededController([this.names = const ['First', 'Second', 'Third']]);
+  _SeededController([
+    this.names = const ['First', 'Second', 'Third'],
+    this.groupAt,
+    this.groupSize = 2,
+  ]);
 
   final List<String> names;
 
+  /// Slot a group sits in, so a test can add into a group that is not at the
+  /// end of the list.
+  final int? groupAt;
+
+  /// How many gestures that group holds. A group taller than the viewport
+  /// keeps its header pinned while the list is scrolled inside it.
+  final int groupSize;
+
   @override
   Future<EditSession> build() {
-    final normalized = assignEditIds(
-      Config(
-        mouseNodes: [
-          for (final name in names)
-            GestureNode.leaf(
-              PressGesture(common: TriggerCommon(name: name)),
-            ),
-        ],
-      ),
-    );
+    final nodes = [
+      for (final name in names)
+        GestureNode.leaf(PressGesture(common: TriggerCommon(name: name))),
+    ];
+    if (groupAt != null) {
+      nodes.insert(
+        groupAt!,
+        GestureGroupNode(
+          name: 'Holder',
+          children: [
+            for (var i = 0; i < groupSize; i++)
+              GestureNode.leaf(
+                PressGesture(common: TriggerCommon(name: 'H$i')),
+              ),
+          ],
+        ),
+      );
+    }
+    final normalized = assignEditIds(Config(mouseNodes: nodes));
     return SynchronousFuture(EditSession(draft: normalized, saved: normalized));
   }
 }
@@ -54,13 +79,20 @@ class _PreselectedGesture extends SelectedGestureController {
       gestureLocationAt(ref.read(draftConfigProvider), DeviceType.mouse, 20);
 }
 
-Widget _host({List<String>? names, bool preselected = false}) => MaterialApp(
+Widget _host({
+  List<String>? names,
+  bool preselected = false,
+  int? groupAt,
+  int groupSize = 2,
+}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: ProviderScope(
     overrides: [
       configControllerProvider.overrideWith(
-        () => names == null ? _SeededController() : _SeededController(names),
+        () => names == null
+            ? _SeededController()
+            : _SeededController(names, groupAt, groupSize),
       ),
       deviceFilterProvider.overrideWith(_MouseFilter.new),
       if (preselected)
@@ -120,13 +152,57 @@ Future<void> _pumpList(
   WidgetTester tester, {
   List<String>? names,
   bool preselected = false,
+  int? groupAt,
+  int groupSize = 2,
 }) async {
   tester.view
     ..physicalSize = const Size(900, 900)
     ..devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(_host(names: names, preselected: preselected));
+  await tester.pumpWidget(
+    _host(
+      names: names,
+      preselected: preselected,
+      groupAt: groupAt,
+      groupSize: groupSize,
+    ),
+  );
   await tester.pumpAndSettle();
+}
+
+/// Where the list is scrolled to.
+double _offset(WidgetTester tester) => tester
+    .state<ScrollableState>(find.byType(Scrollable).first)
+    .position
+    .pixels;
+
+/// Every laid-out gesture row, in screen coordinates.
+List<Rect> _tileRects(WidgetTester tester) => [
+  for (final element in find.byType(GestureListTile).evaluate())
+    if (element.renderObject case final RenderBox box)
+      box.localToGlobal(Offset.zero) & box.size,
+];
+
+/// The row a gesture name sits in.
+Finder _tileOf(String name) =>
+    find.ancestor(of: find.text(name), matching: find.byType(GestureListTile));
+
+/// Fires an undo/redo reveal at the gesture in slot [index].
+void _reveal(WidgetTester tester, int index) {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(GestureListSection)),
+  );
+  final draft = container.read(configControllerProvider).requireValue.draft;
+  container
+      .read(editRevealProvider.notifier)
+      .show(
+        EditReveal(
+          gesture: gestureLocationAt(draft, DeviceType.mouse, index),
+          before: draft,
+          after: draft,
+          ticket: 0,
+        ),
+      );
 }
 
 void main() {
@@ -137,9 +213,7 @@ void main() {
     expect(_order(tester), ['First', 'Second', 'Third']);
   });
 
-  testWidgets('a redirect parks the row below the pinned header', (
-    tester,
-  ) async {
+  testWidgets('a redirect parks the row under the header', (tester) async {
     final names = [for (var i = 0; i < 40; i++) 'G$i'];
     await _pumpList(tester, names: names);
 
@@ -152,17 +226,15 @@ void main() {
     await tester.pumpAndSettle();
 
     final listTop = tester.getRect(find.byType(GestureListSection)).top;
-    final rowTop = tester
-        .getRect(
-          find.ancestor(
-            of: find.text('G20'),
-            matching: find.byType(GestureListTile),
-          ),
-        )
-        .top;
+    final row = tester.getRect(
+      find.ancestor(
+        of: find.text('G20'),
+        matching: find.byType(GestureListTile),
+      ),
+    );
 
-    // Below the 65px header, with a row of lead-in above it.
-    expect(rowTop - listTop, closeTo(65 + 62, 2));
+    // Coming back to a gesture parks it under the 65px header.
+    expect(row.top - listTop, closeTo(65, 2));
   });
 
   testWidgets('a restored selection rests where a redirect would leave it', (
@@ -175,16 +247,262 @@ void main() {
     );
 
     final listTop = tester.getRect(find.byType(GestureListSection)).top;
-    final rowTop = tester
-        .getRect(
-          find.ancestor(
-            of: find.text('G20'),
-            matching: find.byType(GestureListTile),
-          ),
-        )
-        .top;
+    final row = tester.getRect(
+      find.ancestor(
+        of: find.text('G20'),
+        matching: find.byType(GestureListTile),
+      ),
+    );
 
-    expect(rowTop - listTop, closeTo(65 + 62, 2));
+    expect(row.top - listTop, closeTo(65, 2));
+  });
+
+  testWidgets('a reveal leaves a fully visible row alone', (tester) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    final before = tester.getRect(_tileOf('G3'));
+    _reveal(tester, 3);
+    await tester.pumpAndSettle();
+
+    expect(tester.getRect(_tileOf('G3')), before);
+  });
+
+  testWidgets('a reveal parks a clipped row under the header', (tester) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    final listBottom = tester.getRect(find.byType(GestureListSection)).bottom;
+    final clipped = [for (var i = 0; i < 40; i++) 'G$i'].firstWhere(
+      (name) => tester.getRect(_tileOf(name)).bottom > listBottom,
+    );
+    final before = tester.getRect(_tileOf(clipped));
+
+    _reveal(tester, int.parse(clipped.substring(1)));
+    await tester.pumpAndSettle();
+    // The scroll checks itself against the row a frame after it lands.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final listTop = tester.getRect(find.byType(GestureListSection)).top;
+    final after = tester.getRect(_tileOf(clipped));
+    expect(after.top - listTop, closeTo(65, 2));
+    expect(after.top, lessThan(before.top));
+  });
+
+  testWidgets('a reveal parks an offscreen row under the header', (
+    tester,
+  ) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    _reveal(tester, 25);
+    await tester.pumpAndSettle();
+
+    final listTop = tester.getRect(find.byType(GestureListSection)).top;
+    expect(tester.getRect(_tileOf('G25')).top - listTop, closeTo(65, 2));
+  });
+
+  testWidgets('a new gesture stops where it becomes whole', (tester) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    // The new row appends to the end, so park where it will land.
+    await tester.drag(find.text('G5'), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(AddGestureButton));
+    await tester.pumpAndSettle();
+    if (find.byType(FTile).evaluate().isNotEmpty) {
+      await tester.tap(find.byType(FTile).first);
+      await tester.pumpAndSettle();
+    }
+    // The scroll settles against the row once the list stops growing.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final listRect = tester.getRect(find.byType(GestureListSection));
+    final added = _tileRects(tester).reduce((a, b) => a.top > b.top ? a : b);
+    expect(added.bottom, lessThanOrEqualTo(listRect.bottom));
+    expect(added.bottom, greaterThan(listRect.bottom - 63));
+  });
+
+  testWidgets('a gesture added in view leaves the list still', (tester) async {
+    await _pumpList(
+      tester,
+      names: [for (var i = 0; i < 40; i++) 'G$i'],
+      groupAt: 5,
+    );
+
+    final before = tester.getRect(_tileOf('G0'));
+
+    await tester.tap(
+      find.descendant(
+        of: find
+            .ancestor(
+              of: find.text('Holder'),
+              matching: find.byType(Row),
+            )
+            .first,
+        matching: find.byIcon(FLucideIcons.plus),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FTile).first);
+    await tester.pumpAndSettle();
+
+    expect(tester.getRect(_tileOf('G0')), before);
+  });
+
+  testWidgets('a far target travels one way', (tester) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 60; i++) 'G$i']);
+
+    _reveal(tester, 30);
+
+    final samples = <double>[];
+    for (var frame = 0; frame < 60; frame++) {
+      samples.add(_offset(tester));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    expect(samples.last, greaterThan(samples.first));
+    for (var i = 1; i < samples.length; i++) {
+      expect(
+        samples[i],
+        greaterThanOrEqualTo(samples[i - 1] - 0.5),
+        reason: 'the travel turned back at frame $i: $samples',
+      );
+    }
+  });
+
+  testWidgets('a row added under a pinned header comes fully into view', (
+    tester,
+  ) async {
+    await _pumpList(
+      tester,
+      names: [for (var i = 0; i < 40; i++) 'G$i'],
+      groupAt: 2,
+      groupSize: 20,
+    );
+
+    final listRect = tester.getRect(find.byType(GestureListSection));
+    // Park the group's last row just short of the bottom edge, so the row
+    // added after it straddles the edge, with the group header pinned above.
+    final position = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    for (var attempt = 0; attempt < 30; attempt++) {
+      final last = _tileOf('H19');
+      if (last.evaluate().isEmpty) {
+        position.jumpTo(position.pixels + 400);
+      } else {
+        final room = listRect.bottom - tester.getRect(last).bottom;
+        if (room > 0 && room < 20) break;
+        position.jumpTo(position.pixels - (room - 10));
+      }
+      await tester.pumpAndSettle();
+    }
+    expect(_tileOf('H19'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find
+            .ancestor(of: find.text('Holder'), matching: find.byType(Row))
+            .first,
+        matching: find.byIcon(FLucideIcons.plus),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FTile).first);
+    await tester.pumpAndSettle();
+    // The scroll settles against the row once the list stops growing.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final added = tester.getRect(
+      find.byWidgetPredicate((w) => w is GestureListTile && w.isSelected),
+    );
+    expect(added.bottom, lessThanOrEqualTo(listRect.bottom + 1));
+    expect(added.top, greaterThanOrEqualTo(listRect.top));
+  });
+
+  testWidgets('a reveal from below clears the pinned group header', (
+    tester,
+  ) async {
+    await _pumpList(
+      tester,
+      names: [for (var i = 0; i < 40; i++) 'G$i'],
+      groupAt: 2,
+      groupSize: 20,
+    );
+
+    final listRect = tester.getRect(find.byType(GestureListSection));
+    final position = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    // Park well past the row, so the reveal has to come back up to it.
+    position.jumpTo(position.pixels + 900);
+    await tester.pumpAndSettle();
+
+    // Device order: two root rows, then the group's H0..H19.
+    _reveal(tester, 7);
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final row = tester.getRect(_tileOf('H5'));
+    // Clear of the list header and of the group header pinned under it.
+    expect(row.top - listRect.top, greaterThanOrEqualTo(65.0 + 38.0 - 1));
+    expect(row.bottom, lessThanOrEqualTo(listRect.bottom));
+  });
+
+  testWidgets('returning to the list scrolls to the gesture it reopens', (
+    tester,
+  ) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GestureListSection)),
+    );
+    final draft = container.read(configControllerProvider).requireValue.draft;
+    final target = gestureLocationAt(draft, DeviceType.mouse, 20);
+    final nav = container.read(navProvider.notifier)
+      ..go(const HistoryDestination())
+      ..go(GesturesDestination(open: target, filter: DeviceType.mouse));
+    expect(nav.lastOpenFor(DeviceType.mouse), target);
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final listTop = tester.getRect(find.byType(GestureListSection)).top;
+    expect(tester.getRect(_tileOf('G20')).top - listTop, closeTo(65, 2));
+  });
+
+  testWidgets('returning keeps a visible gesture where it sat', (tester) async {
+    await _pumpList(tester, names: [for (var i = 0; i < 40; i++) 'G$i']);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GestureListSection)),
+    );
+    final draft = container.read(configControllerProvider).requireValue.draft;
+    final target = gestureLocationAt(draft, DeviceType.mouse, 12);
+    final nav = container.read(navProvider.notifier)
+      ..go(const GesturesDestination(filter: DeviceType.mouse));
+    await tester.pumpAndSettle();
+
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(400);
+    await tester.pumpAndSettle();
+    nav.go(GesturesDestination(open: target, filter: DeviceType.mouse));
+    await tester.pumpAndSettle();
+    final before = tester.getRect(_tileOf('G12'));
+
+    nav
+      ..go(const HistoryDestination())
+      ..go(GesturesDestination(open: target, filter: DeviceType.mouse));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(tester.getRect(_tileOf('G12')), before);
   });
 
   testWidgets('a new group is brought into view', (tester) async {

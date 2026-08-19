@@ -32,6 +32,70 @@ void main() {
     });
   });
 
+  group('NavController remembers the gesture per filter', () {
+    const mouse = GestureLocation(device: DeviceType.mouse, editId: 7);
+    const keyboard = GestureLocation(device: DeviceType.keyboard, editId: 9);
+
+    test('resumes the device it left, not its first gesture', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final nav = _controller(container)
+        ..go(const GesturesDestination(open: mouse, filter: DeviceType.mouse))
+        ..go(
+          const GesturesDestination(
+            open: keyboard,
+            filter: DeviceType.keyboard,
+          ),
+        );
+
+      expect(nav.lastOpenFor(DeviceType.mouse), mouse);
+      expect(nav.lastOpenFor(DeviceType.keyboard), keyboard);
+      expect(nav.lastOpenFor(DeviceType.touchpad), isNull);
+    });
+
+    test('a trip through history leaves the gesture remembered', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final nav = _controller(container)
+        ..go(const GesturesDestination(open: mouse, filter: DeviceType.mouse))
+        ..go(const HistoryDestination());
+
+      expect(nav.lastOpenFor(DeviceType.mouse), mouse);
+    });
+
+    test('a history move updates what the filter reopens', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      const other = GestureLocation(device: DeviceType.mouse, editId: 8);
+      final nav = _controller(container)
+        ..go(const GesturesDestination(open: mouse, filter: DeviceType.mouse))
+        ..go(const GesturesDestination(open: other, filter: DeviceType.mouse))
+        ..back();
+
+      expect(nav.lastOpenFor(DeviceType.mouse), mouse);
+    });
+
+    test('a deleted gesture is forgotten', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final nav = _controller(container)
+        ..go(const GesturesDestination(open: mouse, filter: DeviceType.mouse))
+        ..onGestureDeleted(mouse);
+
+      expect(nav.lastOpenFor(DeviceType.mouse), isNull);
+    });
+
+    test('replacing the document forgets every filter', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final nav = _controller(container)
+        ..go(const GesturesDestination(open: mouse, filter: DeviceType.mouse))
+        ..reset();
+
+      expect(nav.lastOpenFor(DeviceType.mouse), isNull);
+    });
+  });
+
   group('NavController.go', () {
     test('appends a new entry and moves cursor', () {
       final container = ProviderContainer();

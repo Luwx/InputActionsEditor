@@ -259,7 +259,7 @@ void main() {
       final footerRect = tester.getRect(_rowFooters.last);
       expect(
         footerRect.bottom,
-        greaterThanOrEqualTo(viewportRect.bottom - 12),
+        greaterThanOrEqualTo(viewportRect.bottom - anchorBottomGap - 12),
         reason: 'The expanded row footer should scroll near the viewport end.',
       );
       expect(

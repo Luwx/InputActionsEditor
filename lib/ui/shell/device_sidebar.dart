@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -40,16 +41,30 @@ class DeviceSidebar extends HookConsumerWidget {
       final currentFilter = ref.read(deviceFilterProvider);
       final changingFilter =
           currentView != AppView.gestures || currentFilter != device;
+      // Asking for the list already on screen is not a reason to close the
+      // gesture open in it.
+      if (!changingFilter) return;
 
-      if (changingFilter) {
-        final config = ref.read(configControllerProvider).value?.draft;
-        final first = config == null
-            ? null
-            : firstGestureForFilter(config, device);
-        if (first != null) {
-          context.goToGesturesSelectFirst(filter: device, location: first);
-          return;
-        }
+      final config = ref.read(configControllerProvider).value?.draft;
+      bool holds(GestureLocation? location) =>
+          config != null &&
+          location != null &&
+          (device == null || location.device == device) &&
+          gestureAt(config, location) != null;
+
+      // Keep the gesture in hand when the filter it moves to still shows it,
+      // otherwise resume where that filter was left, and only then fall back
+      // to its first gesture.
+      final carried = ref.read(selectedGestureProvider);
+      final resumed = ref.read(navProvider.notifier).lastOpenFor(device);
+      final open = holds(carried)
+          ? carried
+          : holds(resumed)
+          ? resumed
+          : (config == null ? null : firstGestureForFilter(config, device));
+      if (open != null) {
+        context.goToGesturesSelectFirst(filter: device, location: open);
+        return;
       }
 
       context.goToGestures(device: device);
