@@ -2872,11 +2872,41 @@ abstract class AppLocalizations {
   /// **'Neutral'**
   String get appearanceColorThemeNeutral;
 
+  /// No description provided for @appearanceColorThemeStone.
+  ///
+  /// In en, this message translates to:
+  /// **'Stone'**
+  String get appearanceColorThemeStone;
+
   /// No description provided for @appearanceColorThemeZinc.
   ///
   /// In en, this message translates to:
   /// **'Zinc'**
   String get appearanceColorThemeZinc;
+
+  /// No description provided for @appearanceColorThemeMauve.
+  ///
+  /// In en, this message translates to:
+  /// **'Mauve'**
+  String get appearanceColorThemeMauve;
+
+  /// No description provided for @appearanceColorThemeOlive.
+  ///
+  /// In en, this message translates to:
+  /// **'Olive'**
+  String get appearanceColorThemeOlive;
+
+  /// No description provided for @appearanceColorThemeMist.
+  ///
+  /// In en, this message translates to:
+  /// **'Mist'**
+  String get appearanceColorThemeMist;
+
+  /// No description provided for @appearanceColorThemeTaupe.
+  ///
+  /// In en, this message translates to:
+  /// **'Taupe'**
+  String get appearanceColorThemeTaupe;
 
   /// No description provided for @appearanceColorThemeSlate.
   ///
@@ -2884,11 +2914,35 @@ abstract class AppLocalizations {
   /// **'Slate'**
   String get appearanceColorThemeSlate;
 
+  /// No description provided for @appearanceColorThemeAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get appearanceColorThemeAmber;
+
   /// No description provided for @appearanceColorThemeBlue.
   ///
   /// In en, this message translates to:
   /// **'Blue'**
   String get appearanceColorThemeBlue;
+
+  /// No description provided for @appearanceColorThemeCyan.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get appearanceColorThemeCyan;
+
+  /// No description provided for @appearanceColorThemeEmerald.
+  ///
+  /// In en, this message translates to:
+  /// **'Emerald'**
+  String get appearanceColorThemeEmerald;
+
+  /// No description provided for @appearanceColorThemeFuchsia.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuchsia'**
+  String get appearanceColorThemeFuchsia;
 
   /// No description provided for @appearanceColorThemeGreen.
   ///
@@ -2896,11 +2950,35 @@ abstract class AppLocalizations {
   /// **'Green'**
   String get appearanceColorThemeGreen;
 
+  /// No description provided for @appearanceColorThemeIndigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get appearanceColorThemeIndigo;
+
+  /// No description provided for @appearanceColorThemeLime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lime'**
+  String get appearanceColorThemeLime;
+
   /// No description provided for @appearanceColorThemeOrange.
   ///
   /// In en, this message translates to:
   /// **'Orange'**
   String get appearanceColorThemeOrange;
+
+  /// No description provided for @appearanceColorThemePink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get appearanceColorThemePink;
+
+  /// No description provided for @appearanceColorThemePurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get appearanceColorThemePurple;
 
   /// No description provided for @appearanceColorThemeRed.
   ///
@@ -2914,6 +2992,18 @@ abstract class AppLocalizations {
   /// **'Rose'**
   String get appearanceColorThemeRose;
 
+  /// No description provided for @appearanceColorThemeSky.
+  ///
+  /// In en, this message translates to:
+  /// **'Sky'**
+  String get appearanceColorThemeSky;
+
+  /// No description provided for @appearanceColorThemeTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get appearanceColorThemeTeal;
+
   /// No description provided for @appearanceColorThemeViolet.
   ///
   /// In en, this message translates to:
@@ -2925,6 +3015,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yellow'**
   String get appearanceColorThemeYellow;
+
+  /// No description provided for @appearanceColorThemeGroupBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base'**
+  String get appearanceColorThemeGroupBase;
+
+  /// No description provided for @appearanceColorThemeGroupPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get appearanceColorThemeGroupPrimary;
 
   /// No description provided for @backupsLabel.
   ///

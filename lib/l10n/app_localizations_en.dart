@@ -1598,19 +1598,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceColorThemeNeutral => 'Neutral';
 
   @override
+  String get appearanceColorThemeStone => 'Stone';
+
+  @override
   String get appearanceColorThemeZinc => 'Zinc';
+
+  @override
+  String get appearanceColorThemeMauve => 'Mauve';
+
+  @override
+  String get appearanceColorThemeOlive => 'Olive';
+
+  @override
+  String get appearanceColorThemeMist => 'Mist';
+
+  @override
+  String get appearanceColorThemeTaupe => 'Taupe';
 
   @override
   String get appearanceColorThemeSlate => 'Slate';
 
   @override
+  String get appearanceColorThemeAmber => 'Amber';
+
+  @override
   String get appearanceColorThemeBlue => 'Blue';
+
+  @override
+  String get appearanceColorThemeCyan => 'Cyan';
+
+  @override
+  String get appearanceColorThemeEmerald => 'Emerald';
+
+  @override
+  String get appearanceColorThemeFuchsia => 'Fuchsia';
 
   @override
   String get appearanceColorThemeGreen => 'Green';
 
   @override
+  String get appearanceColorThemeIndigo => 'Indigo';
+
+  @override
+  String get appearanceColorThemeLime => 'Lime';
+
+  @override
   String get appearanceColorThemeOrange => 'Orange';
+
+  @override
+  String get appearanceColorThemePink => 'Pink';
+
+  @override
+  String get appearanceColorThemePurple => 'Purple';
 
   @override
   String get appearanceColorThemeRed => 'Red';
@@ -1619,10 +1658,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceColorThemeRose => 'Rose';
 
   @override
+  String get appearanceColorThemeSky => 'Sky';
+
+  @override
+  String get appearanceColorThemeTeal => 'Teal';
+
+  @override
   String get appearanceColorThemeViolet => 'Violet';
 
   @override
   String get appearanceColorThemeYellow => 'Yellow';
+
+  @override
+  String get appearanceColorThemeGroupBase => 'Base';
+
+  @override
+  String get appearanceColorThemeGroupPrimary => 'Primary';
 
   @override
   String get backupsLabel => 'Config backups';

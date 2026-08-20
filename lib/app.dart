@@ -93,19 +93,7 @@ class App extends ConsumerWidget {
 }
 
 FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
-  final colorPair = switch (settings.colorTheme) {
-    FColorTheme.neutral => AppThemes.neutral,
-    FColorTheme.zinc => AppThemes.zinc,
-    FColorTheme.slate => AppThemes.slate,
-    FColorTheme.blue => AppThemes.blue,
-    FColorTheme.green => AppThemes.green,
-    FColorTheme.orange => AppThemes.orange,
-    FColorTheme.red => AppThemes.red,
-    FColorTheme.rose => AppThemes.rose,
-    FColorTheme.violet => AppThemes.violet,
-    FColorTheme.yellow => AppThemes.yellow,
-    FColorTheme.kde => null,
-  };
+  final colorPair = AppThemes.of(settings.colorTheme);
 
   if (colorPair == null) {
     // KDE theme is handled separately
