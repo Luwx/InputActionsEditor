@@ -16,6 +16,7 @@ class StrokePreview extends StatelessWidget {
     this.dottedBackground = false,
     this.animatePath = false,
     this.animationDuration = const Duration(milliseconds: 800),
+    this.fromStrokeBase64,
     super.key,
   });
 
@@ -31,12 +32,15 @@ class StrokePreview extends StatelessWidget {
   final bool dottedBackground;
   final bool animatePath;
   final Duration animationDuration;
+  final String? fromStrokeBase64;
 
   @override
   Widget build(BuildContext context) {
     final points = decodeStrokeBase64(strokeBase64);
+    final from = fromStrokeBase64;
     return PathPreview(
       points: points ?? const [],
+      fromPoints: from == null ? null : decodeStrokeBase64(from),
       startColor: startColor,
       endColor: endColor,
       surface: surface,

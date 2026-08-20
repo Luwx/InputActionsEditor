@@ -14,6 +14,7 @@ class StrokeRow extends StatelessWidget {
     required this.index,
     required this.onDelete,
     this.animatePath = false,
+    this.fromStroke,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class StrokeRow extends StatelessWidget {
   final int index;
   final VoidCallback onDelete;
   final bool animatePath;
+  final String? fromStroke;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +54,7 @@ class StrokeRow extends StatelessWidget {
                     pathPadding: 12,
                     dottedBackground: true,
                     animatePath: animatePath,
+                    fromStrokeBase64: fromStroke,
                   ),
                 ),
               ),

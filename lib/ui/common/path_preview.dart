@@ -28,6 +28,8 @@ class PathPreview extends HookWidget {
     this.arrowSize = 8.0,
     this.animatePath = false,
     this.animationDuration = const Duration(seconds: 1),
+    this.morphDuration = const Duration(milliseconds: 350),
+    this.fromPoints,
     this.empty,
     super.key,
   });
@@ -52,13 +54,27 @@ class PathPreview extends HookWidget {
   final double arrowSize;
   final bool animatePath;
   final Duration animationDuration;
+
+  final Duration morphDuration;
+
+  /// Path this preview morphs out of, read once on mount.
+  final List<Offset>? fromPoints;
   final Widget? empty;
 
   @override
   Widget build(BuildContext context) {
+    final morphSource = useMemoized(() {
+      final from = fromPoints;
+      if (from == null || from.length < 2 || points.length < 2) return null;
+      return listEquals(from, points) ? null : from;
+    }, const []);
+    final morphSpent = useRef(false);
+    bool isMorphing() => morphSource != null && !morphSpent.value;
+
+    final activeDuration = isMorphing() ? morphDuration : animationDuration;
     final controller = useAnimationController(
-      duration: animationDuration,
-      initialValue: animatePath ? 0 : 1,
+      duration: activeDuration,
+      initialValue: animatePath || morphSource != null ? 0 : 1,
     );
     final progress = useMemoized(
       () => CurvedAnimation(parent: controller, curve: Curves.easeInOutCubic),
@@ -69,7 +85,8 @@ class PathPreview extends HookWidget {
     useEffect(() => progress.dispose, [progress]);
 
     void syncAnimation({required bool startFromZero}) {
-      if (!animatePath || points.length < 2) {
+      controller.duration = isMorphing() ? morphDuration : animationDuration;
+      if ((!animatePath && !isMorphing()) || points.length < 2) {
         controller.value = 1;
         return;
       }
@@ -84,14 +101,15 @@ class PathPreview extends HookWidget {
     }, const []);
 
     // Handle prop changes (didUpdateWidget logic).
-    final prevDuration = usePrevious(animationDuration);
-    if (prevDuration != null && prevDuration != animationDuration) {
-      controller.duration = animationDuration;
+    final prevDuration = usePrevious(activeDuration);
+    if (prevDuration != null && prevDuration != activeDuration) {
+      controller.duration = activeDuration;
     }
 
     final prevPoints = usePrevious(points);
     final prevAnimatePath = usePrevious(animatePath);
     if (prevPoints != null && !listEquals(prevPoints, points)) {
+      morphSpent.value = true;
       syncAnimation(startFromZero: true);
     } else if (prevAnimatePath != null && prevAnimatePath != animatePath) {
       if (!prevAnimatePath && animatePath) {
@@ -103,6 +121,7 @@ class PathPreview extends HookWidget {
     // Rebuild on animation tick.
     useListenable(controller);
 
+    final morphing = isMorphing();
     final isAnimatingPath =
         animatePath || controller.isAnimating || controller.value < 1;
 
@@ -124,14 +143,15 @@ class PathPreview extends HookWidget {
         samplePointRadius: samplePointRadius,
         arrowSize: arrowSize,
         progress: prog,
-        minPointCount: isAnimatingPath
+        morphFrom: morphing ? morphSource : null,
+        minPointCount: isAnimatingPath && !morphing
             ? minimumAnimatedPointCount(animationDuration)
             : null,
       ),
       child: points.length >= 2 ? null : empty,
     );
 
-    final preview = isAnimatingPath
+    final preview = isAnimatingPath || morphing
         ? AnimatedBuilder(
             animation: progress,
             builder: (context, child) => buildPreview(progress.value),
@@ -174,6 +194,7 @@ class PathPreviewPainter extends CustomPainter {
     this.samplePointRadius = 1.5,
     this.arrowSize = 16.0,
     this.progress = 1,
+    this.morphFrom,
     this.minPointCount,
   });
 
@@ -193,6 +214,10 @@ class PathPreviewPainter extends CustomPainter {
   final double samplePointRadius;
   final double arrowSize;
   final double progress;
+
+  /// Set to make [progress] tween this path into [points] rather than reveal
+  /// [points] up to it.
+  final List<Offset>? morphFrom;
   final int? minPointCount;
 
   @override
@@ -225,13 +250,39 @@ class PathPreviewPainter extends CustomPainter {
       }
     }
 
-    final resolvedPoints = minPointCount == null
-        ? points
-        : densifyPathPoints(points, minPointCount!);
-    final visiblePoints = visiblePathPoints(
-      resolvedPoints,
-      progress.clamp(0, 1),
-    );
+    final morph = morphFrom;
+    final morphProgress = progress.clamp(0.0, 1.0);
+    final List<Offset> resolvedPoints;
+    final List<Offset> visiblePoints;
+    List<double>? sampleAlphas;
+    if (morph != null &&
+        morphProgress < 1 &&
+        morph.length >= 2 &&
+        points.length >= 2) {
+      final parameters = morphParameters(morph.length, points.length);
+      resolvedPoints = [
+        for (final t in parameters)
+          Offset.lerp(
+            samplePathAt(morph, t),
+            samplePathAt(points, t),
+            morphProgress,
+          )!,
+      ];
+      visiblePoints = resolvedPoints;
+      sampleAlphas = [
+        for (final t in parameters)
+          _vertexWeight(morph.length, t) * (1 - morphProgress) +
+              _vertexWeight(points.length, t) * morphProgress,
+      ];
+    } else {
+      resolvedPoints = minPointCount == null
+          ? points
+          : densifyPathPoints(points, minPointCount!);
+      visiblePoints = visiblePathPoints(
+        resolvedPoints,
+        progress.clamp(0, 1),
+      );
+    }
 
     if (resolvedPoints.length < 2 || visiblePoints.isEmpty) return;
 
@@ -313,6 +364,8 @@ class PathPreviewPainter extends CustomPainter {
         final t = visiblePoints.length <= 1
             ? 1.0
             : index / (visiblePoints.length - 1);
+        final alpha = 0.7 * (sampleAlphas?[index] ?? 1);
+        if (alpha <= 0) continue;
         canvas.drawCircle(
           toCanvas(visiblePoints[index]),
           samplePointRadius,
@@ -321,7 +374,7 @@ class PathPreviewPainter extends CustomPainter {
               startColor,
               endColor,
               t,
-            )!.withValues(alpha: 0.7),
+            )!.withValues(alpha: alpha),
         );
       }
     }
@@ -374,7 +427,35 @@ class PathPreviewPainter extends CustomPainter {
       old.samplePointRadius != samplePointRadius ||
       old.arrowSize != arrowSize ||
       old.progress != progress ||
+      !listEquals(old.morphFrom, morphFrom) ||
       old.minPointCount != minPointCount;
+}
+
+/// 1 when [t] falls on a real point of a [length]-point path, 0 when it lands
+/// between two of them.
+double _vertexWeight(int length, double t) {
+  final position = t * (length - 1);
+  return (position - position.roundToDouble()).abs() < 1e-9 ? 1 : 0;
+}
+
+/// Parameters at which two paths of [a] and [b] points have to be sampled for
+/// the tween between them to keep every corner of both.
+List<double> morphParameters(int a, int b) {
+  final parameters = <double>{};
+  for (var index = 0; index < a; index++) {
+    parameters.add(index / (a - 1));
+  }
+  for (var index = 0; index < b; index++) {
+    parameters.add(index / (b - 1));
+  }
+  return parameters.toList()..sort();
+}
+
+Offset samplePathAt(List<Offset> points, double t) {
+  final position = t * (points.length - 1);
+  final lower = position.floor().clamp(0, points.length - 1);
+  final upper = math.min(lower + 1, points.length - 1);
+  return Offset.lerp(points[lower], points[upper], position - lower)!;
 }
 
 int minimumAnimatedPointCount(Duration duration) =>
