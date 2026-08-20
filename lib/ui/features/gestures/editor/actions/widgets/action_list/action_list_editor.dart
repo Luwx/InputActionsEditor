@@ -35,7 +35,7 @@ const double actionIndent = 24;
 const double actionHeaderExtent = 50;
 
 /// Corner radius of a card, which the selection marker traces.
-const double actionCardRadius = 10;
+const double actionCardRadius = 12;
 
 /// Space between cards.
 const double actionCardGap = 4;

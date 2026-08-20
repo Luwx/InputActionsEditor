@@ -340,7 +340,7 @@ class ConditionEditor extends StatelessWidget {
         decoration: BoxDecoration(
           color: bodyBackgroundColor,
           border: Border.all(color: colors.border),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: switch (condition) {
           final RawCondition current when inherited.isEmpty => RawFallback(
@@ -348,16 +348,17 @@ class ConditionEditor extends StatelessWidget {
           ),
           null when inherited.isNotEmpty => _buildTable(context, null),
           null => Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: bodyBackgroundColor,
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               'No conditions set. Add a condition or '
               'group to specify when this gesture should trigger.',
-              style: typography.body.sm.copyWith(color: colors.mutedForeground),
+              style: typography.body.sm.copyWith(
+                color: colors.mutedForeground,
+              ),
             ),
           ),
           _ => _buildTable(context, condition),
