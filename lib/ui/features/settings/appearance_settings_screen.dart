@@ -176,6 +176,12 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                             enabled:
                                 effectiveThemeSelection != _ThemeSelection.kde,
                             format: (value) => _colorThemeLabel(l10n, value),
+                            prefixBuilder: (context, style, _) => Padding(
+                              padding: const EdgeInsets.only(left: 8, right: 2),
+                              child: _ColorThemeSwatch(
+                                theme: effectiveColorTheme,
+                              ),
+                            ),
                             control: FSelectManagedControl<FColorTheme>(
                               initial: effectiveColorTheme,
                               onChange: (value) {
