@@ -7,6 +7,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
 import 'package:input_actions_editor/model/action.dart'
     show ActionGroup, TriggerAction;
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
@@ -132,7 +133,10 @@ class ActionExpandedEditor extends HookConsumerWidget {
             children: [
               FAccordionItem(
                 title: Text(context.l10n.triggerOtherOptions),
-                child: ActionTriggerFields(fields: accordionFields),
+                child: StaggeredBuild(
+                  immediate: optionsExpanded.value,
+                  child: ActionTriggerFields(fields: accordionFields),
+                ),
               ),
             ],
           ),

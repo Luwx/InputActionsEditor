@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -89,6 +90,14 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
 
   final GestureLocation location;
 
+  List<ActionRow> _rows = const [];
+
+  // select compares rows with ==, and a fresh list is never equal to the last.
+  List<ActionRow> _keepRows(List<ActionRow> next) =>
+      const ListEquality<ActionRow>().equals(_rows, next)
+      ? _rows
+      : _rows = next;
+
   @override
   ActionListEditorVm build() {
     final common = ref.watch(
@@ -109,7 +118,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     return ActionListEditorVm(
       location: location,
       actions: actions,
-      rows: flattenActionRows(location, actions),
+      rows: _keepRows(flattenActionRows(location, actions)),
       dirtyState: dirtyState,
       savedActions: savedCommon?.actions,
     );

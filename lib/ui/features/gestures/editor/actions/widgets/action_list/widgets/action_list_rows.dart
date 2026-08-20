@@ -362,7 +362,7 @@ class ActionRowHeader extends HookConsumerWidget {
       builder: dismissibleContextMenuBuilder,
       secondaryPress: !menuController.isShown,
       longPress: false,
-      menu: _actionContextMenuItems(
+      menuBuilder: (context, _, _) => _actionContextMenuItems(
         context,
         controller: menuController,
         enabled: action.enabled != false,

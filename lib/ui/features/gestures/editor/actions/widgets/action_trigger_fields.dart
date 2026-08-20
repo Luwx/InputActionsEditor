@@ -71,17 +71,18 @@ class ActionTriggerFields extends HookConsumerWidget {
       actionConflictingLens,
       fallbackValue: () => true,
     );
-    final gesture = ref.watch(
-      configControllerProvider.select(
-        (s) => gestureAt(s.requireValue.draft, gestureLocation),
-      ),
+    // The lists are const, so an unrelated edit reselects the same instance.
+    final supportedOnValues = ref.watch(
+      configControllerProvider.select((s) {
+        final gesture = gestureAt(s.requireValue.draft, gestureLocation);
+        return gesture == null
+            ? kAllTriggerOnOptions
+            : supportedTriggerOnOptions(
+                gesture,
+                conflicting: conflictingField.value,
+              );
+      }),
     );
-    final supportedOnValues = gesture == null
-        ? kAllTriggerOnOptions
-        : supportedTriggerOnOptions(
-            gesture,
-            conflicting: conflictingField.value,
-          );
     // The default item is the schema default, labelled as such.
     final defaultOn = actionTriggerOnField.defaultValue!;
     final supportedOnOptions = {

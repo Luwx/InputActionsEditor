@@ -107,7 +107,7 @@ class GestureContextMenuTile extends HookConsumerWidget {
       builder: dismissibleContextMenuBuilder,
       secondaryPress: !controller.isShown,
       longPress: false,
-      menu: _gestureContextMenuItems(
+      menuBuilder: (context, _, _) => _gestureContextMenuItems(
         context,
         controller: controller,
         isGestureEnabled: isGestureEnabled,

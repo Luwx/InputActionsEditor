@@ -215,7 +215,7 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
       control: FPopoverControl.managed(controller: menuController),
       builder: dismissibleContextMenuBuilder,
       secondaryPress: !menuController.isShown,
-      menu: _groupContextMenuItems(
+      menuBuilder: (context, _, _) => _groupContextMenuItems(
         context,
         controller: menuController,
         enabled: enabled,

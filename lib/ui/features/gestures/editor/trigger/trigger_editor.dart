@@ -12,6 +12,7 @@ import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
@@ -145,11 +146,14 @@ class TriggerEditor extends HookConsumerWidget {
             children: [
               FAccordionItem(
                 title: Text(context.l10n.triggerOtherOptions),
-                child: TriggerAdvancedFields(
-                  fields: accordionFields,
-                  inherited: inherited,
-                  inheritedConditions: inheritedConditions,
-                  onOpenGroup: openGroup,
+                child: StaggeredBuild(
+                  immediate: optionsExpanded.value,
+                  child: TriggerAdvancedFields(
+                    fields: accordionFields,
+                    inherited: inherited,
+                    inheritedConditions: inheritedConditions,
+                    onOpenGroup: openGroup,
+                  ),
                 ),
               ),
             ],

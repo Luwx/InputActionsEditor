@@ -10,6 +10,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
@@ -113,10 +114,13 @@ class GroupSettingsView extends HookConsumerWidget {
               children: [
                 FAccordionItem(
                   title: Text(l10n.triggerOtherOptions),
-                  child: TriggerAdvancedFields(
-                    fields: accordionFields,
-                    group: location,
-                    inheritedConditions: inheritedConditions,
+                  child: StaggeredBuild(
+                    immediate: optionsExpanded.value,
+                    child: TriggerAdvancedFields(
+                      fields: accordionFields,
+                      group: location,
+                      inheritedConditions: inheritedConditions,
+                    ),
                   ),
                 ),
               ],
