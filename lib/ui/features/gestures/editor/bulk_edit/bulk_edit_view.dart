@@ -8,6 +8,8 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
@@ -76,8 +78,22 @@ class BulkEditView extends HookConsumerWidget {
       child: SectionCard(
         color: colors.card.withValues(alpha: 0.55),
         title: l10n.triggerConfigTitle,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Column(
+        padding: const EdgeInsets.all(16),
+        footer: accordionFields.isEmpty
+            ? null
+            : CardFooter(
+                expanded: optionsExpanded.value,
+                child: CollapsibleSection(
+                  title: Text(l10n.triggerOtherOptions),
+                  expanded: optionsExpanded.value,
+                  onExpanded: (expanded) => optionsExpanded.value = expanded,
+                  child: StaggeredBuild(
+                    immediate: optionsExpanded.value,
+                    child: TriggerAdvancedFields(fields: accordionFields),
+                  ),
+                ),
+              ),
+        body: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 16,
@@ -85,31 +101,6 @@ class BulkEditView extends HookConsumerWidget {
             if (allMouse) const MouseButtonsField(),
             if (pinnedFields.isNotEmpty)
               TriggerAdvancedFields(fields: pinnedFields),
-            if (accordionFields.isNotEmpty)
-              FAccordion(
-                control: FAccordionControl.lifted(
-                  expanded: (index) => index == 0 && optionsExpanded.value,
-                  onChange: (index, exp) {
-                    if (index != 0 || optionsExpanded.value == exp) return;
-                    optionsExpanded.value = exp;
-                  },
-                ),
-                style: const .delta(
-                  dividerStyle: .delta(
-                    color: Colors.transparent,
-                    padding: .value(EdgeInsets.zero),
-                  ),
-                ),
-                children: [
-                  FAccordionItem(
-                    title: Text(l10n.triggerOtherOptions),
-                    child: StaggeredBuild(
-                      immediate: optionsExpanded.value,
-                      child: TriggerAdvancedFields(fields: accordionFields),
-                    ),
-                  ),
-                ],
-              ),
           ],
         ),
       ),

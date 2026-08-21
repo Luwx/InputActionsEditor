@@ -281,7 +281,7 @@ class _EmergencyCombinationSection extends HookWidget {
       ),
       borderRadius: 8,
       padding: const EdgeInsets.all(14),
-      child: Column(
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 8,
         children: [

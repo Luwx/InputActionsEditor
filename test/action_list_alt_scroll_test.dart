@@ -92,11 +92,16 @@ class _ActionsEditorHost extends StatefulWidget {
     required this.controller,
     this.bottomSpacerHeight = 120,
     this.common,
+    this.aboveHeight,
   });
 
   final ScrollController controller;
   final double bottomSpacerHeight;
   final TriggerCommon? common;
+
+  /// A resizable band inside the anchored sliver, above the list, standing in
+  /// for the trigger section.
+  final ValueListenable<double>? aboveHeight;
 
   @override
   State<_ActionsEditorHost> createState() => _ActionsEditorHostState();
@@ -156,12 +161,22 @@ class _ActionsEditorHostState extends State<_ActionsEditorHost> {
                             : null,
                         child: ScrollAnchorScope(
                           controller: _anchor,
-                          child: const EditLocationScope(
-                            gesture: GestureLocation(
-                              device: DeviceType.mouse,
-                              editId: _seedEditId,
-                            ),
-                            child: ActionListEditor(),
+                          child: Column(
+                            children: [
+                              if (widget.aboveHeight case final above?)
+                                ValueListenableBuilder<double>(
+                                  valueListenable: above,
+                                  builder: (_, height, _) =>
+                                      SizedBox(height: height),
+                                ),
+                              const EditLocationScope(
+                                gesture: GestureLocation(
+                                  device: DeviceType.mouse,
+                                  editId: _seedEditId,
+                                ),
+                                child: ActionListEditor(),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -517,6 +532,35 @@ void main() {
         find.text('Action Conditions'),
         'The accordion footer should remain visible after opening.',
       );
+    },
+  );
+
+  testWidgets(
+    'a section above the list grows in place once Other Options settles',
+    (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      final aboveHeight = ValueNotifier<double>(200);
+      addTearDown(aboveHeight.dispose);
+
+      await tester.pumpWidget(
+        _ActionsEditorHost(controller: controller, aboveHeight: aboveHeight),
+      );
+      await tester.pumpAndSettle();
+
+      await _jumpNearBottom(tester, controller);
+      await _tapRow(tester, _lastRow);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Other Options'));
+      await tester.pumpAndSettle();
+
+      controller.jumpTo(0);
+      await tester.pumpAndSettle();
+
+      aboveHeight.value = 500;
+      await tester.pumpAndSettle();
+
+      expect(controller.offset, 0);
     },
   );
 }

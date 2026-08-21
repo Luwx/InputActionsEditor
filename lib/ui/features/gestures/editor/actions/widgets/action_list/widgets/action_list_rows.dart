@@ -11,6 +11,7 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/reveal_providers.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
+import 'package:input_actions_editor/ui/common/collapsible.dart';
 import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
@@ -169,6 +170,7 @@ class ActionRowCard extends HookConsumerWidget {
     final card = AnimatedContainer(
       duration: Durations.medium2,
       curve: Easing.standard,
+      clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(top: actionCardGap),
       decoration: BoxDecoration(
         color: color,
@@ -213,36 +215,32 @@ class ActionRowCard extends HookConsumerWidget {
               onDragEnded: choreo.endDrag,
             ),
           ),
-          AnimatedSize(
-            duration: Durations.medium2,
-            curve: Easing.standard,
-            alignment: Alignment.topCenter,
+          Collapsible(
+            expanded: expanded,
+            keepMounted: false,
             onEnd: expanded ? choreo.anchor.end : null,
-            child: expanded
-                ? EditLocationScope(
-                    action: actionLocation,
-                    child: AttentionFlashScope(
-                      trigger: flashTrigger,
-                      child: Listener(
-                        onPointerDown: (event) =>
-                            choreo.blockMarquee(event.pointer),
-                        child: ActionExpandedEditor(
-                          nested: row.depth > 0,
-                          onAddToGroup: row.isGroup ? onAddToGroup : null,
-                          onOptionsExpanded: () => choreo.anchor.begin(editId),
-                          onRevealAction: choreo.reveal,
-                          footerKey: ValueKey('action-footer-$editId'),
-                          pinnedTriggerOptions:
-                              choreo.pinnedTriggerOptions[editId] ?? const {},
-                        ),
-                      ),
-                    ),
-                  )
-                : const SizedBox(width: double.infinity),
+            child: EditLocationScope(
+              action: actionLocation,
+              child: AttentionFlashScope(
+                trigger: flashTrigger,
+                child: Listener(
+                  onPointerDown: (event) => choreo.blockMarquee(event.pointer),
+                  child: ActionExpandedEditor(
+                    nested: row.depth > 0,
+                    onAddToGroup: row.isGroup ? onAddToGroup : null,
+                    onOptionsExpanded: () => choreo.anchor.begin(editId),
+                    onOptionsSettled: choreo.anchor.end,
+                    onRevealAction: choreo.reveal,
+                    footerKey: ValueKey('action-footer-$editId'),
+                    pinnedTriggerOptions:
+                        choreo.pinnedTriggerOptions[editId] ?? const {},
+                  ),
+                ),
+              ),
+            ),
           ),
-          // Sits outside the AnimatedSize so its position
-          // tracks the row's animating bottom edge, giving the
-          // SliverSmartAnchor a live target.
+          // Sits outside the fold so its position tracks the row's animating
+          // bottom edge, giving the SliverSmartAnchor a live target.
           if (anchorKey != null) SizedBox(key: anchorKey, height: 0),
         ],
       ),

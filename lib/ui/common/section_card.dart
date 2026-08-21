@@ -3,7 +3,8 @@ import 'package:forui/forui.dart';
 
 class SectionCard extends StatelessWidget {
   const SectionCard({
-    required this.child,
+    required this.body,
+    this.footer,
     this.title,
     this.titleWidget,
     this.subtitle,
@@ -16,7 +17,12 @@ class SectionCard extends StatelessWidget {
   final String? title;
   final Widget? titleWidget;
   final Widget? subtitle;
-  final Widget child;
+  final Widget body;
+
+  /// Sits flush against the card's edges, below [body]'s padding.
+  final Widget? footer;
+
+  /// Around [body] only.
   final EdgeInsetsGeometry? padding;
   final Color? color;
   final double borderRadius;
@@ -26,14 +32,24 @@ class SectionCard extends StatelessWidget {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
 
+    final padded = padding == null
+        ? body
+        : Padding(padding: padding!, child: body);
+
     final card = Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: color,
         border: Border.all(color: colors.border),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
-      padding: padding,
-      child: child,
+      child: footer == null
+          ? padded
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [padded, footer!],
+            ),
     );
 
     if (title == null && titleWidget == null && subtitle == null) return card;

@@ -14,6 +14,7 @@ import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_editor.dart';
@@ -116,7 +117,7 @@ void main() {
         scope: const GesturesScope(),
       );
     await tester.pumpAndSettle();
-    expect(find.byType(FAccordion), findsNothing);
+    expect(find.byType(CollapsibleSection), findsNothing);
 
     notifier.undo(scope: const GesturesScope());
     await tester.pumpAndSettle();
@@ -125,7 +126,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // The reveal opened the card, and the accordion holding interval with it.
-    final accordion = find.byType(FAccordion);
+    final accordion = find.byType(CollapsibleSection);
     expect(accordion, findsOneWidget);
     final opened = tester.getSize(accordion).height;
 

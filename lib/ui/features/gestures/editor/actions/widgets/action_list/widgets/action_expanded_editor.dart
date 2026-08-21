@@ -7,6 +7,8 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
 import 'package:input_actions_editor/model/action.dart'
     show ActionGroup, TriggerAction;
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
+import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
@@ -37,6 +39,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
     required this.nested,
     this.onAddToGroup,
     this.onOptionsExpanded,
+    this.onOptionsSettled,
     this.onRevealAction,
     super.key,
   });
@@ -50,6 +53,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
   /// Set on a group row: adds an action to this group.
   final VoidCallback? onAddToGroup;
   final VoidCallback? onOptionsExpanded;
+  final VoidCallback? onOptionsSettled;
 
   /// Brings an action into view by editId.
   final ValueChanged<int>? onRevealAction;
@@ -88,61 +92,55 @@ class ActionExpandedEditor extends HookConsumerWidget {
       return null;
     }, [reveal]);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // const SizedBox(height: 8),
-          switch (kind) {
-            ActionKind.command => const EditorCommand(),
-            ActionKind.input => const EditorInputAction(),
-            ActionKind.plasmaShortcut => const EditorPlasmaShortcut(),
-            ActionKind.activateWindow => const EditorActivateWindow(),
-            ActionKind.replaceText => const EditorReplaceText(),
-            ActionKind.sleep => const EditorSleep(),
-            ActionKind.function => const EditorFunction(),
-            ActionKind.group => _GroupActionEditor(
-              onAdd: onAddToGroup,
-              onRevealAction: onRevealAction,
-            ),
-            ActionKind.raw => const EditorRaw(),
-            ActionKind.missing => const SizedBox.shrink(),
-          },
-          SizedBox(height: (kind == .input && pinned.isEmpty) ? 4 : 12),
-          if (pinned.isNotEmpty) ...[
-            ActionTriggerFields(fields: pinned),
-            const SizedBox(height: 16),
-          ],
-          FAccordion(
-            key: ValueKey(actionLocation.editId),
-            control: FAccordionControl.lifted(
-              expanded: (index) => index == 0 && optionsExpanded.value,
-              onChange: (index, exp) {
-                if (index != 0 || optionsExpanded.value == exp) return;
-                optionsExpanded.value = exp;
-                if (exp) onOptionsExpanded?.call();
-              },
-            ),
-            style: const .delta(
-              dividerStyle: .delta(
-                color: Colors.transparent,
-                padding: .value(EdgeInsets.zero),
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FAccordionItem(
-                title: Text(context.l10n.triggerOtherOptions),
-                child: StaggeredBuild(
-                  immediate: optionsExpanded.value,
-                  child: ActionTriggerFields(fields: accordionFields),
+              switch (kind) {
+                ActionKind.command => const EditorCommand(),
+                ActionKind.input => const EditorInputAction(),
+                ActionKind.plasmaShortcut => const EditorPlasmaShortcut(),
+                ActionKind.activateWindow => const EditorActivateWindow(),
+                ActionKind.replaceText => const EditorReplaceText(),
+                ActionKind.sleep => const EditorSleep(),
+                ActionKind.function => const EditorFunction(),
+                ActionKind.group => _GroupActionEditor(
+                  onAdd: onAddToGroup,
+                  onRevealAction: onRevealAction,
                 ),
-              ),
+                ActionKind.raw => const EditorRaw(),
+                ActionKind.missing => const SizedBox.shrink(),
+              },
+              if (pinned.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ActionTriggerFields(fields: pinned),
+              ],
             ],
           ),
-          SizedBox(key: footerKey, height: 1),
-        ],
-      ),
+        ),
+        CardFooter(
+          expanded: optionsExpanded.value,
+          child: CollapsibleSection(
+            key: ValueKey(actionLocation.editId),
+            title: Text(context.l10n.triggerOtherOptions),
+            expanded: optionsExpanded.value,
+            onExpanded: (expanded) {
+              optionsExpanded.value = expanded;
+              if (expanded) onOptionsExpanded?.call();
+            },
+            onEnd: onOptionsSettled,
+            child: StaggeredBuild(
+              immediate: optionsExpanded.value,
+              child: ActionTriggerFields(fields: accordionFields),
+            ),
+          ),
+        ),
+        SizedBox(key: footerKey, height: 1),
+      ],
     );
   }
 }

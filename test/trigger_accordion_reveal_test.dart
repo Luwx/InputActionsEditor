@@ -15,6 +15,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/trigger_editor.dart';
@@ -83,7 +84,7 @@ void main() {
 
     // Nothing is pinned, so every advanced field sits inside the accordion,
     // whose own height is what the fold changes.
-    final body = find.byType(FAccordion);
+    final body = find.byType(CollapsibleSection);
     final collapsedHeight = tester.getSize(body).height;
 
     final notifier = container.read(configControllerProvider.notifier)

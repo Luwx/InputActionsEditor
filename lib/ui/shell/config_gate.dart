@@ -32,6 +32,7 @@ class ConfigGate extends ConsumerWidget {
         );
 
     return PageTransitionSwitcher(
+      duration: const Duration(milliseconds: 500),
       transitionBuilder: (child, animation, secondaryAnimation) =>
           SharedAxisTransition(
             animation: animation,

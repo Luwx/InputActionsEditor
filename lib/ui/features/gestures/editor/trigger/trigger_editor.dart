@@ -10,6 +10,8 @@ import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
+import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
@@ -106,8 +108,26 @@ class TriggerEditor extends HookConsumerWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Column(
+      padding: const EdgeInsets.all(16),
+      footer: CardFooter(
+        expanded: optionsExpanded.value,
+        child: CollapsibleSection(
+          key: ValueKey(location.editId),
+          title: Text(context.l10n.triggerOtherOptions),
+          expanded: optionsExpanded.value,
+          onExpanded: (expanded) => optionsExpanded.value = expanded,
+          child: StaggeredBuild(
+            immediate: optionsExpanded.value,
+            child: TriggerAdvancedFields(
+              fields: accordionFields,
+              inherited: inherited,
+              inheritedConditions: inheritedConditions,
+              onOpenGroup: openGroup,
+            ),
+          ),
+        ),
+      ),
+      body: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 16,
         children: [
@@ -128,36 +148,6 @@ class TriggerEditor extends HookConsumerWidget {
                 onOpenGroup: openGroup,
               ),
             ),
-          FAccordion(
-            key: ValueKey(location.editId),
-            control: FAccordionControl.lifted(
-              expanded: (index) => index == 0 && optionsExpanded.value,
-              onChange: (index, exp) {
-                if (index != 0 || optionsExpanded.value == exp) return;
-                optionsExpanded.value = exp;
-              },
-            ),
-            style: const .delta(
-              dividerStyle: .delta(
-                color: Colors.transparent,
-                padding: .value(EdgeInsets.zero),
-              ),
-            ),
-            children: [
-              FAccordionItem(
-                title: Text(context.l10n.triggerOtherOptions),
-                child: StaggeredBuild(
-                  immediate: optionsExpanded.value,
-                  child: TriggerAdvancedFields(
-                    fields: accordionFields,
-                    inherited: inherited,
-                    inheritedConditions: inheritedConditions,
-                    onOpenGroup: openGroup,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
