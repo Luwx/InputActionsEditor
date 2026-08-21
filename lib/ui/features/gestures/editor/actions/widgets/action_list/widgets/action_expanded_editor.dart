@@ -171,30 +171,30 @@ class _GroupActionEditor extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            context.l10n.actionGroupExplanation,
-            style: theme.typography.body.sm.copyWith(
-              color: theme.colors.mutedForeground,
-            ),
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  context.l10n.actionGroupExplanation,
+                  style: theme.typography.body.sm.copyWith(
+                    color: theme.colors.mutedForeground,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FButton(
+                variant: .outline,
+                size: .sm,
+                onPress: onAdd,
+                prefix: const Icon(FLucideIcons.plus, size: 14),
+                child: Text(context.l10n.actionGroupAddAction),
+              ),
+            ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: ActionGroupFlow(
-            actions: nestedActions,
-            onStepPressed: onRevealAction,
-          ),
-        ),
-        SizedBox(
-          width: double.infinity,
-          child: FButton(
-            variant: .outline,
-            onPress: onAdd,
-            prefix: const Icon(FLucideIcons.plus, size: 14),
-            child: Text(context.l10n.actionGroupAddAction),
-          ),
-        ),
+        ActionGroupFlow(actions: nestedActions, onStepPressed: onRevealAction),
       ],
     );
   }

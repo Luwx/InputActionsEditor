@@ -78,12 +78,16 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
     anchorRef.value?.belowExtent = gap < 0 ? 0.0 : gap;
   }
 
-  void clear() {
-    anchorTarget.value = null;
+  void end() {
     anchorRef.value
       ?..isAnchoring = false
       ..belowExtent = null
       ..correctionBudget = null;
+  }
+
+  void clear() {
+    anchorTarget.value = null;
+    end();
   }
 
   void begin(int editId) {
@@ -96,8 +100,6 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
       ..isAnchoring = true;
     WidgetsBinding.instance.addPostFrameCallback((_) => measureBelowExtent());
   }
-
-  void end() => anchorRef.value?.isAnchoring = false;
 
   void beginTwoPhase(
     int editId, {

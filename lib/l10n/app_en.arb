@@ -415,7 +415,7 @@
     }
   },
   "actionGroupExplanation": "Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.",
-  "actionGroupAddAction": "Add action to group",
+  "actionGroupAddAction": "Add action",
   "actionGroupFlowTitle": "What runs",
   "actionGroupFlowIf": "If",
   "actionGroupFlowElseIf": "Else if",

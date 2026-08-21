@@ -1735,7 +1735,7 @@ abstract class AppLocalizations {
   /// No description provided for @actionGroupAddAction.
   ///
   /// In en, this message translates to:
-  /// **'Add action to group'**
+  /// **'Add action'**
   String get actionGroupAddAction;
 
   /// No description provided for @actionGroupFlowTitle.

@@ -914,7 +914,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.';
 
   @override
-  String get actionGroupAddAction => 'Add action to group';
+  String get actionGroupAddAction => 'Add action';
 
   @override
   String get actionGroupFlowTitle => 'What runs';
