@@ -77,8 +77,9 @@ class GestureListTile extends ConsumerWidget {
         gestureOverride == null && ref.watch(gestureDirtyProvider(location));
     final isDisabled = common.enabled == false || groupDisabled;
     final summaryText = _summary(gesture);
+    final hasAction = common.actions.isNotEmpty;
     final firstAction = _firstActionSummary(common, context.l10n);
-    final firstActionIcon = common.actions.isNotEmpty
+    final firstActionIcon = hasAction
         ? actionMeta(common.actions.first.action, context.l10n).icon
         : null;
     final nameText = (common.name?.isNotEmpty ?? false)
@@ -164,40 +165,41 @@ class GestureListTile extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      if (summaryText.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          summaryText,
-                          style: typography.body.xs.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Text(
+                        summaryText,
+                        style: typography.body.xs.copyWith(
+                          color: colors.mutedForeground,
                         ),
-                      ],
-                      if (firstAction.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            if (firstActionIcon != null) ...[
-                              Icon(
-                                firstActionIcon,
-                                size: 11,
-                                color: colors.mutedForeground,
-                              ),
-                              const SizedBox(width: 3),
-                            ],
-                            Expanded(
-                              child: Text(
-                                firstAction,
-                                style: typography.body.xs.copyWith(
-                                  color: colors.mutedForeground,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (firstActionIcon != null) ...[
+                            Icon(
+                              firstActionIcon,
+                              size: 11,
+                              color: colors.mutedForeground,
                             ),
+                            const SizedBox(width: 3),
                           ],
-                        ),
-                      ],
+                          Expanded(
+                            child: Text(
+                              firstAction,
+                              style: typography.body.xs.copyWith(
+                                color: hasAction
+                                    ? colors.mutedForeground
+                                    : colors.mutedForeground.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                fontStyle: hasAction ? null : FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -288,7 +290,7 @@ void _addTouchSummary(Object g, List<String> parts) {
 }
 
 String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
-  if (common.actions.isEmpty) return '';
+  if (common.actions.isEmpty) return l10n.actionSummaryNoAction;
   final action = common.actions.first.action;
   return switch (action) {
     CommandAction(:final command) => command.isEmpty ? '(no command)' : command,

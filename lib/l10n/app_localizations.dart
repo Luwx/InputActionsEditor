@@ -1894,6 +1894,12 @@ abstract class AppLocalizations {
   /// **'No input'**
   String get actionSummaryNoInput;
 
+  /// No description provided for @actionSummaryNoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'No action'**
+  String get actionSummaryNoAction;
+
   /// No description provided for @actionSummaryNoKeys.
   ///
   /// In en, this message translates to:

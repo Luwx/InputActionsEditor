@@ -25,9 +25,8 @@ final class _GestureListChoreography {
 }
 
 /// The slots the list's items take, which place a target it has not laid out
-/// yet. A row grows by a line once it has an action to show.
-const double _rowExtent = 59;
-const double _tallRowExtent = 63;
+/// yet.
+const double _rowExtent = 63;
 const double _groupHeaderExtent = 38;
 
 /// How far short of the target a restored session lands before gliding in.
@@ -46,7 +45,7 @@ Duration _travelTime(double distance, double viewport) {
 /// group take no space.
 double _slotExtent(_FlatItem item) => switch (item) {
   _GroupHeaderItem() => _groupHeaderExtent,
-  _GestureRowItem(:final tall) => tall ? _tallRowExtent : _rowExtent,
+  _GestureRowItem() => _rowExtent,
 };
 
 double _contentOffset(List<_FlatItem> items, int index) {

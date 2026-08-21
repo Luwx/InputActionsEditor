@@ -449,6 +449,7 @@
   "actionSummaryNotConfigured": "Not configured",
   "actionSummaryEmpty": "Empty",
   "actionSummaryNoInput": "No input",
+  "actionSummaryNoAction": "No action",
   "actionSummaryNoKeys": "No keys",
   "actionSummaryNoButtons": "No buttons",
   "actionCommandLabel": "Command",

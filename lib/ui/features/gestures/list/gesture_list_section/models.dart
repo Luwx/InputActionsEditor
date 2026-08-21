@@ -73,7 +73,6 @@ final class _GestureRowItem extends _FlatItem {
     this.depth = 0,
     this.localGroupIndex,
     this.isLastInGroup = false,
-    this.tall = false,
     this.isVisible = true,
     this.ancestorContinues = const [],
   });
@@ -95,10 +94,6 @@ final class _GestureRowItem extends _FlatItem {
   final int depth;
   final int? localGroupIndex;
   final bool isLastInGroup;
-
-  /// Whether the tile shows an action, which is the line that makes one row
-  /// taller than another. Lets a target the list has not laid out be placed.
-  final bool tall;
 
   @override
   final bool isVisible;
@@ -126,7 +121,6 @@ final class _GestureRowItem extends _FlatItem {
     depth,
     localGroupIndex,
     isLastInGroup,
-    tall,
     isVisible,
     ancestorContinues,
   ];

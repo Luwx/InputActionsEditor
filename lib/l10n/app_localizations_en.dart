@@ -1006,6 +1006,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSummaryNoInput => 'No input';
 
   @override
+  String get actionSummaryNoAction => 'No action';
+
+  @override
   String get actionSummaryNoKeys => 'No keys';
 
   @override
