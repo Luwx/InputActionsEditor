@@ -9,12 +9,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_navigation.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
 import 'package:input_actions_editor/ui/shell/sidebar/app_sidebar.dart';
@@ -44,40 +43,6 @@ class DeviceSidebar extends HookConsumerWidget {
     // Only rebuilds when discardability flips, not on every edit.
     final canDiscard = ref.watch(canDiscardChangesProvider);
     final canSave = ref.watch(isDirtyProvider);
-
-    void goToDevice(DeviceType? device) {
-      final currentView = ref.read(currentViewProvider);
-      final currentFilter = ref.read(deviceFilterProvider);
-      final changingFilter =
-          currentView != AppView.gestures || currentFilter != device;
-      // Asking for the list already on screen is not a reason to close the
-      // gesture open in it.
-      if (!changingFilter) return;
-
-      final config = ref.read(configControllerProvider).value?.draft;
-      bool holds(GestureLocation? location) =>
-          config != null &&
-          location != null &&
-          (device == null || location.device == device) &&
-          gestureAt(config, location) != null;
-
-      // Keep the gesture in hand when the filter it moves to still shows it,
-      // otherwise resume where that filter was left, and only then fall back
-      // to its first gesture.
-      final carried = ref.read(selectedGestureProvider);
-      final resumed = ref.read(navProvider.notifier).lastOpenFor(device);
-      final open = holds(carried)
-          ? carried
-          : holds(resumed)
-          ? resumed
-          : (config == null ? null : firstGestureForFilter(config, device));
-      if (open != null) {
-        context.goToGesturesSelectFirst(filter: device, location: open);
-        return;
-      }
-
-      context.goToGestures(device: device);
-    }
 
     return AppSidebar(
       child: Column(
@@ -167,37 +132,45 @@ class DeviceSidebar extends HookConsumerWidget {
                         icon: const Icon(FLucideIcons.list),
                         label: Text(l10n.sidebarAllDevices),
                         selected: isGestures && deviceFilter == null,
-                        onPress: () => goToDevice(null),
+                        onPress: () => goToDeviceFilter(context, ref, null),
                       ),
                       AppSidebarItem(
                         icon: const Icon(FLucideIcons.mouse),
                         label: Text(l10n.deviceTypeMouse),
                         selected: isGestures && deviceFilter == .mouse,
-                        onPress: () => goToDevice(DeviceType.mouse),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.mouse),
                       ),
                       AppSidebarItem(
                         icon: const Icon(FLucideIcons.mousePointer2),
                         label: Text(l10n.deviceTypePointer),
                         selected: isGestures && deviceFilter == .pointer,
-                        onPress: () => goToDevice(DeviceType.pointer),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.pointer),
                       ),
                       AppSidebarItem(
                         icon: const Icon(FLucideIcons.keyboard),
                         label: Text(l10n.deviceTypeKeyboard),
                         selected: isGestures && deviceFilter == .keyboard,
-                        onPress: () => goToDevice(DeviceType.keyboard),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.keyboard),
                       ),
                       AppSidebarItem(
                         icon: const Icon(FLucideIcons.touchpad),
                         label: Text(l10n.deviceTypeTouchpad),
                         selected: isGestures && deviceFilter == .touchpad,
-                        onPress: () => goToDevice(DeviceType.touchpad),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.touchpad),
                       ),
                       AppSidebarItem(
                         icon: const Icon(FLucideIcons.monitor),
                         label: Text(l10n.deviceTypeTouchscreen),
                         selected: isGestures && deviceFilter == .touchscreen,
-                        onPress: () => goToDevice(DeviceType.touchscreen),
+                        onPress: () => goToDeviceFilter(
+                          context,
+                          ref,
+                          DeviceType.touchscreen,
+                        ),
                       ),
                     ],
                   ),

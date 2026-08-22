@@ -12,6 +12,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_navigation.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
 import 'package:input_actions_editor/ui/shell/document_intents.dart';
 import 'package:window_manager/window_manager.dart';
@@ -20,9 +21,6 @@ import 'package:window_manager/window_manager.dart';
 /// of any scope, except in settings, which unwinds only its own. An editor
 /// wanting its own scope registers [Actions] for the same intents nearer the
 /// focus, which are found first.
-///
-/// Every binding here is also declared as a hint in `application_menu.dart`
-/// and the sidebar's file menu, which only display it.
 class DocumentShortcuts extends ConsumerWidget {
   const DocumentShortcuts({required this.child, super.key});
 
@@ -70,6 +68,30 @@ class DocumentShortcuts extends ConsumerWidget {
         renameShortcut: RenameGestureIntent(),
         duplicateShortcut: DuplicateGestureIntent(),
         copyYamlShortcut: CopyGestureYamlIntent(),
+        SingleActivator(LogicalKeyboardKey.arrowUp, alt: true):
+            StepGestureIntent(-1, yieldsToTextField: true),
+        SingleActivator(LogicalKeyboardKey.arrowDown, alt: true):
+            StepGestureIntent(1, yieldsToTextField: true),
+        SingleActivator(LogicalKeyboardKey.tab, control: true):
+            StepGestureIntent(1),
+        SingleActivator(LogicalKeyboardKey.tab, control: true, shift: true):
+            StepGestureIntent(-1),
+        SingleActivator(LogicalKeyboardKey.home): JumpGestureIntent(
+          last: false,
+          yieldsToTextField: true,
+        ),
+        SingleActivator(LogicalKeyboardKey.end): JumpGestureIntent(
+          last: true,
+          yieldsToTextField: true,
+        ),
+        SingleActivator(LogicalKeyboardKey.pageUp, control: true):
+            StepDeviceIntent(-1),
+        SingleActivator(LogicalKeyboardKey.pageDown, control: true):
+            StepDeviceIntent(1),
+        SingleActivator(LogicalKeyboardKey.home, control: true):
+            JumpDeviceIntent(last: false, yieldsToTextField: true),
+        SingleActivator(LogicalKeyboardKey.end, control: true):
+            JumpDeviceIntent(last: true, yieldsToTextField: true),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -151,6 +173,30 @@ class DocumentShortcuts extends ConsumerWidget {
               return null;
             },
           ),
+          StepGestureIntent: _NavigationAction<StepGestureIntent>(
+            onInvoke: (intent) {
+              stepGesture(context, ref, intent.delta);
+              return null;
+            },
+          ),
+          JumpGestureIntent: _NavigationAction<JumpGestureIntent>(
+            onInvoke: (intent) {
+              jumpToGesture(context, ref, last: intent.last);
+              return null;
+            },
+          ),
+          StepDeviceIntent: _NavigationAction<StepDeviceIntent>(
+            onInvoke: (intent) {
+              stepDeviceFilter(context, ref, intent.delta);
+              return null;
+            },
+          ),
+          JumpDeviceIntent: _NavigationAction<JumpDeviceIntent>(
+            onInvoke: (intent) {
+              jumpToDeviceFilter(context, ref, last: intent.last);
+              return null;
+            },
+          ),
           CopyGestureYamlIntent: CallbackAction<CopyGestureYamlIntent>(
             onInvoke: (_) {
               final location = selectedGesture();
@@ -170,4 +216,16 @@ class DocumentShortcuts extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _NavigationAction<T extends NavigationIntent> extends CallbackAction<T> {
+  _NavigationAction({required super.onInvoke});
+
+  // A disabled action leaves the key unhandled, so it keeps travelling up to
+  // the text field's own shortcuts instead of being swallowed here.
+  @override
+  bool isEnabled(T intent) =>
+      !intent.yieldsToTextField ||
+      primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() ==
+          null;
 }
