@@ -37,7 +37,6 @@ class SectionCard extends StatelessWidget {
         : Padding(padding: padding!, child: body);
 
     final card = Container(
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: color,
         border: Border.all(color: colors.border),

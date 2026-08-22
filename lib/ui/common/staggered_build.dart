@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Holds [child] back from the frames that first put a page on screen, then
@@ -16,11 +17,17 @@ class StaggeredBuild extends StatefulWidget {
     required this.child,
     this.immediate = false,
     this.delay = defaultDelay,
+    this.firstFrame = false,
     super.key,
   });
 
   /// How long a subtree waits before it joins the release queue.
   static const defaultDelay = Duration(milliseconds: 250);
+
+  /// How many [firstFrame] subtrees are still waiting to be built, anywhere in
+  /// the app. A screen holding its own reveal can wait for this to reach zero
+  /// rather than guess a delay that covers every [delay] under it.
+  static ValueListenable<int> get pending => _StaggerQueue.pending;
 
   final Widget child;
 
@@ -30,12 +37,18 @@ class StaggeredBuild extends StatefulWidget {
 
   final Duration delay;
 
+  /// Whether a screen holding its own reveal should wait for this subtree.
+  /// Content behind a collapsible is not part of the first frame and never
+  /// should: nobody is looking at it when the reveal starts.
+  final bool firstFrame;
+
   @override
   State<StaggeredBuild> createState() => _StaggeredBuildState();
 }
 
 class _StaggeredBuildState extends State<StaggeredBuild> {
   bool _built = false;
+  bool _counted = false;
   Timer? _timer;
 
   @override
@@ -44,6 +57,8 @@ class _StaggeredBuildState extends State<StaggeredBuild> {
     if (widget.immediate) {
       _built = true;
     } else {
+      _counted = widget.firstFrame;
+      if (_counted) _StaggerQueue.hold();
       _timer = Timer(widget.delay, () => _StaggerQueue.add(_release));
     }
   }
@@ -67,10 +82,24 @@ class _StaggeredBuildState extends State<StaggeredBuild> {
     _timer?.cancel();
     _timer = null;
     _StaggerQueue.remove(_release);
+    _drop();
   }
 
   void _release() {
-    if (mounted) setState(() => _built = true);
+    if (!mounted) {
+      _drop();
+      return;
+    }
+    setState(() => _built = true);
+    // Counted as outstanding until the frame that holds the child is up, so a
+    // screen waiting on the queue does not start counting mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _drop());
+  }
+
+  void _drop() {
+    if (!_counted) return;
+    _counted = false;
+    _StaggerQueue.drop();
   }
 
   @override
@@ -81,7 +110,12 @@ class _StaggeredBuildState extends State<StaggeredBuild> {
 /// Releases at most one waiting subtree per frame.
 abstract final class _StaggerQueue {
   static final Queue<VoidCallback> _waiting = Queue();
+  static final ValueNotifier<int> pending = ValueNotifier(0);
   static bool _scheduled = false;
+
+  static void hold() => pending.value++;
+
+  static void drop() => pending.value--;
 
   static void add(VoidCallback release) {
     _waiting.add(release);

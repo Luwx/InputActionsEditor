@@ -170,7 +170,6 @@ class ActionRowCard extends HookConsumerWidget {
     final card = AnimatedContainer(
       duration: Durations.medium2,
       curve: Easing.standard,
-      clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(top: actionCardGap),
       decoration: BoxDecoration(
         color: color,

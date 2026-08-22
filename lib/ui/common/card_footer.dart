@@ -10,11 +10,14 @@ class CardFooter extends StatefulWidget {
   const CardFooter({
     required this.expanded,
     required this.child,
+    this.radius = 11,
     super.key,
   });
 
   final bool expanded;
   final Widget child;
+
+  final double radius;
 
   @override
   State<CardFooter> createState() => _CardFooterState();
@@ -44,6 +47,9 @@ class _CardFooterState extends State<CardFooter> {
         decoration: BoxDecoration(
           color: color,
           border: Border(top: BorderSide(color: separator)),
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(widget.radius),
+          ),
         ),
         child: widget.child,
       ),

@@ -32,6 +32,9 @@ class DeviceSidebar extends HookConsumerWidget {
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
     final configController = ref.read(configControllerProvider.notifier);
+    final configLoaded = ref.watch(
+      configControllerProvider.select((config) => config.hasValue),
+    );
     // Only rebuilds when discardability flips, not on every edit.
     final canDiscard = ref.watch(canDiscardChangesProvider);
     final canSave = ref.watch(isDirtyProvider);
@@ -203,7 +206,9 @@ class DeviceSidebar extends HookConsumerWidget {
                 icon: const Icon(FLucideIcons.cog),
                 label: Text(l10n.navSettings),
                 selected: currentView == AppView.settings,
-                onPress: context.openSettings,
+                // Settings reads the config, so it stays shut until there is
+                // one: the page is not gated behind a loader of its own.
+                onPress: configLoaded ? context.openSettings : null,
               ),
             ],
           ),

@@ -15,9 +15,12 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
+import 'package:input_actions_editor/ui/common/fade_slide_in.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/add_action_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
@@ -369,7 +372,18 @@ class _GestureEditorView extends HookConsumerWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: undoFocusNode.requestFocus,
-        child: editorBody,
+        child: StaggeredBuild(
+          firstFrame: true,
+          delay: WarmUpScope.of(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 100),
+          child: FadeSlideIn(
+            delay: WarmUpScope.of(context)
+                ? const Duration(milliseconds: 200)
+                : Duration.zero,
+            child: editorBody,
+          ),
+        ),
       ),
     );
   }

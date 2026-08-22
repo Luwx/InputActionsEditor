@@ -397,9 +397,9 @@ class GestureListSection extends HookConsumerWidget {
               marqueeEnabled: true,
               marqueeColor: colors.primary,
               onMarqueeStart: (additive) {
-                // Snapshot the base but don't enter multi-select yet: entering
-                // is a heavy rebuild, so defer it until a row is actually
-                // covered (keeps a drag starting on empty space cheap).
+                // Snapshot the base but don't enter multi-select yet:
+                // entering is a heavy rebuild, so defer it until a row is
+                // actually covered (keeps a drag on empty space cheap).
                 marqueeBase.value = additive
                     ? {...?multiSelect}
                     : <GestureLocation>{};
@@ -639,7 +639,10 @@ class GestureListSection extends HookConsumerWidget {
           }
         },
         onRename: () {
-          final gesture = gestureAt(ref.read(draftConfigProvider), location);
+          final gesture = gestureAt(
+            ref.read(draftConfigProvider),
+            location,
+          );
           if (gesture == null) return;
           unawaited(
             showRenameDialog(
