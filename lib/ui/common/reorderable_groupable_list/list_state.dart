@@ -30,6 +30,7 @@ class _ReorderableGroupableListState<I, G>
   Set<I> _activeItemDragIds = const {};
   int? _routedPointer;
   bool _isDragging = false;
+  final _dragCursor = DragCursorOverlay();
 
   // Stable per-group keys on the pinned header boxes, so the header scroll
   // measurement can read a header's painted position frame by frame.
@@ -67,6 +68,7 @@ class _ReorderableGroupableListState<I, G>
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _removePointerRoute();
+    _dragCursor.hide();
     _marquee.dispose();
     _autoScroll.dispose();
     super.dispose();
@@ -119,8 +121,9 @@ class _ReorderableGroupableListState<I, G>
 
   void _startItemDrag(ReorderableGroupableItem<I, G> item) {
     final selected = widget.selectedItemIds;
-    _isDragging = true;
+    _dragCursor.show(context);
     setState(() {
+      _isDragging = true;
       _activeItemDragIds = selected.contains(item.id)
           ? Set<I>.of(selected)
           : {item.id};
@@ -130,6 +133,7 @@ class _ReorderableGroupableListState<I, G>
   void _endDrag() {
     _autoScroll.stop();
     _removePointerRoute();
+    _dragCursor.hide();
     _isDragging = false;
     if (!mounted) return;
     setState(() {
@@ -594,7 +598,10 @@ class _ReorderableGroupableListState<I, G>
             label:
                 widget.groupDragLabelBuilder?.call(group) ??
                 group.id.toString(),
-            onDragStarted: () => _isDragging = true,
+            onDragStarted: () {
+              _dragCursor.show(context);
+              _isDragging = true;
+            },
             onDragEnded: _endDrag,
             onPointerDown: _registerPointer,
           )

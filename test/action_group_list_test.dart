@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -286,6 +287,48 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
     }
+
+    testWidgets('a row being dragged wears the grabbing cursor', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1000, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_host(nested));
+      await tester.pumpAndSettle();
+
+      final handle = find.byIcon(FLucideIcons.gripVertical).at(5);
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: tester.getCenter(handle));
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+
+      await gesture.down(tester.getCenter(handle));
+      await tester.pump(const Duration(milliseconds: 200));
+      final card = tester.getRect(_rowFor('First match').first);
+      await gesture.moveTo(Offset(card.center.dx, card.top + 40));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Once the drag is under way the cursor has to hold through the move
+      // itself: one that only settles on the next frame flickers.
+      await gesture.moveTo(Offset(card.center.dx, card.top + 20));
+      expect(
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+        SystemMouseCursors.grabbing,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+        SystemMouseCursors.grabbing,
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(_left(tester, 'root two'), greaterThan(_left(tester, 'root one')));
+    });
 
     testWidgets('a drop below the top strip lands inside the group', (
       tester,

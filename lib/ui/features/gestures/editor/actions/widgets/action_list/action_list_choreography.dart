@@ -19,6 +19,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
+import 'package:input_actions_editor/ui/common/drag_cursor.dart';
 import 'package:input_actions_editor/ui/common/tree_list/auto_scroller.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
 import 'package:input_actions_editor/ui/common/tree_list/marquee_engine.dart';
@@ -195,6 +196,8 @@ ActionListChoreography useActionListChoreography(
     duration: _revealScrollDuration,
   );
   final draggingKeys = useState(<int>{});
+  final dragCursor = useMemoized(DragCursorOverlay.new);
+  useEffect(() => dragCursor.hide, [dragCursor]);
   final pinnedTriggerOptions = useState(
     _initialPinnedActionTriggerOptions(
       ref.read(actionListEditorProvider(location)).actions,
@@ -673,8 +676,14 @@ ActionListChoreography useActionListChoreography(
     reveal: reveal,
     draggingKeys: draggingKeys.value,
     setDragPointer: routeDragPointer,
-    beginDrag: (editId) => draggingKeys.value = bundle(editId).toSet(),
-    endDrag: () => draggingKeys.value = const {},
+    beginDrag: (editId) {
+      dragCursor.show(context);
+      draggingKeys.value = bundle(editId).toSet();
+    },
+    endDrag: () {
+      dragCursor.hide();
+      draggingKeys.value = const {};
+    },
     toggle: toggle,
     select: (editIds) {
       selected.value = editIds;

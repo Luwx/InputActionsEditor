@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -614,6 +615,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_order(tester), ['First', 'Third']);
+  });
+
+  testWidgets('a row being dragged wears the grabbing cursor', (tester) async {
+    await _pumpList(tester);
+
+    MouseCursor? cursor() =>
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1);
+
+    final handle = find.byIcon(FLucideIcons.gripVertical).at(2);
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: tester.getCenter(handle));
+    addTearDown(gesture.removePointer);
+    await tester.pump();
+
+    expect(cursor(), SystemMouseCursors.grab);
+
+    await gesture.down(tester.getCenter(handle));
+    await tester.pump(const Duration(milliseconds: 200));
+    await gesture.moveTo(tester.getCenter(find.text('Second')));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Read before the frame lands as well: the cursor is claimed per pointer
+    // event, and one that only settles on the next frame flickers.
+    await gesture.moveTo(tester.getCenter(find.text('First')));
+    expect(cursor(), SystemMouseCursors.grabbing);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(cursor(), SystemMouseCursors.grabbing);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(cursor(), isNot(SystemMouseCursors.grabbing));
   });
 
   testWidgets('a row moved up leaves its ghost in the slot it vacated', (
