@@ -26,6 +26,15 @@ class RenameDialog extends HookWidget {
   Widget build(BuildContext context) {
     final controller = useTextEditingController(text: initial);
     useListenable(controller);
+
+    useEffect(() {
+      controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: initial.length,
+      );
+      return null;
+    }, const []);
+
     final canConfirm = allowEmpty || controller.text.trim().isNotEmpty;
 
     void handleConfirm() {
