@@ -1,4 +1,3 @@
-import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,11 +20,7 @@ class SettingsShell extends ConsumerWidget {
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
     return FScaffold(
-      sidebar: Blurred(
-        disabled: !transparent,
-        expand: const EdgeInsets.only(right: 30),
-        child: const SettingsListSection(),
-      ),
+      sidebar: const SettingsListSection(),
       childPad: false,
       child: transparent
           ? ColoredBox(

@@ -1,3 +1,4 @@
+import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -238,36 +239,41 @@ class _AppChromeBackground extends ConsumerWidget {
     }
 
     final sidebarColor = color.withValues(alpha: 0.80);
-    // Only the gestures sidebar collapses; settings keeps the full width.
-    final collapsible = ref.watch(currentViewProvider) != AppView.settings;
     return Stack(
       fit: StackFit.expand,
       children: [
-        ValueListenableBuilder<double>(
-          valueListenable: ref.watch(sidebarWidthProvider),
-          builder: (context, width, _) => Row(
-            textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ColoredBox(
-                color: sidebarColor,
-                child: SizedBox(
-                  width: collapsible ? width : kSidebarExpandedWidth,
-                ),
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.centerStart,
-                    end: AlignmentDirectional.centerEnd,
-                    colors: [sidebarColor, color],
-                  ),
-                ),
-                child: const SizedBox(width: _appSidebarBlendWidth),
-              ),
-              Expanded(child: ColoredBox(color: color)),
-            ],
+        const PositionedDirectional(
+          top: 0,
+          bottom: 0,
+          start: 0,
+          width: kSidebarExpandedWidth,
+          child: Blurred(
+            expand: EdgeInsets.only(right: 30),
+            child: SizedBox.expand(),
           ),
+        ),
+        Row(
+          textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ColoredBox(
+              color: sidebarColor,
+              child: const SizedBox(
+                width: kSidebarExpandedWidth,
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
+                  colors: [sidebarColor, color],
+                ),
+              ),
+              child: const SizedBox(width: _appSidebarBlendWidth),
+            ),
+            Expanded(child: ColoredBox(color: color)),
+          ],
         ),
         child,
       ],
