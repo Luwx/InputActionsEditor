@@ -22,9 +22,11 @@ class PathPreview extends HookWidget {
     this.paddingFactor,
     this.dottedBackground = false,
     this.lineWidth = 2,
+    this.lineBorderWidth = 0,
     this.startPointRadius = 3,
     this.endPointRadius = 3.5,
     this.samplePointRadius = 1.5,
+    this.hollowSamplePoints = false,
     this.arrowSize = 8.0,
     this.animatePath = false,
     this.animationDuration = const Duration(seconds: 1),
@@ -48,9 +50,11 @@ class PathPreview extends HookWidget {
   final double? paddingFactor;
   final bool dottedBackground;
   final double lineWidth;
+  final double lineBorderWidth;
   final double startPointRadius;
   final double endPointRadius;
   final double samplePointRadius;
+  final bool hollowSamplePoints;
   final double arrowSize;
   final bool animatePath;
   final Duration animationDuration;
@@ -138,9 +142,11 @@ class PathPreview extends HookWidget {
         paddingFactor: paddingFactor,
         dottedBackground: dottedBackground,
         lineWidth: lineWidth,
+        lineBorderWidth: lineBorderWidth,
         startPointRadius: startPointRadius,
         endPointRadius: endPointRadius,
         samplePointRadius: samplePointRadius,
+        hollowSamplePoints: hollowSamplePoints,
         arrowSize: arrowSize,
         progress: prog,
         morphFrom: morphing ? morphSource : null,
@@ -189,9 +195,11 @@ class PathPreviewPainter extends CustomPainter {
     this.paddingFactor,
     this.dottedBackground = false,
     this.lineWidth = 2,
+    this.lineBorderWidth = 0,
     this.startPointRadius = 3,
     this.endPointRadius = 3.5,
     this.samplePointRadius = 1.5,
+    this.hollowSamplePoints = false,
     this.arrowSize = 16.0,
     this.progress = 1,
     this.morphFrom,
@@ -209,9 +217,11 @@ class PathPreviewPainter extends CustomPainter {
   final double? paddingFactor;
   final bool dottedBackground;
   final double lineWidth;
+  final double lineBorderWidth;
   final double startPointRadius;
   final double endPointRadius;
   final double samplePointRadius;
+  final bool hollowSamplePoints;
   final double arrowSize;
   final double progress;
 
@@ -345,6 +355,17 @@ class PathPreviewPainter extends CustomPainter {
       final endT = (index + 1) / segmentCount;
       final from = toCanvas(visiblePoints[index]);
       final to = toCanvas(visiblePoints[index + 1]);
+      if (lineBorderWidth > 0) {
+        canvas.drawLine(
+          from,
+          to,
+          Paint()
+            ..color = surface
+            ..strokeWidth = lineWidth + lineBorderWidth * 2
+            ..strokeCap = StrokeCap.butt
+            ..style = PaintingStyle.stroke,
+        );
+      }
       canvas.drawLine(
         from,
         to,
@@ -359,22 +380,61 @@ class PathPreviewPainter extends CustomPainter {
       );
     }
 
-    if (showSamplePoints) {
+    void drawSample(Offset center, double t, double alpha, double radius) {
+      if (alpha <= 0 || radius <= 0) return;
+      final color = Color.lerp(
+        startColor,
+        endColor,
+        t,
+      )!.withValues(alpha: alpha);
+      if (hollowSamplePoints) {
+        canvas
+          ..drawCircle(center, radius, Paint()..color = surface)
+          ..drawCircle(
+            center,
+            radius,
+            Paint()
+              ..color = color
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1,
+          );
+      } else {
+        canvas.drawCircle(center, radius, Paint()..color = color);
+      }
+    }
+
+    if (showSamplePoints && morph != null) {
       for (var index = 1; index < count - 1; index++) {
         final t = visiblePoints.length <= 1
             ? 1.0
             : index / (visiblePoints.length - 1);
-        final alpha = 0.7 * (sampleAlphas?[index] ?? 1);
-        if (alpha <= 0) continue;
-        canvas.drawCircle(
+        drawSample(
           toCanvas(visiblePoints[index]),
+          t,
+          0.7 * (sampleAlphas?[index] ?? 1),
           samplePointRadius,
-          Paint()
-            ..color = Color.lerp(
-              startColor,
-              endColor,
-              t,
-            )!.withValues(alpha: alpha),
+        );
+      }
+    } else if (showSamplePoints && points.length > 2) {
+      const popIn = 0.18;
+      final revealed = progress.clamp(0.0, 1.0);
+      var totalLength = 0.0;
+      for (var index = 0; index < points.length - 1; index++) {
+        totalLength += (points[index + 1] - points[index]).distance;
+      }
+
+      var traversed = 0.0;
+      for (var index = 1; index < points.length - 1; index++) {
+        traversed += (points[index] - points[index - 1]).distance;
+        final reached = totalLength == 0 ? 0.0 : traversed / totalLength;
+        final entered = Curves.easeOut.transform(
+          ((revealed - reached) / popIn).clamp(0.0, 1.0),
+        );
+        drawSample(
+          toCanvas(points[index]),
+          index / (points.length - 1),
+          0.7 * entered,
+          samplePointRadius * (0.4 + 0.6 * entered),
         );
       }
     }
@@ -422,9 +482,11 @@ class PathPreviewPainter extends CustomPainter {
       old.paddingFactor != paddingFactor ||
       old.dottedBackground != dottedBackground ||
       old.lineWidth != lineWidth ||
+      old.lineBorderWidth != lineBorderWidth ||
       old.startPointRadius != startPointRadius ||
       old.endPointRadius != endPointRadius ||
       old.samplePointRadius != samplePointRadius ||
+      old.hollowSamplePoints != hollowSamplePoints ||
       old.arrowSize != arrowSize ||
       old.progress != progress ||
       !listEquals(old.morphFrom, morphFrom) ||
@@ -478,26 +540,36 @@ List<Offset> densifyPathPoints(List<Offset> points, int minPointCount) {
     return points;
   }
 
-  final targetCount = math.max(points.length, minPointCount);
-  final result = <Offset>[points.first];
-  var segmentIndex = 0;
-  var traversed = 0.0;
-
-  for (var sampleIndex = 1; sampleIndex < targetCount - 1; sampleIndex++) {
-    final targetDistance = totalLength * (sampleIndex / (targetCount - 1));
-    while (segmentIndex < segmentLengths.length - 1 &&
-        traversed + segmentLengths[segmentIndex] < targetDistance) {
-      traversed += segmentLengths[segmentIndex];
-      segmentIndex++;
-    }
-
-    final segmentLength = segmentLengths[segmentIndex];
-    final localDistance = targetDistance - traversed;
-    final t = segmentLength == 0 ? 0.0 : localDistance / segmentLength;
-    result.add(Offset.lerp(points[segmentIndex], points[segmentIndex + 1], t)!);
+  final budget = minPointCount - points.length;
+  final inserted = List<int>.filled(segmentLengths.length, 0);
+  final remainders = <double>[];
+  var assigned = 0;
+  for (var index = 0; index < segmentLengths.length; index++) {
+    final share = budget * segmentLengths[index] / totalLength;
+    inserted[index] = share.floor();
+    remainders.add(share - inserted[index]);
+    assigned += inserted[index];
   }
 
+  final order = [for (var index = 0; index < inserted.length; index++) index]
+    ..sort((a, b) => remainders[b].compareTo(remainders[a]));
+  for (var index = 0; assigned < budget; index++) {
+    inserted[order[index % order.length]]++;
+    assigned++;
+  }
+
+  final result = <Offset>[];
+  for (var index = 0; index < points.length - 1; index++) {
+    result.add(points[index]);
+    final count = inserted[index];
+    for (var step = 1; step <= count; step++) {
+      result.add(
+        Offset.lerp(points[index], points[index + 1], step / (count + 1))!,
+      );
+    }
+  }
   result.add(points.last);
+
   return result;
 }
 

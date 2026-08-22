@@ -4150,12 +4150,6 @@ abstract class AppLocalizations {
   /// **'Invalid stroke data'**
   String get strokeRowInvalidData;
 
-  /// No description provided for @strokePreviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stroke preview'**
-  String get strokePreviewTitle;
-
   /// No description provided for @inputDevicesLabel.
   ///
   /// In en, this message translates to:

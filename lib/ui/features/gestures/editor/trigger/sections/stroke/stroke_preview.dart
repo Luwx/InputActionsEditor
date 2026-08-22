@@ -11,6 +11,12 @@ class StrokePreview extends StatelessWidget {
     required this.border,
     this.size = 60,
     this.strokeWidth = 2,
+    this.strokeBorderWidth = 0,
+    this.startPointRadius = 3,
+    this.samplePointRadius = 1.5,
+    this.hollowSamplePoints = false,
+    this.arrowSize = 8,
+    this.borderRadius,
     this.showSamplePoints = false,
     this.pathPadding,
     this.dottedBackground = false,
@@ -27,6 +33,12 @@ class StrokePreview extends StatelessWidget {
   final Color border;
   final double size;
   final double strokeWidth;
+  final double strokeBorderWidth;
+  final double startPointRadius;
+  final double samplePointRadius;
+  final bool hollowSamplePoints;
+  final double arrowSize;
+  final BorderRadius? borderRadius;
   final bool showSamplePoints;
   final double? pathPadding;
   final bool dottedBackground;
@@ -47,12 +59,17 @@ class StrokePreview extends StatelessWidget {
       border: border,
       size: size,
       lineWidth: strokeWidth,
+      lineBorderWidth: strokeBorderWidth,
+      startPointRadius: startPointRadius,
+      samplePointRadius: samplePointRadius,
+      hollowSamplePoints: hollowSamplePoints,
+      arrowSize: arrowSize,
       showSamplePoints: showSamplePoints,
       pathPadding: pathPadding,
       dottedBackground: dottedBackground,
       animatePath: animatePath,
       animationDuration: animationDuration,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: borderRadius ?? BorderRadius.circular(6),
       empty: Center(
         child: Text(
           '?',

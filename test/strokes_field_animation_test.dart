@@ -26,6 +26,24 @@ void main() {
     expect(densePoints.last, realPoints.last);
   });
 
+  test('densifyPathPoints keeps every corner of the original path', () {
+    final realPoints = [
+      Offset.zero,
+      const Offset(20, 10),
+      const Offset(40, 0),
+    ];
+
+    final densePoints = densifyPathPoints(realPoints, 12);
+
+    for (final point in realPoints) {
+      expect(
+        densePoints,
+        contains(point),
+        reason: 'the densified path cuts the corner at $point',
+      );
+    }
+  });
+
   test('a morph samples both paths on every corner of either', () {
     final short = [Offset.zero, const Offset(20, 10), const Offset(40, 0)];
     final long = [

@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
-import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_codec.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_meta_chip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_preview.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -126,55 +126,86 @@ class StrokeRow extends StatelessWidget {
   Future<void> _showDetail(BuildContext context) async {
     final l10n = context.l10n;
     final colors = context.theme.colors;
+    final typography = context.theme.typography;
+    final radius = context.theme.style.borderRadius.md;
     final data = decodeStrokeDetailed(stroke);
     await showFDialog<void>(
       context: context,
       useRootNavigator: true,
-      builder: (context, style, animation) => AppDialog(
+      builder: (context, style, animation) => FDialog(
         animation: animation,
-        onDefaultAction: () => Navigator.of(context).pop(),
-        title: Text(l10n.strokePreviewTitle),
-        body: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final size = constraints.maxWidth.isFinite
-                    ? constraints.maxWidth
-                    : 320.0;
-                return StrokePreview(
-                  strokeBase64: stroke,
-                  size: size,
-                  startColor: colors.mutedForeground,
-                  endColor: colors.primary,
-                  surface: colors.secondary,
-                  border: colors.border,
-                  showSamplePoints: true,
-                  strokeWidth: 3,
-                  pathPadding: 22,
-                  dottedBackground: true,
-                );
-              },
-            ),
-            if (data != null) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
+        constraints: const BoxConstraints(maxWidth: 440),
+        style: const FDialogStyleDelta.delta(
+          decoration: DecorationDelta.value(BoxDecoration()),
+        ),
+        builder: (context, style) => HookBuilder(
+          builder: (context) {
+            final samplePoints = useState(true);
+            return LayoutBuilder(
+              builder: (context, constraints) => Stack(
                 children: [
-                  StrokeMetaChip(label: l10n.strokeRowPoints(data.pointCount)),
+                  StrokePreview(
+                    strokeBase64: stroke,
+                    size: math.min(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    ),
+                    startColor: colors.mutedForeground,
+                    endColor: colors.primary,
+                    surface: colors.card,
+                    border: colors.border,
+                    showSamplePoints: samplePoints.value,
+                    strokeWidth: 4,
+                    strokeBorderWidth: 1,
+                    startPointRadius: 4.5,
+                    samplePointRadius: 3,
+                    hollowSamplePoints: true,
+                    arrowSize: 11,
+                    borderRadius: radius,
+                    pathPadding: 22,
+                    dottedBackground: true,
+                    animatePath: true,
+                  ),
+                  if (data != null)
+                    Positioned(
+                      left: 6,
+                      bottom: 6,
+                      child: FButton(
+                        variant: .ghost,
+                        size: .xs,
+                        style: const .delta(
+                          contentStyle: .delta(
+                            padding: .value(
+                              EdgeInsetsGeometry.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                        onPress: () => samplePoints.value = !samplePoints.value,
+                        child: Text(
+                          l10n.strokeRowPoints(data.pointCount),
+                          style: typography.body.xs.copyWith(
+                            color: colors.mutedForeground,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: FButton.icon(
+                      size: .xs,
+                      onPress: () => Navigator.of(context).pop(),
+                      child: const Icon(FLucideIcons.x, size: 16),
+                    ),
+                  ),
                 ],
               ),
-            ],
-          ],
+            );
+          },
         ),
-        actions: [
-          FButton(
-            onPress: () => Navigator.of(context).pop(),
-            child: Text(l10n.actionClose),
-          ),
-        ],
       ),
     );
   }

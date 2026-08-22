@@ -2332,9 +2332,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strokeRowInvalidData => 'Invalid stroke data';
 
   @override
-  String get strokePreviewTitle => 'Stroke preview';
-
-  @override
   String get inputDevicesLabel => 'Input devices';
 
   @override
