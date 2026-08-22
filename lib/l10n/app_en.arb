@@ -267,6 +267,7 @@
   "dialogClipboardLoadActionNew": "New config",
   "dialogClipboardLoadActionMerge": "Merge",
   "gestureCopyYamlSuccess": "Gesture YAML copied.",
+  "gestureDisabledLabel": "DISABLED",
   "gestureMenuEnable": "Enable",
   "gestureMenuDisable": "Disable",
   "gestureMenuResetToDefaults": "Reset To Defaults",

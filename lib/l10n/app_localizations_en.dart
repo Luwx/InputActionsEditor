@@ -559,6 +559,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gestureCopyYamlSuccess => 'Gesture YAML copied.';
 
   @override
+  String get gestureDisabledLabel => 'DISABLED';
+
+  @override
   String get gestureMenuEnable => 'Enable';
 
   @override

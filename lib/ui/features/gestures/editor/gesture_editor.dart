@@ -199,10 +199,14 @@ class _GestureEditorView extends HookConsumerWidget {
         if (gesture == null) return null;
         final common = gesture.common;
         final typeLabel = gestureTypeLabel(gesture, l10n);
+        final isEnabled = common.effectiveEnabled;
+        final deviceLabel = gestureDeviceLabel(location.device, l10n);
         return (
           name: (common.name?.isNotEmpty ?? false) ? common.name! : typeLabel,
-          subtitle: '$typeLabel · ${gestureDeviceLabel(location.device, l10n)}',
-          isEnabled: common.effectiveEnabled,
+          subtitle: isEnabled
+              ? '$typeLabel · $deviceLabel'
+              : '$typeLabel · $deviceLabel · ${l10n.gestureDisabledLabel}',
+          isEnabled: isEnabled,
         );
       }),
     );

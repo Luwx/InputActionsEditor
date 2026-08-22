@@ -1120,6 +1120,12 @@ abstract class AppLocalizations {
   /// **'Gesture YAML copied.'**
   String get gestureCopyYamlSuccess;
 
+  /// No description provided for @gestureDisabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DISABLED'**
+  String get gestureDisabledLabel;
+
   /// No description provided for @gestureMenuEnable.
   ///
   /// In en, this message translates to:
