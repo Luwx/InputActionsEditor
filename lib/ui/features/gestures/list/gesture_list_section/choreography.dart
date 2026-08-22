@@ -175,7 +175,7 @@ _GestureListChoreography _useGestureListChoreography(
           });
           return;
         }
-        final to = (position.pixels + delta).clamp(
+        final to = (position.pixels + delta + 1).clamp(
           position.minScrollExtent,
           position.maxScrollExtent,
         );
