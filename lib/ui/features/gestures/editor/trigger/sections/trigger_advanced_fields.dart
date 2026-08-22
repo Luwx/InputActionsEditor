@@ -14,6 +14,7 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inherited_field_note.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
@@ -242,6 +243,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                         ),
                       ),
                     ),
+                    inputFormatters: thresholdInputFormatters,
                     control: FTextFieldControl.managed(
                       controller: thresholdController,
                     ),

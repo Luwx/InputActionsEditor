@@ -13,6 +13,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/a
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
@@ -172,6 +173,7 @@ class ActionTriggerFields extends HookConsumerWidget {
                           tooltipContent: const ActionIntervalTooltip(),
                         ),
                       ),
+                      inputFormatters: intervalInputFormatters,
                       keyboardType: TextInputType.number,
                       control: FTextFieldControl.managed(
                         controller: intervalController,
@@ -195,6 +197,7 @@ class ActionTriggerFields extends HookConsumerWidget {
                           tooltipContent: const ActionThresholdTooltip(),
                         ),
                       ),
+                      inputFormatters: thresholdInputFormatters,
                       control: FTextFieldControl.managed(
                         controller: thresholdController,
                       ),
