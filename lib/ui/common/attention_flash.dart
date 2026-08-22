@@ -148,6 +148,7 @@ class _AttentionFlashState extends State<AttentionFlash>
     final expand = widget.expand;
     // if (_controller.value == 0) return widget.child;
     return Stack(
+      fit: StackFit.passthrough,
       clipBehavior: Clip.none,
       children: [
         widget.child,
