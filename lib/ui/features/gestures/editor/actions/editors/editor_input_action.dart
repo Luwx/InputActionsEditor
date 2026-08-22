@@ -556,9 +556,9 @@ class _InputEntryEditor extends HookWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 12,
               children: [
-                Expanded(child: deviceField),
-                Expanded(flex: 2, child: actionTypeField),
-                Expanded(flex: 3, child: inlineEditor),
+                Expanded(flex: 4, child: deviceField),
+                Expanded(flex: 5, child: actionTypeField),
+                Expanded(flex: 10, child: inlineEditor),
                 Padding(
                   padding: const EdgeInsets.only(top: 22),
                   child: FButton(

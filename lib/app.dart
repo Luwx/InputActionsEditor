@@ -120,11 +120,6 @@ FThemeData _withAppChromeStyle(
   required bool transparentSidebar,
 }) {
   final colors = baseTheme.colors;
-  final hoverColor = colors.primary.withValues(alpha: 0.14);
-  final pressedColor = colors.primary.withValues(alpha: 0.30);
-  final selectedColor = colors.primary.withValues(alpha: 0.18);
-  final selectedHoverColor = colors.primary.withValues(alpha: 0.38);
-  final selectedPressedColor = colors.primary.withValues(alpha: 0.34);
 
   return withGlassPopups(baseTheme).copyWith(
     switchStyle: switchContrastDelta(baseTheme),
@@ -145,11 +140,7 @@ FThemeData _withAppChromeStyle(
                 backgroundColor: FVariants(
                   Colors.transparent,
                   variants: {
-                    [.hovered]: hoverColor,
-                    [.pressed]: pressedColor,
-                    [.selected]: selectedColor,
-                    [.selected.and(.hovered)]: selectedHoverColor,
-                    [.selected.and(.pressed)]: selectedPressedColor,
+                    [.selected, .hovered, .pressed]: colors.secondary,
                     [.disabled]: Colors.transparent,
                   },
                 ),
