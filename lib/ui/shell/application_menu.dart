@@ -2,20 +2,19 @@ import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/about_input_actions_dialog.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
+import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
@@ -107,7 +106,7 @@ class ApplicationMenu extends ConsumerWidget {
                     LogicalKeyboardKey.keyS,
                     control: true,
                   ),
-                  onSelected: () => unawaited(configController.save()),
+                  onSelected: () => unawaited(saveConfigDocument(context, ref)),
                 ),
                 LinuxMenuItem(
                   label: l10n.actionSaveAs,
@@ -186,18 +185,25 @@ class ApplicationMenu extends ConsumerWidget {
               iconName: 'input-mouse',
             ),
             LinuxMenuItem(
+              label: l10n.actionRename,
+              iconName: 'edit-rename',
+              enabled: gesture != null,
+              shortcut: renameShortcut,
+              onSelected: location == null
+                  ? null
+                  : () => unawaited(
+                      showGestureRenameDialog(context, ref, location),
+                    ),
+            ),
+            LinuxMenuItem(
               label: l10n.gestureMenuCopyYaml,
               iconName: 'edit-copy',
               enabled: gesture != null,
-              shortcut: const SingleActivator(
-                LogicalKeyboardKey.keyC,
-                control: true,
-                shift: true,
-              ),
+              shortcut: copyYamlShortcut,
               onSelected: gesture == null || location == null
                   ? null
                   : () => unawaited(
-                      _copyGestureYaml(context, location, gesture),
+                      copyGestureYaml(context, location, gesture),
                     ),
             ),
             LinuxCheckMenuItem(
@@ -215,34 +221,15 @@ class ApplicationMenu extends ConsumerWidget {
               label: l10n.actionDuplicate,
               iconName: 'edit-copy',
               enabled: gesture != null,
-              shortcut: const SingleActivator(
-                LogicalKeyboardKey.keyD,
-                control: true,
-              ),
+              shortcut: duplicateShortcut,
               onSelected: gesture == null || location == null
                   ? null
-                  : () {
-                      gestureEditor?.duplicate();
-                      final draft = ref
-                          .read(configControllerProvider)
-                          .value
-                          ?.draft;
-                      final index = gestureIndexOf(draft, location);
-                      final copy = index == null
-                          ? null
-                          : gestureLocationAt(
-                              draft,
-                              location.device,
-                              index + 1,
-                            );
-                      if (copy != null) context.selectGesture(copy);
-                    },
+                  : () => duplicateGestureAndSelect(context, ref, location),
             ),
             LinuxMenuItem(
               label: l10n.actionDelete,
               iconName: 'edit-delete',
               enabled: gesture != null,
-              shortcut: const SingleActivator(LogicalKeyboardKey.delete),
               onSelected: gesture == null
                   ? null
                   : () {
@@ -359,29 +346,4 @@ List<PlatformMenuItem> _colorThemeItems(
         onSelected: () => onSelected(entry.key),
       ),
   ];
-}
-
-Future<void> _copyGestureYaml(
-  BuildContext context,
-  GestureLocation location,
-  Object gesture,
-) async {
-  await Clipboard.setData(
-    ClipboardData(
-      text: gestureYamlSnippet(
-        device: location.device,
-        gesture: gesture,
-      ),
-    ),
-  );
-  if (!context.mounted) return;
-  showFToast(
-    context: context,
-    title: Text(context.l10n.gestureCopyYamlSuccess),
-    suffixBuilder: (context, entry) => FButton.icon(
-      onPress: entry.dismiss,
-      child: const Icon(FLucideIcons.x),
-    ),
-    duration: const Duration(seconds: 3),
-  );
 }

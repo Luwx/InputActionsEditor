@@ -21,6 +21,7 @@ const SingleActivator duplicateShortcut = SingleActivator(
 const SingleActivator deleteShortcut = SingleActivator(
   LogicalKeyboardKey.delete,
 );
+const SingleActivator renameShortcut = SingleActivator(LogicalKeyboardKey.f2);
 const SingleActivator copyYamlShortcut = SingleActivator(
   LogicalKeyboardKey.keyC,
   control: true,

@@ -78,6 +78,7 @@ class GestureContextMenuTile extends HookConsumerWidget {
     final controller = useFPopoverController();
     useListenable(controller);
     useMenuShortcuts(controller, {
+      if (targetCount == 1) renameShortcut: onRename,
       copyShortcut: onCopy,
       pasteShortcut: onPaste,
       duplicateShortcut: onDuplicate,
@@ -155,6 +156,7 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           FItem(
             prefix: const Icon(FLucideIcons.pencil),
             title: Text(l10n.groupMenuRename),
+            details: const MenuShortcutHint(renameShortcut),
             onPress: dismissThen(controller, onRename),
           ),
         FItem(
