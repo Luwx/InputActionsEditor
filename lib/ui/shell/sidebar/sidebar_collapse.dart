@@ -32,7 +32,7 @@ const kSidebarCollapseMotion = Motion.snappySpring(
   snapToEnd: true,
 );
 const kSidebarHoverMotion = Motion.curved(
-  Duration(milliseconds: 100),
+  Duration(milliseconds: 150),
   Curves.easeOutCubic,
 );
 const kSidebarDividerMotion = CupertinoMotion.snappy(
