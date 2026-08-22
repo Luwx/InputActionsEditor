@@ -31,6 +31,7 @@ import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
@@ -602,7 +603,6 @@ class GestureListSection extends HookConsumerWidget {
 
     final row = item!;
     final location = itemEntry.id;
-    final commands = ref.read(gestureCommandsProvider);
     final multiSelect = ref.read(multiSelectControllerProvider.notifier);
     List<GestureLocation> targets() => rowCommands.targetsFor(location);
 
@@ -638,24 +638,8 @@ class GestureListSection extends HookConsumerWidget {
             multiSelect.enter(location);
           }
         },
-        onRename: () {
-          final gesture = gestureAt(
-            ref.read(draftConfigProvider),
-            location,
-          );
-          if (gesture == null) return;
-          unawaited(
-            showRenameDialog(
-              context,
-              title: context.l10n.renameDialogTitle,
-              initial: gesture.common.name ?? '',
-              confirmLabel: context.l10n.actionRename,
-              allowEmpty: true,
-              onConfirm: (name) =>
-                  commands.renameGesture(location, name.trim()),
-            ),
-          );
-        },
+        onRename: () =>
+            unawaited(showGestureRenameDialog(context, ref, location)),
         onCopy: () => unawaited(rowCommands.copy(targets())),
         onPaste: () => unawaited(rowCommands.paste(targets().last)),
         onDuplicate: () => rowCommands.duplicate(targets()),

@@ -2,7 +2,6 @@ import 'dart:async' show unawaited;
 
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:forui_hooks/forui_hooks.dart';
@@ -30,10 +29,10 @@ import 'package:input_actions_editor/ui/features/gestures/editor/devices/mouse_g
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/pointer_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchpad_gesture_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/touchscreen_gesture_editor.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/group/group_settings_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/multi_select_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
@@ -262,48 +261,14 @@ class _GestureEditorView extends HookConsumerWidget {
                         gestureEditor.resetDefaults(gesture);
                       }
                     },
-                    onDuplicate: () {
-                      gestureEditor.duplicate();
-                      // The copy sits right after the original and only gets
-                      // its editId once the edit lands, so its identity
-                      // location is resolved from the updated draft.
-                      final draft = ref
-                          .read(configControllerProvider)
-                          .value
-                          ?.draft;
-                      final index = gestureIndexOf(draft, location);
-                      final copy = index == null
-                          ? null
-                          : gestureLocationAt(
-                              draft,
-                              location.device,
-                              index + 1,
-                            );
-                      if (copy != null) context.selectGesture(copy);
-                    },
+                    onDuplicate: () =>
+                        duplicateGestureAndSelect(context, ref, location),
                     onCopyYaml: () async {
                       final gesture = ref
                           .read(gestureEditorProvider(location))
                           .gesture;
                       if (gesture == null) return;
-                      await Clipboard.setData(
-                        ClipboardData(
-                          text: gestureYamlSnippet(
-                            device: location.device,
-                            gesture: gesture,
-                          ),
-                        ),
-                      );
-                      if (!context.mounted) return;
-                      showFToast(
-                        context: context,
-                        title: Text(context.l10n.gestureCopyYamlSuccess),
-                        suffixBuilder: (context, entry) => FButton.icon(
-                          onPress: entry.dismiss,
-                          child: const Icon(FLucideIcons.x),
-                        ),
-                        duration: const Duration(seconds: 3),
-                      );
+                      await copyGestureYaml(context, location, gesture);
                     },
                     onDelete: () {
                       context.clearGestureSelection();
