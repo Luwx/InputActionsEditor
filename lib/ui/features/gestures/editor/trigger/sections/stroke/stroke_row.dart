@@ -132,6 +132,7 @@ class StrokeRow extends StatelessWidget {
       useRootNavigator: true,
       builder: (context, style, animation) => AppDialog(
         animation: animation,
+        onDefaultAction: () => Navigator.of(context).pop(),
         title: Text(l10n.strokePreviewTitle),
         body: Column(
           mainAxisSize: MainAxisSize.min,

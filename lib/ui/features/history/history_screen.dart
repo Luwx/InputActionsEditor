@@ -262,6 +262,7 @@ class _EventTile extends StatelessWidget {
       useRootNavigator: true,
       builder: (context, style, animation) => AppDialog(
         animation: animation,
+        onDefaultAction: () => Navigator.of(context).pop(),
         title: Text(event.triggerType ?? context.l10n.historyPathPreview),
         body: Column(
           mainAxisSize: MainAxisSize.min,

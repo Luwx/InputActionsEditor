@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 
@@ -10,6 +11,7 @@ class AppDialog extends StatelessWidget {
     this.constraints = const BoxConstraints(minWidth: 280, maxWidth: 560),
     this.title,
     this.body,
+    this.onDefaultAction,
     super.key,
   });
 
@@ -19,6 +21,10 @@ class AppDialog extends StatelessWidget {
   final BoxConstraints constraints;
   final Widget? title;
   final Widget? body;
+
+  /// What Enter runs, normally the primary action's press. Leave null in a
+  /// dialog whose body already answers Enter, such as a text field.
+  final VoidCallback? onDefaultAction;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class AppDialog extends StatelessWidget {
             ? const EdgeInsets.symmetric(horizontal: 8)
             : EdgeInsets.zero;
 
-        return Padding(
+        final content = Padding(
           padding: touch
               ? const EdgeInsets.symmetric(horizontal: 16, vertical: 18)
               : const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -72,6 +78,19 @@ class AppDialog extends StatelessWidget {
             ],
           ),
         );
+
+        if (onDefaultAction case final run?) {
+          return CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter): run,
+              const SingleActivator(LogicalKeyboardKey.numpadEnter): run,
+            },
+            // The route's own scope sits above these bindings, so without a
+            // scope of its own the dialog never routes the key down to them.
+            child: FocusScope(autofocus: true, child: content),
+          );
+        }
+        return content;
       },
     );
   }

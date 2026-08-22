@@ -18,6 +18,7 @@ Future<void> showConfigIssuesDialog(
       style: style,
       animation: animation,
       constraints: const BoxConstraints(minWidth: 360, maxWidth: 560),
+      onDefaultAction: () => Navigator.of(ctx).pop(),
       title: Text(l10n.configIssuesTitle(issues.length)),
       body: Padding(
         padding: const EdgeInsets.only(top: 8),

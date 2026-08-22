@@ -30,6 +30,8 @@ class _ClipboardLoadDialog extends StatelessWidget {
       style: style ?? const FDialogStyleDelta.context(),
       animation: animation,
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
+      onDefaultAction: () =>
+          Navigator.of(context).pop(ClipboardLoadAction.newConfig),
       title: Text(l10n.dialogClipboardLoadTitle),
       body: Padding(
         padding: const EdgeInsets.only(top: 8),

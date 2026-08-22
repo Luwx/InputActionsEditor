@@ -104,6 +104,7 @@ Future<void> loadConfigFromClipboard(
                   minWidth: 280,
                   maxWidth: 480,
                 ),
+                onDefaultAction: () => Navigator.of(ctx).pop(),
                 title: Text(l10n.configLoadClipboardError),
                 body: Padding(
                   padding: const EdgeInsets.only(top: 8),

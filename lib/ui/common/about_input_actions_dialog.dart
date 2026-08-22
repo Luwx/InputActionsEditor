@@ -40,6 +40,7 @@ Future<void> showAboutInputActionsDialog(BuildContext context) async {
       style: style,
       animation: animation,
       constraints: const BoxConstraints(minWidth: 380, maxWidth: 500),
+      onDefaultAction: () => Navigator.of(dialogContext).pop(),
       body: _AboutBody(version: packageInfo.version),
       actions: [
         FButton(

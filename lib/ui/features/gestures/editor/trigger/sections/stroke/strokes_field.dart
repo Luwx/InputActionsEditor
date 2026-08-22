@@ -70,6 +70,7 @@ class StrokesField extends HookConsumerWidget {
           useRootNavigator: true,
           builder: (context, style, animation) => AppDialog(
             animation: animation,
+            onDefaultAction: () => Navigator.of(context).pop(),
             title: Text(context.l10n.strokesRecordingFailedTitle),
             body: Text(details),
             actions: [

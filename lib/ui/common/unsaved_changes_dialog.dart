@@ -52,6 +52,8 @@ class _UnsavedChangesDialog extends StatelessWidget {
       style: style ?? const FDialogStyleDelta.context(),
       animation: animation,
       constraints: const BoxConstraints(minWidth: 280, maxWidth: 400),
+      onDefaultAction: () =>
+          Navigator.of(context).pop(UnsavedChangesAction.apply),
       title: Text(context.l10n.dialogUnsavedChangesTitle),
       body: Padding(
         padding: const EdgeInsets.only(top: 8),
