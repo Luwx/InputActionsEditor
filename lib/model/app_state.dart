@@ -17,6 +17,7 @@ abstract class AppState with _$AppState {
     DeviceType? gestureFilter,
     StoredGestureSelection? selectedGesture,
     @Default(kDefaultGestureListWidth) double gestureListWidth,
+    @Default(false) bool sidebarCollapsed,
   }) = _AppState;
 
   const AppState._();
@@ -42,6 +43,7 @@ abstract class AppState with _$AppState {
       gestureListWidth:
           (json['gesture_list_width_px'] as num?)?.toDouble() ??
           kDefaultGestureListWidth,
+      sidebarCollapsed: json['sidebar_collapsed'] as bool? ?? false,
     );
   }
 
@@ -52,5 +54,6 @@ abstract class AppState with _$AppState {
       'gesture_index': selectedGesture!.index,
     },
     'gesture_list_width_px': gestureListWidth,
+    'sidebar_collapsed': sidebarCollapsed,
   };
 }

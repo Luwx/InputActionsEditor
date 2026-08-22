@@ -21,12 +21,12 @@ import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // cached once, kdeglobals either exists or it doesn't
 final bool _kdeAvailable = KdeglobalsParser.isAvailable();
 
-const _appSidebarWidth = 180.0;
 const _appSidebarBlendWidth = 20.0;
 
 class App extends ConsumerWidget {
@@ -219,7 +219,7 @@ class _ThemedShell extends ConsumerWidget {
   }
 }
 
-class _AppChromeBackground extends StatelessWidget {
+class _AppChromeBackground extends ConsumerWidget {
   const _AppChromeBackground({
     required this.color,
     required this.transparentSidebar,
@@ -231,36 +231,43 @@ class _AppChromeBackground extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     printBuild(3, 'appChromeBackground build');
     if (!transparentSidebar) {
       return ColoredBox(color: color, child: child);
     }
 
     final sidebarColor = color.withValues(alpha: 0.80);
+    // Only the gestures sidebar collapses; settings keeps the full width.
+    final collapsible = ref.watch(currentViewProvider) != AppView.settings;
     return Stack(
       fit: StackFit.expand,
       children: [
-        Row(
-          textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ColoredBox(
-              color: sidebarColor,
-              child: const SizedBox(width: _appSidebarWidth),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: AlignmentDirectional.centerStart,
-                  end: AlignmentDirectional.centerEnd,
-                  colors: [sidebarColor, color],
+        ValueListenableBuilder<double>(
+          valueListenable: ref.watch(sidebarWidthProvider),
+          builder: (context, width, _) => Row(
+            textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ColoredBox(
+                color: sidebarColor,
+                child: SizedBox(
+                  width: collapsible ? width : kSidebarExpandedWidth,
                 ),
               ),
-              child: const SizedBox(width: _appSidebarBlendWidth),
-            ),
-            Expanded(child: ColoredBox(color: color)),
-          ],
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: AlignmentDirectional.centerStart,
+                    end: AlignmentDirectional.centerEnd,
+                    colors: [sidebarColor, color],
+                  ),
+                ),
+                child: const SizedBox(width: _appSidebarBlendWidth),
+              ),
+              Expanded(child: ColoredBox(color: color)),
+            ],
+          ),
         ),
         child,
       ],

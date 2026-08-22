@@ -21,6 +21,8 @@ import 'package:input_actions_editor/ui/shell/application_menu.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
 import 'package:input_actions_editor/ui/shell/config_issues_dialog.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/collapsible_sidebar.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
 
 void _showConfigIssues(BuildContext context, WidgetRef ref) {
   final issues = ref.read(configIssuesProvider);
@@ -135,19 +137,27 @@ class MainShell extends HookConsumerWidget {
     );
     final gatedContent = ConfigGate(child: child);
     return ApplicationMenu(
-      child: FScaffold(
-        sidebar: Blurred(
-          disabled: !transparent,
-          expand: const EdgeInsets.only(right: 30),
-          child: const DeviceSidebar(),
+      child: CollapsibleSidebar(
+        child: FScaffold(
+          // The blur region only follows the sidebar's rect when Blurred itself
+          // rebuilds, so it is rebuilt as the sidebar collapses.
+          sidebar: ValueListenableBuilder<double>(
+            valueListenable: ref.watch(sidebarWidthProvider),
+            child: const DeviceSidebar(),
+            builder: (context, _, child) => Blurred(
+              disabled: !transparent,
+              expand: const EdgeInsets.only(right: 30),
+              child: child!,
+            ),
+          ),
+          childPad: false,
+          child: transparent
+              ? ColoredBox(
+                  color: context.theme.colors.background,
+                  child: gatedContent,
+                )
+              : gatedContent,
         ),
-        childPad: false,
-        child: transparent
-            ? ColoredBox(
-                color: context.theme.colors.background,
-                child: gatedContent,
-              )
-            : gatedContent,
       ),
     );
   }

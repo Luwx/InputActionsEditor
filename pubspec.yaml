@@ -68,6 +68,7 @@ dependencies:
   forui_hooks: ^0.25.0
   fast_immutable_collections: ^11.2.0
   iconoir_flutter: ^7.12.1
+  motor: ^1.1.0
 # Local checkout while the tree-collections generator work lands; remove once
 # the dart_generators changes are pushed.
 # dependency_overrides:

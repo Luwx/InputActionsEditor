@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,11 @@ import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/app_sidebar.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/app_sidebar_group.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/app_sidebar_item.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/sidebar_collapse_fade.dart';
 
 class DeviceSidebar extends HookConsumerWidget {
   const DeviceSidebar({super.key});
@@ -73,10 +79,7 @@ class DeviceSidebar extends HookConsumerWidget {
       context.goToGestures(device: device);
     }
 
-    return FSidebar.raw(
-      style: const .delta(
-        constraints: BoxConstraints(maxWidth: 180),
-      ),
+    return AppSidebar(
       child: Column(
         children: [
           Expanded(
@@ -86,34 +89,48 @@ class DeviceSidebar extends HookConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, left: 16),
+                  SidebarCollapseBuilder(
+                    builder: (context, progress, child) => Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        top: 2,
+                        start: lerpDouble(12, 16, progress)!,
+                        end: lerpDouble(12, 4, progress)!,
+                      ),
+                      child: child,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              'Input Actions',
-                              style: context.theme.typography.body.lg.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                        Expanded(
+                          child: SidebarCollapseFade(
+                            clip: true,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Input Actions',
+                                  style: context.theme.typography.body.lg
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Editor',
+                                  style: context.theme.typography.body.xs
+                                      .copyWith(
+                                        color: context
+                                            .theme
+                                            .colors
+                                            .mutedForeground,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: 1.8,
+                                        fontFamily: 'monospace',
+                                      ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Editor',
-                              style: context.theme.typography.body.xs.copyWith(
-                                color: context.theme.colors.mutedForeground,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 1.8,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const Spacer(),
                         FPopoverMenu(
                           // The default 250 cuts the longest labels off once
                           // their shortcut hint is beside them.
@@ -137,47 +154,46 @@ class DeviceSidebar extends HookConsumerWidget {
                             child: const Icon(FLucideIcons.menu, size: 13),
                           ),
                         ),
-                        const SizedBox(width: 4),
                       ],
                     ),
                   ),
                   const SizedBox(height: 4),
                   const SizedBox(height: 8),
                   const SizedBox(height: 4),
-                  FSidebarGroup(
+                  AppSidebarGroup(
                     label: Text(l10n.sidebarDeviceGesturesGroup),
                     children: [
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.list),
                         label: Text(l10n.sidebarAllDevices),
                         selected: isGestures && deviceFilter == null,
                         onPress: () => goToDevice(null),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.mouse),
                         label: Text(l10n.deviceTypeMouse),
                         selected: isGestures && deviceFilter == .mouse,
                         onPress: () => goToDevice(DeviceType.mouse),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.mousePointer2),
                         label: Text(l10n.deviceTypePointer),
                         selected: isGestures && deviceFilter == .pointer,
                         onPress: () => goToDevice(DeviceType.pointer),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.keyboard),
                         label: Text(l10n.deviceTypeKeyboard),
                         selected: isGestures && deviceFilter == .keyboard,
                         onPress: () => goToDevice(DeviceType.keyboard),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.touchpad),
                         label: Text(l10n.deviceTypeTouchpad),
                         selected: isGestures && deviceFilter == .touchpad,
                         onPress: () => goToDevice(DeviceType.touchpad),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.monitor),
                         label: Text(l10n.deviceTypeTouchscreen),
                         selected: isGestures && deviceFilter == .touchscreen,
@@ -186,9 +202,9 @@ class DeviceSidebar extends HookConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  FSidebarGroup(
+                  AppSidebarGroup(
                     children: [
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.history),
                         label: Text(l10n.navHistory),
                         selected: currentView == AppView.history,
@@ -200,9 +216,9 @@ class DeviceSidebar extends HookConsumerWidget {
               ),
             ),
           ),
-          FSidebarGroup(
+          AppSidebarGroup(
             children: [
-              FSidebarItem(
+              AppSidebarItem(
                 icon: const Icon(FLucideIcons.cog),
                 label: Text(l10n.navSettings),
                 selected: currentView == AppView.settings,
