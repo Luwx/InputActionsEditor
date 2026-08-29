@@ -181,7 +181,7 @@ class _SwipeModeCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: colors.card.withValues(alpha: selected ? 1 : 0.65),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? colors.primary : colors.border,
             width: selected ? 1.5 : 1,
