@@ -22,9 +22,8 @@ Future<Action?> showAddActionDialog(BuildContext context) {
           childAspectRatio: 2.5,
           children: [
             for (final kind in _ActionKind.values)
-              // (!) disable these actions for now since it
-              // requires more complex ui
-              if (kind != .function && kind != .raw)
+              // (!) disabled for now since it requires more complex ui
+              if (kind != .raw)
                 _KindCard(
                   kind: kind,
                   onTap: () => Navigator.of(context).pop(kind.buildDefault()),
