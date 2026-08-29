@@ -387,14 +387,14 @@ _GestureListChoreography _useGestureListChoreography(
     }
     scrollTargetOffset.value = _contentOffset(viewModel.flatItems, flatIndex);
     scrollTargetExtent.value = _slotExtent(item);
-    // The all-devices view draws no group chrome, so nothing is pinned over a
-    // row there.
+    // The all-devices view draws no group chrome, so nothing is pinned over an
+    // item there.
+    final nested = switch (item) {
+      _GestureRowItem(:final groupKey) => groupKey != null,
+      _GroupHeaderItem(:final parentKey) => parentKey != null,
+    };
     scrollTargetInset.value =
-        viewModel.deviceFilter != null &&
-            item is _GestureRowItem &&
-            item.groupKey != null
-        ? _groupHeaderExtent
-        : 0;
+        viewModel.deviceFilter != null && nested ? _groupHeaderExtent : 0;
     if (scrollTargetQueued.value) return;
     scrollTargetQueued.value = true;
     if (scrollTargetExpanded.value) {

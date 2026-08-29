@@ -466,6 +466,45 @@ void main() {
     expect(row.bottom, lessThanOrEqualTo(listRect.bottom));
   });
 
+  testWidgets('a subgroup added under a pinned header clears it', (
+    tester,
+  ) async {
+    await _pumpList(
+      tester,
+      names: [for (var i = 0; i < 40; i++) 'G$i'],
+      groupAt: 2,
+      groupSize: 20,
+    );
+
+    final listRect = tester.getRect(find.byType(GestureListSection));
+    // Deep inside the group, so its header is pinned while the subgroup lands
+    // above the viewport and the scroll has to come back up to it.
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(1000);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Holder'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New subgroup'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Nested');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    final nested = tester.getRect(
+      find.ancestor(of: find.text('Nested'), matching: find.byType(Row)).first,
+    );
+    // Clear of the list header and of the parent group header pinned under it.
+    expect(nested.top - listRect.top, greaterThanOrEqualTo(65.0 + 38.0 - 1));
+    expect(nested.bottom, lessThanOrEqualTo(listRect.bottom));
+  });
+
   testWidgets('returning to the list scrolls to the gesture it reopens', (
     tester,
   ) async {
