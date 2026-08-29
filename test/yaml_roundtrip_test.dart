@@ -644,4 +644,82 @@ touchpad:
       );
     });
   });
+
+  group('multi-line function bodies', () {
+    const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: tick
+          function: |
+            () => {
+                const p = pointerPositionVariable.value;
+                input.virtualMouse.mouseWheel(new Point(p.x, p.y));
+            }
+''';
+
+    test('an action body stays a literal block instead of an escaped line', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+
+      expect(encoded, contains('function: |-'));
+      expect(encoded, isNot(contains(r'\n')));
+      expect(
+        decodeConfig(encoded).mouseGestures.first.common.actions.first.action,
+        const FunctionAction(
+          expression:
+              '() => {\n'
+              '    const p = pointerPositionVariable.value;\n'
+              '    input.virtualMouse.mouseWheel(new Point(p.x, p.y));\n'
+              '}',
+        ),
+      );
+    });
+
+    test('re-encoding a written body changes nothing', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
+    });
+
+    test('a condition body stays a literal block too', () {
+      const withCondition = '''
+mouse:
+  gestures:
+    - type: press
+      conditions:
+        function: |
+          () => {
+              return true;
+          }
+      actions:
+        - command: ls
+''';
+      final encoded = encodeConfig(
+        decodeConfig(withCondition),
+        withCondition,
+      );
+
+      expect(encoded, contains('function: |-'));
+      expect(
+        decodeConfig(encoded).mouseGestures.first.common.conditions,
+        const FunctionCondition(
+          expression: '() => {\n    return true;\n}',
+        ),
+      );
+    });
+
+    test('a single-line body stays on its line, unquoted', () {
+      const oneLiner = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - function: () => initialDirection = "l"
+''';
+      final encoded = encodeConfig(decodeConfig(oneLiner), oneLiner);
+
+      expect(encoded, contains('- function: () => initialDirection = "l"'));
+      expect(encoded, isNot(contains('|-')));
+    });
+  });
 }

@@ -4,6 +4,17 @@
 library;
 
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
+
+/// Multi-line text as a node the encoder writes as a `|-` literal block
+/// instead of collapsing to one double-quoted line full of `\n` escapes.
+///
+/// Literal blocks cannot carry leading or trailing whitespace, so text that
+/// has any is returned unwrapped and falls back to the quoted form.
+dynamic yamlBlockText(String text) {
+  if (!text.contains('\n') || text.trim().length != text.length) return text;
+  return wrapAsYamlNode(text, scalarStyle: ScalarStyle.LITERAL);
+}
 
 String? uncommentYamlLine(String line) {
   final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
@@ -85,6 +96,8 @@ String commentYamlLine(String line) {
 /// Whether a parsed node holds exactly [value], comparing maps in key order so
 /// a rewrite that only reorders keys still counts as a change.
 bool yamlNodeMatches(dynamic node, dynamic value) {
+  // Style-carrying scalars compare by their value; [node] is already plain.
+  if (value is YamlScalar) return yamlNodeMatches(node, value.value);
   if (node is YamlMap) {
     if (value is! Map) return false;
     if (node.length != value.length) return false;

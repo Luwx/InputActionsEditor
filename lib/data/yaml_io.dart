@@ -524,7 +524,7 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
     'replace_text': rules.map(textSubstitutionRuleToMap).toList(),
   },
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
-  FunctionAction(:final expression) => {'function': expression},
+  FunctionAction(:final expression) => {'function': yamlBlockText(expression)},
   ActionGroup(:final actions) => {
     actionGroupYamlKey: actions.map(triggerActionToMap).toList(),
   },
@@ -840,7 +840,9 @@ dynamic conditionToYaml(Condition c) => switch (c) {
       children,
     ).map(conditionToYaml).toList(),
   },
-  FunctionCondition(:final expression) => {'function': expression},
+  FunctionCondition(:final expression) => {
+    'function': yamlBlockText(expression),
+  },
   RawCondition(:final raw) => raw,
 };
 

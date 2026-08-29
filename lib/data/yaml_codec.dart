@@ -505,7 +505,9 @@ Condition _parseCondition(dynamic node) {
       }
     }
     if (node.containsKey('function')) {
-      return FunctionCondition(expression: node['function'].toString());
+      return FunctionCondition(
+        expression: _functionExpression(node['function']),
+      );
     }
   }
   return RawCondition(raw: node.toString());
@@ -702,6 +704,11 @@ String materializeDisabledYamlComments(String yamlText) {
   return out.join('\n');
 }
 
+/// A `function:` body. The trailing newline a `|` block scalar carries is not
+/// part of the source, and keeping it would force the encoder to write the
+/// body back as one escaped double-quoted line.
+String _functionExpression(dynamic node) => node.toString().trimRight();
+
 Action? _parseAction(YamlMap m) {
   if (m.containsKey('command')) {
     return CommandAction(
@@ -731,7 +738,7 @@ Action? _parseAction(YamlMap m) {
     return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
   }
   if (m.containsKey('function')) {
-    return FunctionAction(expression: m['function'].toString());
+    return FunctionAction(expression: _functionExpression(m['function']));
   }
   if (m.containsKey(actionGroupYamlKey)) {
     return ActionGroup(actions: _parseActions(m[actionGroupYamlKey]));
