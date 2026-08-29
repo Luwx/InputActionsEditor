@@ -194,9 +194,16 @@ class _InputEntryEditor extends HookWidget {
     final mode = inferInputEntryMode(entry);
 
     final syncing = useRef(false);
+    final typedTokenKey = useRef<String?>(null);
 
     void replaceTokens(List<String> tokens) {
       if (syncing.value) return;
+      onChanged(entry.copyWith(tokens: tokens));
+    }
+
+    void replaceTypedTokens(List<String> tokens) {
+      if (syncing.value) return;
+      typedTokenKey.value = tokens.join(', ');
       onChanged(entry.copyWith(tokens: tokens));
     }
 
@@ -209,6 +216,9 @@ class _InputEntryEditor extends HookWidget {
 
     final tokenKey = entry.tokens.join(', ');
     useEffect(() {
+      if (tokenKey == typedTokenKey.value) return null;
+      typedTokenKey.value = null;
+
       void resync(TextEditingController controller) {
         if (controller.text == tokenKey) return;
         final typed = KeySequenceParser.toTokens(
@@ -320,7 +330,7 @@ class _InputEntryEditor extends HookWidget {
           Expanded(
             child: KeySequenceTextField(
               controller: keySeqController,
-              onChanged: replaceTokens,
+              onChanged: replaceTypedTokens,
               labelWidget: LabelWithTooltip(
                 label: context.l10n.inputKeySequenceLabel,
                 tooltipContent: const KeySequenceTooltip(),
@@ -406,7 +416,7 @@ class _InputEntryEditor extends HookWidget {
           Expanded(
             child: KeySequenceTextField(
               controller: mouseSeqController,
-              onChanged: replaceTokens,
+              onChanged: replaceTypedTokens,
               labelWidget: LabelWithTooltip(
                 label: context.l10n.inputButtonSequenceLabel,
                 tooltipContent: const ButtonSequenceTooltip(),
