@@ -51,6 +51,7 @@ class FunctionConditionInput extends HookWidget {
         keyboardType: TextInputType.multiline,
         style: typography.body.sm.copyWith(
           fontFamily: 'monospace',
+          fontSize: typography.body.xs.fontSize,
           color: colors.foreground,
         ),
         cursorColor: colors.primary,
@@ -58,6 +59,7 @@ class FunctionConditionInput extends HookWidget {
           hintText: context.l10n.conditionFunctionHint,
           hintStyle: typography.body.sm.copyWith(
             fontFamily: 'monospace',
+            fontSize: typography.body.xs.fontSize,
             color: colors.mutedForeground,
           ),
           isDense: true,
