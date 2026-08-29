@@ -157,6 +157,7 @@ void main() {
           SetLens<String?>(gestureThresholdField.lens(_gesture), '5'),
         ),
       );
+      await _settle(tester);
 
       expect(rebuilt.countOf('ActionListEditor'), 0);
       expect(rebuilt.countOf('ActionRowCard'), 0);
@@ -169,6 +170,7 @@ void main() {
         tester,
         () => _edit(tester, _setConditions(_action(_first), 0.25)),
       );
+      await _settle(tester);
 
       expect(rebuilt.countOf('ActionListEditor'), 0);
       expect(rebuilt.countOf('ActionRowCard'), 0);
@@ -187,6 +189,7 @@ void main() {
         tester,
         () => _edit(tester, _setConditions(_action(_first), 0.25)),
       );
+      await _settle(tester);
 
       expect(rebuilt.countOf('ActionTriggerFields'), 1);
     });

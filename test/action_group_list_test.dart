@@ -233,7 +233,7 @@ void main() {
     await tester.tap(find.text('First match').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Add action to group'), findsOneWidget);
+    expect(find.text('Add action'), findsOneWidget);
   });
 
   testWidgets('a group hides and shows its nested rows', (tester) async {
@@ -514,7 +514,7 @@ void main() {
     await tester.tap(find.text('only'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add action to group'), findsNothing);
+    expect(find.text('Add action'), findsNothing);
   });
 
   group('multi-select', () {
