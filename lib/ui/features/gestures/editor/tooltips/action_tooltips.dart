@@ -433,6 +433,9 @@ class ActionTriggerOnTooltip extends StatelessWidget {
 class ActionIntervalTooltip extends StatelessWidget {
   const ActionIntervalTooltip({super.key});
 
+  // Keys here are short ("(empty)", "+", "-", "4").
+  static const double _intervalKeyWidth = 64;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -464,24 +467,28 @@ class ActionIntervalTooltip extends StatelessWidget {
                   l10n.tooltip_actionInterval_unitEmptyDesc,
                   mono,
                   muted,
+                  keyWidth: _intervalKeyWidth,
                 ),
                 _UnitRow(
                   '+',
                   l10n.tooltip_actionInterval_unitPlusDesc,
                   mono,
                   muted,
+                  keyWidth: _intervalKeyWidth,
                 ),
                 _UnitRow(
                   '-',
                   l10n.tooltip_actionInterval_unitMinusDesc,
                   mono,
                   muted,
+                  keyWidth: _intervalKeyWidth,
                 ),
                 _UnitRow(
                   '4',
                   l10n.tooltip_actionInterval_unitNDesc,
                   mono,
                   muted,
+                  keyWidth: _intervalKeyWidth,
                 ),
               ],
             ),

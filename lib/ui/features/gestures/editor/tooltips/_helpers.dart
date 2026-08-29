@@ -200,20 +200,28 @@ class _Note extends StatelessWidget {
 }
 
 class _UnitRow extends StatelessWidget {
-  const _UnitRow(this.gesture, this.unit, this.mono, this.muted);
+  const _UnitRow(
+    this.gesture,
+    this.unit,
+    this.mono,
+    this.muted, {
+    this.keyWidth = 118,
+  });
 
   final String gesture;
   final String unit;
   final TextStyle mono;
   final TextStyle muted;
 
+  final double keyWidth;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(width: 118, child: Text(gesture, style: mono)),
-        Text(unit, style: muted),
+        SizedBox(width: keyWidth, child: Text(gesture, style: mono)),
+        Flexible(child: Text(unit, style: muted)),
       ],
     );
   }
