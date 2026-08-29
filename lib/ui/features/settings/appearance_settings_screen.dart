@@ -58,18 +58,19 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                     divider: .full,
                     label: Text(l10n.settingsGeneral),
                     children: [
-                      FTile(
-                        prefix: const Icon(FLucideIcons.appWindow),
-                        title: Text(l10n.appearanceMinimizeToTrayLabel),
-                        subtitle: Text(l10n.appearanceMinimizeToTraySubtitle),
-                        onPress: () => notifier.setMinimizeToTray(
-                          !settings.minimizeToTray,
-                        ),
-                        suffix: FSwitch(
-                          value: settings.minimizeToTray,
-                          onChange: notifier.setMinimizeToTray,
-                        ),
-                      ),
+                      // FTile(
+                      //   prefix: const Icon(FLucideIcons.appWindow),
+                      //   title: Text(l10n.appearanceMinimizeToTrayLabel),
+                      //   subtitle: 
+                      // Text(l10n.appearanceMinimizeToTraySubtitle),
+                      //   onPress: () => notifier.setMinimizeToTray(
+                      //     !settings.minimizeToTray,
+                      //   ),
+                      //   suffix: FSwitch(
+                      //     value: settings.minimizeToTray,
+                      //     onChange: notifier.setMinimizeToTray,
+                      //   ),
+                      // ),
                       FTile(
                         prefix: const Icon(FLucideIcons.archive),
                         title: Text(l10n.backupsLabel),
