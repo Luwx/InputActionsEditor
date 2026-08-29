@@ -8,6 +8,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter/rendering.dart';
@@ -78,7 +79,10 @@ final class ActionListChoreography {
   });
 
   /// EditIds of currently expanded rows.
-  final Set<int> expanded;
+  ///
+  /// A listenable rather than a plain set: opening one card must not rebuild
+  /// every row, only the card that opened.
+  final ValueListenable<Set<int>> expanded;
 
   /// EditIds of groups whose children are hidden. Groups start expanded, so
   /// this is empty until one is collapsed.
@@ -169,7 +173,8 @@ ActionListChoreography useActionListChoreography(
   ref.listen(actionListEditorProvider(location), (previous, next) {
     if (previous != null) captureActionMotion(transitions, previous, next);
   });
-  final expanded = useState(<int>{});
+  // Deliberately a notifier, not useState: a toggle must not rebuild the list.
+  final expanded = useValueNotifier(<int>{});
   final collapsedGroups = useState(<int>{});
   // Groups whose children were unfolded by their card opening, so shutting the
   // card can put them back. A manual disclosure hands the fold back to the user
@@ -370,7 +375,7 @@ ActionListChoreography useActionListChoreography(
     final next = Set<int>.from(expanded.value);
     if (!next.add(editId)) {
       next.remove(editId);
-      if (anchor.activeKey == editId) anchor.clear();
+      if (anchor.activeKey.value == editId) anchor.clear();
       if (unfoldedByCard.value.remove(editId)) {
         collapsedGroups.value = {...collapsedGroups.value, editId};
       }
@@ -660,7 +665,7 @@ ActionListChoreography useActionListChoreography(
   }, [pending]);
 
   return ActionListChoreography(
-    expanded: expanded.value,
+    expanded: expanded,
     collapsedGroups: collapsedGroups.value,
     toggleGroup: toggleGroup,
     selected: selected.value,

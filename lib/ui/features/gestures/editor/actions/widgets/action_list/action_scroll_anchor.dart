@@ -2,6 +2,7 @@
 /// enclosing sliver can correct the scroll offset as the row animates open.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:input_actions_editor/ui/common/sliver_smart_anchor.dart';
@@ -29,7 +30,10 @@ final class ActionScrollAnchor {
   final GlobalKey bottomKey;
 
   /// EditId of the row currently wearing [anchorKey], or null.
-  final int? activeKey;
+  ///
+  /// A listenable rather than a plain value: moving the anchor must not rebuild
+  /// every row, only the one losing it and the one taking it.
+  final ValueListenable<int?> activeKey;
 
   /// Start anchoring a row that is expanding its trigger-options accordion.
   final void Function(int editId) begin;
@@ -57,7 +61,7 @@ final class ActionScrollAnchor {
 ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
   final anchorKey = useMemoized(GlobalKey.new);
   final bottomKey = useMemoized(GlobalKey.new);
-  final anchorTarget = useState<int?>(null);
+  final anchorTarget = useValueNotifier<int?>(null);
   final anchorRef = useRef<ScrollAnchorController?>(null)
     ..value = ScrollAnchorScope.maybeOf(context);
 
@@ -129,7 +133,7 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
   return ActionScrollAnchor(
     anchorKey: anchorKey,
     bottomKey: bottomKey,
-    activeKey: anchorTarget.value,
+    activeKey: anchorTarget,
     begin: begin,
     beginTwoPhase: beginTwoPhase,
     end: end,

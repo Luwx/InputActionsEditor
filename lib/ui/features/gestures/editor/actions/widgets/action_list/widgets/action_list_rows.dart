@@ -32,6 +32,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/helpers/use_value_selector.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// How long a shut row waits after the page is on screen before it builds the
@@ -97,16 +98,12 @@ class ActionListRows extends StatelessWidget {
                   !folded.contains(row.editId),
               child: KeyedSubtree(
                 key: choreo.marquee.measureKeyFor(row.editId),
-                child: ActionRowCard(
+                child: _WatchedActionRow(
                   row: row,
-                  expanded: choreo.expanded.contains(row.editId),
                   selected: choreo.selected.contains(row.editId),
                   colors: colors,
                   choreo: choreo,
                   onAddToGroup: () => onAddToGroup(parentKey: row.editId),
-                  anchorKey: choreo.anchor.activeKey == row.editId
-                      ? choreo.anchor.anchorKey
-                      : null,
                   revealKey: choreo.revealTarget == row.editId
                       ? choreo.revealKey
                       : null,
@@ -118,6 +115,52 @@ class ActionListRows extends StatelessWidget {
             ),
           },
       ],
+    );
+  }
+}
+
+/// Subscribes one row to the two pieces of list state a toggle changes, so
+/// opening a card rebuilds that card instead of every row in the list.
+class _WatchedActionRow extends HookWidget {
+  const _WatchedActionRow({
+    required this.row,
+    required this.selected,
+    required this.colors,
+    required this.choreo,
+    required this.onAddToGroup,
+    required this.revealKey,
+    required this.flashTrigger,
+  });
+
+  final ActionRow row;
+  final bool selected;
+  final FColors colors;
+  final ActionListChoreography choreo;
+  final VoidCallback onAddToGroup;
+  final GlobalKey? revealKey;
+  final int? flashTrigger;
+
+  @override
+  Widget build(BuildContext context) {
+    final editId = row.editId;
+    final expanded = useValueSelector(
+      choreo.expanded,
+      (open) => open.contains(editId),
+    );
+    final isAnchor = useValueSelector(
+      choreo.anchor.activeKey,
+      (key) => key == editId,
+    );
+    return ActionRowCard(
+      row: row,
+      expanded: expanded,
+      selected: selected,
+      colors: colors,
+      choreo: choreo,
+      onAddToGroup: onAddToGroup,
+      anchorKey: isAnchor ? choreo.anchor.anchorKey : null,
+      revealKey: revealKey,
+      flashTrigger: flashTrigger,
     );
   }
 }
