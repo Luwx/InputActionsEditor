@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -11,6 +13,7 @@ import 'package:input_actions_editor/projections/conflict_provider.dart';
 import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible.dart';
 import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
@@ -53,6 +56,7 @@ class TriggerEditor extends HookConsumerWidget {
       if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
     });
     final optionsExpanded = useState(false);
+    final optionsEndKey = useMemoized(GlobalKey.new);
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinnedFields.value.contains(field))
         .toList();
@@ -115,16 +119,26 @@ class TriggerEditor extends HookConsumerWidget {
           key: ValueKey(location.editId),
           title: Text(context.l10n.triggerOtherOptions),
           expanded: optionsExpanded.value,
-          onExpanded: (expanded) => optionsExpanded.value = expanded,
-          child: StaggeredBuild(
-            immediate: optionsExpanded.value,
-            delay: const Duration(milliseconds: 800),
-            child: TriggerAdvancedFields(
-              fields: accordionFields,
-              inherited: inherited,
-              inheritedConditions: inheritedConditions,
-              onOpenGroup: openGroup,
-            ),
+          onExpanded: (expanded) {
+            optionsExpanded.value = expanded;
+            if (expanded) _revealOptionsEnd(optionsEndKey);
+          },
+          childPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              StaggeredBuild(
+                immediate: optionsExpanded.value,
+                delay: const Duration(milliseconds: 800),
+                child: TriggerAdvancedFields(
+                  fields: accordionFields,
+                  inherited: inherited,
+                  inheritedConditions: inheritedConditions,
+                  onOpenGroup: openGroup,
+                ),
+              ),
+              SizedBox(key: optionsEndKey, height: 16),
+            ],
           ),
         ),
       ),
@@ -153,6 +167,22 @@ class TriggerEditor extends HookConsumerWidget {
       ),
     );
   }
+}
+
+void _revealOptionsEnd(GlobalKey marker) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final end = marker.currentContext;
+    if (end == null) return;
+    unawaited(
+      Scrollable.ensureVisible(
+        end,
+        alignment: 1,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        duration: collapsibleDuration,
+        curve: Easing.standard,
+      ),
+    );
+  });
 }
 
 /// Indexes inherited properties by the field that renders them. Conditions are
