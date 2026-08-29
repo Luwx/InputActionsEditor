@@ -345,7 +345,7 @@ class _GestureEditorView extends HookConsumerWidget {
           firstFrame: true,
           delay: WarmUpScope.of(context)
               ? Duration.zero
-              : const Duration(milliseconds: 100),
+              : const Duration(milliseconds: 150),
           child: FadeSlideIn(
             delay: WarmUpScope.of(context)
                 ? const Duration(milliseconds: 200)

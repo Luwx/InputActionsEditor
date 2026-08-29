@@ -8,6 +8,7 @@ class _HeaderScrollProgress extends StatefulWidget {
     required this.scrollable,
     required this.leadingInset,
     required this.measureKey,
+    required this.initiallyAtPinLine,
     required this.builder,
     required this.child,
   });
@@ -15,6 +16,7 @@ class _HeaderScrollProgress extends StatefulWidget {
   final ScrollController scrollable;
   final double leadingInset;
   final GlobalKey measureKey;
+  final bool initiallyAtPinLine;
   final ValueWidgetBuilder<ReorderableHeaderScroll> builder;
   final Widget? child;
 
@@ -29,14 +31,20 @@ class _HeaderScrollProgressState extends State<_HeaderScrollProgress> {
     pinOffsetPx: 1e6,
   );
 
-  final ValueNotifier<ReorderableHeaderScroll> _scroll = ValueNotifier(
-    _unmeasured,
+  static const ReorderableHeaderScroll _atPinLine = (
+    scrolledUnder: 0.0,
+    pinOffsetPx: 0.0,
   );
+
+  late final ValueNotifier<ReorderableHeaderScroll> _scroll;
   bool _recomputeScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    _scroll = ValueNotifier(
+      widget.initiallyAtPinLine ? _atPinLine : _unmeasured,
+    );
     widget.scrollable.addListener(_scheduleRecompute);
     _scheduleRecompute();
   }

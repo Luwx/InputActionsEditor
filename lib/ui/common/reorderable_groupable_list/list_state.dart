@@ -357,8 +357,12 @@ class _ReorderableGroupableListState<I, G>
                         pinned: true,
                         delegate: _GroupHeaderDelegate(
                           extent: widget.groupHeaderExtent,
-                          builder: (context, isPinned) =>
-                              _buildGroupHeader(context, group, isPinned),
+                          builder: (context, isPinned) => _buildGroupHeader(
+                            context,
+                            group,
+                            isPinned,
+                            initiallyAtPinLine: s == 0,
+                          ),
                         ),
                       ),
                       ..._buildGroupContentSlivers(context, rows, 1),
@@ -591,6 +595,7 @@ class _ReorderableGroupableListState<I, G>
     ReorderableGroupableGroup<I, G> group,
     bool isPinned, {
     bool showTopBorder = false,
+    bool initiallyAtPinLine = false,
   }) {
     final handle = widget.reorderEnabled
         ? _GroupDragHandle<G>(
@@ -620,6 +625,10 @@ class _ReorderableGroupableListState<I, G>
       leadingInset:
           widget.leadingPinnedExtent + group.depth * widget.groupHeaderExtent,
       measureKey: headerKey,
+      // A newly mounted header cannot measure its render box until after its
+      // first frame. Seed headers already at the pin line so their backing
+      // does not flash unfrosted while waiting for that measurement.
+      initiallyAtPinLine: isPinned || initiallyAtPinLine,
       builder: builder,
       child: child,
     );

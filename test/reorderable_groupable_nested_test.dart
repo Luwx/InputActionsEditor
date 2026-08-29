@@ -54,6 +54,44 @@ ReorderableGroupableItem<int, String> _item(
 );
 
 void main() {
+  testWidgets('leading group starts at the pin line on its first frame', (
+    tester,
+  ) async {
+    ReorderableHeaderScroll? initialScroll;
+    final scrollController = ScrollController();
+    addTearDown(scrollController.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ReorderableGroupableList<int, String>(
+          entries: [_outer, _item(0, 'outer', 1)],
+          scrollController: scrollController,
+          borderColor: const Color(0xFF888888),
+          groupHeaderExtent: 38,
+          reorderEnabled: false,
+          leadingPinnedExtent: 60,
+          leadingSlivers: const [
+            SliverAppBar(pinned: true, toolbarHeight: 60),
+          ],
+          onItemsReordered: (_) {},
+          onGroupMoved: (_) {},
+          itemBuilder: (context, item, handle, isDragging) =>
+              const SizedBox(height: 40),
+          groupBuilder: (_, _, _, _, scrollBuilder) => scrollBuilder((
+            _,
+            scroll,
+            _,
+          ) {
+            initialScroll ??= scroll;
+            return const SizedBox(height: 38);
+          }),
+        ),
+      ),
+    );
+
+    expect(initialScroll?.pinOffsetPx, 0);
+  });
+
   testWidgets('renders a nested group header as a row inside its parent', (
     tester,
   ) async {
