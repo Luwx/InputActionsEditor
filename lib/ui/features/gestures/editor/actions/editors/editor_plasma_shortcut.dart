@@ -17,6 +17,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/k
         shortcutFilterProvider;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/helpers/use_revealed_list_item.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -377,7 +378,7 @@ class _ShortcutPickerSheetState extends ConsumerState<_ShortcutPickerSheet> {
   }
 }
 
-class _ComponentSidebar extends ConsumerWidget {
+class _ComponentSidebar extends HookConsumerWidget {
   const _ComponentSidebar({
     required this.components,
     required this.selected,
@@ -408,32 +409,42 @@ class _ComponentSidebar extends ConsumerWidget {
       (false, l10n.plasmaShortcutPickerSystemServices),
     ];
 
-    return FSidebar(
+    final reveal = useRevealedListItem(
+      index: [
+        for (final (isApp, _) in categories) ...?grouped[isApp],
+      ].indexWhere((c) => c.uniqueName == selected),
+    );
+
+    return FSidebar.raw(
       style: const .delta(
         constraints: BoxConstraints.tightFor(width: 210),
       ),
-      children: [
-        const SizedBox(height: 8),
-        for (final (isApp, label) in categories)
-          if (grouped[isApp]?.isNotEmpty ?? false)
-            FSidebarGroup(
-              label: Text(label),
-              children: [
-                for (final comp in grouped[isApp]!)
-                  FSidebarItem(
-                    icon: _ComponentIcon(
-                      iconPath: comp.iconPath,
-                      fallbackIcon: isApp
-                          ? FLucideIcons.appWindowMac
-                          : FLucideIcons.monitorCog,
+      child: ListView(
+        controller: reveal.controller,
+        children: [
+          const SizedBox(height: 8),
+          for (final (isApp, label) in categories)
+            if (grouped[isApp]?.isNotEmpty ?? false)
+              FSidebarGroup(
+                label: Text(label),
+                children: [
+                  for (final comp in grouped[isApp]!)
+                    FSidebarItem(
+                      key: comp.uniqueName == selected ? reveal.itemKey : null,
+                      icon: _ComponentIcon(
+                        iconPath: comp.iconPath,
+                        fallbackIcon: isApp
+                            ? FLucideIcons.appWindowMac
+                            : FLucideIcons.monitorCog,
+                      ),
+                      label: Text(comp.friendlyName),
+                      selected: comp.uniqueName == selected,
+                      onPress: () => onSelect(comp.uniqueName),
                     ),
-                    label: Text(comp.friendlyName),
-                    selected: comp.uniqueName == selected,
-                    onPress: () => onSelect(comp.uniqueName),
-                  ),
-              ],
-            ),
-      ],
+                ],
+              ),
+        ],
+      ),
     );
   }
 }
@@ -494,13 +505,42 @@ class _ShortcutList extends ConsumerWidget {
 
   Widget _buildList(List<KGlobalAccelShortcut> shortcuts) {
     if (shortcuts.isEmpty) return const SizedBox();
+    return _ShortcutListView(
+      shortcuts: shortcuts,
+      selected: initialShortcut,
+      onSelected: onSelected,
+    );
+  }
+}
+
+class _ShortcutListView extends HookWidget {
+  const _ShortcutListView({
+    required this.shortcuts,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<KGlobalAccelShortcut> shortcuts;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = shortcuts.indexWhere((s) => s.uniqueName == selected);
+    final reveal = useRevealedListItem(
+      index: selectedIndex,
+      itemCount: shortcuts.length,
+    );
+
     return ListView.builder(
+      controller: reveal.controller,
       itemCount: shortcuts.length,
       padding: const EdgeInsets.all(8),
       itemBuilder: (_, i) {
         final s = shortcuts[i];
-        final isSelected = s.uniqueName == initialShortcut;
+        final isSelected = i == selectedIndex;
         return FItem(
+          key: isSelected ? reveal.itemKey : null,
           title: Text(s.friendlyName),
           subtitle: Text(
             s.keySequences.isEmpty ? '-' : s.keySequences.join('  ·  '),
