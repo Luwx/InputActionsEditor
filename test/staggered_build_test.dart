@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 
 Widget _host(List<Widget> children) => MaterialApp(
   home: Scaffold(body: Column(children: children)),
@@ -30,6 +31,28 @@ void main() {
     await tester.pumpWidget(_host([_marker('now', immediate: true)]));
 
     expect(find.text('now'), findsOneWidget);
+  });
+
+  testWidgets('warm-up drains a delayed child before its timer', (
+    tester,
+  ) async {
+    final revealed = ValueNotifier(false);
+    addTearDown(revealed.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WarmUpScope(
+          warming: true,
+          revealed: revealed,
+          child: Scaffold(body: _marker('warmed')),
+        ),
+      ),
+    );
+    expect(find.text('warmed'), findsNothing);
+
+    await tester.pump();
+
+    expect(find.text('warmed'), findsOneWidget);
   });
 
   testWidgets('turning immediate on builds the child without waiting', (

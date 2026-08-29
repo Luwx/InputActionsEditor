@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 
 /// Holds [child] back from the frames that first put a page on screen, then
 /// builds it and leaves it up. Subtrees that come due together are released one
@@ -49,6 +50,7 @@ class StaggeredBuild extends StatefulWidget {
 class _StaggeredBuildState extends State<StaggeredBuild> {
   bool _built = false;
   bool _counted = false;
+  bool _promotedForWarmUp = false;
   Timer? _timer;
 
   @override
@@ -61,6 +63,23 @@ class _StaggeredBuildState extends State<StaggeredBuild> {
       if (_counted) _StaggerQueue.hold();
       _timer = Timer(widget.delay, () => _StaggerQueue.add(_release));
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_built || widget.immediate || _promotedForWarmUp) return;
+    if (!WarmUpScope.of(context)) return;
+
+    // A collapsed child is not painted, but it is still laid out at full size.
+    _promotedForWarmUp = true;
+    _timer?.cancel();
+    _timer = null;
+    if (!_counted) {
+      _counted = true;
+      _StaggerQueue.hold();
+    }
+    _StaggerQueue.add(_release);
   }
 
   @override

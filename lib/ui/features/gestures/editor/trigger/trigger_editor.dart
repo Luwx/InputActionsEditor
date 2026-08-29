@@ -118,6 +118,7 @@ class TriggerEditor extends HookConsumerWidget {
           onExpanded: (expanded) => optionsExpanded.value = expanded,
           child: StaggeredBuild(
             immediate: optionsExpanded.value,
+            delay: const Duration(milliseconds: 800),
             child: TriggerAdvancedFields(
               fields: accordionFields,
               inherited: inherited,

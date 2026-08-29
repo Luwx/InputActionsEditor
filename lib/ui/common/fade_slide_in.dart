@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Durations, Easing;
 import 'package:flutter/widgets.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 
 /// Fades [child] in and lifts it into place, once, when it is first built.
-class FadeSlideIn extends StatefulWidget {
+class FadeSlideIn extends StatelessWidget {
   const FadeSlideIn({
     required this.child,
     this.duration = Durations.medium1,
@@ -25,16 +29,43 @@ class FadeSlideIn extends StatefulWidget {
   final double offset;
 
   @override
-  State<FadeSlideIn> createState() => _FadeSlideInState();
+  Widget build(BuildContext context) => _FadeSlideTransition(
+    duration: duration,
+    delay: delay,
+    offset: offset,
+    enabled: enabled,
+    child: child,
+  );
 }
 
-class _FadeSlideInState extends State<FadeSlideIn>
+class _FadeSlideTransition extends StatefulWidget {
+  const _FadeSlideTransition({
+    required this.child,
+    required this.duration,
+    required this.delay,
+    required this.offset,
+    required this.enabled,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final Duration duration;
+  final Duration delay;
+  final double offset;
+
+  @override
+  State<_FadeSlideTransition> createState() => _FadeSlideTransitionState();
+}
+
+class _FadeSlideTransitionState extends State<_FadeSlideTransition>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.delay + widget.duration,
     value: widget.enabled ? 0 : 1,
-  )..forward();
+  );
+  ValueListenable<bool>? _revealed;
+  bool _started = false;
 
   // A flat head on the curve rather than a timer, so a child disposed before
   // its turn leaves nothing pending.
@@ -49,7 +80,36 @@ class _FadeSlideInState extends State<FadeSlideIn>
   );
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _subscribe();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    _subscribe();
+  }
+
+  void _subscribe() {
+    final next = WarmUpScope.revealedOf(context);
+    if (!identical(next, _revealed)) {
+      _revealed?.removeListener(_startIfRevealed);
+      _revealed = next;
+      next?.addListener(_startIfRevealed);
+    }
+    _startIfRevealed();
+  }
+
+  void _startIfRevealed() {
+    if (_started || !widget.enabled || !(_revealed?.value ?? true)) return;
+    _started = true;
+    unawaited(_controller.forward());
+  }
+
+  @override
   void dispose() {
+    _revealed?.removeListener(_startIfRevealed);
     _controller.dispose();
     super.dispose();
   }
@@ -57,9 +117,12 @@ class _FadeSlideInState extends State<FadeSlideIn>
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _t,
-    child: widget.child,
+    // Kept off the repaint path of the opacity and the transform above it, so
+    // the entrance composites a cached raster instead of repainting [child]
+    // on every frame.
+    child: RepaintBoundary(child: widget.child),
     builder: (_, child) => Opacity(
-      opacity: _t.value,
+      opacity: _t.value.clamp(kWarmUpPaintFloor, 1),
       child: Transform.translate(
         offset: Offset(0, widget.offset * (1 - _t.value)),
         child: child,
