@@ -393,8 +393,9 @@ _GestureListChoreography _useGestureListChoreography(
       _GestureRowItem(:final groupKey) => groupKey != null,
       _GroupHeaderItem(:final parentKey) => parentKey != null,
     };
-    scrollTargetInset.value =
-        viewModel.deviceFilter != null && nested ? _groupHeaderExtent : 0;
+    scrollTargetInset.value = viewModel.deviceFilter != null && nested
+        ? _groupHeaderExtent
+        : 0;
     if (scrollTargetQueued.value) return;
     scrollTargetQueued.value = true;
     if (scrollTargetExpanded.value) {
