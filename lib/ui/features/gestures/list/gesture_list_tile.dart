@@ -269,16 +269,16 @@ void _addTouchSummary(Object g, List<String> parts) {
         when direction != PinchDirection.any:
       parts.add(direction.name);
     case TouchpadRotateGesture(:final direction)
-        when direction != RotateDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchscreenRotateGesture(:final direction)
-        when direction != RotateDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchpadCircleGesture(:final direction)
-        when direction != CircleDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchscreenCircleGesture(:final direction)
-        when direction != CircleDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchpadStrokeGesture(:final strokes):
       parts.add('${strokes.length} stroke${strokes.length == 1 ? '' : 's'}');

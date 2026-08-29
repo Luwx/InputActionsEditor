@@ -220,7 +220,10 @@ class _UnitRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(width: keyWidth, child: Text(gesture, style: mono)),
+        SizedBox(
+          width: keyWidth,
+          child: Text(gesture, style: mono),
+        ),
         Flexible(child: Text(unit, style: muted)),
       ],
     );

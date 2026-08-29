@@ -39,7 +39,7 @@ sealed class MouseGesture with _$MouseGesture implements Gesture {
 
   const factory MouseGesture.circle({
     required TriggerCommon common,
-    required CircleDirection direction,
+    required RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = CircleGesture;
 

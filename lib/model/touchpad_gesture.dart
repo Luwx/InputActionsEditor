@@ -30,14 +30,14 @@ sealed class TouchpadGesture with _$TouchpadGesture implements Gesture {
   const factory TouchpadGesture.rotate({
     required TriggerCommon common,
     int? fingers,
-    @Default(RotateDirection.any) RotateDirection direction,
+    @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadRotateGesture;
 
   const factory TouchpadGesture.circle({
     required TriggerCommon common,
     int? fingers,
-    @Default(CircleDirection.any) CircleDirection direction,
+    @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadCircleGesture;
 

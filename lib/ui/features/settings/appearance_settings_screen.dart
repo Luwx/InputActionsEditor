@@ -61,7 +61,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                       // FTile(
                       //   prefix: const Icon(FLucideIcons.appWindow),
                       //   title: Text(l10n.appearanceMinimizeToTrayLabel),
-                      //   subtitle: 
+                      //   subtitle:
                       // Text(l10n.appearanceMinimizeToTraySubtitle),
                       //   onPress: () => notifier.setMinimizeToTray(
                       //     !settings.minimizeToTray,

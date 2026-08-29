@@ -564,11 +564,11 @@ Set<String> _dirTokensOf(Object g) => switch (g) {
   WheelGesture(:final direction) => _wheelTokens(direction),
   CircleGesture(:final direction) ||
   TouchpadCircleGesture(:final direction) ||
-  TouchscreenCircleGesture(:final direction) => _circleTokens(direction),
+  TouchscreenCircleGesture(:final direction) => _rotationTokens(direction),
   TouchpadPinchGesture(:final direction) ||
   TouchscreenPinchGesture(:final direction) => _pinchTokens(direction),
   TouchpadRotateGesture(:final direction) ||
-  TouchscreenRotateGesture(:final direction) => _rotateTokens(direction),
+  TouchscreenRotateGesture(:final direction) => _rotationTokens(direction),
   _ => const {},
 };
 
@@ -582,20 +582,14 @@ Set<String> _wheelTokens(WheelDirection d) => switch (d) {
   WheelDirection.any => {'l', 'r', 'u', 'd'},
 };
 
-Set<String> _circleTokens(CircleDirection d) => switch (d) {
-  CircleDirection.clockwise => {'cw'},
-  CircleDirection.counterclockwise => {'ccw'},
-  CircleDirection.any => {'cw', 'ccw'},
+Set<String> _rotationTokens(RotationDirection d) => switch (d) {
+  RotationDirection.clockwise => {'cw'},
+  RotationDirection.counterclockwise => {'ccw'},
+  RotationDirection.any => {'cw', 'ccw'},
 };
 
 Set<String> _pinchTokens(PinchDirection d) => switch (d) {
   PinchDirection.inward => {'in'},
   PinchDirection.outward => {'out'},
   PinchDirection.any => {'in', 'out'},
-};
-
-Set<String> _rotateTokens(RotateDirection d) => switch (d) {
-  RotateDirection.clockwise => {'cw'},
-  RotateDirection.counterclockwise => {'ccw'},
-  RotateDirection.any => {'cw', 'ccw'},
 };

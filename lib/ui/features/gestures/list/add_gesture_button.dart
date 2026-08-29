@@ -309,7 +309,7 @@ List<_TriggerEntry> _triggerTypesFor(
       icon: Icons.rotate_right_rounded,
       factory: () => const CircleGesture(
         common: _mouseCommon,
-        direction: CircleDirection.any,
+        direction: RotationDirection.any,
       ),
     ),
     (

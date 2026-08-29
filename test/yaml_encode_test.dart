@@ -74,7 +74,7 @@ void main() {
         mouseGestureToMap(
           const CircleGesture(
             common: TriggerCommon(),
-            direction: CircleDirection.clockwise,
+            direction: RotationDirection.clockwise,
           ),
         ),
         {'type': 'circle', 'direction': 'clockwise'},

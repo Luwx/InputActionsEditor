@@ -6,29 +6,24 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/enum_labels.dart';
 
-class RotateSection extends StatelessWidget {
-  const RotateSection({
+class RotationDirectionSelect extends StatelessWidget {
+  const RotationDirectionSelect({
     required this.direction,
     required this.onDirectionChanged,
+    required this.label,
+    required this.tooltip,
     super.key,
   });
 
-  final RotateDirection direction;
-  final void Function(RotateDirection) onDirectionChanged;
+  final RotationDirection direction;
+  final void Function(RotationDirection) onDirectionChanged;
+  final String label;
+  final String tooltip;
 
-  static const List<RotateDirection> _directions = [
-    RotateDirection.any,
-    RotateDirection.clockwise,
-    RotateDirection.counterclockwise,
-  ];
-
-  static Widget? _icon(RotateDirection direction) => switch (direction) {
-    RotateDirection.any => null,
-    RotateDirection.clockwise => const Icon(FLucideIcons.refreshCw, size: 14),
-    RotateDirection.counterclockwise => const Icon(
-      FLucideIcons.refreshCcw,
-      size: 14,
-    ),
+  static const Map<RotationDirection, Widget?> _items = {
+    RotationDirection.any: null,
+    RotationDirection.clockwise: Icon(FLucideIcons.refreshCw, size: 14),
+    RotationDirection.counterclockwise: Icon(FLucideIcons.refreshCcw, size: 14),
   };
 
   @override
@@ -36,32 +31,29 @@ class RotateSection extends StatelessWidget {
     final l10n = context.l10n;
     return SizedBox(
       width: 220,
-      child: FSelect<RotateDirection>.rich(
+      child: FSelect<RotationDirection>.rich(
         key: ValueKey(direction),
         format: (value) => value.label(l10n),
-        prefixBuilder: switch (_icon(direction)) {
+        prefixBuilder: switch (_items[direction]) {
           final icon? => (_, _, _) => Padding(
             padding: const EdgeInsets.only(left: 8),
             child: icon,
           ),
           null => null,
         },
-        control: FSelectManagedControl<RotateDirection>(
+        control: FSelectManagedControl<RotationDirection>(
           initial: direction,
           onChange: (v) {
             if (v != null) onDirectionChanged(v);
           },
         ),
-        label: LabelWithTooltip(
-          label: l10n.sectionRotateDirectionLabel,
-          tooltip: l10n.sectionRotateDirectionTooltip,
-        ),
+        label: LabelWithTooltip(label: label, tooltip: tooltip),
         children: [
-          for (final value in _directions)
-            FSelectItem<RotateDirection>.item(
+          for (final MapEntry(key: value, value: icon) in _items.entries)
+            FSelectItem<RotationDirection>.item(
               value: value,
               title: Text(value.label(l10n)),
-              prefix: _icon(value),
+              prefix: icon,
             ),
         ],
       ),

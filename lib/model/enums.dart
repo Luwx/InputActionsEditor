@@ -72,17 +72,6 @@ enum PinchDirection {
       _fromYaml(PinchDirection.values, s, (v) => v.toYaml());
 }
 
-enum RotateDirection {
-  clockwise,
-  counterclockwise,
-  any;
-
-  String toYaml() => name;
-
-  static RotateDirection? fromYaml(String s) =>
-      _fromYaml(RotateDirection.values, s, (v) => v.name);
-}
-
 enum MouseButtonValue {
   left,
   middle,
@@ -160,15 +149,15 @@ enum WheelDirection {
       _fromYaml(WheelDirection.values, s, (v) => v.toYaml());
 }
 
-enum CircleDirection {
+enum RotationDirection {
   clockwise,
   counterclockwise,
   any;
 
   String toYaml() => name;
 
-  static CircleDirection? fromYaml(String s) =>
-      _fromYaml(CircleDirection.values, s, (v) => v.name);
+  static RotationDirection? fromYaml(String s) =>
+      _fromYaml(RotationDirection.values, s, (v) => v.name);
 }
 
 enum TriggerSpeed {

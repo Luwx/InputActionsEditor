@@ -278,8 +278,8 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
       common: common,
       motion: motion,
       direction:
-          CircleDirection.fromYaml(m['direction'] as String? ?? '') ??
-          CircleDirection.any,
+          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.any,
     ),
     'press' => PressGesture(common: common, instant: m['instant'] as bool?),
     'wheel' => WheelGesture(
@@ -347,16 +347,16 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotateDirection.fromYaml(m['direction'] as String? ?? '') ??
-          RotateDirection.any,
+          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.any,
       motion: motion,
     ),
     'circle' => TouchpadCircleGesture(
       common: common,
       fingers: fingers,
       direction:
-          CircleDirection.fromYaml(m['direction'] as String? ?? '') ??
-          CircleDirection.any,
+          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.any,
       motion: motion,
     ),
     'tap' => TouchpadTapGesture(common: common, fingers: fingers),
@@ -399,16 +399,16 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotateDirection.fromYaml(m['direction'] as String? ?? '') ??
-          RotateDirection.any,
+          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.any,
       motion: motion,
     ),
     'circle' => TouchscreenCircleGesture(
       common: common,
       fingers: fingers,
       direction:
-          CircleDirection.fromYaml(m['direction'] as String? ?? '') ??
-          CircleDirection.any,
+          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.any,
       motion: motion,
     ),
     'tap' => TouchscreenTapGesture(common: common, fingers: fingers),

@@ -10,12 +10,13 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/motion_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/pinch_section.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/rotate_section.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/rotation_direction_select.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/strokes_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/swipe/swipe_mode_selector.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_count_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TouchscreenGestureEditor extends StatelessWidget {
   const TouchscreenGestureEditor({
@@ -118,9 +119,11 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
               );
               return RevealedField(
                 field: ConfigDirtyField.touchscreenRotateDirection,
-                child: RotateSection(
+                child: RotationDirectionSelect(
                   direction: directionField.value,
                   onDirectionChanged: directionField.onChanged,
+                  label: context.l10n.sectionRotateDirectionLabel,
+                  tooltip: context.l10n.sectionRotateDirectionTooltip,
                 ),
               );
             },

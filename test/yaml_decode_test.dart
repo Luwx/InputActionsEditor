@@ -111,11 +111,11 @@ mouse:
 ''');
       expect(
         (c.mouseGestures[0] as CircleGesture).direction,
-        CircleDirection.clockwise,
+        RotationDirection.clockwise,
       );
       expect(
         (c.mouseGestures[1] as CircleGesture).direction,
-        CircleDirection.any,
+        RotationDirection.any,
       );
     });
 
