@@ -130,7 +130,6 @@ class StrokesField extends HookConsumerWidget {
         const SizedBox(height: 8),
         FButton(
           variant: .outline,
-          size: .sm,
           onPress: isRecording
               ? null
               : () async {
