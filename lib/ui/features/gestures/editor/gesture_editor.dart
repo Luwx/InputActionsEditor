@@ -121,11 +121,10 @@ class _GestureEditorView extends HookConsumerWidget {
     final addActionFloating = useValueNotifier<AddActionFloatingPlacement?>(
       null,
     );
-    final tickerProvider = useSingleTickerProvider();
     final undoFocusNode = useFocusNode(debugLabel: 'gestureEditorUndo');
 
     useEffect(() {
-      // The ticker outlives a swap of the editor by a frame, and an element on
+      // The check outlives a swap of the editor by a frame, and an element on
       // its way out has no render object to ask.
       RenderBox? boxOf(GlobalKey key) {
         final context = key.currentContext;
@@ -134,7 +133,11 @@ class _GestureEditorView extends HookConsumerWidget {
         return box is RenderBox && box.attached && box.hasSize ? box : null;
       }
 
-      final ticker = tickerProvider.createTicker((_) {
+      var cancelled = false;
+      void check(Duration _) {
+        if (cancelled) return;
+        WidgetsBinding.instance.addPostFrameCallback(check);
+
         final editorBox = boxOf(editorKey);
         if (editorBox == null) return;
         final origin = editorBox.localToGlobal(Offset.zero);
@@ -172,9 +175,10 @@ class _GestureEditorView extends HookConsumerWidget {
           shadow: ((dockTop - floatLine) / 24).clamp(0.0, 1.0),
         );
         if (addActionFloating.value != next) addActionFloating.value = next;
-      });
-      unawaited(ticker.start());
-      return ticker.dispose;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback(check);
+      return () => cancelled = true;
     }, const []);
 
     ref.listen(selectedGestureProvider, (prev, next) {
