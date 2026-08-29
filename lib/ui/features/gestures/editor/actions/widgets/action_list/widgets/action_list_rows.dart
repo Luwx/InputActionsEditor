@@ -16,8 +16,10 @@ import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/reveal_horizontally.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
@@ -31,6 +33,16 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+
+/// How long a shut row waits after the page is on screen before it builds the
+/// editor behind its fold. Expanding a row is otherwise the frame that builds
+/// it, and that build outruns the fold's own 300ms, which costs the expansion
+/// its scroll anchoring.
+const _prewarmDelay = Duration(seconds: 1);
+
+/// Stands in for [WarmUpScope.revealedOf] where there is no warm-up to wait on,
+/// such as a widget test hosting the list on its own.
+final _revealedByDefault = ValueNotifier<bool>(false);
 
 /// The rows plus the marquee layer. A press on empty list body starts a
 /// rubber-band selection; the box paints over the rows in list coordinates.
@@ -216,23 +228,43 @@ class ActionRowCard extends HookConsumerWidget {
           ),
           Collapsible(
             expanded: expanded,
-            keepMounted: false,
             onEnd: expanded ? choreo.anchor.end : null,
-            child: EditLocationScope(
-              action: actionLocation,
-              child: AttentionFlashScope(
-                trigger: flashTrigger,
-                child: Listener(
-                  onPointerDown: (event) => choreo.blockMarquee(event.pointer),
-                  child: ActionExpandedEditor(
-                    nested: row.depth > 0,
-                    onAddToGroup: row.isGroup ? onAddToGroup : null,
-                    onOptionsExpanded: () => choreo.anchor.begin(editId),
-                    onOptionsSettled: choreo.anchor.end,
-                    onRevealAction: choreo.reveal,
-                    footerKey: ValueKey('action-footer-$editId'),
-                    pinnedTriggerOptions:
-                        choreo.pinnedTriggerOptions[editId] ?? const {},
+            child: ValueListenableBuilder<bool>(
+              valueListenable:
+                  WarmUpScope.revealedOf(context) ?? _revealedByDefault,
+              builder: (context, revealed, child) => expanded || revealed
+                  // A shut row's editor is built but never seen, so its clock
+                  // stays stopped: a muted ticker does not rewind, and every
+                  // entrance waits at the head of its curve until the fold
+                  // opens.
+                  ? TickerMode(
+                      enabled: expanded,
+                      child: StaggeredBuild(
+                        immediate: expanded,
+                        delay: _prewarmDelay,
+                        child: child!,
+                      ),
+                    )
+                  // Matches the placeholder a shut [Collapsible] would use, so
+                  // the row keeps its width while the editor is still waiting.
+                  : const SizedBox(width: double.infinity),
+              child: EditLocationScope(
+                action: actionLocation,
+                child: AttentionFlashScope(
+                  trigger: flashTrigger,
+                  child: Listener(
+                    onPointerDown: (event) =>
+                        choreo.blockMarquee(event.pointer),
+                    child: ActionExpandedEditor(
+                      nested: row.depth > 0,
+                      onAddToGroup: row.isGroup ? onAddToGroup : null,
+                      onOptionsExpanded: () => choreo.anchor.begin(editId),
+                      onOptionsSettled: choreo.anchor.end,
+                      onRevealAction: choreo.reveal,
+                      footerKey: ValueKey('action-footer-$editId'),
+                      pinnedTriggerOptions:
+                          choreo.pinnedTriggerOptions[editId] ?? const {},
+                    ),
                   ),
                 ),
               ),
