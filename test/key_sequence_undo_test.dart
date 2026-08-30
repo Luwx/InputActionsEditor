@@ -16,7 +16,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/editor_input_action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/shell/document_shortcuts.dart';
 

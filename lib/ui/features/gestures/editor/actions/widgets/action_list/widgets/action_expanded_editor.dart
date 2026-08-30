@@ -14,7 +14,7 @@ import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_function.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/editor_input_action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_plasma_shortcut.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_raw.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_replace_text.dart';
