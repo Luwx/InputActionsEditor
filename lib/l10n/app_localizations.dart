@@ -4276,6 +4276,24 @@ abstract class AppLocalizations {
   /// **'Text to type'**
   String get inputTextToTypeLabel;
 
+  /// No description provided for @inputTextCommandMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get inputTextCommandMode;
+
+  /// No description provided for @inputTextCommandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the command in a shell and types its standard output. Variables can be referenced by name.'**
+  String get inputTextCommandTooltip;
+
+  /// No description provided for @inputTextCommandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'date'**
+  String get inputTextCommandHint;
+
   /// No description provided for @inputDelayLabel.
   ///
   /// In en, this message translates to:

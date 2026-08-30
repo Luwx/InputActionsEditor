@@ -13,6 +13,7 @@ import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/editor_input_action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_trigger_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
@@ -91,6 +92,54 @@ void main() {
     await tester.pumpAndSettle();
     return container;
   }
+
+  group('a text item backed by a command', () {
+    setUp(() {
+      _seed = const InputAction(
+        entries: [
+          InputEntry(
+            device: InputDevice.keyboard,
+            tokens: [InputToken.text(DynamicText.command('date'))],
+          ),
+        ],
+      );
+    });
+
+    testWidgets('the command is what the editor shows', (tester) async {
+      await pump(tester, const EditorInputAction());
+
+      expect(
+        tester
+            .widgetList<EditableText>(find.byType(EditableText))
+            .map((e) => e.controller.text),
+        contains('date'),
+      );
+    });
+
+    testWidgets('editing it keeps it a command', (tester) async {
+      final container = await pump(tester, const EditorInputAction());
+
+      await tester.enterText(find.text('date'), 'date +%H');
+      await tester.pumpAndSettle();
+
+      expect(actionOf(container).entries.single.tokens, const [
+        InputToken.text(DynamicText.command('date +%H')),
+      ]);
+    });
+
+    testWidgets('switching the source keeps the text', (tester) async {
+      final container = await pump(tester, const EditorInputAction());
+
+      await tester.tap(find.text('Command').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Text to type').last);
+      await tester.pumpAndSettle();
+
+      expect(actionOf(container).entries.single.tokens, const [
+        InputToken.text(DynamicText.literal('date')),
+      ]);
+    });
+  });
 
   group('input delay', () {
     setUp(() {

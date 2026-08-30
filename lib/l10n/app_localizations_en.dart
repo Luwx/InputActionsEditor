@@ -2397,6 +2397,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputTextToTypeLabel => 'Text to type';
 
   @override
+  String get inputTextCommandMode => 'Command';
+
+  @override
+  String get inputTextCommandTooltip =>
+      'Runs the command in a shell and types its standard output. Variables can be referenced by name.';
+
+  @override
+  String get inputTextCommandHint => 'date';
+
+  @override
   String get inputDelayLabel => 'Delay';
 
   @override

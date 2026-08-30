@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/widgets/keyboard_text_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/widgets/keyboard_timeline_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/widgets/mouse_timeline_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_delta_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/mouse_vector_editor.dart';
-import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
-import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class InputEntryInlineEditor extends HookWidget {
+class InputEntryInlineEditor extends StatelessWidget {
   const InputEntryInlineEditor({
     required this.mode,
     required this.tokens,
@@ -24,22 +21,6 @@ class InputEntryInlineEditor extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textValue = _keyboardTextValue(tokens);
-    final keyboardText = useSyncedTextController(
-      switch (textValue) {
-        LiteralText(:final text) => text,
-        CommandText(:final command) => command,
-      },
-      (value) => onChanged([
-        InputToken.text(
-          switch (textValue) {
-            LiteralText() => DynamicText.literal(value.text),
-            CommandText() => DynamicText.command(value.text),
-          },
-        ),
-      ]),
-    );
-
     final (x, y) = _vectorOf(tokens);
 
     return switch (mode) {
@@ -51,11 +32,9 @@ class InputEntryInlineEditor extends HookWidget {
         tokens: tokens,
         onChanged: onChanged,
       ),
-      InputEntryMode.keyboardText => FTextField(
-        control: FTextFieldControl.managed(controller: keyboardText),
-        label: Text(context.l10n.inputTextToTypeLabel),
-        maxLines: null,
-        hint: 'Hello world',
+      InputEntryMode.keyboardText => KeyboardTextField(
+        value: _keyboardTextValue(tokens),
+        onChanged: (value) => onChanged([InputToken.text(value)]),
       ),
       InputEntryMode.mouseMoveBy => MouseVectorEditor(
         x: x,

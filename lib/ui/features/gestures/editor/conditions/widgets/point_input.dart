@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/inline_menu_button.dart';
 import 'package:input_actions_editor/ui/common/spinbox.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/state/preview_resolution_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/point_preview.dart';
@@ -277,12 +278,21 @@ class _PixelReadout extends ConsumerWidget {
       children: [
         Text(context.l10n.pointPixelReadoutPrefix, style: muted),
         const SizedBox(width: 2),
-        _ResolutionPicker(
-          resolution: resolution,
-          options: options,
+        InlineMenuButton<Size>(
           isOpen: menuOpen,
+          value: resolution,
+          items: [
+            for (final option in options)
+              InlineMenuItem(label: formatResolution(option), value: option),
+          ],
           onChanged: (value) =>
               ref.read(previewResolutionProvider.notifier).state = value,
+          child: Text(
+            formatResolution(resolution),
+            style: context.theme.typography.body.xs.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ),
         Flexible(
           child: Text(
@@ -302,91 +312,6 @@ class _PixelReadout extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ResolutionPicker extends HookWidget {
-  const _ResolutionPicker({
-    required this.resolution,
-    required this.options,
-    required this.isOpen,
-    required this.onChanged,
-  });
-
-  final Size resolution;
-  final List<Size> options;
-  final ValueNotifier<bool> isOpen;
-  final ValueChanged<Size> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-    final isHovered = useState(false);
-
-    return FPopoverMenu(
-      control: FPopoverControl.lifted(
-        shown: isOpen.value,
-        onChange: (shown) => isOpen.value = shown,
-      ),
-      autofocus: true,
-      menuAnchor: Alignment.bottomLeft,
-      childAnchor: Alignment.topLeft,
-      maxHeight: 260,
-      menuBuilder: (context, controller, _) => [
-        FItemGroup(
-          children: [
-            for (final option in options)
-              FItem(
-                title: Text(formatResolution(option)),
-                suffix: option == resolution
-                    ? const Icon(FLucideIcons.check)
-                    : null,
-                onPress: () async {
-                  await controller.hide();
-                  onChanged(option);
-                },
-              ),
-          ],
-        ),
-      ],
-      builder: (context, controller, _) => MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => isHovered.value = true,
-        onExit: (_) => isHovered.value = false,
-        child: GestureDetector(
-          onTap: controller.toggle,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: isHovered.value
-                  ? colors.secondary.withValues(alpha: 0.78)
-                  : null,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  formatResolution(resolution),
-                  style: context.theme.typography.body.xs.copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  FLucideIcons.chevronDown,
-                  size: 11,
-                  color: colors.mutedForeground,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
