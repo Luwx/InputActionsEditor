@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
+import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 
 /// A text field that accepts key sequences in two formats and decorates them
@@ -24,7 +25,7 @@ import 'package:input_actions_editor/ui/common/key_sequence_span_builder.dart';
 /// such as `ctrl`, `shift`, `alt`, `super`, `win`, `pgup`, `del`, `ins` are
 /// resolved automatically.
 ///
-/// [onChanged] is called with the normalised `List<String>` token list
+/// [onChanged] is called with the normalised token list
 /// whenever that list changes.  Text edits the tokens do not depend on, such
 /// as a half-typed or unrecognised key name, or a caret move, emit nothing.
 /// A chord typed in chord format is kept as a single combo token
@@ -51,7 +52,7 @@ class KeySequenceTextField extends HookWidget {
   final String? initialValue;
 
   /// Emits the normalised `+key` / `-key` token list on every text change.
-  final ValueChanged<List<String>>? onChanged;
+  final ValueChanged<List<InputToken>>? onChanged;
 
   final String? label;
 
@@ -88,10 +89,10 @@ class KeySequenceTextField extends HookWidget {
     useListenable(effectiveController);
 
     final onChangedRef = useRef(onChanged)..value = onChanged;
-    final lastTokens = useRef<List<String>>(const []);
+    final lastTokens = useRef<List<InputToken>>(const []);
 
     useEffect(() {
-      List<String> tokensOf(String text) =>
+      List<InputToken> tokensOf(String text) =>
           KeySequenceParser.toTokens(KeySequenceParser.parse(text));
 
       void onTextChanged() {

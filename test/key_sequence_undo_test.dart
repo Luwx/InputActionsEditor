@@ -40,7 +40,9 @@ class _SeededController extends ConfigController {
                       entries: [
                         InputEntry(
                           device: InputDevice.keyboard,
-                          tokens: ['leftctrl+a'],
+                          tokens: [
+                            InputToken.combo(['leftctrl', 'a']),
+                          ],
                         ),
                       ],
                     ),
@@ -106,7 +108,7 @@ void main() {
     return container;
   }
 
-  List<String> tokensOf(ProviderContainer container) =>
+  List<InputToken> tokensOf(ProviderContainer container) =>
       actionInputEntriesLens(action)
           .get(container.read(configControllerProvider).requireValue.draft)
           .first
@@ -141,17 +143,25 @@ void main() {
 
   testWidgets('typing an unrecognised key adds no undo step', (tester) async {
     final container = await pumpEditor(tester);
-    expect(tokensOf(container), ['leftctrl+a']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'a']),
+    ]);
 
     await type(tester, 'leftctrl+b');
-    expect(tokensOf(container), ['leftctrl+b']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'b']),
+    ]);
 
     await type(tester, 'leftctrl+b, bogus');
-    expect(tokensOf(container), ['leftctrl+b']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'b']),
+    ]);
 
     await pressUndo(tester);
 
-    expect(tokensOf(container), ['leftctrl+a']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'a']),
+    ]);
     expect(fieldText(tester), 'leftctrl+a');
   });
 
@@ -163,22 +173,30 @@ void main() {
 
     await pressUndo(tester);
 
-    expect(tokensOf(container), ['leftctrl+a']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'a']),
+    ]);
   });
 
   testWidgets('redo replays an undone sequence edit', (tester) async {
     final container = await pumpEditor(tester);
 
     await type(tester, 'leftctrl+b');
-    expect(tokensOf(container), ['leftctrl+b']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'b']),
+    ]);
 
     await pressUndo(tester);
-    expect(tokensOf(container), ['leftctrl+a']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'a']),
+    ]);
     expect(fieldText(tester), 'leftctrl+a');
 
     await pressUndo(tester, shift: true);
 
-    expect(tokensOf(container), ['leftctrl+b']);
+    expect(tokensOf(container), const [
+      InputToken.combo(['leftctrl', 'b']),
+    ]);
     expect(fieldText(tester), 'leftctrl+b');
   });
 }

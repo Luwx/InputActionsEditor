@@ -641,15 +641,57 @@ mouse:
           c.mouseGestures.single.common.actions.single.action as InputAction;
       expect(action.entries.length, 2);
       expect(action.entries[0].device, InputDevice.keyboard);
-      expect(
-        action.entries[0].tokens,
-        ['+leftctrl', 'leftctrl+c', '-leftctrl'],
-      );
+      expect(action.entries[0].tokens, const [
+        InputToken.press('leftctrl'),
+        InputToken.combo(['leftctrl', 'c']),
+        InputToken.release('leftctrl'),
+      ]);
       expect(action.entries[1].device, InputDevice.mouse);
-      expect(action.entries[1].tokens, ['back', 'move_by 10 10']);
+      expect(action.entries[1].tokens, const [
+        InputToken.combo(['back']),
+        InputToken.moveBy(10, 10),
+      ]);
     });
 
-    test('input text token becomes text: sentinel', () {
+    test('pointer motion only decodes under mouse', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - input:
+            - keyboard: [ move_by 10 10 ]
+            - mouse: [ move_by_delta, move_by_delta 0.5, wheel 0 -1 ]
+''');
+      final action =
+          c.mouseGestures.single.common.actions.single.action as InputAction;
+      expect(action.entries[0].tokens, const [
+        InputToken.raw('move_by 10 10'),
+      ]);
+      expect(action.entries[1].tokens, const [
+        InputToken.moveByDelta(null),
+        InputToken.moveByDelta(0.5),
+        InputToken.wheel(0, -1),
+      ]);
+    });
+
+    test('an unrecognised item is kept verbatim', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - input:
+            - mouse: [ teleport 1 2 3 ]
+''');
+      final action =
+          c.mouseGestures.single.common.actions.single.action as InputAction;
+      expect(action.entries.single.tokens, const [
+        InputToken.raw('teleport 1 2 3'),
+      ]);
+    });
+
+    test('input text token carries a literal value', () {
       final c = decodeConfig('''
 keyboard:
   gestures:
@@ -662,7 +704,28 @@ keyboard:
 ''');
       final action =
           c.keyboardGestures.single.common.actions.single.action as InputAction;
-      expect(action.entries.single.tokens, ['text:hello world']);
+      expect(action.entries.single.tokens, const [
+        InputToken.text(DynamicText.literal('hello world')),
+      ]);
+    });
+
+    test('input text token carries a command value', () {
+      final c = decodeConfig('''
+keyboard:
+  gestures:
+    - type: shortcut
+      shortcut: [ leftctrl ]
+      actions:
+        - input:
+            - keyboard:
+                - text:
+                    command: date
+''');
+      final action =
+          c.keyboardGestures.single.common.actions.single.action as InputAction;
+      expect(action.entries.single.tokens, const [
+        InputToken.text(DynamicText.command('date')),
+      ]);
     });
 
     test('input delay is read alongside the entries', () {
@@ -718,13 +781,13 @@ mouse:
       expect(action.rules, [
         const TextSubstitutionRule(
           regex: ':calc{(.*)}',
-          replace: CommandTextReplacementValue(
-            command: r'printf "$(qalc -t "$match_1")"',
+          replace: DynamicText.command(
+            r'printf "$(qalc -t "$match_1")"',
           ),
         ),
         const TextSubstitutionRule(
           regex: ':email',
-          replace: LiteralTextReplacementValue(text: 'example@example.com'),
+          replace: DynamicText.literal('example@example.com'),
         ),
       ]);
     });

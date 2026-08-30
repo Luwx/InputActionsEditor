@@ -1,12 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
+import 'package:input_actions_editor/model/action.dart';
+
+InputToken press(String key) => InputToken.press(key);
+InputToken release(String key) => InputToken.release(key);
 
 void main() {
   group('KeySequenceParser.canExpressAsShortcut', () {
     group('returns true', () {
       test('single key press-release', () {
         expect(
-          KeySequenceParser.canExpressAsShortcut(['+a', '-a']),
+          KeySequenceParser.canExpressAsShortcut([press('a'), release('a')]),
           isTrue,
         );
       });
@@ -14,12 +18,12 @@ void main() {
       test('modifier + key chord (standard release order)', () {
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+leftctrl',
-            '+leftshift',
-            '+t',
-            '-t',
-            '-leftshift',
-            '-leftctrl',
+            press('leftctrl'),
+            press('leftshift'),
+            press('t'),
+            release('t'),
+            release('leftshift'),
+            release('leftctrl'),
           ]),
           isTrue,
         );
@@ -29,10 +33,10 @@ void main() {
         // ctrl released before t — still the same chord semantically
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+leftctrl',
-            '+t',
-            '-leftctrl',
-            '-t',
+            press('leftctrl'),
+            press('t'),
+            release('leftctrl'),
+            release('t'),
           ]),
           isTrue,
         );
@@ -42,14 +46,14 @@ void main() {
         // NOT the same as a+s+d+f — these are four separate chords
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+a',
-            '-a',
-            '+s',
-            '-s',
-            '+d',
-            '-d',
-            '+f',
-            '-f',
+            press('a'),
+            release('a'),
+            press('s'),
+            release('s'),
+            press('d'),
+            release('d'),
+            press('f'),
+            release('f'),
           ]),
           isTrue,
         );
@@ -58,12 +62,12 @@ void main() {
       test('two-key chord followed by single-key chord', () {
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+leftctrl',
-            '+z',
-            '-z',
-            '-leftctrl',
-            '+a',
-            '-a',
+            press('leftctrl'),
+            press('z'),
+            release('z'),
+            release('leftctrl'),
+            press('a'),
+            release('a'),
           ]),
           isTrue,
         );
@@ -72,10 +76,10 @@ void main() {
       test('a held while s is pressed then released (a+s)', () {
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+a',
-            '+s',
-            '-s',
-            '-a',
+            press('a'),
+            press('s'),
+            release('s'),
+            release('a'),
           ]),
           isTrue,
         );
@@ -91,12 +95,12 @@ void main() {
         // ctrl held, t pressed+released, then a pressed while ctrl still down
         expect(
           KeySequenceParser.canExpressAsShortcut([
-            '+leftctrl',
-            '+t',
-            '-t',
-            '+a',
-            '-a',
-            '-leftctrl',
+            press('leftctrl'),
+            press('t'),
+            release('t'),
+            press('a'),
+            release('a'),
+            release('leftctrl'),
           ]),
           isFalse,
         );
@@ -104,28 +108,38 @@ void main() {
 
       test('key released without being pressed', () {
         expect(
-          KeySequenceParser.canExpressAsShortcut(['+a', '-b']),
+          KeySequenceParser.canExpressAsShortcut([press('a'), release('b')]),
           isFalse,
         );
       });
 
       test('key pressed twice without release', () {
         expect(
-          KeySequenceParser.canExpressAsShortcut(['+a', '+a', '-a']),
+          KeySequenceParser.canExpressAsShortcut([
+            press('a'),
+            press('a'),
+            release('a'),
+          ]),
           isFalse,
         );
       });
 
       test('group left open (key never released)', () {
         expect(
-          KeySequenceParser.canExpressAsShortcut(['+a', '+s', '-s']),
+          KeySequenceParser.canExpressAsShortcut([
+            press('a'),
+            press('s'),
+            release('s'),
+          ]),
           isFalse,
         );
       });
 
-      test('non-keyboard token', () {
+      test('a chord is not a press/release sequence', () {
         expect(
-          KeySequenceParser.canExpressAsShortcut(['left+right']),
+          KeySequenceParser.canExpressAsShortcut([
+            const InputToken.combo(['left', 'right']),
+          ]),
           isFalse,
         );
       });
@@ -135,7 +149,7 @@ void main() {
   group('KeySequenceParser.tokensToShortcutString', () {
     test('single key → bare key name', () {
       expect(
-        KeySequenceParser.tokensToShortcutString(['+a', '-a']),
+        KeySequenceParser.tokensToShortcutString([press('a'), release('a')]),
         equals('a'),
       );
     });
@@ -143,12 +157,12 @@ void main() {
     test('modifier + key chord → joined with +', () {
       expect(
         KeySequenceParser.tokensToShortcutString([
-          '+leftctrl',
-          '+leftshift',
-          '+t',
-          '-t',
-          '-leftshift',
-          '-leftctrl',
+          press('leftctrl'),
+          press('leftshift'),
+          press('t'),
+          release('t'),
+          release('leftshift'),
+          release('leftctrl'),
         ]),
         equals('leftctrl+leftshift+t'),
       );
@@ -156,7 +170,12 @@ void main() {
 
     test('a held while s pressed then released → a+s', () {
       expect(
-        KeySequenceParser.tokensToShortcutString(['+a', '+s', '-s', '-a']),
+        KeySequenceParser.tokensToShortcutString([
+          press('a'),
+          press('s'),
+          release('s'),
+          release('a'),
+        ]),
         equals('a+s'),
       );
     });
@@ -165,14 +184,14 @@ void main() {
       // a, s, d, f — four chords — is distinct from a+s+d+f (one chord)
       expect(
         KeySequenceParser.tokensToShortcutString([
-          '+a',
-          '-a',
-          '+s',
-          '-s',
-          '+d',
-          '-d',
-          '+f',
-          '-f',
+          press('a'),
+          release('a'),
+          press('s'),
+          release('s'),
+          press('d'),
+          release('d'),
+          press('f'),
+          release('f'),
         ]),
         equals('a, s, d, f'),
       );
@@ -181,12 +200,12 @@ void main() {
     test('two-key chord then single key', () {
       expect(
         KeySequenceParser.tokensToShortcutString([
-          '+leftctrl',
-          '+z',
-          '-z',
-          '-leftctrl',
-          '+a',
-          '-a',
+          press('leftctrl'),
+          press('z'),
+          release('z'),
+          release('leftctrl'),
+          press('a'),
+          release('a'),
         ]),
         equals('leftctrl+z, a'),
       );
@@ -195,10 +214,10 @@ void main() {
     test('non-standard release order preserves press order in chord', () {
       expect(
         KeySequenceParser.tokensToShortcutString([
-          '+leftctrl',
-          '+t',
-          '-leftctrl',
-          '-t',
+          press('leftctrl'),
+          press('t'),
+          release('leftctrl'),
+          release('t'),
         ]),
         equals('leftctrl+t'),
       );

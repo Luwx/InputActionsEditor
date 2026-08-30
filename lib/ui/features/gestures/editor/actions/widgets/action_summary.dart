@@ -79,30 +79,19 @@ String inputEntrySummary(InputEntry entry, AppLocalizations l10n) {
         ? l10n.actionSummaryNoKeys
         : l10n.actionSummaryNoButtons;
   }
-  return entry.tokens.map((t) => _tokenLabel(t, entry.device, l10n)).join(' ');
+  return entry.tokens.map((t) => _tokenLabel(t, l10n)).join(' ');
 }
 
-String _tokenLabel(String token, InputDevice device, AppLocalizations l10n) {
-  if (device == InputDevice.keyboard) {
-    final (:type, :val) = parseKeyToken(token);
-    return switch (type) {
-      KeyTokenType.press => '↓$val',
-      KeyTokenType.release => '↑$val',
-      KeyTokenType.text => val,
-      KeyTokenType.combo => val,
-    };
-  }
-  final (:type, :v1, :v2) = parseMouseToken(token);
-  return switch (type) {
-    MouseTokenType.press => '↓$v1',
-    MouseTokenType.release => '↑$v1',
-    MouseTokenType.moveBy => tokenLabel(token, device, l10n),
-    MouseTokenType.moveByDelta => tokenLabel(token, device, l10n),
-    MouseTokenType.moveTo => tokenLabel(token, device, l10n),
-    MouseTokenType.wheel => tokenLabel(token, device, l10n),
-    MouseTokenType.combo => v1,
-  };
-}
+String _tokenLabel(InputToken token, AppLocalizations l10n) => switch (token) {
+  PressInputToken(:final key) => '↓ $key',
+  ReleaseInputToken(:final key) => '↑ $key',
+  ComboInputToken(:final keys) => keys.join('+'),
+  TextInputToken(value: LiteralText(:final text)) => text,
+  TextInputToken(value: CommandText(:final command)) =>
+    l10n.tokenLabelTextCommand(command),
+  RawInputToken(:final token) => token,
+  _ => tokenLabel(token, l10n),
+};
 
 /// The non-default trigger fields, shown as chips on the collapsed row.
 List<({String label, String value})> actionMetaChips(

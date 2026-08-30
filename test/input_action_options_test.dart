@@ -98,7 +98,9 @@ void main() {
         entries: [
           InputEntry(
             device: InputDevice.keyboard,
-            tokens: ['leftctrl+n'],
+            tokens: [
+              InputToken.combo(['leftctrl', 'n']),
+            ],
           ),
         ],
       );

@@ -5,6 +5,7 @@ import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -513,7 +514,7 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   },
   InputAction(:final entries, :final delay) => {
     'input': entries
-        .map((e) => {e.device.name: e.tokens.map(_tokenFromString).toList()})
+        .map((e) => {e.device.name: e.tokens.map(inputTokenToYaml).toList()})
         .toList(),
     'delay': ?delay,
   },
@@ -534,14 +535,13 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
 
 Map<String, dynamic> textSubstitutionRuleToMap(TextSubstitutionRule rule) => {
   'regex': rule.regex,
-  'replace': textReplacementValueToYaml(rule.replace),
+  'replace': dynamicTextToYaml(rule.replace),
 };
 
-dynamic textReplacementValueToYaml(TextReplacementValue value) =>
-    switch (value) {
-      LiteralTextReplacementValue(:final text) => text,
-      CommandTextReplacementValue(:final command) => {'command': command},
-    };
+dynamic dynamicTextToYaml(DynamicText value) => switch (value) {
+  LiteralText(:final text) => text,
+  CommandText(:final command) => {'command': command},
+};
 
 const _deviceSectionKeys = {
   'mouse',
@@ -816,8 +816,10 @@ List<List<String>> _disabledItemInnerComments(String yamlText) {
   return results;
 }
 
-dynamic _tokenFromString(String token) =>
-    token.startsWith('text:') ? {'text': token.substring(5)} : token;
+dynamic inputTokenToYaml(InputToken token) => switch (token) {
+  TextInputToken(:final value) => {'text': dynamicTextToYaml(value)},
+  _ => formatInputToken(token),
+};
 
 dynamic conditionToYaml(Condition c) => switch (c) {
   VariableCondition(

@@ -1,4 +1,5 @@
 import 'package:input_actions_editor/domain/misc/keyboard_scancodes.dart';
+import 'package:input_actions_editor/model/action.dart';
 
 // ---------------------------------------------------------------------------
 // Key resolution
@@ -184,10 +185,12 @@ final class KsChord extends KsSegment {
 
   bool get isFullyValid => keys.isNotEmpty && keys.every((k) => k.isValid);
 
-  List<String> toTokens() {
+  List<InputToken> toTokens() {
     final valid = keys.where((k) => k.isValid).toList();
     if (valid.isEmpty) return const [];
-    return [valid.map((k) => k.scancode).join('+')];
+    return [
+      InputToken.combo([for (final k in valid) k.scancode!]),
+    ];
   }
 }
 
@@ -204,11 +207,11 @@ final class KsToken extends KsSegment {
   final KsKeyPart key;
   final bool pressed;
 
-  /// Returns the normalised token string, or `null` if the key is invalid.
-  String? toToken() {
+  /// Returns the normalised token, or `null` if the key is invalid.
+  InputToken? toToken() {
     final sc = key.scancode;
     if (sc == null) return null;
-    return '${pressed ? '+' : '-'}$sc';
+    return pressed ? InputToken.press(sc) : InputToken.release(sc);
   }
 }
 
@@ -331,10 +334,9 @@ class KeySequenceParser {
     return result;
   }
 
-  /// Converts parsed segments to the internal '+scancode' / '-scancode' token
-  /// list that the rest of the app understands.
-  static List<String> toTokens(List<KsSegment> segments) {
-    final tokens = <String>[];
+  /// Converts parsed segments to the token list the rest of the app uses.
+  static List<InputToken> toTokens(List<KsSegment> segments) {
+    final tokens = <InputToken>[];
     for (final seg in segments) {
       switch (seg) {
         case KsChord():
@@ -355,20 +357,21 @@ class KeySequenceParser {
   /// A token sequence is chord-expressible when it consists of one or more
   /// contiguous groups where each group has all presses before any release and
   /// every pressed key is released exactly once before the next group begins.
-  static bool canExpressAsShortcut(List<String> tokens) {
+  static bool canExpressAsShortcut(List<InputToken> tokens) {
     if (tokens.isEmpty) return false;
     final held = <String>{};
     var seenReleaseInGroup = false;
-    for (final t in tokens) {
-      if (t.startsWith('+')) {
-        if (seenReleaseInGroup) return false; // press after release in group
-        if (!held.add(t.substring(1))) return false; // duplicate press
-      } else if (t.startsWith('-')) {
-        if (!held.remove(t.substring(1))) return false; // release without press
-        seenReleaseInGroup = true;
-        if (held.isEmpty) seenReleaseInGroup = false; // group complete
-      } else {
-        return false;
+    for (final token in tokens) {
+      switch (token) {
+        case PressInputToken(:final key):
+          if (seenReleaseInGroup) return false; // press after release in group
+          if (!held.add(key)) return false; // duplicate press
+        case ReleaseInputToken(:final key):
+          if (!held.remove(key)) return false; // release without press
+          seenReleaseInGroup = true;
+          if (held.isEmpty) seenReleaseInGroup = false; // group complete
+        default:
+          return false;
       }
     }
     return held.isEmpty;
@@ -376,20 +379,23 @@ class KeySequenceParser {
 
   /// Converts a token list that satisfies [canExpressAsShortcut] into a
   /// comma-separated chord string, e.g. `ctrl+shift+t` or `a, s, d`.
-  static String tokensToShortcutString(List<String> tokens) {
+  static String tokensToShortcutString(List<InputToken> tokens) {
     final chords = <String>[];
     final currentGroup = <String>[];
     final held = <String>{};
-    for (final t in tokens) {
-      if (t.startsWith('+')) {
-        currentGroup.add(t.substring(1));
-        held.add(t.substring(1));
-      } else if (t.startsWith('-')) {
-        held.remove(t.substring(1));
-        if (held.isEmpty) {
-          chords.add(currentGroup.join('+'));
-          currentGroup.clear();
-        }
+    for (final token in tokens) {
+      switch (token) {
+        case PressInputToken(:final key):
+          currentGroup.add(key);
+          held.add(key);
+        case ReleaseInputToken(:final key):
+          held.remove(key);
+          if (held.isEmpty) {
+            chords.add(currentGroup.join('+'));
+            currentGroup.clear();
+          }
+        default:
+          break;
       }
     }
     return chords.join(', ');

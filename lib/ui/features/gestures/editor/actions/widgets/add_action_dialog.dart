@@ -67,7 +67,7 @@ enum _ActionKind {
       rules: [
         TextSubstitutionRule(
           regex: '',
-          replace: LiteralTextReplacementValue(text: ''),
+          replace: LiteralText(''),
         ),
       ],
     ),

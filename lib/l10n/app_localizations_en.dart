@@ -420,6 +420,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String tokenLabelTextCommand(String val) {
+    return 'Text from: $val';
+  }
+
+  @override
   String tokenLabelMoveBy(String v1, String v2) {
     return 'Move by $v1, $v2';
   }

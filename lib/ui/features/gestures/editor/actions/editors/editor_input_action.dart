@@ -181,14 +181,14 @@ class _InputEntryEditor extends HookWidget {
   Widget build(BuildContext context) {
     final timelinePopoverGroup = useMemoized(Object.new);
     final isKeyboardRecording = useState(false);
-    final liveKeyTokens = useState<List<String>>([]);
+    final liveKeyTokens = useState<List<InputToken>>([]);
     final keySeqController = useTextEditingController(
-      text: entry.tokens.join(', '),
+      text: entry.tokens.map(inputTokenText).join(', '),
     );
-    final liveMouseTokens = useState<List<String>>([]);
+    final liveMouseTokens = useState<List<InputToken>>([]);
     final buttonsDown = useRef(0);
     final mouseSeqController = useTextEditingController(
-      text: entry.tokens.join(', '),
+      text: entry.tokens.map(inputTokenText).join(', '),
     );
 
     final mode = inferInputEntryMode(entry);
@@ -196,25 +196,34 @@ class _InputEntryEditor extends HookWidget {
     final syncing = useRef(false);
     final typedTokenKey = useRef<String?>(null);
 
-    void replaceTokens(List<String> tokens) {
+    void replaceTokens(List<InputToken> tokens) {
       if (syncing.value) return;
       onChanged(entry.copyWith(tokens: tokens));
     }
 
-    void replaceTypedTokens(List<String> tokens) {
+    void replaceTypedTokens(List<InputToken> tokens) {
       if (syncing.value) return;
-      typedTokenKey.value = tokens.join(', ');
+      typedTokenKey.value = tokens.map(inputTokenText).join(', ');
       onChanged(entry.copyWith(tokens: tokens));
     }
 
-    void replaceSingleToken(String token) => replaceTokens([token]);
-
+    final textValue = keyboardTextValue(entry.tokens);
     final keyboardText = useSyncedTextController(
-      keyboardTextValue(entry.tokens),
-      (value) => replaceSingleToken('text: ${value.text}'),
+      switch (textValue) {
+        LiteralText(:final text) => text,
+        CommandText(:final command) => command,
+      },
+      (value) => replaceTokens([
+        InputToken.text(
+          switch (textValue) {
+            LiteralText() => DynamicText.literal(value.text),
+            CommandText() => DynamicText.command(value.text),
+          },
+        ),
+      ]),
     );
 
-    final tokenKey = entry.tokens.join(', ');
+    final tokenKey = entry.tokens.map(inputTokenText).join(', ');
     useEffect(() {
       if (tokenKey == typedTokenKey.value) return null;
       typedTokenKey.value = null;
@@ -223,7 +232,7 @@ class _InputEntryEditor extends HookWidget {
         if (controller.text == tokenKey) return;
         final typed = KeySequenceParser.toTokens(
           KeySequenceParser.parse(controller.text),
-        ).join(', ');
+        ).map(inputTokenText).join(', ');
         // Text the parser cannot read canonicalizes to nothing, which must not
         // pass for an empty sequence.
         if (typed.isNotEmpty && typed == tokenKey) return;
@@ -263,8 +272,13 @@ class _InputEntryEditor extends HookWidget {
       if (event is! KeyDownEvent && event is! KeyUpEvent) return true;
       final scancode = physicalKeyToScancode[event.physicalKey];
       if (scancode != null) {
-        final token = '${event is KeyDownEvent ? '+' : '-'}$scancode';
-        liveKeyTokens.value = [...liveKeyTokens.value, token];
+        liveKeyTokens.value = [
+          ...liveKeyTokens.value,
+          if (event is KeyDownEvent)
+            InputToken.press(scancode)
+          else
+            InputToken.release(scancode),
+        ];
       }
       return true;
     }
@@ -289,7 +303,7 @@ class _InputEntryEditor extends HookWidget {
         final tokens = liveKeyTokens.value;
         final appended = convertToShortcut
             ? KeySequenceParser.tokensToShortcutString(tokens)
-            : tokens.join(', ');
+            : tokens.map(inputTokenText).join(', ');
         final existing = keySeqController.text.trim();
         keySeqController.text = existing.isEmpty
             ? appended
@@ -306,7 +320,10 @@ class _InputEntryEditor extends HookWidget {
       var changed = false;
       for (final e in _mouseButtonNames.entries) {
         if (pressed & e.key != 0) {
-          liveMouseTokens.value = [...liveMouseTokens.value, '+${e.value}'];
+          liveMouseTokens.value = [
+            ...liveMouseTokens.value,
+            InputToken.press(e.value),
+          ];
           changed = true;
         }
       }
@@ -318,7 +335,10 @@ class _InputEntryEditor extends HookWidget {
       buttonsDown.value = event.buttons;
       for (final e in _mouseButtonNames.entries) {
         if (released & e.key != 0) {
-          liveMouseTokens.value = [...liveMouseTokens.value, '-${e.value}'];
+          liveMouseTokens.value = [
+            ...liveMouseTokens.value,
+            InputToken.release(e.value),
+          ];
         }
       }
     }
@@ -463,6 +483,7 @@ class _InputEntryEditor extends HookWidget {
       );
     }
 
+    final vector = vectorOf(entry.tokens);
     final inlineEditor = switch (mode) {
       InputEntryMode.keyboardTimeline => buildKeyboardTimelineEditor(),
       InputEntryMode.mouseTimeline => buildMouseTimelineEditor(),
@@ -473,23 +494,23 @@ class _InputEntryEditor extends HookWidget {
         hint: 'Hello world',
       ),
       InputEntryMode.mouseMoveBy => MouseVectorEditor(
-        token: singleTokenOrDefault(entry.tokens, mode),
-        mode: mode,
-        onChanged: replaceSingleToken,
+        x: vector.$1,
+        y: vector.$2,
+        onChanged: (x, y) => replaceTokens([InputToken.moveBy(x, y)]),
       ),
       InputEntryMode.mouseMoveByDelta => MouseDeltaEditor(
-        token: singleTokenOrDefault(entry.tokens, mode),
-        onChanged: replaceSingleToken,
+        multiplier: multiplierOf(entry.tokens),
+        onChanged: (value) => replaceTokens([InputToken.moveByDelta(value)]),
       ),
       InputEntryMode.mouseMoveTo => MouseVectorEditor(
-        token: singleTokenOrDefault(entry.tokens, mode),
-        mode: mode,
-        onChanged: replaceSingleToken,
+        x: vector.$1,
+        y: vector.$2,
+        onChanged: (x, y) => replaceTokens([InputToken.moveTo(x, y)]),
       ),
       InputEntryMode.mouseWheel => MouseVectorEditor(
-        token: singleTokenOrDefault(entry.tokens, mode),
-        mode: mode,
-        onChanged: replaceSingleToken,
+        x: vector.$1,
+        y: vector.$2,
+        onChanged: (x, y) => replaceTokens([InputToken.wheel(x, y)]),
       ),
     };
 
@@ -651,7 +672,7 @@ class _KeyboardRecordingView extends HookWidget {
   });
 
   final FPopoverController controller;
-  final List<String> liveKeyTokens;
+  final List<InputToken> liveKeyTokens;
   final void Function({required bool append, bool convertToShortcut})
   stopRecording;
   final VoidCallback onClear;
@@ -711,7 +732,7 @@ class _KeyboardRecordingView extends HookWidget {
                         vertical: 4,
                       ),
                       child: Text(
-                        token,
+                        inputTokenText(token),
                         style: context.theme.typography.body.xs,
                       ),
                     ),
@@ -883,7 +904,7 @@ class _KeyResultTile extends HookWidget {
 Widget _buildMouseRecordPopover(
   BuildContext context,
   FPopoverController controller, {
-  required List<String> liveMouseTokens,
+  required List<InputToken> liveMouseTokens,
   required TextEditingController mouseSeqController,
   required void Function(PointerDownEvent) onPointerDown,
   required void Function(PointerUpEvent) onPointerUp,
@@ -930,12 +951,7 @@ Widget _buildMouseRecordPopover(
                     for (final token in liveMouseTokens)
                       Builder(
                         builder: (context) {
-                          final vis = tokenVisual(
-                            token,
-                            InputDevice.mouse,
-                            colors,
-                            context.l10n,
-                          );
+                          final vis = tokenVisual(token, colors, context.l10n);
                           return DecoratedBox(
                             decoration: BoxDecoration(
                               color: vis.background,

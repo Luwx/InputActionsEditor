@@ -19,6 +19,37 @@ import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
 void main() {
+  group('input items', () {
+    const source = '''
+keyboard:
+  gestures:
+    - type: shortcut
+      shortcut: [ leftctrl ]
+      actions:
+        - input:
+            - keyboard: [ leftctrl+n ]
+            - mouse: [ left, move_by 10 10 ]
+            - mouse: [ move_by_delta, move_by_delta 0.5 ]
+            - mouse: [ move_to 0 0, wheel 0 -1 ]
+            - keyboard: [ text: aaaaaa ]
+            - keyboard:
+                - text:
+                    command: date
+            - mouse: [ teleport 1 2 3 ]
+''';
+
+    test('decoding and re-encoding rewrites none of the items', () {
+      expect(encodeConfig(decodeConfig(source), source), startsWith(source));
+    });
+
+    test('the model survives a round-trip', () {
+      final config1 = decodeConfig(source);
+      final config2 = decodeConfig(encodeConfig(config1, source));
+
+      expect(config2, config1);
+    });
+  });
+
   group('fixture round-trip (decode -> encode -> decode)', () {
     late final fixture = File(
       'test/fixtures/test_config.yaml',
@@ -90,7 +121,7 @@ void main() {
                         InputEntry(
                           device: InputDevice.keyboard,
                           tokens: [
-                            'leftctrl+home',
+                            InputToken.combo(['leftctrl', 'home']),
                           ],
                         ),
                       ],

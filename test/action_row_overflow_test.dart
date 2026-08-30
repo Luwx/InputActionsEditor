@@ -35,7 +35,9 @@ class _SeededController extends ConfigController {
                       entries: [
                         InputEntry(
                           device: InputDevice.keyboard,
-                          tokens: ['leftctrl+c'],
+                          tokens: [
+                            InputToken.combo(['leftctrl', 'c']),
+                          ],
                         ),
                       ],
                     ),

@@ -910,6 +910,12 @@ abstract class AppLocalizations {
   /// **'Text: {val}'**
   String tokenLabelText(String val);
 
+  /// No description provided for @tokenLabelTextCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Text from: {val}'**
+  String tokenLabelTextCommand(String val);
+
   /// No description provided for @tokenLabelMoveBy.
   ///
   /// In en, this message translates to:

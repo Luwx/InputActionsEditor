@@ -1,4 +1,5 @@
 import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -762,15 +763,15 @@ TextSubstitutionRule? _parseTextSubstitutionRule(dynamic node) {
   if (!node.containsKey('regex') || !node.containsKey('replace')) return null;
   return TextSubstitutionRule(
     regex: node['regex'].toString(),
-    replace: _parseTextReplacementValue(node['replace']),
+    replace: _parseDynamicText(node['replace']),
   );
 }
 
-TextReplacementValue _parseTextReplacementValue(dynamic node) {
+DynamicText _parseDynamicText(dynamic node) {
   if (node is YamlMap && node.containsKey('command')) {
-    return CommandTextReplacementValue(command: node['command'].toString());
+    return DynamicText.command(node['command'].toString());
   }
-  return LiteralTextReplacementValue(text: node?.toString() ?? '');
+  return DynamicText.literal(node?.toString() ?? '');
 }
 
 List<InputEntry> _parseInputEntries(dynamic node) {
@@ -785,7 +786,10 @@ List<InputEntry> _parseInputEntries(dynamic node) {
           InputEntry(
             device: device,
             tokens: tokenNode is YamlList
-                ? tokenNode.map(_tokenToString).toList()
+                ? [
+                    for (final token in tokenNode)
+                      _parseInputToken(token, device),
+                  ]
                 : [],
           ),
         );
@@ -795,11 +799,11 @@ List<InputEntry> _parseInputEntries(dynamic node) {
   return entries;
 }
 
-String _tokenToString(dynamic token) {
+InputToken _parseInputToken(dynamic token, InputDevice device) {
   if (token is YamlMap && token.containsKey('text')) {
-    return 'text:${token["text"]}';
+    return InputToken.text(_parseDynamicText(token['text']));
   }
-  return token?.toString() ?? '';
+  return parseInputToken(token?.toString() ?? '', device);
 }
 
 // Device rules

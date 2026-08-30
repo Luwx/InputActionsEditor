@@ -446,7 +446,12 @@ mouse:
         actionToMap(
           const InputAction(
             entries: [
-              InputEntry(device: InputDevice.keyboard, tokens: ['leftctrl+n']),
+              InputEntry(
+                device: InputDevice.keyboard,
+                tokens: [
+                  InputToken.combo(['leftctrl', 'n']),
+                ],
+              ),
             ],
             delay: 5,
           ),
@@ -474,11 +479,16 @@ mouse:
               InputEntry(
                 device: InputDevice.keyboard,
                 tokens: [
-                  '+leftctrl',
-                  'text:hello world',
+                  InputToken.press('leftctrl'),
+                  InputToken.text(DynamicText.literal('hello world')),
                 ],
               ),
-              InputEntry(device: InputDevice.mouse, tokens: ['back']),
+              InputEntry(
+                device: InputDevice.mouse,
+                tokens: [
+                  InputToken.combo(['back']),
+                ],
+              ),
             ],
           ),
         ),
@@ -528,14 +538,14 @@ mouse:
             rules: [
               TextSubstitutionRule(
                 regex: ':calc{(.*)}',
-                replace: CommandTextReplacementValue(
-                  command: r'printf "$(qalc -t "$match_1")"',
+                replace: DynamicText.command(
+                  r'printf "$(qalc -t "$match_1")"',
                 ),
               ),
               TextSubstitutionRule(
                 regex: ':email',
-                replace: LiteralTextReplacementValue(
-                  text: 'example@example.com',
+                replace: DynamicText.literal(
+                  'example@example.com',
                 ),
               ),
             ],

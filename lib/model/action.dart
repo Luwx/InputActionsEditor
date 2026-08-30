@@ -72,18 +72,16 @@ sealed class Action with _$Action {
 abstract class TextSubstitutionRule with _$TextSubstitutionRule {
   const factory TextSubstitutionRule({
     required String regex,
-    required TextReplacementValue replace,
+    required DynamicText replace,
   }) = _TextSubstitutionRule;
 }
 
 @freezed
 @withMeta
-sealed class TextReplacementValue with _$TextReplacementValue {
-  const factory TextReplacementValue.literal({required String text}) =
-      LiteralTextReplacementValue;
+sealed class DynamicText with _$DynamicText {
+  const factory DynamicText.literal(String text) = LiteralText;
 
-  const factory TextReplacementValue.command({required String command}) =
-      CommandTextReplacementValue;
+  const factory DynamicText.command(String command) = CommandText;
 }
 
 enum InputDevice { keyboard, mouse }
@@ -93,6 +91,35 @@ enum InputDevice { keyboard, mouse }
 abstract class InputEntry with _$InputEntry {
   const factory InputEntry({
     required InputDevice device,
-    @Default([]) List<String> tokens,
+    @Default([]) List<InputToken> tokens,
   }) = _InputEntry;
+}
+
+/// One item of an `input:` device sequence. Mirrors the daemon's own item
+/// set; anything it does not recognise stays a [RawInputToken] so an
+/// unfamiliar config still round-trips.
+@freezed
+@withMeta
+sealed class InputToken with _$InputToken {
+  const factory InputToken.press(String key) = PressInputToken;
+
+  const factory InputToken.release(String key) = ReleaseInputToken;
+
+  /// Keys pressed in order and released in reverse, written `a+b+c`. A lone
+  /// key or mouse button is a one-element combo.
+  const factory InputToken.combo(List<String> keys) = ComboInputToken;
+
+  const factory InputToken.text(DynamicText value) = TextInputToken;
+
+  const factory InputToken.moveBy(double x, double y) = MoveByInputToken;
+
+  /// Null multiplier is the bare `move_by_delta`, which the daemon reads as 1.
+  const factory InputToken.moveByDelta(double? multiplier) =
+      MoveByDeltaInputToken;
+
+  const factory InputToken.moveTo(double x, double y) = MoveToInputToken;
+
+  const factory InputToken.wheel(double x, double y) = WheelInputToken;
+
+  const factory InputToken.raw(String token) = RawInputToken;
 }

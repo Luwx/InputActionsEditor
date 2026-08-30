@@ -32,7 +32,12 @@ Condition _isTrue(String variable) => VariableCondition(
 TriggerAction _keys(String token) => TriggerAction(
   action: InputAction(
     entries: [
-      InputEntry(device: InputDevice.keyboard, tokens: [token]),
+      InputEntry(
+        device: InputDevice.keyboard,
+        tokens: [
+          InputToken.combo([token]),
+        ],
+      ),
     ],
   ),
 );

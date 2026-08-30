@@ -149,6 +149,14 @@
       }
     }
   },
+  "tokenLabelTextCommand": "Text from: {val}",
+  "@tokenLabelTextCommand": {
+    "placeholders": {
+      "val": {
+        "type": "String"
+      }
+    }
+  },
   "tokenLabelMoveBy": "Move by {v1}, {v2}",
   "@tokenLabelMoveBy": {
     "placeholders": {
