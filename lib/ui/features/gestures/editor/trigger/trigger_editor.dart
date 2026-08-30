@@ -20,7 +20,10 @@ import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -55,6 +58,21 @@ class TriggerEditor extends HookConsumerWidget {
       ...inherited.keys,
       if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
     });
+    final lockPointer = ref.watch(
+      gestureEditorProvider(
+        location,
+      ).select((s) => lockPointerTargetFor(s.gesture)),
+    );
+    final speed = ref.watch(
+      gestureEditorProvider(location).select((s) => speedTargetFor(s.gesture)),
+    );
+
+    final pinLockPointer = useState(lockPointer?.isSet ?? false);
+    final pinSpeed = useState(speed?.isSet ?? false);
+    final bodyLockPointer = lockPointer != null && pinLockPointer.value;
+    final bodySpeed = speed != null && pinSpeed.value;
+    final foldedLockPointer = lockPointer != null && !pinLockPointer.value;
+    final foldedSpeed = speed != null && !pinSpeed.value;
     final optionsExpanded = useState(false);
     final optionsEndKey = useMemoized(GlobalKey.new);
     final accordionFields = TriggerAdvancedField.values
@@ -68,7 +86,9 @@ class TriggerEditor extends HookConsumerWidget {
         reveal.after,
         location,
       );
-      if (accordionFields.any((field) => changed.contains(field.dirtyField))) {
+      if (accordionFields.any((field) => changed.contains(field.dirtyField)) ||
+          (foldedLockPointer && changed.contains(lockPointer.dirty)) ||
+          (foldedSpeed && changed.contains(speed.dirty))) {
         optionsExpanded.value = true;
       }
       return null;
@@ -135,6 +155,8 @@ class TriggerEditor extends HookConsumerWidget {
                   inherited: inherited,
                   inheritedConditions: inheritedConditions,
                   onOpenGroup: openGroup,
+                  showLockPointer: foldedLockPointer,
+                  showSpeed: foldedSpeed,
                 ),
               ),
               SizedBox(key: optionsEndKey, height: 16),
@@ -153,15 +175,14 @@ class TriggerEditor extends HookConsumerWidget {
             spacing: 16,
             children: sections,
           ),
-          if (pinnedFields.value.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 4),
-              child: TriggerAdvancedFields(
-                fields: pinnedFields.value,
-                inherited: inherited,
-                inheritedConditions: inheritedConditions,
-                onOpenGroup: openGroup,
-              ),
+          if (pinnedFields.value.isNotEmpty || bodyLockPointer || bodySpeed)
+            TriggerAdvancedFields(
+              fields: pinnedFields.value,
+              inherited: inherited,
+              inheritedConditions: inheritedConditions,
+              onOpenGroup: openGroup,
+              showLockPointer: bodyLockPointer,
+              showSpeed: bodySpeed,
             ),
         ],
       ),

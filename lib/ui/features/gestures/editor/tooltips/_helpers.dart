@@ -199,6 +199,46 @@ class _Note extends StatelessWidget {
   }
 }
 
+class _Warning extends StatelessWidget {
+  const _Warning(this.text, this.t);
+
+  final String text;
+  final FTypography t;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: kGestureWarningColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: kGestureWarningColor.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 6,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(
+              FLucideIcons.triangleAlert,
+              size: 11,
+              color: kGestureWarningColor,
+            ),
+          ),
+          Flexible(
+            child: Text(
+              text,
+              style: t.body.xs.copyWith(color: kGestureWarningColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _UnitRow extends StatelessWidget {
   const _UnitRow(
     this.gesture,

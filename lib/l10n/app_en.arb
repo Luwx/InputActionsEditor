@@ -304,6 +304,7 @@
   "triggerConditionsTitle": "Trigger Conditions",
   "triggerEndConditionsTitle": "End conditions",
   "triggerConditionsEmpty": "No conditions set. Add a condition or group to specify when this gesture should trigger.",
+  "triggerEndConditionsEmpty": "No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.",
   "conditionsMergedRootLabel": "must match: group conditions merged with this gesture's",
   "@conditionsMergedRootLabel": {
     "description": "Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge."
@@ -811,6 +812,8 @@
   "tooltip_triggerAccelerated_body": "Scale delta values by pointer acceleration.",
   "tooltip_triggerAccelerated_bulletOn": "Enable for proportional feel, e.g. move_by_delta actions.",
   "tooltip_triggerAccelerated_bulletOff": "Disable for uniform response, e.g. fixed key per tick.",
+  "tooltip_triggerLockPointer_body": "Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.",
+  "tooltip_triggerLockPointer_warning": "Locks the pointer for every motion trigger active at the same time, not just this one.",
   "tooltip_triggerBlockEvents_body": "Suppress raw input from reaching other applications.",
   "tooltip_triggerBlockEvents_sectionLabel": "Example",
   "tooltip_triggerBlockEvents_exCode": "right-click stroke gesture",
@@ -924,9 +927,8 @@
   "mouseDeltaMultiplierLabel": "Multiplier",
   "mouseDeltaMultiplierTooltip": "Scale factor applied to the gesture movement delta. 1 moves the pointer by the same distance as the gesture, 2 doubles it, 0.5 halves it.",
   "motionSpeedLabel": "Motion Speed",
-  "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.",
+  "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.",
   "motionLockPointerLabel": "Lock pointer",
-  "motionLockPointerTooltip": "Prevent the pointer from moving on screen while this gesture is active.",
   "numberRangeBetween": "Must be {min} to {max}",
   "@numberRangeBetween": {
     "placeholders": {

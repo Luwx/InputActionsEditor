@@ -301,6 +301,27 @@ class TriggerResumeTimeoutTooltip extends StatelessWidget {
   }
 }
 
+class TriggerLockPointerTooltip extends StatelessWidget {
+  const TriggerLockPointerTooltip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final t = context.theme.typography;
+    return TooltipShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          Text(l10n.tooltip_triggerLockPointer_body),
+          _Warning(l10n.tooltip_triggerLockPointer_warning, t),
+        ],
+      ),
+    );
+  }
+}
+
 class TriggerAcceleratedTooltip extends StatelessWidget {
   const TriggerAcceleratedTooltip({super.key});
 

@@ -14,6 +14,8 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inherited_field_note.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
@@ -29,9 +31,16 @@ class TriggerAdvancedFields extends HookConsumerWidget {
     this.inherited = const {},
     this.inheritedConditions = const [],
     this.onOpenGroup,
+    this.showLockPointer = false,
+    this.showSpeed = false,
   });
 
   final Iterable<TriggerAdvancedField> fields;
+
+  /// Properties of the trigger itself, rendered among [fields]. Not
+  /// [TriggerAdvancedField]s
+  final bool showLockPointer;
+  final bool showSpeed;
 
   /// When set, the fields read and write the group node's shared properties
   /// instead of the gesture in [EditLocationScope].
@@ -90,7 +99,9 @@ class TriggerAdvancedFields extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final visibleFields = fields.toSet();
-    if (visibleFields.isEmpty) return const SizedBox.shrink();
+    if (visibleFields.isEmpty && !showLockPointer && !showSpeed) {
+      return const SizedBox.shrink();
+    }
 
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
@@ -203,8 +214,10 @@ class TriggerAdvancedFields extends HookConsumerWidget {
       children: [
         if (visibleFields.contains(TriggerAdvancedField.id) ||
             visibleFields.contains(TriggerAdvancedField.threshold) ||
-            visibleFields.contains(TriggerAdvancedField.resumeTimeout)) ...[
+            visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
+            showSpeed) ...[
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 12,
             children: [
               if (visibleFields.contains(TriggerAdvancedField.id))
@@ -226,55 +239,78 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                     hint: l10n.triggerFieldIdHint,
                   ),
                 ),
-              if (visibleFields.contains(TriggerAdvancedField.threshold))
-                withNote(
-                  TriggerAdvancedField.threshold,
-                  FTextField(
-                    label: UnsavedLabel(
-                      state: thresholdField.dirty,
-                      onRevert: thresholdField.onRevert,
-                      mixed: thresholdField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldThresholdLabel,
-                        tooltipContent: const TriggerThresholdTooltip(),
-                        textStyle: const TextStyle(
-                          height: 1.4,
-                          fontFamily: 'monospaced',
+              if (visibleFields.contains(TriggerAdvancedField.threshold) ||
+                  visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
+                  showSpeed)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    if (visibleFields.contains(TriggerAdvancedField.threshold))
+                      SizedBox(
+                        width: _fieldWidth,
+                        child: withNote(
+                          TriggerAdvancedField.threshold,
+                          FTextField(
+                            label: UnsavedLabel(
+                              state: thresholdField.dirty,
+                              onRevert: thresholdField.onRevert,
+                              mixed: thresholdField.mixed,
+                              child: LabelWithTooltip(
+                                label: l10n.triggerFieldThresholdLabel,
+                                tooltipContent: const TriggerThresholdTooltip(),
+                                textStyle: const TextStyle(
+                                  height: 1.4,
+                                  fontFamily: 'monospaced',
+                                ),
+                              ),
+                            ),
+                            inputFormatters: thresholdInputFormatters,
+                            control: FTextFieldControl.managed(
+                              controller: thresholdController,
+                            ),
+                            hint: l10n.triggerFieldThresholdHint,
+                          ),
                         ),
                       ),
-                    ),
-                    inputFormatters: thresholdInputFormatters,
-                    control: FTextFieldControl.managed(
-                      controller: thresholdController,
-                    ),
-                    hint: l10n.triggerFieldThresholdHint,
-                  ),
-                ),
-              if (visibleFields.contains(TriggerAdvancedField.resumeTimeout))
-                withNote(
-                  TriggerAdvancedField.resumeTimeout,
-                  FTextField(
-                    label: UnsavedLabel(
-                      state: resumeTimeoutField.dirty,
-                      onRevert: resumeTimeoutField.onRevert,
-                      mixed: resumeTimeoutField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldResumeTimeoutLabel,
-                        tooltipContent: const TriggerResumeTimeoutTooltip(),
+                    if (visibleFields.contains(
+                      TriggerAdvancedField.resumeTimeout,
+                    ))
+                      SizedBox(
+                        width: _fieldWidth,
+                        child: withNote(
+                          TriggerAdvancedField.resumeTimeout,
+                          FTextField(
+                            label: UnsavedLabel(
+                              state: resumeTimeoutField.dirty,
+                              onRevert: resumeTimeoutField.onRevert,
+                              mixed: resumeTimeoutField.mixed,
+                              child: LabelWithTooltip(
+                                label: l10n.triggerFieldResumeTimeoutLabel,
+                                tooltipContent:
+                                    const TriggerResumeTimeoutTooltip(),
+                              ),
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            keyboardType: TextInputType.number,
+                            control: FTextFieldControl.managed(
+                              controller: resumeTimeoutController,
+                            ),
+                            hint: l10n.triggerFieldResumeTimeoutHint,
+                          ),
+                        ),
                       ),
-                    ),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    keyboardType: TextInputType.number,
-                    control: FTextFieldControl.managed(
-                      controller: resumeTimeoutController,
-                    ),
-                    hint: l10n.triggerFieldResumeTimeoutHint,
-                  ),
+                    if (showSpeed)
+                      const SizedBox(width: _fieldWidth, child: SpeedField()),
+                  ],
                 ),
             ],
           ),
         ],
-        if (visibleFields.contains(TriggerAdvancedField.accelerated) ||
+        if (showLockPointer ||
+            visibleFields.contains(TriggerAdvancedField.accelerated) ||
             visibleFields.contains(TriggerAdvancedField.blockEvents) ||
             visibleFields.contains(TriggerAdvancedField.clearModifiers) ||
             visibleFields.contains(TriggerAdvancedField.setLastTrigger)) ...[
@@ -361,6 +397,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
                     ),
                   ),
                 ),
+              if (showLockPointer) const LockPointerField(),
             ],
           ),
         ],
@@ -397,6 +434,7 @@ class TriggerAdvancedFields extends HookConsumerWidget {
               dirtyState: endConditionsField.dirty,
               onRevert: endConditionsField.onRevert,
               titleTooltipContent: const TriggerEndConditionsTooltip(),
+              emptyMessage: l10n.triggerEndConditionsEmpty,
               condition: endConditionsField.value,
               bodyBackgroundColor: conditionsBodyBackgroundColor,
               onConditionChanged: endConditionsField.onChanged,
@@ -410,6 +448,9 @@ class TriggerAdvancedFields extends HookConsumerWidget {
     );
   }
 }
+
+/// Matches the action card's advanced options.
+const double _fieldWidth = 180;
 
 enum TriggerAdvancedField {
   id,

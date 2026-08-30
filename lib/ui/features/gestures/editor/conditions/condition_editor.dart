@@ -19,6 +19,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/raw_fallback.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ConditionEditor extends StatelessWidget {
   /// Convenience constructor that reads/writes from [TriggerCommon.conditions].
@@ -44,6 +45,7 @@ class ConditionEditor extends StatelessWidget {
        title = 'Trigger Conditions',
        titleTooltip = null,
        titleTooltipContent = null,
+       emptyMessage = null,
        groups = null;
 
   /// Generic constructor for any condition (e.g. end_conditions).
@@ -53,6 +55,7 @@ class ConditionEditor extends StatelessWidget {
     this.title = 'Trigger Conditions',
     this.titleTooltip,
     this.titleTooltipContent,
+    this.emptyMessage,
     this.groups,
     this.isDirty = false,
     this.dirtyState,
@@ -80,6 +83,9 @@ class ConditionEditor extends StatelessWidget {
 
   /// Rich widget tooltip. Takes precedence over [titleTooltip] when both set.
   final Widget? titleTooltipContent;
+
+  /// Body text shown when nothing is set, defaulting to the trigger wording.
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -204,6 +210,7 @@ class ConditionEditor extends StatelessWidget {
           title: title,
           titleTooltip: titleTooltip,
           titleTooltipContent: titleTooltipContent,
+          emptyMessage: emptyMessage,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
@@ -348,14 +355,13 @@ class ConditionEditor extends StatelessWidget {
           ),
           null when inherited.isNotEmpty => _buildTable(context, null),
           null => Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             decoration: BoxDecoration(
               color: bodyBackgroundColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'No conditions set. Add a condition or '
-              'group to specify when this gesture should trigger.',
+              emptyMessage ?? context.l10n.triggerConditionsEmpty,
               style: typography.body.sm.copyWith(
                 color: colors.mutedForeground,
               ),

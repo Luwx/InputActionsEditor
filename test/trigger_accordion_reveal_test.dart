@@ -20,6 +20,8 @@ import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/trigger_editor.dart';
 
+import 'helpers/load_fonts.dart';
+
 class _SeededConfig extends ConfigController {
   static const config = Config(
     mouseNodes: [
@@ -58,6 +60,8 @@ Widget _host(ProviderContainer container, GestureLocation location) =>
     );
 
 void main() {
+  setUpAll(loadAppFonts);
+
   testWidgets('an undo of a hidden field opens Other options', (tester) async {
     tester.view
       ..physicalSize = const Size(900, 1400)

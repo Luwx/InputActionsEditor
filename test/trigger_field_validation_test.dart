@@ -18,6 +18,8 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/group/group_settings_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
+import 'helpers/load_fonts.dart';
+
 const _groupEditId = 901;
 const _gestureEditId = 9001;
 
@@ -117,6 +119,8 @@ Future<void> _type(WidgetTester tester, Finder field, String text) async {
 }
 
 void main() {
+  setUpAll(loadAppFonts);
+
   group('threshold', () {
     const location = GestureGroupLocation(
       device: DeviceType.mouse,

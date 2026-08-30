@@ -24,6 +24,7 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
   required Condition? initialCondition,
   required void Function(Condition?) onConditionChanged,
   Widget? titleTooltipContent,
+  String? emptyMessage,
   List<InheritedCondition> inherited = const [],
   bool inheritedForGroup = false,
   ValueChanged<InheritedCondition>? onOpenInheritedGroup,
@@ -44,6 +45,7 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
           title: title,
           titleTooltip: titleTooltip,
           titleTooltipContent: titleTooltipContent,
+          emptyMessage: emptyMessage,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
@@ -100,6 +102,7 @@ class _ConditionsExpandModal extends StatelessWidget {
     required this.inheritedForGroup,
     required this.onOpenInheritedGroup,
     this.titleTooltipContent,
+    this.emptyMessage,
   });
 
   final Animation<double> animation;
@@ -108,6 +111,7 @@ class _ConditionsExpandModal extends StatelessWidget {
   final String title;
   final String? titleTooltip;
   final Widget? titleTooltipContent;
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -199,6 +203,7 @@ class _ConditionsExpandModal extends StatelessWidget {
                                   title: title,
                                   titleTooltip: titleTooltip,
                                   titleTooltipContent: titleTooltipContent,
+                                  emptyMessage: emptyMessage,
                                   groups: groups,
                                   isDirty: isDirty,
                                   dirtyState: dirtyState,
@@ -242,6 +247,7 @@ class _ConditionsWrapper extends StatefulWidget {
     required this.inheritedForGroup,
     required this.onOpenInheritedGroup,
     this.titleTooltipContent,
+    this.emptyMessage,
   });
 
   final Object heroTag;
@@ -249,6 +255,7 @@ class _ConditionsWrapper extends StatefulWidget {
   final String title;
   final String? titleTooltip;
   final Widget? titleTooltipContent;
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -283,6 +290,7 @@ class _ConditionsWrapperState extends State<_ConditionsWrapper> {
       title: widget.title,
       titleTooltip: widget.titleTooltip,
       titleTooltipContent: widget.titleTooltipContent,
+      emptyMessage: widget.emptyMessage,
       groups: widget.groups,
       isDirty: widget.isDirty,
       dirtyState: widget.dirtyState,

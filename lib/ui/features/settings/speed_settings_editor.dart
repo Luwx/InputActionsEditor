@@ -57,6 +57,7 @@ class SpeedSettingsEditor extends ConsumerWidget {
       speedRotateThresholdLens(device),
       fallbackValue: () => s.rotateThreshold,
     );
+    final multiTouch = device != DeviceType.mouse;
 
     return Center(
       child: ConstrainedBox(
@@ -97,45 +98,47 @@ class SpeedSettingsEditor extends ConsumerWidget {
                 onChanged: swipeThresholdField.onChanged,
               ),
             ),
-            FTile(
-              title: UnsavedLabel(
-                state: pinchInThresholdField.dirty,
-                onRevert: pinchInThresholdField.onRevert,
-                child: Text(l10n.speedPinchInThresholdLabel),
+            if (multiTouch) ...[
+              FTile(
+                title: UnsavedLabel(
+                  state: pinchInThresholdField.dirty,
+                  onRevert: pinchInThresholdField.onRevert,
+                  child: Text(l10n.speedPinchInThresholdLabel),
+                ),
+                subtitle: Text(l10n.speedPinchInThresholdSubtitle),
+                suffix: _SpeedField(
+                  value: pinchInThresholdField.value,
+                  hint: '0.04',
+                  onChanged: pinchInThresholdField.onChanged,
+                ),
               ),
-              subtitle: Text(l10n.speedPinchInThresholdSubtitle),
-              suffix: _SpeedField(
-                value: pinchInThresholdField.value,
-                hint: '0.04',
-                onChanged: pinchInThresholdField.onChanged,
+              FTile(
+                title: UnsavedLabel(
+                  state: pinchOutThresholdField.dirty,
+                  onRevert: pinchOutThresholdField.onRevert,
+                  child: Text(l10n.speedPinchOutThresholdLabel),
+                ),
+                subtitle: Text(l10n.speedPinchOutThresholdSubtitle),
+                suffix: _SpeedField(
+                  value: pinchOutThresholdField.value,
+                  hint: '0.08',
+                  onChanged: pinchOutThresholdField.onChanged,
+                ),
               ),
-            ),
-            FTile(
-              title: UnsavedLabel(
-                state: pinchOutThresholdField.dirty,
-                onRevert: pinchOutThresholdField.onRevert,
-                child: Text(l10n.speedPinchOutThresholdLabel),
+              FTile(
+                title: UnsavedLabel(
+                  state: rotateThresholdField.dirty,
+                  onRevert: rotateThresholdField.onRevert,
+                  child: Text(l10n.speedRotateThresholdLabel),
+                ),
+                subtitle: Text(l10n.speedRotateThresholdSubtitle),
+                suffix: _SpeedField(
+                  value: rotateThresholdField.value,
+                  hint: '5',
+                  onChanged: rotateThresholdField.onChanged,
+                ),
               ),
-              subtitle: Text(l10n.speedPinchOutThresholdSubtitle),
-              suffix: _SpeedField(
-                value: pinchOutThresholdField.value,
-                hint: '0.08',
-                onChanged: pinchOutThresholdField.onChanged,
-              ),
-            ),
-            FTile(
-              title: UnsavedLabel(
-                state: rotateThresholdField.dirty,
-                onRevert: rotateThresholdField.onRevert,
-                child: Text(l10n.speedRotateThresholdLabel),
-              ),
-              subtitle: Text(l10n.speedRotateThresholdSubtitle),
-              suffix: _SpeedField(
-                value: rotateThresholdField.value,
-                hint: '5',
-                onChanged: rotateThresholdField.onChanged,
-              ),
-            ),
+            ],
           ],
         ),
       ),

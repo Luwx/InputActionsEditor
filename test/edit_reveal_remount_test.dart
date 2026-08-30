@@ -19,6 +19,8 @@ import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/group/group_settings_view.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 
+import 'helpers/load_fonts.dart';
+
 const _first = 9001;
 const _second = 9002;
 const _groupEditId = 901;
@@ -86,6 +88,8 @@ Widget _gesturePane(GestureLocation location) => GestureEditorLayout(
 );
 
 void main() {
+  setUpAll(loadAppFonts);
+
   const opened = GestureLocation(device: DeviceType.mouse, editId: _first);
   const other = GestureLocation(device: DeviceType.mouse, editId: _second);
   const group = GestureGroupLocation(

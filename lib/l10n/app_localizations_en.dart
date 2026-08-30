@@ -626,6 +626,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No conditions set. Add a condition or group to specify when this gesture should trigger.';
 
   @override
+  String get triggerEndConditionsEmpty =>
+      'No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.';
+
+  @override
   String get conditionsMergedRootLabel =>
       'must match: group conditions merged with this gesture\'s';
 
@@ -2111,6 +2115,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Disable for uniform response, e.g. fixed key per tick.';
 
   @override
+  String get tooltip_triggerLockPointer_body =>
+      'Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.';
+
+  @override
+  String get tooltip_triggerLockPointer_warning =>
+      'Locks the pointer for every motion trigger active at the same time, not just this one.';
+
+  @override
   String get tooltip_triggerBlockEvents_body =>
       'Suppress raw input from reaching other applications.';
 
@@ -2439,14 +2451,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motionSpeedTooltip =>
-      'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.';
+      'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.';
 
   @override
   String get motionLockPointerLabel => 'Lock pointer';
-
-  @override
-  String get motionLockPointerTooltip =>
-      'Prevent the pointer from moving on screen while this gesture is active.';
 
   @override
   String numberRangeBetween(String min, String max) {

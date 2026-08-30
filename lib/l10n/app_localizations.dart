@@ -1216,6 +1216,12 @@ abstract class AppLocalizations {
   /// **'No conditions set. Add a condition or group to specify when this gesture should trigger.'**
   String get triggerConditionsEmpty;
 
+  /// No description provided for @triggerEndConditionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.'**
+  String get triggerEndConditionsEmpty;
+
   /// Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge.
   ///
   /// In en, this message translates to:
@@ -3754,6 +3760,18 @@ abstract class AppLocalizations {
   /// **'Disable for uniform response, e.g. fixed key per tick.'**
   String get tooltip_triggerAccelerated_bulletOff;
 
+  /// No description provided for @tooltip_triggerLockPointer_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.'**
+  String get tooltip_triggerLockPointer_body;
+
+  /// No description provided for @tooltip_triggerLockPointer_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Locks the pointer for every motion trigger active at the same time, not just this one.'**
+  String get tooltip_triggerLockPointer_warning;
+
   /// No description provided for @tooltip_triggerBlockEvents_body.
   ///
   /// In en, this message translates to:
@@ -4351,7 +4369,7 @@ abstract class AppLocalizations {
   /// No description provided for @motionSpeedTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.'**
+  /// **'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.'**
   String get motionSpeedTooltip;
 
   /// No description provided for @motionLockPointerLabel.
@@ -4359,12 +4377,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lock pointer'**
   String get motionLockPointerLabel;
-
-  /// No description provided for @motionLockPointerTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Prevent the pointer from moving on screen while this gesture is active.'**
-  String get motionLockPointerTooltip;
 
   /// No description provided for @numberRangeBetween.
   ///

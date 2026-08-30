@@ -17,6 +17,8 @@ import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/group/group_settings_view.dart';
 
+import 'helpers/load_fonts.dart';
+
 const _groupEditId = 901;
 
 class _SeededController extends ConfigController {
@@ -38,6 +40,8 @@ class _SeededController extends ConfigController {
 }
 
 void main() {
+  setUpAll(loadAppFonts);
+
   const location = GestureGroupLocation(
     device: DeviceType.mouse,
     editId: _groupEditId,
