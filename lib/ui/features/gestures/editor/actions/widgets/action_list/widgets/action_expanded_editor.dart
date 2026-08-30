@@ -30,6 +30,7 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 const List<ActionTriggerOptionField> _nestedTriggerOptionFields = [
   ActionTriggerOptionField.conditions,
   ActionTriggerOptionField.limit,
+  ActionTriggerOptionField.inputDelay,
 ];
 
 class ActionExpandedEditor extends HookConsumerWidget {
@@ -66,9 +67,12 @@ class ActionExpandedEditor extends HookConsumerWidget {
       actionEditorProvider(actionLocation).select((vm) => vm.kind),
     );
     final optionsExpanded = useState(false);
-    final available = nested
-        ? _nestedTriggerOptionFields
-        : ActionTriggerOptionField.values;
+    final available = List.of(
+      nested ? _nestedTriggerOptionFields : ActionTriggerOptionField.values,
+    );
+    if (kind != ActionKind.input) {
+      available.remove(ActionTriggerOptionField.inputDelay);
+    }
     final pinned = pinnedTriggerOptions.where(available.contains).toSet();
     final accordionFields = available
         .where((field) => !pinned.contains(field))

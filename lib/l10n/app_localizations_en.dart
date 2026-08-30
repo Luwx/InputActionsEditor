@@ -845,6 +845,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionChipConflicting => 'Conflicting';
 
   @override
+  String get actionChipDelay => 'Delay';
+
+  @override
   String get actionMetaCommandLabel => 'Command';
 
   @override
@@ -2387,6 +2390,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inputTextToTypeLabel => 'Text to type';
+
+  @override
+  String get inputDelayLabel => 'Delay';
+
+  @override
+  String get inputDelayTooltip =>
+      'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.';
 
   @override
   String get inputDeviceFieldLabel => 'Device';

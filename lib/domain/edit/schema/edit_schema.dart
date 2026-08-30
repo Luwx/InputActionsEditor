@@ -94,7 +94,14 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
         valueCase<ActionGroup>('group'),
         valueCase<InputAction>(
           'input',
-          fields: [prop('inputEntries', property: InputActionMeta.entries)],
+          fields: [
+            prop('inputEntries', property: InputActionMeta.entries),
+            prop(
+              'inputDelay',
+              property: InputActionMeta.delay,
+              adapter: nullableInt(),
+            ),
+          ],
         ),
       ],
     ),

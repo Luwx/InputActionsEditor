@@ -511,10 +511,11 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
     'command': command,
     'wait': ?wait,
   },
-  InputAction(:final entries) => {
+  InputAction(:final entries, :final delay) => {
     'input': entries
         .map((e) => {e.device.name: e.tokens.map(_tokenFromString).toList()})
         .toList(),
+    'delay': ?delay,
   },
   PlasmaShortcutAction(:final component, :final shortcut) => {
     'plasma_shortcut': '$component,$shortcut',

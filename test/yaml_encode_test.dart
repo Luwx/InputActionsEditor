@@ -441,6 +441,31 @@ mouse:
       );
     });
 
+    test('input writes a set delay beside the entries', () {
+      expect(
+        actionToMap(
+          const InputAction(
+            entries: [
+              InputEntry(device: InputDevice.keyboard, tokens: ['leftctrl+n']),
+            ],
+            delay: 5,
+          ),
+        ),
+        {
+          'input': [
+            {
+              'keyboard': ['leftctrl+n'],
+            },
+          ],
+          'delay': 5,
+        },
+      );
+    });
+
+    test('input omits an absent delay', () {
+      expect(actionToMap(const InputAction()).containsKey('delay'), isFalse);
+    });
+
     test('input writes device entries with text token maps', () {
       expect(
         actionToMap(

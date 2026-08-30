@@ -717,7 +717,10 @@ Action? _parseAction(YamlMap m) {
     );
   }
   if (m.containsKey('input')) {
-    return InputAction(entries: _parseInputEntries(m['input']));
+    return InputAction(
+      entries: _parseInputEntries(m['input']),
+      delay: m['delay'] as int?,
+    );
   }
   if (m.containsKey('plasma_shortcut')) {
     final parts = (m['plasma_shortcut'] as String).split(',');

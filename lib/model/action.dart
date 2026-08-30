@@ -34,8 +34,10 @@ sealed class Action with _$Action {
   const factory Action.command({required String command, bool? wait}) =
       CommandAction;
 
-  const factory Action.input({@Default([]) List<InputEntry> entries}) =
-      InputAction;
+  const factory Action.input({
+    @Default([]) List<InputEntry> entries,
+    int? delay,
+  }) = InputAction;
 
   const factory Action.plasmaShortcut({
     required String component,

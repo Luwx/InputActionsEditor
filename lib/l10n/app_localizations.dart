@@ -1618,6 +1618,12 @@ abstract class AppLocalizations {
   /// **'Conflicting'**
   String get actionChipConflicting;
 
+  /// No description provided for @actionChipDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get actionChipDelay;
+
   /// No description provided for @actionMetaCommandLabel.
   ///
   /// In en, this message translates to:
@@ -4263,6 +4269,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text to type'**
   String get inputTextToTypeLabel;
+
+  /// No description provided for @inputDelayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get inputDelayLabel;
+
+  /// No description provided for @inputDelayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.'**
+  String get inputDelayTooltip;
 
   /// No description provided for @inputDeviceFieldLabel.
   ///

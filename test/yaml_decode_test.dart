@@ -665,6 +665,22 @@ keyboard:
       expect(action.entries.single.tokens, ['text:hello world']);
     });
 
+    test('input delay is read alongside the entries', () {
+      final c = decodeConfig('''
+keyboard:
+  gestures:
+    - type: shortcut
+      shortcut: [ leftctrl ]
+      actions:
+        - input:
+            - keyboard: [ leftctrl+n ]
+          delay: 5
+''');
+      final action =
+          c.keyboardGestures.single.common.actions.single.action as InputAction;
+      expect(action.delay, 5);
+    });
+
     test('plasma_shortcut splits component and shortcut', () {
       final c = decodeConfig('''
 mouse:

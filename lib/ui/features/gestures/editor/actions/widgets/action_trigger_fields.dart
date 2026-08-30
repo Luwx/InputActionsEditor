@@ -38,6 +38,8 @@ class ActionTriggerFields extends HookConsumerWidget {
 
   static Set<ActionTriggerOptionField> nonDefaultFields(TriggerAction action) =>
       {
+        if (action.action case InputAction(delay: final delay?) when delay != 0)
+          ActionTriggerOptionField.inputDelay,
         if (action.on != null) ActionTriggerOptionField.triggerOn,
         if (action.interval != null) ActionTriggerOptionField.interval,
         if (action.threshold != null) ActionTriggerOptionField.threshold,
@@ -67,6 +69,12 @@ class ActionTriggerFields extends HookConsumerWidget {
     final intervalField = ref.actionSchemaField(context, actionIntervalField);
     final thresholdField = ref.actionSchemaField(context, actionThresholdField);
     final limitField = ref.actionSchemaField(context, actionLimitField);
+    final showDelay = visibleFields.contains(
+      ActionTriggerOptionField.inputDelay,
+    );
+    final delayField = showDelay
+        ? ref.actionSchemaField(context, actionInputDelayField)
+        : null;
     final conflictingField = ref.actionField(
       context,
       actionConflictingLens,
@@ -119,16 +127,42 @@ class ActionTriggerFields extends HookConsumerWidget {
       limitField.text,
       limitField.onTextChanged,
     );
+    final delayController = useSyncedTextController(
+      delayField?.text ?? '',
+      delayField?.onTextChanged ?? (_) {},
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (delayField != null)
+          revealable(
+            ActionTriggerOptionField.inputDelay,
+            SizedBox(
+              width: 180,
+              child: FTextField(
+                label: UnsavedLabel(
+                  state: delayField.dirty,
+                  onRevert: delayField.onRevert,
+                  child: LabelWithTooltip(
+                    label: context.l10n.inputDelayLabel,
+                    tooltip: context.l10n.inputDelayTooltip,
+                  ),
+                ),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                keyboardType: TextInputType.number,
+                control: FTextFieldControl.managed(controller: delayController),
+                hint: '0',
+              ),
+            ),
+          ),
         if (visibleFields.contains(ActionTriggerOptionField.triggerOn) ||
             (visibleFields.contains(ActionTriggerOptionField.interval) &&
                 showInterval) ||
             (visibleFields.contains(ActionTriggerOptionField.threshold) &&
                 showThreshold) ||
-            visibleFields.contains(ActionTriggerOptionField.limit))
+            visibleFields.contains(ActionTriggerOptionField.limit)) ...[
+          if (delayField != null) const SizedBox(height: 12),
           Wrap(
             spacing: 12,
             runSpacing: 8,
@@ -230,6 +264,7 @@ class ActionTriggerFields extends HookConsumerWidget {
                 ),
             ],
           ),
+        ],
         if (visibleFields.contains(ActionTriggerOptionField.conflicting)) ...[
           const SizedBox(height: 8),
           revealable(
@@ -273,6 +308,9 @@ enum ActionTriggerOptionField {
   limit,
   conflicting,
   conditions,
+
+  /// Only applies to an input action.
+  inputDelay,
 }
 
 extension ActionTriggerOptionFieldSchema on ActionTriggerOptionField {
@@ -283,5 +321,6 @@ extension ActionTriggerOptionFieldSchema on ActionTriggerOptionField {
     ActionTriggerOptionField.limit => ConfigDirtyField.actionLimit,
     ActionTriggerOptionField.conflicting => ConfigDirtyField.actionConflicting,
     ActionTriggerOptionField.conditions => ConfigDirtyField.actionConditions,
+    ActionTriggerOptionField.inputDelay => ConfigDirtyField.actionInputDelay,
   };
 }

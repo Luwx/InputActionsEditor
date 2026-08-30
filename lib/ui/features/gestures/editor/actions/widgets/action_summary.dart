@@ -122,6 +122,9 @@ List<({String label, String value})> actionMetaChips(
   if (t.limit != null && t.limit != 0) {
     chips.add((label: l10n.actionChipLimit, value: '${t.limit}'));
   }
+  if (t.action case InputAction(delay: final delay?) when delay != 0) {
+    chips.add((label: l10n.actionChipDelay, value: '${delay}ms'));
+  }
   if (!t.conflicting) {
     chips.add((label: l10n.actionChipConflicting, value: 'off'));
   }
