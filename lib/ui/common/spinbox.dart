@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart' show PointerScrollEvent;
+// import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -272,7 +272,7 @@ class FSpinBox extends HookWidget {
                 onLongIncrementStart: () => startRepeating(step),
                 onLongDecrementStart: () => startRepeating(-step),
                 onLongPressEnd: stopRepeating,
-                onScroll: (direction) => stepBy(direction * step),
+                // onScroll: (direction) => stepBy(direction * step),
                 onTapIntoStepper: focusNode.requestFocus,
               );
               if (unit == null) return stepper;
@@ -332,7 +332,7 @@ class _SpinStepper extends StatelessWidget {
     required this.onLongIncrementStart,
     required this.onLongDecrementStart,
     required this.onLongPressEnd,
-    required this.onScroll,
+    // required this.onScroll,
     required this.onTapIntoStepper,
   });
 
@@ -345,7 +345,7 @@ class _SpinStepper extends StatelessWidget {
   final VoidCallback onLongIncrementStart;
   final VoidCallback onLongDecrementStart;
   final VoidCallback onLongPressEnd;
-  final ValueChanged<double> onScroll;
+  // final ValueChanged<double> onScroll;
   final VoidCallback onTapIntoStepper;
 
   @override
@@ -358,55 +358,56 @@ class _SpinStepper extends StatelessWidget {
       ),
       _ => BorderRadius.zero,
     };
-    return Listener(
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent) {
-          onScroll(event.scrollDelta.dy < 0 ? 1 : -1);
-        }
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topRight: borderRadius.topRight,
-          bottomRight: borderRadius.bottomRight,
+    // Listener(
+    //   onPointerSignal: (event) {
+    //     if (event is PointerScrollEvent) {
+    //       onScroll(event.scrollDelta.dy < 0 ? 1 : -1);
+    //     }
+    //   },
+    //   child: <the ClipRRect below>,
+    // )
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+        topRight: borderRadius.topRight,
+        bottomRight: borderRadius.bottomRight,
+      ),
+      child: Container(
+        width: 22,
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: colors.border)),
         ),
-        child: Container(
-          width: 22,
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: colors.border)),
-          ),
-          child: SizedBox(
-            height: 32,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 16,
-                  child: _SpinStepperSegment(
-                    icon: FLucideIcons.chevronUp,
-                    enabled: canIncrement,
-                    showDivider: true,
-                    onPressed: onIncrement,
-                    onLongPressStart: onLongIncrementStart,
-                    onLongPressEnd: onLongPressEnd,
-                    onTapIntoStepper: onTapIntoStepper,
-                    iconStyle: style.iconStyle.resolve(variants),
-                  ),
+        child: SizedBox(
+          height: 32,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 16,
+                child: _SpinStepperSegment(
+                  icon: FLucideIcons.chevronUp,
+                  enabled: canIncrement,
+                  showDivider: true,
+                  onPressed: onIncrement,
+                  onLongPressStart: onLongIncrementStart,
+                  onLongPressEnd: onLongPressEnd,
+                  onTapIntoStepper: onTapIntoStepper,
+                  iconStyle: style.iconStyle.resolve(variants),
                 ),
-                SizedBox(
-                  height: 16,
-                  child: _SpinStepperSegment(
-                    icon: FLucideIcons.chevronDown,
-                    enabled: canDecrement,
-                    showDivider: false,
-                    onPressed: onDecrement,
-                    onLongPressStart: onLongDecrementStart,
-                    onLongPressEnd: onLongPressEnd,
-                    onTapIntoStepper: onTapIntoStepper,
-                    iconStyle: style.iconStyle.resolve(variants),
-                  ),
+              ),
+              SizedBox(
+                height: 16,
+                child: _SpinStepperSegment(
+                  icon: FLucideIcons.chevronDown,
+                  enabled: canDecrement,
+                  showDivider: false,
+                  onPressed: onDecrement,
+                  onLongPressStart: onLongDecrementStart,
+                  onLongPressEnd: onLongPressEnd,
+                  onTapIntoStepper: onTapIntoStepper,
+                  iconStyle: style.iconStyle.resolve(variants),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
