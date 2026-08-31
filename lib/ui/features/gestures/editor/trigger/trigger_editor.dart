@@ -166,6 +166,7 @@ class TriggerEditor extends HookConsumerWidget {
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 16,
         children: [
           // for (final section in sections) section,
