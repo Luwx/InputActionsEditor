@@ -9,6 +9,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/app_state.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 export 'package:input_actions_editor/model/app_state.dart' show AppState;
@@ -44,6 +45,7 @@ class AppStateController extends Notifier<void> {
               gestureFilter: filter,
               selectedGesture: _storedSelection(open),
               gestureListWidth: ref.read(gestureListWidthProvider),
+              sidebarCollapsed: ref.read(sidebarCollapsedProvider),
             ),
           );
         }
@@ -58,9 +60,16 @@ class AppStateController extends Notifier<void> {
               nav is GesturesDestination ? nav.open : null,
             ),
             gestureListWidth: next,
+            sidebarCollapsed: ref.read(sidebarCollapsedProvider),
           ),
         );
-      });
+      })
+      // The sidebar collapses from the history view too, where the gesture
+      // fields are not the controller's to rewrite.
+      ..listen(
+        sidebarCollapsedProvider,
+        (_, next) => _save(prefs, load(prefs).copyWith(sidebarCollapsed: next)),
+      );
   }
 
   /// Identity locations don't survive a restart, so the open gesture persists

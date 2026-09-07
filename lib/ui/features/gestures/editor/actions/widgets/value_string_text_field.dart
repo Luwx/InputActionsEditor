@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/misc/value_string_parser.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ValueStringTextField extends HookWidget {
@@ -27,28 +28,11 @@ class ValueStringTextField extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = useTextEditingController(text: value);
-
-    useEffect(() {
-      if (controller.text != value) {
-        controller.value = TextEditingValue(
-          text: value,
-          selection: _clampSelection(controller.selection, value.length),
-        );
-      }
-      return null;
-    }, [value]);
-
-    useEffect(() {
-      void listener() {
-        if (controller.text == value) return;
-        onChanged(controller.value);
-      }
-
-      controller.addListener(listener);
-      return () => controller.removeListener(listener);
-    }, [controller, onChanged, value]);
-
+    final controller = useSyncedTextController(
+      value,
+      onChanged,
+      preserveSelection: true,
+    );
     useListenable(controller);
 
     final colors = context.theme.colors;
@@ -180,16 +164,4 @@ class ValueStringSpanBuilder extends SpecialTextSpanBuilder {
     SpecialTextGestureTapCallback? onTap,
     int? index,
   }) => null;
-}
-
-TextSelection _clampSelection(TextSelection selection, int textLength) {
-  if (!selection.isValid) {
-    return TextSelection.collapsed(offset: textLength);
-  }
-  return TextSelection(
-    baseOffset: selection.baseOffset.clamp(0, textLength),
-    extentOffset: selection.extentOffset.clamp(0, textLength),
-    affinity: selection.affinity,
-    isDirectional: selection.isDirectional,
-  );
 }

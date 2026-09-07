@@ -1,11 +1,9 @@
-import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/ui/features/settings/settings_list_section.dart';
-import 'package:input_actions_editor/ui/shell/config_gate.dart';
 
 /// Settings shell: settings sidebar + content area.
 ///
@@ -21,20 +19,15 @@ class SettingsShell extends ConsumerWidget {
     final transparent = ref.watch(
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
-    final gatedContent = ConfigGate(child: child);
     return FScaffold(
-      sidebar: Blurred(
-        disabled: !transparent,
-        expand: const EdgeInsets.only(right: 30),
-        child: const SettingsListSection(),
-      ),
+      sidebar: const SettingsListSection(),
       childPad: false,
       child: transparent
           ? ColoredBox(
               color: context.theme.colors.background,
-              child: gatedContent,
+              child: child,
             )
-          : gatedContent,
+          : child,
     );
   }
 }

@@ -1,212 +1,186 @@
 part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
-/// Lifetime of a transition (collapse-out / expand-in). A small buffer over the
-/// list's [_AnimatedGroupRowVisibility] cross-fade so the row reaches height 0 /
-/// full height before its bookkeeping is torn down.
-const Duration _transitionLifetime = Duration(milliseconds: 300);
+/// What a ghost row needs to render itself once its gesture has left the slot.
+typedef _GhostRow = ({
+  Gesture gesture,
+  DeviceType device,
+  int? groupKey,
+  int depth,
+});
 
-/// A transient, display-only copy of a row that has already left its slot in
-/// the config (deleted, or moved elsewhere). It keeps rendering the row's
-/// captured content at its old position so it can collapse out in place — the
-/// config commit is immediate, the ghost is pure animation.
-class _GhostRow {
-  const _GhostRow({
-    required this.editId,
-    required this.gesture,
-    required this.device,
-    required this.groupId,
-    required this.anchorIndex,
-    required this.collapsing,
-  });
-
-  final int editId;
-  final Gesture gesture;
-  final DeviceType device;
-  final String? groupId;
-
-  /// Flat-list index of the row's old slot, where the ghost is inserted.
-  final int anchorIndex;
-
-  /// Once true the ghost renders invisible, so the list collapses it to 0.
-  final bool collapsing;
-
-  _GhostRow get collapsed => _GhostRow(
-    editId: editId,
-    gesture: gesture,
-    device: device,
-    groupId: groupId,
-    anchorIndex: anchorIndex,
-    collapsing: true,
-  );
-}
-
-/// Unified row-transition driver shared by delete and reorder. Both commit to
-/// the config *immediately*, then animate:
-///
-///  * **collapse-out** — a [_GhostRow] (captured content) collapses at the
-///    row's old slot. Delete uses only this; reorder uses it for the vacated
-///    slot.
-///  * **expand-in** — for reorder, the moved row enters at its new slot. Its
-///    key is bumped (`:enter`) so a *fresh* element is built that starts hidden
-///    and expands open next frame (a preserved/visible element would collapse
-///    instead). Enter is opt-in, so first paint never animates rows in.
-///
-/// For reorder the two run together: the moved row enters from height 0 while
-/// its ghost collapses from full, so the list's height stays constant — the
-/// row reads as gliding from old slot to new with no jump and no delay.
+/// Row transitions for the gesture list, over the shared driver: delete leaves
+/// a collapsing ghost at the vacated slot, and a reorder additionally expands
+/// the moved row in at its new one. See [ListTransitions].
 final class _GestureTransitions {
   const _GestureTransitions({
-    required this.ghosts,
-    required this.entering,
-    required this.enteringHidden,
+    required this.transitions,
     required this.requestDelete,
     required this.requestItemsReorder,
   });
 
-  /// Ghosts collapsing out, keyed `ghost:$editId`, each inserted at its
-  /// [_GhostRow.anchorIndex].
-  final List<_GhostRow> ghosts;
-
-  /// Edit-ids expanding in at a new slot. Their row keys are bumped to
-  /// `:enter`.
-  final Set<int> entering;
-
-  /// Edit-ids that render invisible for one frame so the expand starts at 0.
-  final Set<int> enteringHidden;
+  final ListTransitions<_GhostRow> transitions;
 
   final void Function({
-    required GestureLocation location,
+    required Iterable<GestureLocation> locations,
     required List<_FlatItem> flatItems,
   })
   requestDelete;
 
   final void Function({
     required DeviceType device,
-    required ReorderableItemsResult<GestureLocation, String> result,
-    required List<_FlatItem> flatItems,
+    required ReorderableItemsResult<GestureLocation, int> result,
   })
   requestItemsReorder;
+
+  List<ListGhost<_GhostRow>> get ghosts => transitions.ghosts;
+  Set<int> get entering => transitions.entering;
+  Set<int> get enteringHidden => transitions.enteringHidden;
 }
 
-int _ghostAnchorIndex(List<_FlatItem> items, int editId) {
-  for (var i = 0; i < items.length; i++) {
-    final item = items[i];
-    if (item is _GestureRowItem && item.editId == editId) return i;
+/// Identity of the entry after [editId] that is staying put, which is the one
+/// its ghost has to sit in front of once the edit has landed. Null when the row
+/// was last, or when everything after it is moving too.
+Object? _ghostNeighbour(
+  List<_FlatItem> items,
+  int editId,
+  Set<int> moving,
+) {
+  final start = items.indexWhere(
+    (item) => item is _GestureRowItem && item.editId == editId,
+  );
+  if (start < 0) return null;
+  for (var i = start + 1; i < items.length; i++) {
+    switch (items[i]) {
+      case _GroupHeaderItem(:final groupKey):
+        return groupKey;
+      case _GestureRowItem(:final editId?, :final location):
+        if (!moving.contains(editId)) return location;
+      case _GestureRowItem():
+        break;
+    }
   }
-  return items.length;
+  return null;
+}
+
+/// Headers carry their own key, so a whole group moving is blamed on the group
+/// rather than on the rows it travelled past.
+List<TreeListNode<int>> _flatTreeNodes(List<_FlatItem> items) {
+  TreeListNode<int>? node(_FlatItem item) => switch (item) {
+    _GroupHeaderItem(:final groupKey, :final parentKey) => TreeListNode<int>(
+      id: groupKey,
+      parentId: parentKey,
+    ),
+    _GestureRowItem(:final editId?, :final groupKey) => TreeListNode<int>(
+      id: editId,
+      parentId: groupKey,
+    ),
+    _GestureRowItem() => null,
+  };
+
+  return [
+    for (final item in items) ?node(item),
+  ];
+}
+
+_GestureRowItem? _ghostRowItem(List<_FlatItem> items, int editId) {
+  for (final item in items) {
+    if (item is _GestureRowItem && item.editId == editId) return item;
+  }
+  return null;
 }
 
 _GestureTransitions _useGestureTransitions(
   WidgetRef ref,
   BuildContext context,
 ) {
-  final ghosts = useState<List<_GhostRow>>(const []);
-  final entering = useState<Set<int>>(const {});
-  final enteringHidden = useState<Set<int>>(const {});
-  final timers = useRef<List<Timer>>([]);
+  final transitions = useListTransitions<_GhostRow>(context);
 
-  void scheduleCollapseAndRemoval(Set<int> editIds) {
-    // Render full for one frame, then flip to collapsing so it cross-fades.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      ghosts.value = [
-        for (final ghost in ghosts.value)
-          editIds.contains(ghost.editId) ? ghost.collapsed : ghost,
-      ];
-    });
-    timers.value.add(
-      Timer(_transitionLifetime, () {
-        if (!context.mounted) return;
-        ghosts.value = [
-          for (final ghost in ghosts.value)
-            if (!editIds.contains(ghost.editId)) ghost,
-        ];
-      }),
+  ListGhost<_GhostRow>? ghostFor(
+    Gesture gesture,
+    DeviceType device,
+    List<_FlatItem> flatItems,
+    Set<int> moving,
+  ) {
+    final editId = gesture.common.editId;
+    if (editId == null) return null;
+    final row = _ghostRowItem(flatItems, editId);
+    return ListGhost<_GhostRow>(
+      id: editId,
+      payload: (
+        gesture: gesture,
+        device: device,
+        groupKey: row?.groupKey,
+        depth: row?.depth ?? 0,
+      ),
+      beforeId: _ghostNeighbour(flatItems, editId, moving),
     );
   }
 
   void requestDelete({
-    required GestureLocation location,
+    required Iterable<GestureLocation> locations,
     required List<_FlatItem> flatItems,
   }) {
-    final gesture = gestureAt(ref.read(draftConfigProvider), location);
-    // Commit the delete immediately.
-    ref.read(gestureCommandsProvider).removeGesture(location);
-    ref.read(navProvider.notifier).onGestureDeleted(location);
-
-    if (gesture == null) return;
-    final editId = location.editId;
-    ghosts.value = [
-      ...ghosts.value,
-      _GhostRow(
-        editId: editId,
-        gesture: gesture,
-        device: location.device,
-        groupId: gesture.common.groupId,
-        anchorIndex: _ghostAnchorIndex(flatItems, editId),
-        collapsing: false,
-      ),
+    final targets = locations.toList(growable: false);
+    if (targets.isEmpty) return;
+    final draft = ref.read(draftConfigProvider);
+    final leaving = {for (final target in targets) target.editId};
+    final ghosts = [
+      for (final target in targets)
+        if (gestureAt(draft, target) case final gesture?)
+          ?ghostFor(gesture, target.device, flatItems, leaving),
     ];
-    scheduleCollapseAndRemoval({editId});
+
+    // Commit the delete immediately.
+    ref.read(gestureCommandsProvider).removeGestures(targets);
+    targets.forEach(ref.read(navProvider.notifier).onGestureDeleted);
+
+    transitions.capture(ghosts, reenters: false);
   }
 
   void requestItemsReorder({
     required DeviceType device,
-    required ReorderableItemsResult<GestureLocation, String> result,
-    required List<_FlatItem> flatItems,
+    required ReorderableItemsResult<GestureLocation, int> result,
   }) {
-    final draft = ref.read(draftConfigProvider);
-    final newGhosts = <_GhostRow>[];
-    final movedIds = <int>{};
-    for (final id in result.movedItemIds) {
-      final gesture = gestureAt(draft, id);
-      final editId = gesture?.common.editId;
-      if (gesture == null || editId == null) continue;
-      movedIds.add(editId);
-      newGhosts.add(
-        _GhostRow(
-          editId: editId,
-          gesture: gesture,
-          device: device,
-          groupId: gesture.common.groupId,
-          anchorIndex: _ghostAnchorIndex(flatItems, editId),
-          collapsing: false,
-        ),
-      );
-    }
-
-    // Commit the reorder immediately so the drop feels instant.
-    _GestureListController(ref, context).applyItemsReorder(device, result);
-    if (movedIds.isEmpty) return;
-
-    ghosts.value = [...ghosts.value, ...newGhosts];
-    entering.value = {...entering.value, ...movedIds};
-    enteringHidden.value = {...enteringHidden.value, ...movedIds};
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!context.mounted) return;
-      enteringHidden.value = {...enteringHidden.value}..removeAll(movedIds);
-    });
-    scheduleCollapseAndRemoval(movedIds);
-    timers.value.add(
-      Timer(_transitionLifetime, () {
-        if (!context.mounted) return;
-        entering.value = {...entering.value}..removeAll(movedIds);
-      }),
+    // Commit the reorder immediately so the drop feels instant. Item ids are
+    // identity-keyed, so the result passes straight through and the selection
+    // keeps pointing at the moved rows by itself. The ghosts come from the
+    // draft change itself, so a drop, an undo and a redo all animate alike.
+    ref.read(gestureCommandsProvider).reorderGesturesAndGroups(
+      device,
+      result.orderedItemIds,
+      {
+        for (final id in result.movedItemIds) id: result.groupId,
+      },
     );
   }
 
-  useEffect(() {
-    return () {
-      for (final timer in timers.value) {
-        timer.cancel();
-      }
-    };
-  }, const []);
+  ref.listen(draftConfigProvider, (previous, next) {
+    if (previous == null) return;
+    final filter = ref.read(deviceFilterProvider);
+    final collapsed = ref.read(collapsedGroupsProvider);
+    final before = _buildFlatList(previous, filter, collapsed);
+    final beforeNodes = _flatTreeNodes(before);
+    final afterNodes = _flatTreeNodes(_buildFlatList(next, filter, collapsed));
+    final held = {for (final node in beforeNodes) node.id};
+    transitions.enter([
+      for (final node in afterNodes)
+        if (!held.contains(node.id)) node.id,
+    ]);
+    final moved = findMovedNodes(beforeNodes, afterNodes);
+    if (moved.isEmpty) return;
+    transitions.capture(
+      [
+        for (final item in before)
+          if (item is _GestureRowItem && moved.contains(item.editId))
+            if (gestureAt(previous, item.location) case final gesture?)
+              ?ghostFor(gesture, item.device, before, moved),
+      ],
+      reenters: true,
+    );
+  });
 
   return _GestureTransitions(
-    ghosts: ghosts.value,
-    entering: entering.value,
-    enteringHidden: enteringHidden.value,
+    transitions: transitions,
     requestDelete: requestDelete,
     requestItemsReorder: requestItemsReorder,
   );

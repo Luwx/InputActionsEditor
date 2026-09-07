@@ -18,6 +18,7 @@ import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -89,9 +90,18 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
           fields: [prop(FunctionActionMeta.expression)],
         ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
+        // The nested actions are the list's recursion, not a field here.
+        valueCase<ActionGroup>('group'),
         valueCase<InputAction>(
           'input',
-          fields: [prop('inputEntries', property: InputActionMeta.entries)],
+          fields: [
+            prop('inputEntries', property: InputActionMeta.entries),
+            prop(
+              'inputDelay',
+              property: InputActionMeta.delay,
+              adapter: nullableInt(),
+            ),
+          ],
         ),
       ],
     ),
@@ -120,7 +130,6 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
       compare: projected<TriggerCommon, bool?>((v) => v?.effectiveEnabled),
     ),
     prop(TriggerCommonMeta.id, adapter: nullableText()),
-    prop(TriggerCommonMeta.groupId, readOnly: true),
     prop(TriggerCommonMeta.mouseButtons),
     prop(TriggerCommonMeta.mouseButtonsExactOrder),
     prop(TriggerCommonMeta.conditions),
@@ -137,7 +146,23 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
       scope: 'action',
       location: 'ActionLocation',
       parentField: 'gesture',
-      indexField: 'actionIndex',
+      key: listKey<TriggerAction, int>(
+        field: 'editId',
+        get: (action) => action.editId,
+        set: (action, key) => action.copyWith(editId: key),
+      ),
+      children: childList<TriggerAction>(
+        get: (action) => switch (action.action) {
+          ActionGroup(:final actions) => actions,
+          _ => null,
+        },
+        set: (action, children) => switch (action.action) {
+          ActionGroup() => action.copyWith(
+            action: ActionGroup(actions: children),
+          ),
+          _ => action,
+        },
+      ),
     ),
   ],
   groups: [
@@ -341,6 +366,24 @@ final TreeNode<TouchscreenGesture> touchscreenNode =
       ],
     );
 
+final TreeNode<GestureGroupNode> gestureGroupSubtree =
+    subtree<GestureGroupNode>(
+      id: 'gestureGroup',
+      fields: [
+        prop(GestureGroupNodeMeta.name),
+        prop(GestureGroupNodeMeta.enabled),
+        prop(GestureGroupNodeMeta.conditions),
+        prop(GestureGroupNodeMeta.id, adapter: nullableText()),
+        prop(GestureGroupNodeMeta.threshold, adapter: nullableText()),
+        prop(GestureGroupNodeMeta.resumeTimeout, adapter: nullableInt()),
+        prop(GestureGroupNodeMeta.accelerated, defaultsTo: false),
+        prop(GestureGroupNodeMeta.blockEvents, defaultsTo: true),
+        prop(GestureGroupNodeMeta.clearModifiers, defaultsTo: false),
+        prop(GestureGroupNodeMeta.setLastTrigger, defaultsTo: true),
+        prop(GestureGroupNodeMeta.endConditions),
+      ],
+    );
+
 final TreeNode<DeviceRuleProperties> devicePropertiesNode =
     subtree<DeviceRuleProperties>(
       fields: [
@@ -420,10 +463,28 @@ final EditTree<Config> configTree = editTree<Config>(
       generateLocation: true,
       // Identity coordinate: locations carry the gesture's in-memory editId
       // instead of a list index, so the same location addresses the same
-      // gesture in the draft and the saved baseline regardless of reorders.
+      // gesture in the draft and the saved baseline regardless of reorders
+      // or which group's subtree it currently sits in.
       key: listKey<Gesture, int>(
         field: 'editId',
         get: (g) => g.common.editId,
+        set: (g, key) => g.withCommon(g.common.copyWith(editId: key)),
+      ),
+      tree: nodeTree<GestureNode, GestureLeaf, GestureGroupNode>(
+        leaf: leafAccess<GestureLeaf, Gesture>(
+          get: (leaf) => leaf.gesture,
+          wrap: GestureNode.leaf,
+        ),
+        children: 'children',
+        groupKey: listKey<GestureGroupNode, int>(
+          field: 'editId',
+          get: (g) => g.editId,
+          set: (g, key) => g.copyWith(editId: key),
+        ),
+        groupLens: 'gestureGroupLens',
+        groupLocation: 'GestureGroupLocation',
+        groupName: 'gestureGroup',
+        group: gestureGroupSubtree,
       ),
       shared: [
         child(
@@ -437,14 +498,11 @@ final EditTree<Config> configTree = editTree<Config>(
         ),
       ],
       lists: {
-        DeviceType.mouse: (ConfigMeta.mouseGestures, mouseNode),
-        DeviceType.keyboard: (ConfigMeta.keyboardGestures, keyboardNode),
-        DeviceType.pointer: (ConfigMeta.pointerGestures, pointerNode),
-        DeviceType.touchpad: (ConfigMeta.touchpadGestures, touchpadNode),
-        DeviceType.touchscreen: (
-          ConfigMeta.touchscreenGestures,
-          touchscreenNode,
-        ),
+        DeviceType.mouse: (ConfigMeta.mouseNodes, mouseNode),
+        DeviceType.keyboard: (ConfigMeta.keyboardNodes, keyboardNode),
+        DeviceType.pointer: (ConfigMeta.pointerNodes, pointerNode),
+        DeviceType.touchpad: (ConfigMeta.touchpadNodes, touchpadNode),
+        DeviceType.touchscreen: (ConfigMeta.touchscreenNodes, touchscreenNode),
       },
     ),
     list(ConfigMeta.deviceRules, of: deviceRuleNode),

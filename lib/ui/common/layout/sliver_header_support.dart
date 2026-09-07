@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/ui/common/warm_up_scope.dart';
 
 class VDivider extends StatelessWidget {
   const VDivider({super.key});
@@ -191,15 +192,19 @@ class GrowingFrostedHeaderDelegate extends SliverPersistentHeaderDelegate {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            titleBuilder(
-                                  titleStyle,
-                                )
-                                .animate(delay: 50.ms)
-                                .fadeIn(duration: 60.ms)
-                                .slideX(
-                                  duration: 60.ms,
-                                  begin: -0.05,
-                                ),
+                            WarmUpAnimation(
+                              builder: (context, onInit) {
+                                final title = titleBuilder(titleStyle);
+                                return title
+                                    .animate(autoPlay: false, onInit: onInit)
+                                    .fadeIn(delay: 50.ms, duration: 60.ms)
+                                    .slideX(
+                                      delay: 50.ms,
+                                      duration: 60.ms,
+                                      begin: -0.05,
+                                    );
+                              },
+                            ),
                             if (subtitle != null)
                               Text(
                                 subtitle!,

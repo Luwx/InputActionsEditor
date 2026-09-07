@@ -30,7 +30,9 @@ class LabelWithTooltip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: textStyle),
+        Flexible(
+          child: Text(label, style: textStyle, overflow: TextOverflow.ellipsis),
+        ),
         const SizedBox(width: 4),
         AppTooltip(
           tipBuilder: (context, _) =>

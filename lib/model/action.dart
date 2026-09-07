@@ -22,6 +22,9 @@ abstract class TriggerAction with _$TriggerAction {
     @Default(true) bool conflicting,
     String? id,
     int? limit,
+
+    /// In-memory identity, filled in by `assignEditIds`; never serialized.
+    int? editId,
   }) = _TriggerAction;
 }
 
@@ -31,8 +34,10 @@ sealed class Action with _$Action {
   const factory Action.command({required String command, bool? wait}) =
       CommandAction;
 
-  const factory Action.input({@Default([]) List<InputEntry> entries}) =
-      InputAction;
+  const factory Action.input({
+    @Default([]) List<InputEntry> entries,
+    int? delay,
+  }) = InputAction;
 
   const factory Action.plasmaShortcut({
     required String component,
@@ -52,7 +57,13 @@ sealed class Action with _$Action {
   /// return value is ignored). [expression] is the raw `() => ...` source.
   const factory Action.function({required String expression}) = FunctionAction;
 
-  /// Raw YAML for action types we don't model (e.g. one:).
+  /// The daemon's `one:`: the first action whose conditions match runs.
+  /// Nesting is unbounded. The daemon parses children as plain actions, so
+  /// only `conditions`, `limit` and `id` apply to them.
+  const factory Action.group({@Default([]) List<TriggerAction> actions}) =
+      ActionGroup;
+
+  /// Raw YAML for action types we don't model.
   const factory Action.raw({required String raw}) = RawAction;
 }
 
@@ -61,18 +72,16 @@ sealed class Action with _$Action {
 abstract class TextSubstitutionRule with _$TextSubstitutionRule {
   const factory TextSubstitutionRule({
     required String regex,
-    required TextReplacementValue replace,
+    required DynamicText replace,
   }) = _TextSubstitutionRule;
 }
 
 @freezed
 @withMeta
-sealed class TextReplacementValue with _$TextReplacementValue {
-  const factory TextReplacementValue.literal({required String text}) =
-      LiteralTextReplacementValue;
+sealed class DynamicText with _$DynamicText {
+  const factory DynamicText.literal(String text) = LiteralText;
 
-  const factory TextReplacementValue.command({required String command}) =
-      CommandTextReplacementValue;
+  const factory DynamicText.command(String command) = CommandText;
 }
 
 enum InputDevice { keyboard, mouse }
@@ -82,6 +91,35 @@ enum InputDevice { keyboard, mouse }
 abstract class InputEntry with _$InputEntry {
   const factory InputEntry({
     required InputDevice device,
-    @Default([]) List<String> tokens,
+    @Default([]) List<InputToken> tokens,
   }) = _InputEntry;
+}
+
+/// One item of an `input:` device sequence. Mirrors the daemon's own item
+/// set; anything it does not recognise stays a [RawInputToken] so an
+/// unfamiliar config still round-trips.
+@freezed
+@withMeta
+sealed class InputToken with _$InputToken {
+  const factory InputToken.press(String key) = PressInputToken;
+
+  const factory InputToken.release(String key) = ReleaseInputToken;
+
+  /// Keys pressed in order and released in reverse, written `a+b+c`. A lone
+  /// key or mouse button is a one-element combo.
+  const factory InputToken.combo(List<String> keys) = ComboInputToken;
+
+  const factory InputToken.text(DynamicText value) = TextInputToken;
+
+  const factory InputToken.moveBy(double x, double y) = MoveByInputToken;
+
+  /// Null multiplier is the bare `move_by_delta`, which the daemon reads as 1.
+  const factory InputToken.moveByDelta(double? multiplier) =
+      MoveByDeltaInputToken;
+
+  const factory InputToken.moveTo(double x, double y) = MoveToInputToken;
+
+  const factory InputToken.wheel(double x, double y) = WheelInputToken;
+
+  const factory InputToken.raw(String token) = RawInputToken;
 }

@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -27,17 +28,20 @@ class EditorSleep extends HookConsumerWidget {
         if (parsed != null) field.onChanged(parsed);
       },
     );
-    return FTextField(
-      control: FTextFieldControl.managed(controller: controller),
-      label: UnsavedLabel(
-        state: field.dirty,
-        onRevert: field.onRevert,
-        child: LabelWithTooltip(
-          label: l10n.actionSleepDurationLabel,
-          tooltip: l10n.actionSleepDurationTooltip,
+    return RevealedField(
+      field: ConfigDirtyField.actionDuration,
+      child: FTextField(
+        control: FTextFieldControl.managed(controller: controller),
+        label: UnsavedLabel(
+          state: field.dirty,
+          onRevert: field.onRevert,
+          child: LabelWithTooltip(
+            label: l10n.actionSleepDurationLabel,
+            tooltip: l10n.actionSleepDurationTooltip,
+          ),
         ),
+        hint: l10n.actionSleepDurationHint,
       ),
-      hint: l10n.actionSleepDurationHint,
     );
   }
 }

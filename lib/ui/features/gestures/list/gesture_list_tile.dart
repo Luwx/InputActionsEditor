@@ -23,6 +23,14 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/gesture_labels.dart';
 
+/// Horizontal room the multi-select checkbox takes in a gesture row, gap
+/// included. The gesture list panel grows by this while select mode is on.
+const double kGestureSelectionSlotWidth = 28;
+
+const Duration kGestureSelectionSlotDuration = Durations.medium2;
+
+const Curve kGestureSelectionSlotCurve = Curves.easeOutCubic;
+
 class GestureListTile extends ConsumerWidget {
   const GestureListTile({
     required this.location,
@@ -69,8 +77,9 @@ class GestureListTile extends ConsumerWidget {
         gestureOverride == null && ref.watch(gestureDirtyProvider(location));
     final isDisabled = common.enabled == false || groupDisabled;
     final summaryText = _summary(gesture);
+    final hasAction = common.actions.isNotEmpty;
     final firstAction = _firstActionSummary(common, context.l10n);
-    final firstActionIcon = common.actions.isNotEmpty
+    final firstActionIcon = hasAction
         ? actionMeta(common.actions.first.action, context.l10n).icon
         : null;
     final nameText = (common.name?.isNotEmpty ?? false)
@@ -122,22 +131,15 @@ class GestureListTile extends ConsumerWidget {
             },
             child: Row(
               children: [
-                if (isMultiSelectMode)
-                  SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: Center(
-                      child: FCheckbox(
-                        value: isMultiSelected,
-                        onChange: (_) => onTap(),
-                      ),
-                    ),
-                  )
-                else
-                  _GestureTypeIcon(
-                    gesture: gesture,
-                    isSelected: isSelected,
-                  ),
+                _SelectionCheckboxSlot(
+                  visible: isMultiSelectMode,
+                  checked: isMultiSelected,
+                  onToggle: onTap,
+                ),
+                _GestureTypeIcon(
+                  gesture: gesture,
+                  isSelected: effectiveSelected,
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -163,40 +165,41 @@ class GestureListTile extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      if (summaryText.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          summaryText,
-                          style: typography.body.xs.copyWith(
-                            color: colors.mutedForeground,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Text(
+                        summaryText,
+                        style: typography.body.xs.copyWith(
+                          color: colors.mutedForeground,
                         ),
-                      ],
-                      if (firstAction.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            if (firstActionIcon != null) ...[
-                              Icon(
-                                firstActionIcon,
-                                size: 11,
-                                color: colors.mutedForeground,
-                              ),
-                              const SizedBox(width: 3),
-                            ],
-                            Expanded(
-                              child: Text(
-                                firstAction,
-                                style: typography.body.xs.copyWith(
-                                  color: colors.mutedForeground,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (firstActionIcon != null) ...[
+                            Icon(
+                              firstActionIcon,
+                              size: 11,
+                              color: colors.mutedForeground,
                             ),
+                            const SizedBox(width: 3),
                           ],
-                        ),
-                      ],
+                          Expanded(
+                            child: Text(
+                              firstAction,
+                              style: typography.body.xs.copyWith(
+                                color: hasAction
+                                    ? colors.mutedForeground
+                                    : colors.mutedForeground.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                fontStyle: hasAction ? null : FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -266,16 +269,16 @@ void _addTouchSummary(Object g, List<String> parts) {
         when direction != PinchDirection.any:
       parts.add(direction.name);
     case TouchpadRotateGesture(:final direction)
-        when direction != RotateDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchscreenRotateGesture(:final direction)
-        when direction != RotateDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchpadCircleGesture(:final direction)
-        when direction != CircleDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchscreenCircleGesture(:final direction)
-        when direction != CircleDirection.any:
+        when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchpadStrokeGesture(:final strokes):
       parts.add('${strokes.length} stroke${strokes.length == 1 ? '' : 's'}');
@@ -287,7 +290,7 @@ void _addTouchSummary(Object g, List<String> parts) {
 }
 
 String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
-  if (common.actions.isEmpty) return '';
+  if (common.actions.isEmpty) return l10n.actionSummaryNoAction;
   final action = common.actions.first.action;
   return switch (action) {
     CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
@@ -307,11 +310,58 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
     SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
     FunctionAction(:final expression) =>
       expression.trim().isEmpty ? 'function' : expression.trim(),
+    ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
     RawAction() => 'raw yaml',
   };
 }
 
-// ---------------------------------------------------------------------------
+class _SelectionCheckboxSlot extends StatelessWidget {
+  const _SelectionCheckboxSlot({
+    required this.visible,
+    required this.checked,
+    required this.onToggle,
+  });
+
+  final bool visible;
+  final bool checked;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = visible ? 1.0 : 0.0;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: target, end: target),
+      duration: kGestureSelectionSlotDuration,
+      curve: kGestureSelectionSlotCurve,
+      builder: (context, t, child) {
+        if (t <= 0) return const SizedBox.shrink();
+        return Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: t,
+          child: Opacity(opacity: t, child: child),
+        );
+      },
+      child: SizedBox(
+        width: kGestureSelectionSlotWidth,
+        height: 42,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          // FCheckbox reserves 8px on either side of the box for its (absent)
+          // label; without clearing it the box gets squeezed in this slot.
+          child: FCheckbox(
+            style: const FCheckboxStyleDelta.delta(
+              trailingLabelStyle: FLabelStyleDelta.delta(
+                childPadding: EdgeInsetsGeometryDelta.value(EdgeInsets.zero),
+              ),
+            ),
+            value: checked,
+            onChange: (_) => onToggle(),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _GestureTypeIcon extends StatelessWidget {
   const _GestureTypeIcon({required this.gesture, required this.isSelected});
@@ -488,10 +538,7 @@ class _StrokeGestureIcon extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
 // 42×42 swipe direction/angle mini icon
-// ---------------------------------------------------------------------------
-
 class _SwipeIcon extends StatelessWidget {
   const _SwipeIcon({
     required this.mode,

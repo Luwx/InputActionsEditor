@@ -98,6 +98,7 @@ extension VariableInfoL10n on VariableInfo {
     'thumb_initial_position_percentage_y' =>
       l10n.varLabel_thumbInitialPositionY,
     'fingers' => l10n.varLabel_fingers,
+    'max_finger_distance_percentage' => l10n.varLabel_maxFingerDistance,
     'keyboard_modifiers' => l10n.varLabel_keyboardModifiers,
     'cursor_shape' => l10n.varLabel_cursorShape,
     'screen_name' => l10n.varLabel_screenName,

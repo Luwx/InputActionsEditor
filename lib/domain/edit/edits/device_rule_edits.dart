@@ -21,7 +21,7 @@ final class AddDeviceRule extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'remove device rule');
+      RestoreSettings(config, label: 'remove device rule');
 }
 
 final class UpdateDeviceRule extends ConfigEdit {
@@ -39,7 +39,7 @@ final class UpdateDeviceRule extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'update device rule');
+      RestoreSettings(config, label: 'update device rule');
 }
 
 final class RemoveDeviceRule extends ConfigEdit {
@@ -55,7 +55,7 @@ final class RemoveDeviceRule extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'add device rule');
+      RestoreSettings(config, label: 'add device rule');
 }
 
 final class ReorderDeviceRule extends ConfigEdit {
@@ -79,7 +79,7 @@ final class ReorderDeviceRule extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'reorder device rules');
+      RestoreSettings(config, label: 'reorder device rules');
 }
 
 final class ReplaceDeviceRules extends ConfigEdit {
@@ -96,5 +96,5 @@ final class ReplaceDeviceRules extends ConfigEdit {
 
   @override
   ConfigEdit inverse(Config config) =>
-      RestoreConfig(config, label: 'replace device rules');
+      RestoreSettings(config, label: 'replace device rules');
 }

@@ -2,14 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
-import 'package:input_actions_editor/projections/dirty_saved_providers.dart'
-    show savedGestureProvider;
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 
@@ -51,15 +50,18 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
 
   @override
   GestureEditorState build() {
-    final gesture = ref.watch(
-      configControllerProvider.select(
-        (state) => gestureAt(state.requireValue.draft, location),
-      ),
+    final gesture = selectSession(
+      ref,
+      (session) => gestureAt(session.draft, location),
     );
-    final triggerDirtyState = ref.watch(
-      gestureTriggerConfigDirtyStateProvider(location),
+    final triggerDirtyState = selectSession(
+      ref,
+      (session) => gestureTriggerConfigDirtyState(session, location),
     );
-    final savedGesture = ref.watch(savedGestureProvider(location));
+    final savedGesture = selectSession(
+      ref,
+      (session) => gestureAt(session.saved, location),
+    );
     return GestureEditorState(
       location: location,
       gesture: gesture,
@@ -70,7 +72,10 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void updateCommon(TriggerCommon Function(TriggerCommon) update) {
-    _config.add(UpdateGestureCommon(location, update), scope: location);
+    _config.add(
+      UpdateGestureCommon(location, update),
+      scope: const GesturesScope(),
+    );
   }
 
   void rename(String name) {
@@ -86,17 +91,17 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void duplicate() {
-    _config.add(DuplicateGesture(location));
+    _config.add(DuplicateGestures([location]));
   }
 
   void delete() {
-    _config.add(RemoveGesture(location));
+    _config.add(RemoveGestures([location]));
   }
 
   void updateGesture(Object Function(Object) update) {
     _config.add(
       UpdateGesture(location, (gesture) => update(gesture) as Gesture),
-      scope: location,
+      scope: const GesturesScope(),
     );
   }
 
@@ -110,15 +115,10 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
         saved.common.copyWith(
           name: current.common.name,
           enabled: current.common.enabled,
-          groupId: current.common.groupId,
           editId: current.common.editId,
           actions: current.common.actions,
         ),
       );
     });
   }
-
-  void undo() => _config.undo(scope: location);
-
-  void redo() => _config.redo(scope: location);
 }

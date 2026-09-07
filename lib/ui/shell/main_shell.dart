@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
@@ -19,7 +18,31 @@ import 'package:input_actions_editor/ui/features/history/state/recognition_histo
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/application_menu.dart';
 import 'package:input_actions_editor/ui/shell/config_gate.dart';
+import 'package:input_actions_editor/ui/shell/config_issues_dialog.dart';
 import 'package:input_actions_editor/ui/shell/device_sidebar.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/collapsible_sidebar.dart';
+
+void _showConfigIssues(BuildContext context, WidgetRef ref) {
+  final issues = ref.read(configIssuesProvider);
+  if (issues.isEmpty || !context.mounted) return;
+  final l10n = context.l10n;
+  showFToast(
+    context: context,
+    icon: const Icon(FLucideIcons.triangleAlert),
+    title: Text(l10n.configIssuesTitle(issues.length)),
+    description: Text(l10n.configIssuesDescription),
+    duration: const Duration(seconds: 10),
+    suffixBuilder: (toastContext, entry) => FButton(
+      variant: .outline,
+      size: .sm,
+      onPress: () {
+        entry.dismiss();
+        unawaited(showConfigIssuesDialog(context, issues));
+      },
+      child: Text(l10n.actionDetails),
+    ),
+  );
+}
 
 /// Persistent app shell: device sidebar + content area.
 class MainShell extends HookConsumerWidget {
@@ -46,7 +69,8 @@ class MainShell extends HookConsumerWidget {
           final action = await showUnsavedChangesDialog(ctx);
           if (action == null) return false;
           if (action == UnsavedChangesAction.apply) {
-            await controller.save();
+            // Closing on a failed write would drop the edits for good.
+            if (!await controller.save()) return false;
           } else {
             controller.discardChanges();
           }
@@ -67,51 +91,61 @@ class MainShell extends HookConsumerWidget {
           fireImmediately: true,
         );
 
+      // MainShell mounts only after ConfigGate resolves, so the initial load
+      // has already reported; ref.listen below only covers later loads.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = contextRef.value;
+        if (ctx.mounted) _showConfigIssues(ctx, ref);
+      });
+
       return () => windowSvc.onCloseRequested = null;
     }, const []);
 
-    ref.listen(configLoadErrorProvider, (_, error) {
-      if (error == null || !context.mounted) return;
-      final l10n = context.l10n;
-      showFToast(
-        context: context,
-        variant: .destructive,
-        icon: const Icon(FLucideIcons.triangleAlert),
-        title: Text(l10n.configLoadFailedTitle),
-        description: Text('$error'),
-        duration: const Duration(seconds: 8),
-        suffixBuilder: (toastContext, entry) => FButton(
-          size: .sm,
-          onPress: () {
-            entry.dismiss();
-            unawaited(
-              ref.read(configControllerProvider.notifier).reload(),
-            );
-          },
-          suffix: const Icon(FLucideIcons.refreshCw, size: 12),
-          child: Text(l10n.actionRetry),
-        ),
-      );
-    });
+    ref
+      ..listen(
+        configIssuesProvider,
+        (_, _) => _showConfigIssues(context, ref),
+      )
+      ..listen(configLoadErrorProvider, (_, error) {
+        if (error == null || !context.mounted) return;
+        final l10n = context.l10n;
+        showFToast(
+          context: context,
+          variant: .destructive,
+          icon: const Icon(FLucideIcons.triangleAlert),
+          title: Text(l10n.configLoadFailedTitle),
+          description: Text('$error'),
+          duration: const Duration(seconds: 8),
+          suffixBuilder: (toastContext, entry) => FButton(
+            size: .sm,
+            onPress: () {
+              entry.dismiss();
+              unawaited(
+                ref.read(configControllerProvider.notifier).reload(),
+              );
+            },
+            suffix: const Icon(FLucideIcons.refreshCw, size: 12),
+            child: Text(l10n.actionRetry),
+          ),
+        );
+      });
 
     final transparent = ref.watch(
       localSettingsProvider.select((s) => s.transparentSidebar),
     );
     final gatedContent = ConfigGate(child: child);
     return ApplicationMenu(
-      child: FScaffold(
-        sidebar: Blurred(
-          disabled: !transparent,
-          expand: const EdgeInsets.only(right: 30),
-          child: const DeviceSidebar(),
+      child: CollapsibleSidebar(
+        child: FScaffold(
+          sidebar: const DeviceSidebar(),
+          childPad: false,
+          child: transparent
+              ? ColoredBox(
+                  color: context.theme.colors.background,
+                  child: gatedContent,
+                )
+              : gatedContent,
         ),
-        childPad: false,
-        child: transparent
-            ? ColoredBox(
-                color: context.theme.colors.background,
-                child: gatedContent,
-              )
-            : gatedContent,
       ),
     );
   }

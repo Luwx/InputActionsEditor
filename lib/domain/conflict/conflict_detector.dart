@@ -5,6 +5,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
@@ -28,24 +29,63 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 ///   *equal*. Differing conditions (e.g. `$keyboard_modifiers == meta`) are
 ///   assumed to disambiguate, so they are never flagged, this avoids false
 ///   positives on the common "X normally / modifier+X otherwise" pattern.
-List<GestureConflict> detectConflicts(Config config) {
-  return [
-    ..._detectForDevice(DeviceType.mouse, config.mouseGestures),
-    ..._detectForDevice(DeviceType.keyboard, config.keyboardGestures),
-    ..._detectForDevice(DeviceType.pointer, config.pointerGestures),
-    ..._detectForDevice(DeviceType.touchpad, config.touchpadGestures),
-    ..._detectForDevice(DeviceType.touchscreen, config.touchscreenGestures),
-  ];
+List<GestureConflict> detectConflicts(Config config) => [
+  for (final device in DeviceType.values)
+    ..._detectForDevice(
+      device,
+      config.gesturesForDevice(device),
+      _chainKeysForDevice(config.nodesForDevice(device)),
+    ),
+];
+
+/// Condition-key prefix each gesture inherits from its ancestor groups. Group
+/// conditions apply to every member, so they take part in the "same
+/// conditions" comparison exactly as if they were written on the gesture.
+/// Keyed by gesture editId.
+Map<int, String> _chainKeysForDevice(List<GestureNode> nodes) {
+  final result = <int, String>{};
+  void walk(List<GestureNode> level, String chain) {
+    for (final node in level) {
+      switch (node) {
+        case GestureLeaf(:final gesture):
+          final id = gesture.common.editId;
+          if (id != null && chain.isNotEmpty) result[id] = chain;
+        case GestureGroupNode(:final conditions, :final children):
+          final own = conditions == null ? '' : _conditionKey(conditions);
+          walk(
+            children,
+            [
+              chain,
+              own,
+            ].where((s) => s.isNotEmpty).join('&'),
+          );
+      }
+    }
+  }
+
+  walk(nodes, '');
+  return result;
 }
 
-List<GestureConflict> _detectForDevice(DeviceType device, List<Object> raw) {
+List<GestureConflict> _detectForDevice(
+  DeviceType device,
+  List<Object> raw, [
+  Map<int, String> chainKeys = const {},
+]) {
   final items = <_G>[];
   for (final (i, g) in raw.indexed) {
     final common = gestureCommon(g);
     if (common.enabled == false) continue; // user has turned it off
     // Live configs are normalized (assignEditIds), so the negative fallback
     // only keeps detached test fixtures addressable.
-    items.add(_G(common.editId ?? -1 - i, g, common));
+    items.add(
+      _G(
+        common.editId ?? -1 - i,
+        g,
+        common,
+        chainKeys[common.editId] ?? '',
+      ),
+    );
   }
 
   final conflicts = <GestureConflict>[];
@@ -446,7 +486,7 @@ enum _Kind {
 }
 
 class _G {
-  _G(this.editId, this.gesture, this.common)
+  _G(this.editId, this.gesture, this.common, [String groupChainKey = ''])
     : kind = _kindOf(gesture),
       fingers = _fingersOf(gesture),
       speed = _speedOf(gesture),
@@ -455,7 +495,9 @@ class _G {
       dirTokens = _dirTokensOf(gesture),
       // Serialized once per gesture; the O(n^2) pair loop then compares the
       // cached strings instead of rebuilding the condition key for every pair.
-      conditionKey = _conditionKey(common.conditions);
+      conditionKey = groupChainKey.isEmpty
+          ? _conditionKey(common.conditions)
+          : '$groupChainKey|${_conditionKey(common.conditions)}';
 
   final int editId;
   final Object gesture;
@@ -522,11 +564,11 @@ Set<String> _dirTokensOf(Object g) => switch (g) {
   WheelGesture(:final direction) => _wheelTokens(direction),
   CircleGesture(:final direction) ||
   TouchpadCircleGesture(:final direction) ||
-  TouchscreenCircleGesture(:final direction) => _circleTokens(direction),
+  TouchscreenCircleGesture(:final direction) => _rotationTokens(direction),
   TouchpadPinchGesture(:final direction) ||
   TouchscreenPinchGesture(:final direction) => _pinchTokens(direction),
   TouchpadRotateGesture(:final direction) ||
-  TouchscreenRotateGesture(:final direction) => _rotateTokens(direction),
+  TouchscreenRotateGesture(:final direction) => _rotationTokens(direction),
   _ => const {},
 };
 
@@ -540,20 +582,14 @@ Set<String> _wheelTokens(WheelDirection d) => switch (d) {
   WheelDirection.any => {'l', 'r', 'u', 'd'},
 };
 
-Set<String> _circleTokens(CircleDirection d) => switch (d) {
-  CircleDirection.clockwise => {'cw'},
-  CircleDirection.counterclockwise => {'ccw'},
-  CircleDirection.any => {'cw', 'ccw'},
+Set<String> _rotationTokens(RotationDirection d) => switch (d) {
+  RotationDirection.clockwise => {'cw'},
+  RotationDirection.counterclockwise => {'ccw'},
+  RotationDirection.any => {'cw', 'ccw'},
 };
 
 Set<String> _pinchTokens(PinchDirection d) => switch (d) {
   PinchDirection.inward => {'in'},
   PinchDirection.outward => {'out'},
   PinchDirection.any => {'in', 'out'},
-};
-
-Set<String> _rotateTokens(RotateDirection d) => switch (d) {
-  RotateDirection.clockwise => {'cw'},
-  RotateDirection.counterclockwise => {'ccw'},
-  RotateDirection.any => {'cw', 'ccw'},
 };

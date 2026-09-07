@@ -262,6 +262,7 @@ class _EventTile extends StatelessWidget {
       useRootNavigator: true,
       builder: (context, style, animation) => AppDialog(
         animation: animation,
+        onDefaultAction: () => Navigator.of(context).pop(),
         title: Text(event.triggerType ?? context.l10n.historyPathPreview),
         body: Column(
           mainAxisSize: MainAxisSize.min,
@@ -353,10 +354,6 @@ class _HistoryChip extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Info and candidate lines
-// ---------------------------------------------------------------------------
-
 class _InfoLine extends StatelessWidget {
   const _InfoLine({required this.event});
 
@@ -439,10 +436,6 @@ class _CandidateLine extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Matched gesture detail line
-// ---------------------------------------------------------------------------
-
 class _MatchedGestureDetail extends StatelessWidget {
   const _MatchedGestureDetail({required this.gesture});
   final Object gesture;
@@ -467,10 +460,6 @@ class _MatchedGestureDetail extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Swipe match resolution
-// ---------------------------------------------------------------------------
 
 Object? _resolveSwipeGesture(RecognitionEvent event, Config config) {
   final swipes = <(SwipeMode, TriggerCommon, Object)>[];
@@ -511,10 +500,6 @@ Object? _resolveSwipeGesture(RecognitionEvent event, Config config) {
   }
   return null;
 }
-
-// ---------------------------------------------------------------------------
-// Gesture lookup and summary helpers
-// ---------------------------------------------------------------------------
 
 TriggerCommon _gestureCommonOf(Object g) => switch (g) {
   MouseGesture(:final common) => common,
@@ -567,5 +552,6 @@ String _actionSummaryText(Action action, AppLocalizations l10n) =>
       SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
       FunctionAction(:final expression) =>
         expression.trim().isEmpty ? 'function' : expression.trim(),
+      ActionGroup(:final actions) => 'one of ${actions.length}',
       RawAction() => 'raw yaml',
     };

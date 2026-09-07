@@ -1,15 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/projections/conflict_provider.dart';
+import 'package:input_actions_editor/projections/inheritance_provider.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
+import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -31,12 +45,63 @@ class TriggerEditor extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = context.gestureLocation;
-    final pinnedFields = useState(initialAdvancedFields);
+    final inherited = _byField(
+      ref.watch(gestureInheritedPropertiesProvider(location)),
+    );
+    final inheritedConditions = ref.watch(
+      gestureInheritedConditionsProvider(location),
+    );
+    // An inherited property is worth seeing even when the gesture leaves it
+    // unset, so it joins the pinned set rather than hiding in the accordion.
+    final pinnedFields = useState({
+      ...initialAdvancedFields,
+      ...inherited.keys,
+      if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
+    });
+    final lockPointer = ref.watch(
+      gestureEditorProvider(
+        location,
+      ).select((s) => lockPointerTargetFor(s.gesture)),
+    );
+    final speed = ref.watch(
+      gestureEditorProvider(location).select((s) => speedTargetFor(s.gesture)),
+    );
+
+    final pinLockPointer = useState(lockPointer?.isSet ?? false);
+    final pinSpeed = useState(speed?.isSet ?? false);
+    final bodyLockPointer = lockPointer != null && pinLockPointer.value;
+    final bodySpeed = speed != null && pinSpeed.value;
+    final foldedLockPointer = lockPointer != null && !pinLockPointer.value;
+    final foldedSpeed = speed != null && !pinSpeed.value;
     final optionsExpanded = useState(false);
+    final optionsEndKey = useMemoized(GlobalKey.new);
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinnedFields.value.contains(field))
         .toList();
+    final reveal = ref.watch(editRevealProvider);
+    useEffect(() {
+      if (reveal == null || reveal.gesture != location) return null;
+      final changed = changedGestureFields(
+        reveal.before,
+        reveal.after,
+        location,
+      );
+      if (accordionFields.any((field) => changed.contains(field.dirtyField)) ||
+          (foldedLockPointer && changed.contains(lockPointer.dirty)) ||
+          (foldedSpeed && changed.contains(speed.dirty))) {
+        optionsExpanded.value = true;
+      }
+      return null;
+    }, [reveal]);
     final conflicts = ref.watch(conflictReportProvider).forGesture(location);
+
+    void openGroup(int editId) {
+      ref
+          .read(selectedGroupProvider.notifier)
+          .open(
+            GestureGroupLocation(device: location.device, editId: editId),
+          );
+    }
 
     return SectionCard(
       color: context.theme.colors.card.withValues(alpha: 0.55),
@@ -67,9 +132,41 @@ class TriggerEditor extends HookConsumerWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Column(
+      padding: const EdgeInsets.all(16),
+      footer: CardFooter(
+        expanded: optionsExpanded.value,
+        child: CollapsibleSection(
+          key: ValueKey(location.editId),
+          title: Text(context.l10n.triggerOtherOptions),
+          expanded: optionsExpanded.value,
+          onExpanded: (expanded) {
+            optionsExpanded.value = expanded;
+            if (expanded) _revealOptionsEnd(optionsEndKey);
+          },
+          childPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              StaggeredBuild(
+                immediate: optionsExpanded.value,
+                delay: const Duration(milliseconds: 800),
+                child: TriggerAdvancedFields(
+                  fields: accordionFields,
+                  inherited: inherited,
+                  inheritedConditions: inheritedConditions,
+                  onOpenGroup: openGroup,
+                  showLockPointer: foldedLockPointer,
+                  showSpeed: foldedSpeed,
+                ),
+              ),
+              SizedBox(key: optionsEndKey, height: 16),
+            ],
+          ),
+        ),
+      ),
+      body: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 16,
         children: [
           // for (final section in sections) section,
@@ -79,40 +176,46 @@ class TriggerEditor extends HookConsumerWidget {
             spacing: 16,
             children: sections,
           ),
-          if (pinnedFields.value.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 4),
-              child: TriggerAdvancedFields(fields: pinnedFields.value),
+          if (pinnedFields.value.isNotEmpty || bodyLockPointer || bodySpeed)
+            TriggerAdvancedFields(
+              fields: pinnedFields.value,
+              inherited: inherited,
+              inheritedConditions: inheritedConditions,
+              onOpenGroup: openGroup,
+              showLockPointer: bodyLockPointer,
+              showSpeed: bodySpeed,
             ),
-          FAccordion(
-            key: ValueKey(location.editId),
-            control: FAccordionControl.lifted(
-              expanded: (index) => index == 0 && optionsExpanded.value,
-              onChange: (index, exp) {
-                if (index != 0 || optionsExpanded.value == exp) return;
-                optionsExpanded.value = exp;
-              },
-            ),
-            style: const .delta(
-              dividerStyle: .delta(
-                color: Colors.transparent,
-                padding: .value(EdgeInsets.zero),
-              ),
-            ),
-            children: [
-              FAccordionItem(
-                title: Text(context.l10n.triggerOtherOptions),
-                child: TriggerAdvancedFields(
-                  fields: accordionFields,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 }
+
+void _revealOptionsEnd(GlobalKey marker) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final end = marker.currentContext;
+    if (end == null) return;
+    unawaited(
+      Scrollable.ensureVisible(
+        end,
+        alignment: 1,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        duration: collapsibleDuration,
+        curve: Easing.standard,
+      ),
+    );
+  });
+}
+
+/// Indexes inherited properties by the field that renders them. Conditions are
+/// absent by construction: the daemon AND-merges those, so a group condition is
+/// never in tension with a gesture's own.
+Map<TriggerAdvancedField, InheritedProperty> _byField(
+  List<InheritedProperty> inherited,
+) => {
+  for (final property in inherited)
+    triggerAdvancedFieldFor(property.property): property,
+};
 
 class _TriggerConflictBadge extends StatelessWidget {
   const _TriggerConflictBadge({

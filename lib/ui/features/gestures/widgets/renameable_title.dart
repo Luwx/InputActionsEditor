@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -9,10 +10,15 @@ class RenameableTitle extends HookConsumerWidget {
     required this.name,
     required this.titleStyle,
     required this.onRename,
+    this.editingName,
     super.key,
   });
 
   final String name;
+
+  /// Seeds the field when the displayed [name] is a placeholder rather than the
+  /// stored value.
+  final String? editingName;
   final TextStyle? titleStyle;
   final void Function(String)? onRename;
 
@@ -38,11 +44,12 @@ class RenameableTitle extends HookConsumerWidget {
     });
 
     void startRename() {
+      final initial = editingName ?? name;
       controller
-        ..text = name
+        ..text = initial
         ..selection = TextSelection(
           baseOffset: 0,
-          extentOffset: name.length,
+          extentOffset: initial.length,
         );
       isRenaming.value = true;
       WidgetsBinding.instance.addPostFrameCallback(
@@ -58,24 +65,30 @@ class RenameableTitle extends HookConsumerWidget {
     if (isRenaming.value) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: FTextField(
-                control: FTextFieldControl.managed(controller: controller),
-                focusNode: focusNode,
-                hint: 'Name',
-                onSubmit: (_) => doConfirm(),
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                isRenaming.value = false,
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: FTextField(
+                  control: FTextFieldControl.managed(controller: controller),
+                  focusNode: focusNode,
+                  hint: 'Name',
+                  onSubmit: (_) => doConfirm(),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            FButton.icon(
-              onPress: doConfirm,
-              size: .sm,
-              child: const Icon(FLucideIcons.check),
-            ),
-          ],
+              const SizedBox(width: 8),
+              FButton.icon(
+                onPress: doConfirm,
+                size: .sm,
+                child: const Icon(FLucideIcons.check),
+              ),
+            ],
+          ),
         ),
       );
     }

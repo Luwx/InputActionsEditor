@@ -72,7 +72,7 @@ Future<void> _showTypePicker(
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(ctx).pop(),
           child: Text(context.l10n.actionCancel),
         ),
@@ -221,7 +221,7 @@ class _AddGestureDialogContentState extends State<_AddGestureDialogContent> {
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),
@@ -281,6 +281,7 @@ typedef _TriggerEntry = ({
 });
 
 const _common = TriggerCommon();
+const _mouseCommon = TriggerCommon(mouseButtons: [MouseButtonValue.right]);
 
 List<_TriggerEntry> _triggerTypesFor(
   DeviceType device,
@@ -291,14 +292,14 @@ List<_TriggerEntry> _triggerTypesFor(
       label: l10n.gestureTypeStroke,
       description: l10n.templateMouseStrokeDescription,
       icon: FLucideIcons.lineSquiggle,
-      factory: () => const StrokeGesture(common: _common),
+      factory: () => const StrokeGesture(common: _mouseCommon),
     ),
     (
       label: l10n.gestureTypeSwipe,
       description: l10n.templateMouseSwipeDescription,
       icon: Icons.swipe_outlined,
       factory: () => const SwipeGesture(
-        common: _common,
+        common: _mouseCommon,
         mode: SwipeDirectionMode(direction: SwipeDirection.any),
       ),
     ),
@@ -307,22 +308,22 @@ List<_TriggerEntry> _triggerTypesFor(
       description: l10n.templateMouseCircleDescription,
       icon: Icons.rotate_right_rounded,
       factory: () => const CircleGesture(
-        common: _common,
-        direction: CircleDirection.any,
+        common: _mouseCommon,
+        direction: RotationDirection.any,
       ),
     ),
     (
       label: l10n.gestureTypePress,
       description: l10n.templateMousePressDescription,
       icon: Icons.touch_app_rounded,
-      factory: () => const PressGesture(common: _common),
+      factory: () => const PressGesture(common: _mouseCommon),
     ),
     (
       label: l10n.gestureTypeWheel,
       description: l10n.templateMouseWheelDescription,
       icon: Icons.unfold_more_rounded,
       factory: () => const WheelGesture(
-        common: _common,
+        common: _mouseCommon,
         direction: WheelDirection.any,
       ),
     ),

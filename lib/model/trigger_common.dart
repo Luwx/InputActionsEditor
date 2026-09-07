@@ -17,9 +17,6 @@ abstract class TriggerCommon with _$TriggerCommon {
     /// native support is added to the effect.
     bool? enabled,
     String? id,
-
-    /// UI-only: references a [GestureGroup] by id for organizational grouping.
-    String? groupId,
     @Default([]) List<MouseButtonValue> mouseButtons,
     @Default(false) bool mouseButtonsExactOrder,
     Condition? conditions,

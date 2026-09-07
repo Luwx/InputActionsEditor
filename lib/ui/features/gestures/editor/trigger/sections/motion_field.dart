@@ -5,8 +5,8 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-/// Speed + lock-pointer fields for motion-based triggers
-/// (swipe, pinch, rotate, circle, stroke).
+/// Speed field for motion-based triggers (swipe, pinch, rotate, circle,
+/// stroke).
 class MotionField extends StatelessWidget {
   const MotionField({
     required this.motion,
@@ -25,45 +25,28 @@ class MotionField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: FSelect<TriggerSpeed>(
-                key: ValueKey(motion.speed ?? TriggerSpeed.any),
-                items: _speeds,
-                control: FSelectManagedControl<TriggerSpeed>(
-                  initial: motion.speed ?? TriggerSpeed.any,
-                  onChange: (v) {
-                    if (v != null) {
-                      onChanged(
-                        motion.copyWith(
-                          speed: v == TriggerSpeed.any ? null : v,
-                        ),
-                      );
-                    }
-                  },
-                ),
-                label: LabelWithTooltip(
-                  label: context.l10n.motionSpeedLabel,
-                  tooltip: context.l10n.motionSpeedTooltip,
-                ),
-              ),
+        SizedBox(
+          width: 180,
+          child: FSelect<TriggerSpeed>(
+            key: ValueKey(motion.speed ?? TriggerSpeed.any),
+            items: _speeds,
+            control: FSelectManagedControl<TriggerSpeed>(
+              initial: motion.speed ?? TriggerSpeed.any,
+              onChange: (v) {
+                if (v != null) {
+                  onChanged(
+                    motion.copyWith(speed: v == TriggerSpeed.any ? null : v),
+                  );
+                }
+              },
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        FCheckbox(
-          label: LabelWithTooltip(
-            label: context.l10n.motionLockPointerLabel,
-            tooltip: context.l10n.motionLockPointerTooltip,
+            label: LabelWithTooltip(
+              label: context.l10n.motionSpeedLabel,
+              tooltip: context.l10n.motionSpeedTooltip,
+            ),
           ),
-          value: motion.lockPointer ?? false,
-          onChange: (v) =>
-              onChanged(motion.copyWith(lockPointer: v ? true : null)),
         ),
       ],
     );

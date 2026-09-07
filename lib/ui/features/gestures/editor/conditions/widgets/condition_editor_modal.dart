@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' show Colors, Curves, Material;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
@@ -23,6 +24,10 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
   required Condition? initialCondition,
   required void Function(Condition?) onConditionChanged,
   Widget? titleTooltipContent,
+  String? emptyMessage,
+  List<InheritedCondition> inherited = const [],
+  bool inheritedForGroup = false,
+  ValueChanged<InheritedCondition>? onOpenInheritedGroup,
 }) {
   return PageRouteBuilder<void>(
     opaque: false,
@@ -40,12 +45,16 @@ PageRouteBuilder<void> buildConditionsExpandRoute({
           title: title,
           titleTooltip: titleTooltip,
           titleTooltipContent: titleTooltipContent,
+          emptyMessage: emptyMessage,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
           onRevert: onRevert,
           initialCondition: initialCondition,
           onConditionChanged: onConditionChanged,
+          inherited: inherited,
+          inheritedForGroup: inheritedForGroup,
+          onOpenInheritedGroup: onOpenInheritedGroup,
         ),
       );
     },
@@ -89,7 +98,11 @@ class _ConditionsExpandModal extends StatelessWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    required this.inherited,
+    required this.inheritedForGroup,
+    required this.onOpenInheritedGroup,
     this.titleTooltipContent,
+    this.emptyMessage,
   });
 
   final Animation<double> animation;
@@ -98,12 +111,16 @@ class _ConditionsExpandModal extends StatelessWidget {
   final String title;
   final String? titleTooltip;
   final Widget? titleTooltipContent;
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
   final VoidCallback? onRevert;
   final Condition? initialCondition;
   final void Function(Condition?) onConditionChanged;
+  final List<InheritedCondition> inherited;
+  final bool inheritedForGroup;
+  final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -186,12 +203,16 @@ class _ConditionsExpandModal extends StatelessWidget {
                                   title: title,
                                   titleTooltip: titleTooltip,
                                   titleTooltipContent: titleTooltipContent,
+                                  emptyMessage: emptyMessage,
                                   groups: groups,
                                   isDirty: isDirty,
                                   dirtyState: dirtyState,
                                   onRevert: onRevert,
                                   initialCondition: initialCondition,
                                   onConditionChanged: onConditionChanged,
+                                  inherited: inherited,
+                                  inheritedForGroup: inheritedForGroup,
+                                  onOpenInheritedGroup: onOpenInheritedGroup,
                                 ),
                               ),
                             ),
@@ -222,7 +243,11 @@ class _ConditionsWrapper extends StatefulWidget {
     required this.onRevert,
     required this.initialCondition,
     required this.onConditionChanged,
+    required this.inherited,
+    required this.inheritedForGroup,
+    required this.onOpenInheritedGroup,
     this.titleTooltipContent,
+    this.emptyMessage,
   });
 
   final Object heroTag;
@@ -230,12 +255,16 @@ class _ConditionsWrapper extends StatefulWidget {
   final String title;
   final String? titleTooltip;
   final Widget? titleTooltipContent;
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
   final VoidCallback? onRevert;
   final Condition? initialCondition;
   final void Function(Condition?) onConditionChanged;
+  final List<InheritedCondition> inherited;
+  final bool inheritedForGroup;
+  final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
 
   @override
   State<_ConditionsWrapper> createState() => _ConditionsWrapperState();
@@ -261,11 +290,15 @@ class _ConditionsWrapperState extends State<_ConditionsWrapper> {
       title: widget.title,
       titleTooltip: widget.titleTooltip,
       titleTooltipContent: widget.titleTooltipContent,
+      emptyMessage: widget.emptyMessage,
       groups: widget.groups,
       isDirty: widget.isDirty,
       dirtyState: widget.dirtyState,
       onRevert: widget.onRevert,
       expandable: false,
+      inherited: widget.inherited,
+      inheritedForGroup: widget.inheritedForGroup,
+      onOpenInheritedGroup: widget.onOpenInheritedGroup,
       heroTag: widget.heroTag,
       bodyBackgroundColor: widget.backgroundColor,
       onCollapse: () => Navigator.of(context).pop(),

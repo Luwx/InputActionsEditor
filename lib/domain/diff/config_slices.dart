@@ -1,31 +1,25 @@
 /// The single definition of the settings/gestures partition of a [Config].
 ///
-/// The **gesture slice** is every per-device gesture list plus the UI grouping
-/// metadata ([Config.gestureGroups]); the **settings slice** is everything else
-/// (device rules, speeds, global settings, round-trip extras). Scoped
-/// save/discard in `ConfigController` and the per-slice dirty providers all
-/// derive from this, so the boundary lives in exactly one place.
+/// The **gesture slice** is every per-device gesture tree; the **settings
+/// slice** is everything else (device rules, speeds, global settings,
+/// round-trip extras). Scoped save/discard in `ConfigController` and the
+/// per-slice dirty providers all derive from this, so the boundary lives in
+/// exactly one place.
 library;
 
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/model/config.dart';
 
 /// Returns [onto] with its whole gesture slice replaced by [from]'s, leaving
-/// every settings field of [onto] intact.
-///
-/// Copies [from]'s gesture lists straight through `copyWith` (no per-device
-/// `.cast()` wrappers), so this allocates one [Config] instead of six and
-/// shares the underlying gesture *instances* with [from]. The shared instances
-/// keep the subsequent `==`'s per-element comparison to cheap identity checks.
-/// This runs on every keystroke against the whole config, so the reduced
-/// allocation churn matters.
+/// every settings field of [onto] intact. Shares [from]'s node instances so
+/// the subsequent `==` stays a cheap identity comparison per subtree — this
+/// runs on every keystroke against the whole config.
 Config withGestureSliceFrom(Config onto, Config from) => onto.copyWith(
-  mouseGestures: from.mouseGestures,
-  keyboardGestures: from.keyboardGestures,
-  pointerGestures: from.pointerGestures,
-  touchpadGestures: from.touchpadGestures,
-  touchscreenGestures: from.touchscreenGestures,
-  gestureGroups: from.gestureGroups,
+  mouseNodes: from.mouseNodes,
+  keyboardNodes: from.keyboardNodes,
+  pointerNodes: from.pointerNodes,
+  touchpadNodes: from.touchpadNodes,
+  touchscreenNodes: from.touchscreenNodes,
 );
 
 /// Whether [a] and [b] have identical gesture slices (per-device gesture lists

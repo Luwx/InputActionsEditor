@@ -1,3 +1,4 @@
+import 'package:input_actions_editor/domain/diff/config_slices.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 
@@ -40,16 +41,14 @@ final class SetLens<T> implements ConfigEdit {
   @override
   String get label => _label ?? 'set ${lens.name}';
 
-  // @override
-  // Config apply(Config config) => lens.set(config, value);
   @override
-  Config apply(Config config) {
-    // print('applying $label');
-    return lens.set(config, value);
-  }
+  Config apply(Config config) =>
+      lens.canGet(config) ? lens.set(config, value) : config;
 
   @override
-  ConfigEdit inverse(Config config) => SetLens<T>(lens, lens.get(config));
+  ConfigEdit inverse(Config config) => lens.canGet(config)
+      ? SetLens<T>(lens, lens.get(config))
+      : SetLens<T>(lens, value);
 }
 
 /// Applies several edits as one atomic, single-undo-step change.
@@ -95,4 +94,40 @@ final class RestoreConfig implements ConfigEdit {
   @override
   ConfigEdit inverse(Config config) =>
       RestoreConfig(config, label: 'redo $label');
+}
+
+/// [RestoreConfig] narrowed to the gesture slice: the settings the document
+/// carries now survive the restore, so a gesture step older than a settings
+/// step can still be undone on its own.
+final class RestoreGestures implements ConfigEdit {
+  RestoreGestures(this.snapshot, {this.label = 'restore gestures'});
+
+  final Config snapshot;
+
+  @override
+  final String label;
+
+  @override
+  Config apply(Config config) => withGestureSliceFrom(config, snapshot);
+
+  @override
+  ConfigEdit inverse(Config config) =>
+      RestoreGestures(config, label: 'redo $label');
+}
+
+/// Mirror of [RestoreGestures] for the settings slice.
+final class RestoreSettings implements ConfigEdit {
+  RestoreSettings(this.snapshot, {this.label = 'restore settings'});
+
+  final Config snapshot;
+
+  @override
+  final String label;
+
+  @override
+  Config apply(Config config) => withGestureSliceFrom(snapshot, config);
+
+  @override
+  ConfigEdit inverse(Config config) =>
+      RestoreSettings(config, label: 'redo $label');
 }

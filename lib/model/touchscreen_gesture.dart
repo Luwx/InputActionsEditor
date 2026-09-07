@@ -30,14 +30,14 @@ sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
   const factory TouchscreenGesture.rotate({
     required TriggerCommon common,
     int? fingers,
-    @Default(RotateDirection.any) RotateDirection direction,
+    @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenRotateGesture;
 
   const factory TouchscreenGesture.circle({
     required TriggerCommon common,
     int? fingers,
-    @Default(CircleDirection.any) CircleDirection direction,
+    @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenCircleGesture;
 

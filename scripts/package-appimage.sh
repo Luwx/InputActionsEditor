@@ -9,6 +9,8 @@ rm -rf "$APPDIR"
 mkdir -p "$APPDIR/bundle"
 cp -r "$BUNDLE"/. "$APPDIR/bundle/"
 
+rm -f "$APPDIR/bundle/data/flutter_assets/kernel_blob.bin"
+
 {
   echo '#!/bin/bash'
   echo 'SELF=$(readlink -f "$0")'

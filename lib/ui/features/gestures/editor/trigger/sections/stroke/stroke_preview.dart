@@ -11,11 +11,18 @@ class StrokePreview extends StatelessWidget {
     required this.border,
     this.size = 60,
     this.strokeWidth = 2,
+    this.strokeBorderWidth = 0,
+    this.startPointRadius = 3,
+    this.samplePointRadius = 1.5,
+    this.hollowSamplePoints = false,
+    this.arrowSize = 8,
+    this.borderRadius,
     this.showSamplePoints = false,
     this.pathPadding,
     this.dottedBackground = false,
     this.animatePath = false,
     this.animationDuration = const Duration(milliseconds: 800),
+    this.fromStrokeBase64,
     super.key,
   });
 
@@ -26,29 +33,43 @@ class StrokePreview extends StatelessWidget {
   final Color border;
   final double size;
   final double strokeWidth;
+  final double strokeBorderWidth;
+  final double startPointRadius;
+  final double samplePointRadius;
+  final bool hollowSamplePoints;
+  final double arrowSize;
+  final BorderRadius? borderRadius;
   final bool showSamplePoints;
   final double? pathPadding;
   final bool dottedBackground;
   final bool animatePath;
   final Duration animationDuration;
+  final String? fromStrokeBase64;
 
   @override
   Widget build(BuildContext context) {
     final points = decodeStrokeBase64(strokeBase64);
+    final from = fromStrokeBase64;
     return PathPreview(
       points: points ?? const [],
+      fromPoints: from == null ? null : decodeStrokeBase64(from),
       startColor: startColor,
       endColor: endColor,
       surface: surface,
       border: border,
       size: size,
       lineWidth: strokeWidth,
+      lineBorderWidth: strokeBorderWidth,
+      startPointRadius: startPointRadius,
+      samplePointRadius: samplePointRadius,
+      hollowSamplePoints: hollowSamplePoints,
+      arrowSize: arrowSize,
       showSamplePoints: showSamplePoints,
       pathPadding: pathPadding,
       dottedBackground: dottedBackground,
       animatePath: animatePath,
       animationDuration: animationDuration,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: borderRadius ?? BorderRadius.circular(6),
       empty: Center(
         child: Text(
           '?',

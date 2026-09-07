@@ -4,12 +4,14 @@
 *.pyc
 *.swp
 .DS_Store
+skills-lock.json
 .atom/
 .build/
 .buildlog/
 .history
 .svn/
 .claude/
+.agents/
 .swiftpm/
 migrate_working_dir/
 

@@ -3,110 +3,146 @@ part of 'package:input_actions_editor/ui/features/gestures/list/gesture_list_sec
 List<_FlatItem> _buildFlatList(
   Config config,
   DeviceType? deviceFilter,
-  Set<String> collapsedGroups,
+  Set<int> collapsedGroups,
 ) {
   if (deviceFilter != null) {
-    final gestures = config.gesturesForDevice(deviceFilter);
-    final groups = config.groupsForDevice(deviceFilter);
-    final groupIdSet = groups.map((group) => group.id).toSet();
-
-    final grouped = <String, List<(int, Gesture)>>{};
-    final ungrouped = <(int, Gesture)>[];
-
-    for (final (index, gesture) in gestures.indexed) {
-      final groupId = gesture.common.groupId;
-      if (groupId != null && groupIdSet.contains(groupId)) {
-        grouped.putIfAbsent(groupId, () => []).add((index, gesture));
-      } else {
-        ungrouped.add((index, gesture));
-      }
-    }
-
-    final items = <_FlatItem>[];
-    for (final group in groups) {
-      final groupGestures = grouped[group.id] ?? [];
-      final isCollapsed = collapsedGroups.contains(group.id);
-      items.add(
-        _GroupHeaderItem(
-          group: group,
-          device: deviceFilter,
-          isCollapsed: isCollapsed,
-          gestureCount: groupGestures.length,
-        ),
-      );
-
-      for (final (localIndex, entry) in groupGestures.indexed) {
-        final (index, gesture) = entry;
-        items.add(
-          _GestureRowItem(
-            device: deviceFilter,
-            configIndex: index,
-            groupId: gesture.common.groupId,
-            editId: gesture.common.editId,
-            localGroupIndex: localIndex,
-            isLastInGroup: localIndex == groupGestures.length - 1,
-            isVisible: !isCollapsed,
-          ),
-        );
-      }
-    }
-
-    for (final (index, gesture) in ungrouped) {
-      items.add(
-        _GestureRowItem(
-          device: deviceFilter,
-          configIndex: index,
-          groupId: gesture.common.groupId,
-          editId: gesture.common.editId,
-        ),
-      );
-    }
-    return items;
+    return _buildDeviceFlatList(config, deviceFilter, collapsedGroups);
   }
 
-  return [
-    for (final (index, gesture) in config.mouseGestures.indexed)
-      _GestureRowItem(
-        device: DeviceType.mouse,
-        configIndex: index,
-        groupId: gesture.common.groupId,
-        editId: gesture.common.editId,
-      ),
-    for (final (index, gesture) in config.keyboardGestures.indexed)
-      _GestureRowItem(
-        device: DeviceType.keyboard,
-        configIndex: index,
-        groupId: gesture.common.groupId,
-        editId: gesture.common.editId,
-      ),
-    for (final (index, gesture) in config.pointerGestures.indexed)
-      _GestureRowItem(
-        device: DeviceType.pointer,
-        configIndex: index,
-        groupId: gesture.common.groupId,
-        editId: gesture.common.editId,
-      ),
-    for (final (index, gesture) in config.touchpadGestures.indexed)
-      _GestureRowItem(
-        device: DeviceType.touchpad,
-        configIndex: index,
-        groupId: gesture.common.groupId,
-        editId: gesture.common.editId,
-      ),
-    for (final (index, gesture) in config.touchscreenGestures.indexed)
-      _GestureRowItem(
-        device: DeviceType.touchscreen,
-        configIndex: index,
-        groupId: gesture.common.groupId,
-        editId: gesture.common.editId,
-      ),
-  ];
+  // All-devices view: flat rows only, document order, no group chrome.
+  final items = <_FlatItem>[];
+  for (final device in DeviceType.values) {
+    var index = 0;
+    void walk(List<GestureNode> nodes, int? groupKey) {
+      for (final node in nodes) {
+        switch (node) {
+          case GestureLeaf(:final gesture):
+            items.add(
+              _GestureRowItem(
+                device: device,
+                configIndex: index++,
+                groupKey: groupKey,
+                editId: gesture.common.editId,
+              ),
+            );
+          case GestureGroupNode(:final editId, :final children):
+            walk(children, editId);
+        }
+      }
+    }
+
+    walk(config.nodesForDevice(device), null);
+  }
+  return items;
 }
 
-String _generateGroupId() {
-  final random = math.Random();
-  return List.generate(
-    10,
-    (_) => random.nextInt(36).toRadixString(36),
-  ).join();
+/// Per-device list: the tree in document order — group headers followed by
+/// their rows and child groups, root leaves interleaved where they sit.
+List<_FlatItem> _buildDeviceFlatList(
+  Config config,
+  DeviceType device,
+  Set<int> collapsedGroups,
+) {
+  final items = <_FlatItem>[];
+  var configIndex = 0;
+
+  int subtreeCount(GestureGroupNode group) => group.gestures.length;
+
+  void walk(
+    List<GestureNode> nodes,
+    int depth,
+    int? parentKey,
+    List<bool> chain, {
+    required bool anyAncestorCollapsed,
+  }) {
+    final rowTotal = nodes.whereType<GestureLeaf>().length;
+    var rowCounter = 0;
+    for (final (childIndex, node) in nodes.indexed) {
+      final hasNext = childIndex < nodes.length - 1;
+      switch (node) {
+        case GestureLeaf(:final gesture):
+          final localIndex = rowCounter++;
+          items.add(
+            _GestureRowItem(
+              device: device,
+              configIndex: configIndex++,
+              groupKey: parentKey,
+              editId: gesture.common.editId,
+              depth: depth,
+              localGroupIndex: parentKey == null ? null : localIndex,
+              isLastInGroup: parentKey != null && localIndex == rowTotal - 1,
+              isVisible: !anyAncestorCollapsed,
+              // Raw sibling chain, own step last: ancestor guides draw only
+              // while their step has a following sibling; the own-parent
+              // level terminates with a half stem on the last child.
+              ancestorContinues: depth == 0 ? const [] : [...chain, hasNext],
+            ),
+          );
+        case GestureGroupNode():
+          final groupKey = node.editId ?? -1;
+          final isCollapsed = collapsedGroups.contains(groupKey);
+          items.add(
+            _GroupHeaderItem(
+              groupKey: groupKey,
+              name: node.name,
+              enabled: node.enabled,
+              device: device,
+              isCollapsed: isCollapsed,
+              gestureCount: subtreeCount(node),
+              depth: depth,
+              parentKey: parentKey,
+              isVisible: !anyAncestorCollapsed,
+              ancestorContinues: depth == 0 ? const [] : [...chain, hasNext],
+            ),
+          );
+          walk(
+            node.children,
+            depth + 1,
+            groupKey,
+            depth == 0 ? const [] : [...chain, hasNext],
+            anyAncestorCollapsed: anyAncestorCollapsed || isCollapsed,
+          );
+      }
+    }
+  }
+
+  walk(
+    config.nodesForDevice(device),
+    0,
+    null,
+    const [],
+    anyAncestorCollapsed: false,
+  );
+  return items;
+}
+
+/// Every group editId in [device]'s tree, nested ones included.
+Iterable<int> _groupKeysOf(Config config, DeviceType device) sync* {
+  Iterable<int> walk(List<GestureNode> nodes) sync* {
+    for (final node in nodes) {
+      if (node is! GestureGroupNode) continue;
+      if (node.editId case final key?) yield key;
+      yield* walk(node.children);
+    }
+  }
+
+  yield* walk(config.nodesForDevice(device));
+}
+
+/// EditIds of the groups enclosing `items[index]`, outermost first.
+List<int> _ancestorGroupKeys(List<_FlatItem> items, int index) {
+  final parents = {
+    for (final item in items)
+      if (item is _GroupHeaderItem) item.groupKey: item.parentKey,
+  };
+  final chain = <int>[];
+  var key = switch (items[index]) {
+    _GestureRowItem(:final groupKey) => groupKey,
+    _GroupHeaderItem(:final parentKey) => parentKey,
+  };
+  while (key != null) {
+    chain.insert(0, key);
+    key = parents[key];
+  }
+  return chain;
 }

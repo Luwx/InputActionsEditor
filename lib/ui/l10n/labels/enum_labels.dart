@@ -31,19 +31,11 @@ extension WheelDirectionLabel on WheelDirection {
   };
 }
 
-extension CircleDirectionLabel on CircleDirection {
+extension RotationDirectionLabel on RotationDirection {
   String label(AppLocalizations l10n) => switch (this) {
-    CircleDirection.any => l10n.directionAny,
-    CircleDirection.clockwise => l10n.directionClockwise,
-    CircleDirection.counterclockwise => l10n.directionCounterclockwise,
-  };
-}
-
-extension RotateDirectionLabel on RotateDirection {
-  String label(AppLocalizations l10n) => switch (this) {
-    RotateDirection.any => l10n.directionAny,
-    RotateDirection.clockwise => l10n.directionClockwise,
-    RotateDirection.counterclockwise => l10n.directionCounterclockwise,
+    RotationDirection.any => l10n.directionAny,
+    RotationDirection.clockwise => l10n.directionClockwise,
+    RotationDirection.counterclockwise => l10n.directionCounterclockwise,
   };
 }
 

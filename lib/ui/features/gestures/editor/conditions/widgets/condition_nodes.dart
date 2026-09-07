@@ -16,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/type_icon_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/value_input.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Three columns shared by every condition table (variable / operator / value).
@@ -50,6 +51,10 @@ const double kConditionTrailingWidth = kRowActionWidth;
 /// [onChanged] replaces this node in its parent; [onDelete] removes it.
 /// Empty child groups are pruned by the parent updater so delete/edit actions
 /// cannot leave undeletable empty shells in the tree.
+///
+/// [readOnly] renders the subtree as a display of someone else's conditions:
+/// controls are inert and the row actions are gone, so [onChanged] and
+/// [onDelete] are never called.
 TreeTableNode buildConditionNode(
   BuildContext context,
   Condition condition, {
@@ -58,7 +63,13 @@ TreeTableNode buildConditionNode(
   required ValueChanged<Condition> onChanged,
   required VoidCallback onDelete,
   required List<VariableGroup>? groups,
+  bool readOnly = false,
 }) {
+  // The whole tree writes through one lens; the row identifies itself so its
+  // burst can't fold into another row's.
+  void edit(Condition updated) =>
+      tagEdits(context, (context, path), () => onChanged(updated));
+
   switch (condition) {
     case final VariableCondition c:
       return _leafNode(
@@ -66,7 +77,8 @@ TreeTableNode buildConditionNode(
         c,
         key: ValueKey(path),
         groups: groups,
-        onChanged: (updated) => onChanged(updated),
+        readOnly: readOnly,
+        onChanged: edit,
         onDelete: onDelete,
       );
     case final ConditionGroup group:
@@ -76,6 +88,7 @@ TreeTableNode buildConditionNode(
         path: path,
         depth: depth,
         groups: groups,
+        readOnly: readOnly,
         onChanged: (updated) => onChanged(updated),
         onDelete: onDelete,
       );
@@ -83,7 +96,8 @@ TreeTableNode buildConditionNode(
       return _functionNode(
         c,
         key: ValueKey(path),
-        onChanged: onChanged,
+        readOnly: readOnly,
+        onChanged: edit,
         onDelete: onDelete,
       );
     case final RawCondition raw:
@@ -94,6 +108,11 @@ TreeTableNode buildConditionNode(
   }
 }
 
+/// Renders [child] as an inert copy of an editable control.
+Widget _inert(Widget child) => ExcludeFocus(
+  child: IgnorePointer(child: Opacity(opacity: 0.65, child: child)),
+);
+
 TreeTableGroup _groupNode(
   BuildContext context,
   ConditionGroup group, {
@@ -102,6 +121,7 @@ TreeTableGroup _groupNode(
   required ValueChanged<Condition> onChanged,
   required VoidCallback onDelete,
   required List<VariableGroup>? groups,
+  bool readOnly = false,
 }) {
   final children = <TreeTableNode>[];
   for (var i = 0; i < group.children.length; i++) {
@@ -125,6 +145,7 @@ TreeTableGroup _groupNode(
         path: '$path/$i',
         depth: depth + 1,
         groups: groups,
+        readOnly: readOnly,
         onChanged: child is ConditionGroup
             ? (updated) {
                 final asGroup = updated as ConditionGroup;
@@ -146,6 +167,7 @@ TreeTableGroup _groupNode(
     header: _GroupHeaderContent(
       group: group,
       groups: groups,
+      readOnly: readOnly,
       onSetMode: (mode) => onChanged(group.copyWith(mode: mode)),
       onAddCondition: (picked) => onChanged(
         group.copyWith(children: [...group.children, _conditionFor(picked)]),
@@ -162,7 +184,7 @@ TreeTableGroup _groupNode(
         ),
       ),
     ),
-    trailing: depth > 0
+    trailing: depth > 0 && !readOnly
         ? FButton(
             variant: .ghost,
             size: .sm,
@@ -181,6 +203,7 @@ TreeTableLeaf _leafNode(
   required List<VariableGroup>? groups,
   required ValueChanged<VariableCondition> onChanged,
   required VoidCallback onDelete,
+  bool readOnly = false,
 }) {
   final colors = context.theme.colors;
   final typography = context.theme.typography;
@@ -193,113 +216,117 @@ TreeTableLeaf _leafNode(
       ? condition.operator
       : operators.first;
 
+  final cells = <Widget>[
+    Row(
+      children: [
+        SizedBox(
+          width: kConditionLeadingWidth,
+          child: _NegateButton(
+            negate: condition.negate,
+            onToggle: () =>
+                onChanged(condition.copyWith(negate: !condition.negate)),
+          ),
+        ),
+        Expanded(
+          child: Builder(
+            builder: (context) {
+              final variableLabel =
+                  info?.localizedLabel(context.l10n) ?? '\$$variableName';
+              return FItem(
+                style: .delta(
+                  backgroundColor: .delta([.base(Colors.transparent)]),
+                  padding: const .value(EdgeInsetsDirectional.zero),
+                  contentDecoration: .delta([
+                    .base(
+                      const .value(
+                        BoxDecoration(color: Colors.transparent),
+                      ),
+                    ),
+                  ]),
+                  contentStyle: const .delta(
+                    unsuffixedPadding: .value(
+                      .symmetric(horizontal: 2, vertical: 6),
+                    ),
+                  ),
+                ),
+                prefix: info != null ? TypeIconBadge(type: info.type) : null,
+                title: AppTooltip(
+                  tipBuilder: (context, controller) => Text(
+                    '$variableLabel\n'
+                    '${context.l10n.conditionVariableSelectorOpenHint}',
+                    style: context.theme.typography.body.xs.copyWith(
+                      color: context.theme.colors.mutedForeground,
+                    ),
+                  ),
+                  child: Text(
+                    variableLabel,
+                    style: typography.body.sm.copyWith(
+                      color: colors.foreground,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                onPress: () async {
+                  final picked = await showVariablePicker(
+                    context,
+                    currentVariable: variableName,
+                    groups: groups,
+                  );
+                  if (!context.mounted || picked == null) return;
+                  onChanged(
+                    VariableCondition(
+                      variable: ConditionVariableRef.known(picked.name),
+                      operator: picked.defaultOperator,
+                      value: picked.defaultValue,
+                      negate: condition.negate,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+    OperatorSelect(
+      key: ValueKey(variableName),
+      operators: operators,
+      current: currentOperator,
+      onChanged: (operator) => onChanged(
+        condition.copyWith(
+          operator: operator,
+          value: coerceConditionValue(
+            condition.value,
+            type: info?.type,
+            operator: operator,
+          ),
+        ),
+      ),
+    ),
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ValueInput(
+        key: ValueKey(variableName),
+        condition: condition,
+        info: info,
+        onChanged: (value) => onChanged(
+          condition.copyWith(value: value),
+        ),
+      ),
+    ),
+  ];
+
   return TreeTableLeaf(
     key: key,
-    cells: [
-      Row(
-        children: [
-          SizedBox(
-            width: kConditionLeadingWidth,
-            child: _NegateButton(
-              negate: condition.negate,
-              onToggle: () =>
-                  onChanged(condition.copyWith(negate: !condition.negate)),
-            ),
+    cells: readOnly ? cells.map(_inert).toList() : cells,
+    trailing: readOnly
+        ? null
+        : FButton(
+            variant: .ghost,
+            size: .sm,
+            onPress: onDelete,
+            child: Icon(FLucideIcons.trash2, color: colors.mutedForeground),
           ),
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                final variableLabel =
-                    info?.localizedLabel(context.l10n) ?? '\$$variableName';
-                return FItem(
-                  style: .delta(
-                    backgroundColor: .delta([.base(Colors.transparent)]),
-                    padding: const .value(EdgeInsetsDirectional.zero),
-                    contentDecoration: .delta([
-                      .base(
-                        const .value(
-                          BoxDecoration(color: Colors.transparent),
-                        ),
-                      ),
-                    ]),
-                    contentStyle: const .delta(
-                      unsuffixedPadding: .value(
-                        .symmetric(horizontal: 2, vertical: 6),
-                      ),
-                    ),
-                  ),
-                  prefix: info != null ? TypeIconBadge(type: info.type) : null,
-                  title: AppTooltip(
-                    tipBuilder: (context, controller) => Text(
-                      '$variableLabel\n'
-                      '${context.l10n.conditionVariableSelectorOpenHint}',
-                      style: context.theme.typography.body.xs.copyWith(
-                        color: context.theme.colors.mutedForeground,
-                      ),
-                    ),
-                    child: Text(
-                      variableLabel,
-                      style: typography.body.sm.copyWith(
-                        color: colors.foreground,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  onPress: () async {
-                    final picked = await showVariablePicker(
-                      context,
-                      currentVariable: variableName,
-                      groups: groups,
-                    );
-                    if (!context.mounted || picked == null) return;
-                    onChanged(
-                      VariableCondition(
-                        variable: ConditionVariableRef.known(picked.name),
-                        operator: picked.defaultOperator,
-                        value: picked.defaultValue,
-                        negate: condition.negate,
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      OperatorSelect(
-        key: ValueKey(variableName),
-        operators: operators,
-        current: currentOperator,
-        onChanged: (operator) => onChanged(
-          condition.copyWith(
-            operator: operator,
-            value: coerceConditionValue(
-              condition.value,
-              type: info?.type,
-              operator: operator,
-            ),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: ValueInput(
-          key: ValueKey(variableName),
-          condition: condition,
-          info: info,
-          onChanged: (value) => onChanged(
-            condition.copyWith(value: value),
-          ),
-        ),
-      ),
-    ],
-    trailing: FButton(
-      variant: .ghost,
-      size: .sm,
-      onPress: onDelete,
-      child: Icon(FLucideIcons.trash2, color: colors.mutedForeground),
-    ),
   );
 }
 
@@ -316,6 +343,7 @@ TreeTableLeaf _functionNode(
   required Key key,
   required ValueChanged<Condition> onChanged,
   required VoidCallback onDelete,
+  bool readOnly = false,
 }) {
   return TreeTableLeaf(
     key: key,
@@ -323,7 +351,7 @@ TreeTableLeaf _functionNode(
       builder: (context) {
         final colors = context.theme.colors;
         final typography = context.theme.typography;
-        return Row(
+        final row = Row(
           children: [
             Padding(
               padding: const EdgeInsets.only(
@@ -358,22 +386,25 @@ TreeTableLeaf _functionNode(
             ),
           ],
         );
+        return readOnly ? _inert(row) : row;
       },
     ),
-    trailing: Builder(
-      builder: (context) => Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: FButton(
-          variant: .ghost,
-          size: .sm,
-          onPress: onDelete,
-          child: Icon(
-            FLucideIcons.trash2,
-            color: context.theme.colors.mutedForeground,
+    trailing: readOnly
+        ? null
+        : Builder(
+            builder: (context) => Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: FButton(
+                variant: .ghost,
+                size: .sm,
+                onPress: onDelete,
+                child: Icon(
+                  FLucideIcons.trash2,
+                  color: context.theme.colors.mutedForeground,
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-    ),
   );
 }
 
@@ -415,6 +446,7 @@ class _GroupHeaderContent extends StatelessWidget {
     required this.onAddCondition,
     required this.onAddGroup,
     required this.onAddFunction,
+    this.readOnly = false,
   });
 
   final ConditionGroup group;
@@ -423,6 +455,7 @@ class _GroupHeaderContent extends StatelessWidget {
   final ValueChanged<VariableInfo> onAddCondition;
   final VoidCallback onAddGroup;
   final VoidCallback onAddFunction;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -432,11 +465,14 @@ class _GroupHeaderContent extends StatelessWidget {
 
     return Row(
       children: [
-        ModeSelector(
-          key: ValueKey(group.mode),
-          mode: group.mode,
-          onChanged: onSetMode,
-        ),
+        if (readOnly)
+          ModeBadge(mode: group.mode)
+        else
+          ModeSelector(
+            key: ValueKey(group.mode),
+            mode: group.mode,
+            onChanged: onSetMode,
+          ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -445,15 +481,16 @@ class _GroupHeaderContent extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        NewConditionMenu(
-          onAddCondition: () async {
-            final picked = await showVariablePicker(context, groups: groups);
-            if (!context.mounted || picked == null) return;
-            onAddCondition(picked);
-          },
-          onAddGroup: onAddGroup,
-          onAddFunction: onAddFunction,
-        ),
+        if (!readOnly)
+          NewConditionMenu(
+            onAddCondition: () async {
+              final picked = await showVariablePicker(context, groups: groups);
+              if (!context.mounted || picked == null) return;
+              onAddCondition(picked);
+            },
+            onAddGroup: onAddGroup,
+            onAddFunction: onAddFunction,
+          ),
       ],
     );
   }

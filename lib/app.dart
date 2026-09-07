@@ -1,3 +1,4 @@
+import 'package:background_blur_linux/background_blur_linux.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,19 +11,23 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/services/ui_scale_binding.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
+import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
+import 'package:input_actions_editor/ui/common/theme/popup_glass.dart';
+import 'package:input_actions_editor/ui/common/theme/switch_style.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // cached once, kdeglobals either exists or it doesn't
 final bool _kdeAvailable = KdeglobalsParser.isAvailable();
 
-const _appSidebarWidth = 180.0;
 const _appSidebarBlendWidth = 20.0;
 
 class App extends ConsumerWidget {
@@ -81,7 +86,7 @@ class App extends ConsumerWidget {
               ref.read(navProvider.notifier).forward();
             }
           },
-          child: _ThemedShell(child: child!),
+          child: _ScaledMediaQuery(child: _ThemedShell(child: child!)),
         );
       },
     );
@@ -89,23 +94,11 @@ class App extends ConsumerWidget {
 }
 
 FThemeData buildAppFThemeData(LocalSettings settings, Brightness brightness) {
-  final colorPair = switch (settings.colorTheme) {
-    FColorTheme.neutral => FThemes.neutral,
-    FColorTheme.zinc => FThemes.zinc,
-    FColorTheme.slate => FThemes.slate,
-    FColorTheme.blue => FThemes.blue,
-    FColorTheme.green => FThemes.green,
-    FColorTheme.orange => FThemes.orange,
-    FColorTheme.red => FThemes.red,
-    FColorTheme.rose => FThemes.rose,
-    FColorTheme.violet => FThemes.violet,
-    FColorTheme.yellow => FThemes.yellow,
-    FColorTheme.kde => null,
-  };
+  final colorPair = AppThemes.of(settings.colorTheme);
 
   if (colorPair == null) {
     // KDE theme is handled separately
-    return FThemes.zinc.dark.desktop;
+    return withGlassPopups(AppThemes.zinc.dark.desktop);
   }
 
   final baseTheme = switch (settings.themeMode) {
@@ -128,13 +121,14 @@ FThemeData _withAppChromeStyle(
   required bool transparentSidebar,
 }) {
   final colors = baseTheme.colors;
-  final hoverColor = colors.primary.withValues(alpha: 0.14);
-  final pressedColor = colors.primary.withValues(alpha: 0.30);
-  final selectedColor = colors.primary.withValues(alpha: 0.18);
-  final selectedHoverColor = colors.primary.withValues(alpha: 0.38);
-  final selectedPressedColor = colors.primary.withValues(alpha: 0.34);
+  final hoverColor = colors.primary.withValues(alpha: 0.10);
+  final pressedColor = colors.primary.withValues(alpha: 0.22);
+  final selectedColor = colors.primary.withValues(alpha: 0.13);
+  final selectedHoverColor = colors.primary.withValues(alpha: 0.28);
+  final selectedPressedColor = colors.primary.withValues(alpha: 0.25);
 
-  return baseTheme.copyWith(
+  return withGlassPopups(baseTheme).copyWith(
+    switchStyle: switchContrastDelta(baseTheme),
     scaffoldStyle: transparentSidebar
         ? const .delta(
             backgroundColor: Colors.transparent,
@@ -165,6 +159,32 @@ FThemeData _withAppChromeStyle(
       ),
     ),
   );
+}
+
+class _ScaledMediaQuery extends StatelessWidget {
+  const _ScaledMediaQuery({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = UiScaleBinding.scale;
+    if (scale == 1) return child;
+
+    // MediaQueryData.fromView reads the raw view, so it misses the scale the
+    // binding applies to the render view's configuration.
+    final data = MediaQuery.of(context);
+    return MediaQuery(
+      data: data.copyWith(
+        size: data.size / scale,
+        devicePixelRatio: data.devicePixelRatio * scale,
+        padding: data.padding / scale,
+        viewPadding: data.viewPadding / scale,
+        viewInsets: data.viewInsets / scale,
+      ),
+      child: child,
+    );
+  }
 }
 
 class _ThemedShell extends ConsumerWidget {
@@ -200,7 +220,7 @@ class _ThemedShell extends ConsumerWidget {
   }
 }
 
-class _AppChromeBackground extends StatelessWidget {
+class _AppChromeBackground extends ConsumerWidget {
   const _AppChromeBackground({
     required this.color,
     required this.transparentSidebar,
@@ -212,7 +232,7 @@ class _AppChromeBackground extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     printBuild(3, 'appChromeBackground build');
     if (!transparentSidebar) {
       return ColoredBox(color: color, child: child);
@@ -222,13 +242,25 @@ class _AppChromeBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
+        const PositionedDirectional(
+          top: 0,
+          bottom: 0,
+          start: 0,
+          width: kSidebarExpandedWidth,
+          child: Blurred(
+            expand: EdgeInsets.only(right: 30),
+            child: SizedBox.expand(),
+          ),
+        ),
         Row(
           textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ColoredBox(
               color: sidebarColor,
-              child: const SizedBox(width: _appSidebarWidth),
+              child: const SizedBox(
+                width: kSidebarExpandedWidth,
+              ),
             ),
             DecoratedBox(
               decoration: BoxDecoration(

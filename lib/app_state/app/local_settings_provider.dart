@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,9 +38,23 @@ class LocalSettingsNotifier extends Notifier<LocalSettings> {
     ref.read(localSettingsServiceProvider).saveMinimizeToTray(value);
     state = state.copyWith(minimizeToTray: value);
   }
+
+  void setBackupsEnabled(bool value) {
+    ref.read(localSettingsServiceProvider).saveBackupsEnabled(value);
+    state = state.copyWith(backupsEnabled: value);
+  }
+
+  void setBackupCount(int value) {
+    ref.read(localSettingsServiceProvider).saveBackupCount(value);
+    state = state.copyWith(backupCount: value);
+  }
 }
 
 final localSettingsProvider =
     NotifierProvider<LocalSettingsNotifier, LocalSettings>(
       LocalSettingsNotifier.new,
     );
+
+final backupPolicyProvider = Provider<BackupPolicy>(
+  (ref) => ref.watch(localSettingsProvider.select((s) => s.backupPolicy)),
+);

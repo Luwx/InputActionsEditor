@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/device_rule_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
@@ -48,6 +49,7 @@ class DeviceRulesEditor extends ConsumerWidget {
                   ? null
                   : () => controller.add(
                       ReplaceDeviceRules(savedConfig.deviceRules),
+                      scope: const SettingsScope(),
                     ),
               child: Text(
                 l10n.deviceRulesTitle,
@@ -62,8 +64,10 @@ class DeviceRulesEditor extends ConsumerWidget {
                 FButton(
                   variant: .outline,
                   size: .sm,
-                  onPress: () =>
-                      controller.add(AddDeviceRule(const DeviceRule())),
+                  onPress: () => controller.add(
+                    AddDeviceRule(const DeviceRule()),
+                    scope: const SettingsScope(),
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     spacing: 6,
@@ -102,8 +106,10 @@ class DeviceRulesEditor extends ConsumerWidget {
                     FButton(
                       variant: .outline,
                       size: .sm,
-                      onPress: () =>
-                          controller.add(AddDeviceRule(const DeviceRule())),
+                      onPress: () => controller.add(
+                        AddDeviceRule(const DeviceRule()),
+                        scope: const SettingsScope(),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         spacing: 6,
@@ -127,9 +133,14 @@ class DeviceRulesEditor extends ConsumerWidget {
                   key: ValueKey(i),
                   index: i,
                   rule: rules[i],
-                  onChanged: (r) =>
-                      controller.add(UpdateDeviceRule(i, (_) => r)),
-                  onDelete: () => controller.add(RemoveDeviceRule(i)),
+                  onChanged: (r) => controller.add(
+                    UpdateDeviceRule(i, (_) => r),
+                    scope: const SettingsScope(),
+                  ),
+                  onDelete: () => controller.add(
+                    RemoveDeviceRule(i),
+                    scope: const SettingsScope(),
+                  ),
                   colors: colors,
                   typography: typography,
                 ),
@@ -163,7 +174,7 @@ class _DeviceRuleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final condLabel = _conditionLabel(rule.conditions, l10n);
-    final conditionsField = ref.field(
+    final conditionsField = ref.settingsField(
       deviceRuleConditionsLens(DeviceRuleLocation(deviceRuleIndex: index)),
       fallbackValue: () => rule.conditions,
     );

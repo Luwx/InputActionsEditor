@@ -1,11 +1,12 @@
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/warm_up_reveal.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
+/// Holds the app behind a loader until the config is available.
 class ConfigGate extends ConsumerWidget {
   const ConfigGate({required this.child, super.key});
 
@@ -13,40 +14,25 @@ class ConfigGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref
-        .watch(configControllerProvider)
-        .when(
-          skipLoadingOnReload: true,
-          data: (_) => KeyedSubtree(
-            key: const ValueKey('config-gate-data'),
-            child: child,
-          ),
-          loading: () => const Center(
-            key: ValueKey('config-gate-loading'),
-            child: FCircularProgress.loader(),
-          ),
-          error: (error, _) => _ConfigLoadError(
-            key: const ValueKey('config-gate-error'),
-            error: error,
-          ),
-        );
-
-    return PageTransitionSwitcher(
-      transitionBuilder: (child, animation, secondaryAnimation) =>
-          SharedAxisTransition(
-            animation: animation,
-            secondaryAnimation: secondaryAnimation,
-            transitionType: SharedAxisTransitionType.scaled,
-            fillColor: Colors.transparent,
-            child: child,
-          ),
-      child: state,
+    final config = ref.watch(configControllerProvider);
+    final loaded = config.hasValue;
+    return WarmUpReveal(
+      ready: loaded,
+      debugLabel: 'config gate',
+      debugReadyLabel: 'config read',
+      debugChildLabel: 'page built',
+      debugPlaceholderLabel: 'loader',
+      placeholder: switch (config) {
+        AsyncError(:final error) when !loaded => _ConfigLoadError(error: error),
+        _ => const Center(child: FCircularProgress.loader()),
+      },
+      child: child,
     );
   }
 }
 
 class _ConfigLoadError extends ConsumerWidget {
-  const _ConfigLoadError({required this.error, super.key});
+  const _ConfigLoadError({required this.error});
 
   final Object error;
 

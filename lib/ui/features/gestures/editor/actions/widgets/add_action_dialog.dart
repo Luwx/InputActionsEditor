@@ -19,12 +19,11 @@ Future<Action?> showAddActionDialog(BuildContext context) {
           shrinkWrap: true,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
-          childAspectRatio: 2.45,
+          childAspectRatio: 2.5,
           children: [
             for (final kind in _ActionKind.values)
-              // (!) disable these actions for now since it
-              // requires more complex ui
-              if (kind != .function && kind != .raw)
+              // (!) disabled for now since it requires more complex ui
+              if (kind != .raw)
                 _KindCard(
                   kind: kind,
                   onTap: () => Navigator.of(context).pop(kind.buildDefault()),
@@ -34,7 +33,7 @@ Future<Action?> showAddActionDialog(BuildContext context) {
       ),
       actions: [
         FButton(
-          variant: .outline,
+          variant: .ghost,
           onPress: () => Navigator.of(context).pop(),
           child: Text(context.l10n.actionCancel),
         ),
@@ -50,6 +49,7 @@ enum _ActionKind {
   activateWindow,
   replaceText,
   sleep,
+  group,
   function,
   raw;
 
@@ -67,11 +67,12 @@ enum _ActionKind {
       rules: [
         TextSubstitutionRule(
           regex: '',
-          replace: LiteralTextReplacementValue(text: ''),
+          replace: LiteralText(''),
         ),
       ],
     ),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
+    _ActionKind.group => const ActionGroup(),
     _ActionKind.function => const FunctionAction(expression: '() => '),
     _ActionKind.raw => const RawAction(raw: ''),
   };
@@ -119,9 +120,8 @@ class _KindCardState extends State<_KindCard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 4),
               Icon(meta.icon, size: 24, color: colors.secondaryForeground),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 meta.label,
                 style: typography.body.sm.copyWith(

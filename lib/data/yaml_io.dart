@@ -1,15 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:input_actions_editor/data/config_backups.dart';
 import 'package:input_actions_editor/data/paths.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
-import 'package:input_actions_editor/model/enums.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
@@ -20,16 +23,13 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
-// ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
 
 Future<(Config, String)> loadConfig() async {
   final path = configFilePath();
   final file = File(path);
   if (!file.existsSync()) return (const Config(), '');
   final text = await file.readAsString();
-  await Future<void>.delayed(const Duration(milliseconds: 500));
   final config = await compute(decodeConfig, text);
   return (config, text);
 }
@@ -75,11 +75,19 @@ Future<(Config, String)> loadConfigFromPath(String path) async {
   return (decodeConfig(text), text);
 }
 
-Future<void> saveConfig(Config config, String originalText) async {
+/// Writes [config] and returns the YAML text now on disk.
+Future<String> saveConfig(
+  Config config,
+  String originalText, {
+  BackupPolicy backups = const BackupPolicy.disabled(),
+}) async {
   final path = configFilePath();
   final file = File(path);
   if (!file.parent.existsSync()) await file.parent.create(recursive: true);
-  await file.writeAsString(encodeConfig(config, originalText));
+  await backupConfigFile(path, backups);
+  final text = encodeConfig(config, originalText);
+  await file.writeAsString(text);
+  return text;
 }
 
 Future<String?> pickSaveFilePath() async {
@@ -138,32 +146,40 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'mouse',
-    config.mouseGestures.map(mouseGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.mouse),
+    _nodesToYaml(
+      config.mouseNodes,
+      (g) => mouseGestureToMap(g as MouseGesture),
+    ),
     speed: config.mouseSpeed,
   );
   _saveDeviceSection(
     editor,
     doc,
     'keyboard',
-    config.keyboardGestures.map(keyboardGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.keyboard),
+    _nodesToYaml(
+      config.keyboardNodes,
+      (g) => keyboardGestureToMap(g as KeyboardGesture),
+    ),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
     editor,
     doc,
     'pointer',
-    config.pointerGestures.map(pointerGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.pointer),
+    _nodesToYaml(
+      config.pointerNodes,
+      (g) => pointerGestureToMap(g as PointerGesture),
+    ),
     omitIfEmpty: true,
   );
   _saveDeviceSection(
     editor,
     doc,
     'touchpad',
-    config.touchpadGestures.map(touchpadGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.touchpad),
+    _nodesToYaml(
+      config.touchpadNodes,
+      (g) => touchpadGestureToMap(g as TouchpadGesture),
+    ),
     omitIfEmpty: true,
     speed: config.touchpadSpeed,
   );
@@ -171,8 +187,10 @@ String encodeConfig(Config config, String originalText) {
     editor,
     doc,
     'touchscreen',
-    config.touchscreenGestures.map(touchscreenGestureToMap).toList(),
-    groups: config.groupsForDevice(DeviceType.touchscreen),
+    _nodesToYaml(
+      config.touchscreenNodes,
+      (g) => touchscreenGestureToMap(g as TouchscreenGesture),
+    ),
     omitIfEmpty: true,
     speed: config.touchscreenSpeed,
   );
@@ -180,56 +198,81 @@ String encodeConfig(Config config, String originalText) {
   _saveDeviceRules(editor, doc, config);
   _saveGlobalSettings(editor, doc, config);
 
-  return restoreOriginalDisabledItemComments(
-    commentDisabledYamlItems(editor.toString()),
-    originalText,
+  return spaceOutGestures(
+    restoreOriginalDisabledItemComments(
+      commentDisabledYamlItems(editor.toString()),
+      originalText,
+    ),
   );
 }
+
+/// Lays out a device's gesture tree as the YAML `gestures:` list. Membership
+/// is the nesting; nothing about grouping needs reconstruction.
+List<dynamic> _nodesToYaml(
+  List<GestureNode> nodes,
+  Map<String, dynamic> Function(Gesture) toMap,
+) => [
+  for (final node in nodes)
+    switch (node) {
+      GestureLeaf(:final gesture) => toMap(gesture),
+      GestureGroupNode() => {
+        if (node.name.isNotEmpty) 'name': node.name,
+        if (!node.enabled) 'enabled': false,
+        if (node.conditions != null)
+          'conditions': conditionToYaml(node.conditions!),
+        // Shared trigger properties, in the same key order gestures use.
+        if (node.id != null) 'id': node.id,
+        if (node.endConditions != null)
+          'end_conditions': conditionToYaml(node.endConditions!),
+        if (node.blockEvents != null) 'block_events': node.blockEvents,
+        if (node.clearModifiers != null) 'clear_modifiers': node.clearModifiers,
+        if (node.resumeTimeout != null) 'resume_timeout': node.resumeTimeout,
+        if (node.setLastTrigger != null)
+          'set_last_trigger': node.setLastTrigger,
+        if (node.threshold != null) 'threshold': node.threshold,
+        if (node.accelerated != null) 'accelerated': node.accelerated,
+        ...node.extra,
+        'gestures': _nodesToYaml(node.children, toMap),
+      },
+    },
+];
 
 void _saveDeviceSection(
   YamlEditor editor,
   dynamic doc,
   String key,
-  List<Map<String, dynamic>> gestures, {
+  List<dynamic> gestures, {
   bool omitIfEmpty = false,
   SpeedSettings? speed,
-  List<GestureGroup> groups = const [],
 }) {
   final hasGestures = gestures.isNotEmpty;
   final hasSpeed = speed != null && !speed.isEmpty;
-  final hasGroups = groups.isNotEmpty;
-  if (omitIfEmpty && !hasGestures && !hasSpeed && !hasGroups) return;
+  if (omitIfEmpty && !hasGestures && !hasSpeed) return;
 
   final hasSection = doc is YamlMap && doc.containsKey(key);
   if (hasSection) {
-    editor.update([key, 'gestures'], gestures);
-    if (hasGroups) {
-      editor.update(
-        [key, 'groups'],
-        groups.map(_gestureGroupToMap).toList(),
-      );
-    } else if (doc[key] is YamlMap &&
-        (doc[key] as YamlMap).containsKey('groups')) {
+    final sectionMap = doc[key] is YamlMap ? doc[key] as YamlMap : null;
+    if (!yamlNodeMatches(sectionMap?['gestures'], gestures)) {
+      editor.update([key, 'gestures'], gestures);
+    }
+    // The editor's old flat `groups:` list is read for compatibility but no
+    // longer written: groups serialize as nesting. Drop it on save.
+    if (sectionMap != null && sectionMap.containsKey('groups')) {
       editor.remove([key, 'groups']);
     }
     if (hasSpeed) {
-      editor.update([key, 'speed'], speedSettingsToMap(speed));
-    } else if (doc[key] is YamlMap &&
-        (doc[key] as YamlMap).containsKey('speed')) {
+      final speedMap = speedSettingsToMap(speed);
+      if (!yamlNodeMatches(sectionMap?['speed'], speedMap)) {
+        editor.update([key, 'speed'], speedMap);
+      }
+    } else if (sectionMap != null && sectionMap.containsKey('speed')) {
       editor.remove([key, 'speed']);
     }
   } else {
     final section = <String, dynamic>{'gestures': gestures};
-    if (hasGroups) section['groups'] = groups.map(_gestureGroupToMap).toList();
     if (hasSpeed) section['speed'] = speedSettingsToMap(speed);
     editor.update([key], section);
   }
-}
-
-Map<String, dynamic> _gestureGroupToMap(GestureGroup g) {
-  final m = <String, dynamic>{'id': g.id, 'name': g.name};
-  if (!g.enabled) m['enabled'] = false;
-  return m;
 }
 
 void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {
@@ -239,7 +282,10 @@ void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {
     if (hasSection) editor.remove(['device_rules']);
     return;
   }
-  editor.update(['device_rules'], rules);
+  final existing = hasSection ? doc['device_rules'] : null;
+  if (!yamlNodeMatches(existing, rules)) {
+    editor.update(['device_rules'], rules);
+  }
 }
 
 void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
@@ -260,10 +306,14 @@ void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
   if (gs.notificationsConfigError != null) {
     final hasNotifications = doc is YamlMap && doc.containsKey('notifications');
     if (hasNotifications) {
-      editor.update(
-        ['notifications', 'config_error'],
-        gs.notificationsConfigError,
-      );
+      final notif = doc['notifications'];
+      final existing = notif is YamlMap ? notif['config_error'] : null;
+      if (!yamlNodeMatches(existing, gs.notificationsConfigError)) {
+        editor.update(
+          ['notifications', 'config_error'],
+          gs.notificationsConfigError,
+        );
+      }
     } else {
       // Parent map is absent; create it so update() has something to traverse.
       editor.update(
@@ -288,16 +338,16 @@ void _saveOrRemoveKey(
   dynamic value,
 ) {
   if (value != null) {
-    editor.update([key], value);
+    final hasKey = doc is YamlMap && doc.containsKey(key);
+    if (!hasKey || !yamlNodeMatches(doc[key], value)) {
+      editor.update([key], value);
+    }
   } else if (doc is YamlMap && doc.containsKey(key)) {
     editor.remove([key]);
   }
 }
 
-// ---------------------------------------------------------------------------
 // Encode  (model → plain Dart maps consumed by yaml_edit)
-// ---------------------------------------------------------------------------
-
 Map<String, dynamic> mouseGestureToMap(MouseGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.name};
   switch (g) {
@@ -409,7 +459,6 @@ void _writeCommon(
   if (c.name != null) m['name'] = c.name;
   if (c.enabled != null) m['enabled'] = c.enabled;
   if (c.id != null) m['id'] = c.id;
-  if (c.groupId != null) m['group'] = c.groupId;
   if (includeMouseButtons && c.mouseButtons.isNotEmpty) {
     m['mouse_buttons'] = c.mouseButtons.map((b) => b.toYaml()).toList();
   }
@@ -436,6 +485,14 @@ void _writeMotion(Map<String, dynamic> m, MotionCommon mot) {
   if (mot.lockPointer != null) m['lock_pointer'] = mot.lockPointer;
 }
 
+/// Serializes [actions] as a standalone YAML snippet for the clipboard, in the
+/// same shape a gesture's `actions:` block has.
+String encodeActionsYaml(List<TriggerAction> actions) {
+  final editor = YamlEditor('$actionsClipboardKey: []')
+    ..update([actionsClipboardKey], actions.map(triggerActionToMap).toList());
+  return editor.toString();
+}
+
 Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   final m = <String, dynamic>{};
   if (ta.enabled != null) m['enabled'] = ta.enabled;
@@ -455,10 +512,11 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
     'command': command,
     'wait': ?wait,
   },
-  InputAction(:final entries) => {
+  InputAction(:final entries, :final delay) => {
     'input': entries
-        .map((e) => {e.device.name: e.tokens.map(_tokenFromString).toList()})
+        .map((e) => {e.device.name: e.tokens.map(inputTokenToYaml).toList()})
         .toList(),
+    'delay': ?delay,
   },
   PlasmaShortcutAction(:final component, :final shortcut) => {
     'plasma_shortcut': '$component,$shortcut',
@@ -468,20 +526,91 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
     'replace_text': rules.map(textSubstitutionRuleToMap).toList(),
   },
   SleepAction(:final milliseconds) => {'sleep': milliseconds},
-  FunctionAction(:final expression) => {'function': expression},
+  FunctionAction(:final expression) => {'function': yamlBlockText(expression)},
+  ActionGroup(:final actions) => {
+    actionGroupYamlKey: actions.map(triggerActionToMap).toList(),
+  },
   RawAction(:final raw) => {'__raw': raw},
 };
 
 Map<String, dynamic> textSubstitutionRuleToMap(TextSubstitutionRule rule) => {
   'regex': rule.regex,
-  'replace': textReplacementValueToYaml(rule.replace),
+  'replace': dynamicTextToYaml(rule.replace),
 };
 
-dynamic textReplacementValueToYaml(TextReplacementValue value) =>
-    switch (value) {
-      LiteralTextReplacementValue(:final text) => text,
-      CommandTextReplacementValue(:final command) => {'command': command},
-    };
+dynamic dynamicTextToYaml(DynamicText value) => switch (value) {
+  LiteralText(:final text) => text,
+  CommandText(:final command) => {'command': command},
+};
+
+const _deviceSectionKeys = {
+  'mouse',
+  'keyboard',
+  'pointer',
+  'touchpad',
+  'touchscreen',
+};
+
+/// Separates sibling gestures with a blank line and device sections with two.
+/// Blank lines are only added, never taken away, so spacing already in the
+/// file survives and a second pass changes nothing.
+String spaceOutGestures(String yamlText) {
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  final itemIndents = <int>[];
+  final seenItem = <bool>[];
+  final spaced = <bool>[];
+
+  for (final line in lines) {
+    if (line.trim().isEmpty) {
+      out.add(line);
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    final indent = indentOf(parseLine);
+    while (itemIndents.isNotEmpty && indent < itemIndents.last) {
+      itemIndents.removeLast();
+      spaced.removeLast();
+      seenItem.removeLast();
+    }
+
+    final key = blockKey(parseLine);
+    final startsSection =
+        indent == 0 && uncommented == null && _deviceSectionKeys.contains(key);
+    if (startsSection && !_endsWithComment(out)) {
+      _ensureBlankLines(out, 2);
+    } else if (itemIndents.isNotEmpty &&
+        spaced.last &&
+        indent == itemIndents.last &&
+        parseLine.substring(indent).startsWith('- ')) {
+      if (seenItem.last) _ensureBlankLines(out, 1);
+      seenItem[seenItem.length - 1] = true;
+    }
+    out.add(line);
+
+    if (key == 'gestures') {
+      itemIndents.add(indent + 2);
+      spaced.add(uncommented == null);
+      seenItem.add(false);
+    }
+  }
+
+  return out.join('\n');
+}
+
+bool _endsWithComment(List<String> out) =>
+    out.isNotEmpty && out.last.trimLeft().startsWith('#');
+
+void _ensureBlankLines(List<String> out, int count) {
+  final at = out.length;
+  var blanks = 0;
+  while (blanks < at && out[at - blanks - 1].trim().isEmpty) {
+    blanks++;
+  }
+  if (at - blanks == 0 || blanks >= count) return;
+  out.insertAll(at - blanks, List.filled(count - blanks, ''));
+}
 
 /// Comments out disabled gesture/action list items so the runtime ignores
 /// them. The normal YAML map still carries `enabled: false`, which lets
@@ -489,20 +618,24 @@ dynamic textReplacementValueToYaml(TextReplacementValue value) =>
 String commentDisabledYamlItems(String yamlText) {
   final lines = yamlText.split('\n');
   final out = <String>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final indent = _indentOf(line);
-    _popContexts(contexts, indent);
-    final key = _blockKey(line);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    // A blank line has no indentation to read, so it must not close a block.
+    if (line.trim().isEmpty) {
+      out.add(line);
+      i++;
+      continue;
+    }
+    final indent = indentOf(line);
+    popContexts(contexts, indent);
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
-        _isListItemAt(line, parent.indent + 2)) {
+        isDisableableItemList(parent.key) &&
+        isListItemAt(line, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final block = <String>[];
       var j = i;
@@ -513,30 +646,29 @@ String commentDisabledYamlItems(String yamlText) {
           j++;
           continue;
         }
-        final candidateIndent = _indentOf(candidate);
+        final candidateIndent = indentOf(candidate);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidate, itemIndent)) break;
+        if (j > i && isListItemAt(candidate, itemIndent)) break;
         block.add(candidate);
         j++;
       }
       if (block.any(
         (l) =>
-            (_listItemKeyAt(l, 'enabled', itemIndent) ||
-                (_keyAt(l, 'enabled') && _indentOf(l) == parent.indent + 4)) &&
+            (listItemKeyAt(l, 'enabled', itemIndent) ||
+                (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4)) &&
             l.trimRight().endsWith('false'),
       )) {
-        final normalizedBlock = parent.key == 'gestures'
-            ? commentDisabledYamlItems(block.join('\n')).split('\n')
-            : block;
-        out.addAll(normalizedBlock.map(_commentYamlLine));
+        final normalizedBlock = commentDisabledYamlItems(
+          block.join('\n'),
+        ).split('\n');
+        out.addAll(normalizedBlock.map(commentYamlLine));
         i = j;
-      } else {
-        out.add(line);
-        i++;
+        continue;
       }
-      continue;
     }
 
+    final context = blockContext(line);
+    if (context != null) contexts.add(context);
     out.add(line);
     i++;
   }
@@ -553,37 +685,47 @@ String restoreOriginalDisabledItemComments(
 
   final lines = yamlText.split('\n');
   final out = <String>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
   var disabledIndex = 0;
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final uncommented = _uncommentYamlLine(line);
+    if (line.trim().isEmpty) {
+      out.add(line);
+      i++;
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
-    final indent = _indentOf(parseLine);
-    _popContexts(contexts, indent);
-    final key = _blockKey(parseLine);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    final indent = indentOf(parseLine);
+    popContexts(contexts, indent);
+    final key = blockKey(parseLine);
+    if (key != null) {
+      contexts.add(
+        YamlListContext(key, indent, commented: uncommented != null),
+      );
+    }
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
+        !parent.commented &&
+        isDisableableItemList(parent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2)) {
+        isListItemAt(parseLine, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final block = <String>[];
       var j = i;
       while (j < lines.length) {
         final candidate = lines[j];
-        final candidateUncommented = _uncommentYamlLine(candidate);
+        final candidateUncommented = uncommentYamlLine(candidate);
         if (candidateUncommented == null && candidate.trim().isNotEmpty) {
           break;
         }
         final candidateParseLine = candidateUncommented ?? candidate;
-        final candidateIndent = _indentOf(candidateParseLine);
+        final candidateIndent = indentOf(candidateParseLine);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidateParseLine, itemIndent)) break;
+        if (j > i && isListItemAt(candidateParseLine, itemIndent)) break;
         block.add(candidate);
         j++;
       }
@@ -608,34 +750,43 @@ String restoreOriginalDisabledItemComments(
 List<List<String>> _disabledItemInnerComments(String yamlText) {
   final lines = yamlText.split('\n');
   final results = <List<String>>[];
-  final contexts = <_YamlListContext>[];
+  final contexts = <YamlListContext>[];
 
   var i = 0;
   while (i < lines.length) {
     final line = lines[i];
-    final uncommented = _uncommentYamlLine(line);
+    if (line.trim().isEmpty) {
+      i++;
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
-    final indent = _indentOf(parseLine);
-    _popContexts(contexts, indent);
-    final key = _blockKey(parseLine);
-    if (key != null) contexts.add(_YamlListContext(key, indent));
+    final indent = indentOf(parseLine);
+    popContexts(contexts, indent);
+    final key = blockKey(parseLine);
+    if (key != null) {
+      contexts.add(
+        YamlListContext(key, indent, commented: uncommented != null),
+      );
+    }
 
     final parent = contexts.isEmpty ? null : contexts.last;
     if (parent != null &&
-        (parent.key == 'gestures' || parent.key == 'actions') &&
+        !parent.commented &&
+        isDisableableItemList(parent.key) &&
         uncommented != null &&
-        _isListItemAt(parseLine, parent.indent + 2)) {
+        isListItemAt(parseLine, parent.indent + 2)) {
       final itemIndent = parent.indent + 2;
       final comments = <String>[];
       int? skippedNestedItemIndent;
       var j = i;
       while (j < lines.length) {
         final candidate = lines[j];
-        final candidateUncommented = _uncommentYamlLine(candidate);
+        final candidateUncommented = uncommentYamlLine(candidate);
         if (candidateUncommented == null) break;
-        final candidateIndent = _indentOf(candidateUncommented);
+        final candidateIndent = indentOf(candidateUncommented);
         if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && _isListItemAt(candidateUncommented, itemIndent)) break;
+        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
         if (skippedNestedItemIndent != null) {
           if (candidateIndent > skippedNestedItemIndent) {
             j++;
@@ -665,63 +816,10 @@ List<List<String>> _disabledItemInnerComments(String yamlText) {
   return results;
 }
 
-String? _uncommentYamlLine(String line) {
-  final match = RegExp(r'^(\s*)# ?(.*)$').firstMatch(line);
-  if (match == null) return null;
-  return '${match.group(1)}${match.group(2)}';
-}
-
-final class _YamlListContext {
-  const _YamlListContext(this.key, this.indent);
-
-  final String key;
-  final int indent;
-}
-
-void _popContexts(List<_YamlListContext> contexts, int indent) {
-  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
-    contexts.removeLast();
-  }
-}
-
-int _indentOf(String line) {
-  var i = 0;
-  while (i < line.length && line.codeUnitAt(i) == 0x20) {
-    i++;
-  }
-  return i;
-}
-
-String? _blockKey(String line) {
-  final trimmed = line.trimRight();
-  final match = RegExp(
-    r'^(\s*)([A-Za-z_][A-Za-z0-9_]*):\s*$',
-  ).firstMatch(trimmed);
-  return match?.group(2);
-}
-
-bool _isListItemAt(String line, int indent) =>
-    _indentOf(line) == indent && line.substring(indent).startsWith('- ');
-
-bool _keyAt(String line, String key) {
-  final trimmed = line.trimLeft();
-  return trimmed == '$key:' || trimmed.startsWith('$key: ');
-}
-
-bool _listItemKeyAt(String line, String key, int indent) {
-  if (!_isListItemAt(line, indent)) return false;
-  final body = line.substring(indent + 2).trimLeft();
-  return body == '$key:' || body.startsWith('$key: ');
-}
-
-String _commentYamlLine(String line) {
-  if (line.trim().isEmpty) return line;
-  final indent = _indentOf(line);
-  return '${line.substring(0, indent)}# ${line.substring(indent)}';
-}
-
-dynamic _tokenFromString(String token) =>
-    token.startsWith('text:') ? {'text': token.substring(5)} : token;
+dynamic inputTokenToYaml(InputToken token) => switch (token) {
+  TextInputToken(:final value) => {'text': dynamicTextToYaml(value)},
+  _ => formatInputToken(token),
+};
 
 dynamic conditionToYaml(Condition c) => switch (c) {
   VariableCondition(
@@ -732,8 +830,11 @@ dynamic conditionToYaml(Condition c) => switch (c) {
   ) =>
     '${negate ? "!" : ""}\$${conditionVariableName(variable)} '
         '${conditionOperatorToken(operator)} ${conditionValueToText(value)}',
-  ConditionGroup(:final children)
-      when normalizeConditionChildren(children).length == 1 =>
+  // A single-child group is redundant for all/any, but `none` negates: it must
+  // never collapse into its bare child.
+  ConditionGroup(:final mode, :final children)
+      when mode != ConditionGroupMode.none &&
+          normalizeConditionChildren(children).length == 1 =>
     conditionToYaml(
       normalizeConditionChildren(children).first,
     ),
@@ -742,14 +843,14 @@ dynamic conditionToYaml(Condition c) => switch (c) {
       children,
     ).map(conditionToYaml).toList(),
   },
-  FunctionCondition(:final expression) => {'function': expression},
+  FunctionCondition(:final expression) => {
+    'function': yamlBlockText(expression),
+  },
   RawCondition(:final raw) => raw,
 };
 
-// ---------------------------------------------------------------------------
+//
 // Device rule and speed encode helpers
-// ---------------------------------------------------------------------------
-
 Map<String, dynamic> deviceRuleToMap(DeviceRule rule) {
   final m = <String, dynamic>{};
   if (rule.conditions != null) {

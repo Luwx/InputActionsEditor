@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/data/config_repository.dart';
+import 'package:input_actions_editor/domain/config_issues.dart';
 import 'package:input_actions_editor/domain/diff/config_slices.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_ids.dart';
-import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation;
+import 'package:input_actions_editor/domain/edit/edit_reveal.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/store/edit_history.dart';
+import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 
 export 'package:input_actions_editor/domain/edit/edit_ids.dart'
     show assignEditIds, preserveEditIds;
@@ -51,10 +54,14 @@ class EditSession {
 }
 
 /// Handle edits + save/load.
-/// Keep undo/redo per scope key (like [GestureLocation]), so Ctrl+Z stay local.
+/// Keep undo/redo per [EditScope], so Ctrl+Z stay local to an editor.
+/// A scopeless undo takes the newest step of any scope.
 class ConfigController extends AsyncNotifier<EditSession> {
   String _originalText = '';
-  final Map<Object?, EditHistory> _editStacks = {};
+  EditHistory? _editHistory;
+
+  EditHistory get _history =>
+      _editHistory ??= EditHistory(coalesceWindow: coalesceWindow);
 
   /// Time window to merge same [CoalescingEdit] key into one undo step.
   /// Tests can override this.
@@ -80,6 +87,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final normalized = assignEditIds(config);
       _originalText = text;
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       return EditSession(draft: normalized, saved: normalized);
     } on Object catch (error) {
       // A corrupt/unreadable config must not brick the app: start empty so the
@@ -87,52 +95,80 @@ class ConfigController extends AsyncNotifier<EditSession> {
       // untouched; the failure is surfaced as a toast (see MainShell).
       _originalText = '';
       ref.read(configLoadErrorProvider.notifier).report(error);
+      ref.read(configIssuesProvider.notifier).clear();
       return const EditSession(draft: Config(), saved: Config());
     }
   }
 
+  Object? _editSource;
+
+  /// Tags edits added inside [run] as coming from the editor [source], so only
+  /// that editor's own burst folds into one undo step. Innermost tag wins.
+  void tagEdits(Object source, VoidCallback run) {
+    if (_editSource != null) {
+      run();
+      return;
+    }
+    _editSource = source;
+    try {
+      run();
+    } finally {
+      _editSource = null;
+    }
+  }
+
   /// Apply [edit] to draft, then push undo in [scope].
-  /// null scope means shared stack.
   /// Same coalesce key in [coalesceWindow] merge to one undo step.
-  void add(ConfigEdit edit, {Object? scope}) {
+  void add(ConfigEdit edit, {EditScope? scope}) {
     final before = _draft;
     if (before == null) return;
     _applyConfig(edit.apply(before));
-    final coalesceKey = (coalesceEnabled && edit is CoalescingEdit)
-        ? edit.coalesceKeyFor(before)
+    final coalesceKey = coalesceEnabled
+        ? _coalesceKey(edit, before, _editSource)
         : null;
-    _editStacks
-        .putIfAbsent(scope, () => EditHistory(coalesceWindow: coalesceWindow))
-        .push(
-          edit,
-          edit.inverse(before),
-          coalesceKey: coalesceKey,
-          at: clock(),
-        );
+    _history.push(
+      edit,
+      edit.inverse(before),
+      scope: scope,
+      coalesceKey: coalesceKey,
+      at: clock(),
+    );
   }
 
-  void undo({Object? scope}) {
+  static Object? _coalesceKey(ConfigEdit edit, Config before, Object? source) {
+    final slot = edit is CoalescingEdit ? edit.coalesceKeyFor(before) : null;
+    if (source == null) return slot;
+    return (slot, source);
+  }
+
+  void undo({EditScope? scope}) {
     final before = _draft;
     if (before == null) return;
-    final edit = _editStacks[scope]?.popUndo();
+    final edit = _history.popUndo(scope: scope);
     if (edit == null) return;
-    _applyConfig(edit.apply(before));
+    _applyAndReveal(before, edit.apply(before));
   }
 
-  void redo({Object? scope}) {
+  void redo({EditScope? scope}) {
     final before = _draft;
     if (before == null) return;
-    final edit = _editStacks[scope]?.popRedo();
+    final edit = _history.popRedo(scope: scope);
     if (edit == null) return;
-    _applyConfig(edit.apply(before));
+    _applyAndReveal(before, edit.apply(before));
   }
 
-  bool canUndo({Object? scope}) => _editStacks[scope]?.canUndo ?? false;
+  void _applyAndReveal(Config before, Config after) {
+    _applyConfig(after);
+    final reveal = findEditReveal(before, _draft ?? after);
+    ref.read(editRevealProvider.notifier).show(reveal);
+  }
 
-  bool canRedo({Object? scope}) => _editStacks[scope]?.canRedo ?? false;
+  bool canUndo({EditScope? scope}) => _history.canUndo(scope: scope);
+
+  bool canRedo({EditScope? scope}) => _history.canRedo(scope: scope);
 
   /// Put saved value from [lens] back, as undoable edit.
-  void revert<T>(Lens<Config, T> lens, {Object? scope}) {
+  void revert<T>(Lens<Config, T> lens, {EditScope? scope}) {
     final saved = _saved;
     if (saved == null) return;
     add(SetLens<T>(lens, lens.get(saved)), scope: scope);
@@ -177,78 +213,76 @@ class ConfigController extends AsyncNotifier<EditSession> {
     );
   }
 
-  Future<void> save() async {
+  /// Whether the document now on disk matches the draft. False means the write
+  /// failed and the error is on [configSaveErrorProvider].
+  Future<bool> save() async {
     final session = state.value;
-    if (session == null || !session.isDirty) return;
+    if (session == null || !session.isDirty) return true;
     final config = session.draft;
     // The draft stays visible while writing — no AsyncLoading round-trip, so
     // [state] always holds a value once the initial load has resolved.
     try {
-      final reloaded = await _writeAndReload(config);
-      // Reload makes new gesture editIds.
-      // Copy old ids by position (save dont reorder) so undo map still works.
-      final remapped = preserveEditIds(from: config, to: reloaded);
-      state = AsyncData(EditSession(draft: remapped, saved: remapped));
-    } on Exception catch (_) {
+      await _write(config);
+      state = AsyncData(EditSession(draft: config, saved: config));
+      ref.read(configSaveErrorProvider.notifier).clear();
+      return true;
+    } on Object catch (error) {
       // Keep the draft as-is; nothing was persisted.
+      ref.read(configSaveErrorProvider.notifier).report(error);
+      return false;
     }
   }
 
   /// Save only settings slice.
   /// Gesture data from disk stay as-is, draft gesture edits stay unsaved.
   /// Mirror of [saveGestures].
-  Future<void> saveSettings() async {
+  Future<bool> saveSettings() async {
     final session = state.value;
-    if (session == null || !session.settingsDirty.isDirty) return;
+    if (session == null || !session.settingsDirty.isDirty) return true;
     final saved = session.saved;
     // No saved baseline yet (ex: just picked file), so do full save.
     if (saved == null) return save();
     // Draft settings + saved gesture slice.
-    await _saveSlice(
-      withGestureSliceFrom(session.draft, saved),
-      gestureSource: saved,
-    );
+    return _saveSlice(withGestureSliceFrom(session.draft, saved));
   }
 
   /// Save only gesture slice.
   /// Settings on disk stay same, unsaved settings edits stay in memory.
   /// Mirror of [saveSettings].
-  Future<void> saveGestures() async {
+  Future<bool> saveGestures() async {
     final session = state.value;
-    if (session == null || !session.gesturesDirty.isDirty) return;
+    if (session == null || !session.gesturesDirty.isDirty) return true;
     final saved = session.saved;
     if (saved == null) return save();
     // Draft gesture slice + saved settings.
-    await _saveSlice(
-      withGestureSliceFrom(saved, session.draft),
-      gestureSource: session.draft,
-    );
+    return _saveSlice(withGestureSliceFrom(saved, session.draft));
   }
 
   /// Write partial [toWrite] to disk, update saved baseline.
   /// Keep current draft in [state] (other unsaved slice stays there).
-  /// [gestureSource] gives gesture editIds to carry by position after reload.
-  Future<void> _saveSlice(
-    Config toWrite, {
-    required Config gestureSource,
-  }) async {
+  Future<bool> _saveSlice(Config toWrite) async {
     final session = state.value;
-    if (session == null) return;
+    if (session == null) return false;
     try {
-      final reloaded = await _writeAndReload(toWrite);
-      final newSaved = preserveEditIds(from: gestureSource, to: reloaded);
+      await _write(toWrite);
       // Keep the live draft; only the saved baseline advances.
-      state = AsyncData(EditSession(draft: session.draft, saved: newSaved));
-    } on Exception catch (_) {
+      state = AsyncData(EditSession(draft: session.draft, saved: toWrite));
+      ref.read(configSaveErrorProvider.notifier).clear();
+      return true;
+    } on Object catch (error) {
       // Keep the draft as-is; nothing was persisted.
+      ref.read(configSaveErrorProvider.notifier).report(error);
+      return false;
     }
   }
 
-  Future<Config> _writeAndReload(Config toWrite) async {
-    await _repository.save(toWrite, _originalText);
-    final (reloaded, text) = await _repository.load();
-    _originalText = text;
-    return reloaded;
+  /// Writes [toWrite], keeping the produced text as the base for later merges.
+  Future<void> _write(Config toWrite) async {
+    _originalText = await _repository.save(
+      toWrite,
+      _originalText,
+      backups: ref.read(backupPolicyProvider),
+    );
   }
 
   Future<void> reload() async {
@@ -256,7 +290,11 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final (config, text) = await _repository.load();
       final normalized = assignEditIds(config);
       _originalText = text;
+      // The reload hands out fresh editIds, so the stacked inverses no longer
+      // address anything in the draft.
+      _editHistory = null;
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       state = AsyncData(EditSession(draft: normalized, saved: normalized));
     } on Object catch (error) {
       // Keep the current config; surface the failure.
@@ -268,7 +306,8 @@ class ConfigController extends AsyncNotifier<EditSession> {
   void newConfig() {
     const empty = Config();
     _originalText = '';
-    _editStacks.clear();
+    _editHistory = null;
+    ref.read(configIssuesProvider.notifier).clear();
     state = const AsyncData(EditSession(draft: empty, saved: empty));
   }
 
@@ -276,7 +315,8 @@ class ConfigController extends AsyncNotifier<EditSession> {
   void loadFromText(String text) {
     final config = assignEditIds(_repository.decodeFromText(text));
     _originalText = text;
-    _editStacks.clear();
+    _editHistory = null;
+    ref.read(configIssuesProvider.notifier).report(config, text);
     state = AsyncData(EditSession(draft: config, saved: config));
   }
 
@@ -285,34 +325,21 @@ class ConfigController extends AsyncNotifier<EditSession> {
     final current = _draft;
     if (current == null) return;
     final incoming = _repository.decodeFromText(text);
-    final existingGroupIds = current.gestureGroups.map((g) => g.id).toSet();
-    final newGroups = incoming.gestureGroups
-        .where((g) => !existingGroupIds.contains(g.id))
-        .toList();
     final merged = current.copyWith(
-      mouseGestures: [...current.mouseGestures, ...incoming.mouseGestures],
-      keyboardGestures: [
-        ...current.keyboardGestures,
-        ...incoming.keyboardGestures,
+      mouseNodes: [...current.mouseNodes, ...incoming.mouseNodes],
+      keyboardNodes: [...current.keyboardNodes, ...incoming.keyboardNodes],
+      pointerNodes: [...current.pointerNodes, ...incoming.pointerNodes],
+      touchpadNodes: [...current.touchpadNodes, ...incoming.touchpadNodes],
+      touchscreenNodes: [
+        ...current.touchscreenNodes,
+        ...incoming.touchscreenNodes,
       ],
-      pointerGestures: [
-        ...current.pointerGestures,
-        ...incoming.pointerGestures,
-      ],
-      touchpadGestures: [
-        ...current.touchpadGestures,
-        ...incoming.touchpadGestures,
-      ],
-      touchscreenGestures: [
-        ...current.touchscreenGestures,
-        ...incoming.touchscreenGestures,
-      ],
-      gestureGroups: [...current.gestureGroups, ...newGroups],
       deviceRules: [...current.deviceRules, ...incoming.deviceRules],
       mouseSpeed: current.mouseSpeed ?? incoming.mouseSpeed,
       touchpadSpeed: current.touchpadSpeed ?? incoming.touchpadSpeed,
       touchscreenSpeed: current.touchscreenSpeed ?? incoming.touchscreenSpeed,
     );
+    ref.read(configIssuesProvider.notifier).report(merged, text);
     _applyConfig(merged);
   }
 
@@ -356,8 +383,9 @@ class ConfigController extends AsyncNotifier<EditSession> {
       final (config, text) = await _repository.loadFromPath(path);
       final normalized = assignEditIds(config);
       _originalText = text;
-      _editStacks.clear();
+      _editHistory = null;
       ref.read(configLoadErrorProvider.notifier).clear();
+      ref.read(configIssuesProvider.notifier).report(normalized, text);
       state = AsyncData(EditSession(draft: normalized, saved: normalized));
     } on Object catch (error) {
       // Keep the current config; surface the failure.
@@ -389,6 +417,33 @@ class ConfigLoadErrorController extends Notifier<Object?> {
 final configLoadErrorProvider =
     NotifierProvider<ConfigLoadErrorController, Object?>(
       ConfigLoadErrorController.new,
+    );
+
+/// Why the last write failed, or null. Mirror of [configLoadErrorProvider]:
+/// a failed save leaves the draft untouched, so the only sign of it is here.
+final configSaveErrorProvider =
+    NotifierProvider<ConfigLoadErrorController, Object?>(
+      ConfigLoadErrorController.new,
+    );
+
+/// Conditions in the loaded config the decoder could not model, or empty.
+///
+/// Unlike [configLoadErrorProvider] the file parsed fine and the app is fully
+/// usable; the risk is that saving overwrites those conditions with our
+/// misreading of them, so the shell surfaces them once per load.
+class ConfigIssuesController extends Notifier<List<ConfigIssue>> {
+  @override
+  List<ConfigIssue> build() => const [];
+
+  void report(Config config, String sourceText) =>
+      state = findConfigIssues(config, sourceText);
+
+  void clear() => state = const [];
+}
+
+final configIssuesProvider =
+    NotifierProvider<ConfigIssuesController, List<ConfigIssue>>(
+      ConfigIssuesController.new,
     );
 
 /// The current editing session, unwrapped. Safe to read only below the root

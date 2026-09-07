@@ -3,8 +3,11 @@ import 'dart:async' show unawaited;
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/tree_table/tree_table.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
@@ -12,8 +15,11 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/cata
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_picker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_editor_modal.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/condition_nodes.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/inherited_condition_nodes.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/raw_fallback.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/section_header.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ConditionEditor extends StatelessWidget {
   /// Convenience constructor that reads/writes from [TriggerCommon.conditions].
@@ -29,12 +35,17 @@ class ConditionEditor extends StatelessWidget {
     this.heroEnabled = true,
     this.bodyBackgroundColor,
     this.onCollapse,
+    this.inherited = const [],
+    this.inheritedForGroup = false,
+    this.onOpenInheritedGroup,
+    this.revealField,
     super.key,
   }) : condition = null,
        onConditionChanged = null,
        title = 'Trigger Conditions',
        titleTooltip = null,
        titleTooltipContent = null,
+       emptyMessage = null,
        groups = null;
 
   /// Generic constructor for any condition (e.g. end_conditions).
@@ -44,6 +55,7 @@ class ConditionEditor extends StatelessWidget {
     this.title = 'Trigger Conditions',
     this.titleTooltip,
     this.titleTooltipContent,
+    this.emptyMessage,
     this.groups,
     this.isDirty = false,
     this.dirtyState,
@@ -54,6 +66,10 @@ class ConditionEditor extends StatelessWidget {
     this.heroEnabled = true,
     this.bodyBackgroundColor,
     this.onCollapse,
+    this.inherited = const [],
+    this.inheritedForGroup = false,
+    this.onOpenInheritedGroup,
+    this.revealField,
     super.key,
   }) : common = null,
        onCommonChanged = null;
@@ -67,6 +83,9 @@ class ConditionEditor extends StatelessWidget {
 
   /// Rich widget tooltip. Takes precedence over [titleTooltip] when both set.
   final Widget? titleTooltipContent;
+
+  /// Body text shown when nothing is set, defaulting to the trigger wording.
+  final String? emptyMessage;
   final List<VariableGroup>? groups;
   final bool isDirty;
   final DirtyMarkState? dirtyState;
@@ -91,6 +110,21 @@ class ConditionEditor extends StatelessWidget {
 
   /// When non-null, the header shows a collapse (minimize) button calling this.
   final VoidCallback? onCollapse;
+
+  /// Conditions ancestor groups merge into this node's own, outermost first.
+  /// Rendered read-only under a synthetic ALL root together with the editable
+  /// tree, matching what the daemon runs.
+  final List<InheritedCondition> inherited;
+
+  /// Whether the edited node is itself a group, which only changes the wording
+  /// of the merged root's header.
+  final bool inheritedForGroup;
+
+  /// Opens the group an inherited branch comes from.
+  final ValueChanged<InheritedCondition>? onOpenInheritedGroup;
+
+  /// The field an undo lights up, marking the body rather than the title.
+  final ConfigDirtyField? revealField;
 
   Condition? get _effectiveCondition => condition ?? common?.conditions;
 
@@ -176,12 +210,16 @@ class ConditionEditor extends StatelessWidget {
           title: title,
           titleTooltip: titleTooltip,
           titleTooltipContent: titleTooltipContent,
+          emptyMessage: emptyMessage,
           groups: groups,
           isDirty: isDirty,
           dirtyState: dirtyState,
           onRevert: onRevert,
           initialCondition: _effectiveCondition,
           onConditionChanged: _setCondition,
+          inherited: inherited,
+          inheritedForGroup: inheritedForGroup,
+          onOpenInheritedGroup: onOpenInheritedGroup,
         ),
       ),
     );
@@ -286,36 +324,102 @@ class ConditionEditor extends StatelessWidget {
     Condition? condition,
     BuildContext context,
   ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: bodyBackgroundColor,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: switch (condition) {
-        final RawCondition current => RawFallback(raw: current.raw),
-        null => Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: bodyBackgroundColor,
-            border: Border.all(color: colors.border),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            'No conditions set. Add a condition or '
-            'group to specify when this gesture should trigger.',
-            style: typography.body.sm.copyWith(color: colors.mutedForeground),
-          ),
+    final field = revealField;
+    if (field != null) {
+      return RevealedField(
+        field: field,
+        child: _buildFlashableBody(colors, typography, condition, context),
+      );
+    }
+    return _buildFlashableBody(colors, typography, condition, context);
+  }
+
+  Widget _buildFlashableBody(
+    FColors colors,
+    FTypography typography,
+    Condition? condition,
+    BuildContext context,
+  ) {
+    return AttentionFlash(
+      trigger: AttentionFlashScope.maybeOf(context),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bodyBackgroundColor,
+          border: Border.all(color: colors.border),
+          borderRadius: BorderRadius.circular(8),
         ),
-        _ => _buildTable(context, condition),
-      },
+        child: switch (condition) {
+          final RawCondition current when inherited.isEmpty => RawFallback(
+            raw: current.raw,
+          ),
+          null when inherited.isNotEmpty => _buildTable(context, null),
+          null => Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(
+              color: bodyBackgroundColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              emptyMessage ?? context.l10n.triggerConditionsEmpty,
+              style: typography.body.sm.copyWith(
+                color: colors.mutedForeground,
+              ),
+            ),
+          ),
+          _ => _buildTable(context, condition),
+        },
+      ),
     );
   }
 
-  Widget _buildTable(BuildContext context, Condition condition) {
+  Widget _buildTable(BuildContext context, Condition? condition) {
     final colors = context.theme.colors;
+    final localRoot = condition == null
+        ? null
+        : _buildLocalRoot(context, condition);
+
+    Color tint(int depth) =>
+        colors.secondary.withValues(alpha: depth == 0 ? 0.07 : 0.11);
+
+    if (inherited.isEmpty) {
+      return TreeTable(
+        columns: kConditionColumns,
+        trailingWidth: kConditionTrailingWidth,
+        groupBackground: tint,
+        roots: [localRoot!],
+      );
+    }
+
+    final merged = TreeTableGroup(
+      key: const ValueKey('merged-root'),
+      header: MergedConditionsHeader(forGroup: inheritedForGroup),
+      children: [
+        for (var i = 0; i < inherited.length; i++)
+          buildInheritedConditionNode(
+            context,
+            inherited[i],
+            path: 'inherited/$i',
+            groups: groups,
+            onOpenGroup: onOpenInheritedGroup == null
+                ? null
+                : () => onOpenInheritedGroup!(inherited[i]),
+          ),
+        localRoot ?? buildNoLocalConditionsNode(),
+      ],
+    );
+
+    return TreeTable(
+      columns: kConditionColumns,
+      trailingWidth: kConditionTrailingWidth,
+      groupBackground: (depth) => depth == 0 ? null : tint(depth - 1),
+      roots: [merged],
+    );
+  }
+
+  TreeTableNode _buildLocalRoot(BuildContext context, Condition condition) {
     final normalizedRoot = normalizeConditionOrder(condition);
-    final root = buildConditionNode(
+    return buildConditionNode(
       context,
       normalizedRoot,
       path: 'root',
@@ -332,14 +436,6 @@ class ConditionEditor extends StatelessWidget {
         _setCondition(updated);
       },
       onDelete: () => _setCondition(null),
-    );
-
-    return TreeTable(
-      columns: kConditionColumns,
-      trailingWidth: kConditionTrailingWidth,
-      groupBackground: (depth) =>
-          colors.secondary.withValues(alpha: depth == 0 ? 0.07 : 0.11),
-      roots: [root],
     );
   }
 }

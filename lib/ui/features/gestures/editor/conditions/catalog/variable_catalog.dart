@@ -76,6 +76,8 @@ class VariableInfo {
   ConditionOperator get defaultOperator => variable.defaultOperator;
 
   ConditionValue get defaultValue => variable.defaultValue;
+
+  ConditionNumberRange? get range => variable.range;
 }
 
 const _cursorShapeIcons = <String, IconData>{
@@ -539,31 +541,31 @@ const List<VariableGroup> kVariableGroups = [
         variable: ConditionVariableId.finger1Pressure,
         label: 'Finger 1 pressure',
         pickerName: 'Finger 1',
-        description: 'Pressure applied by finger 1 (0 to 1)',
+        description: 'Pressure applied by finger 1, in raw device units',
       ),
       VariableInfo(
         variable: ConditionVariableId.finger2Pressure,
         label: 'Finger 2 pressure',
         pickerName: 'Finger 2',
-        description: 'Pressure applied by finger 2 (0 to 1)',
+        description: 'Pressure applied by finger 2, in raw device units',
       ),
       VariableInfo(
         variable: ConditionVariableId.finger3Pressure,
         label: 'Finger 3 pressure',
         pickerName: 'Finger 3',
-        description: 'Pressure applied by finger 3 (0 to 1)',
+        description: 'Pressure applied by finger 3, in raw device units',
       ),
       VariableInfo(
         variable: ConditionVariableId.finger4Pressure,
         label: 'Finger 4 pressure',
         pickerName: 'Finger 4',
-        description: 'Pressure applied by finger 4 (0 to 1)',
+        description: 'Pressure applied by finger 4, in raw device units',
       ),
       VariableInfo(
         variable: ConditionVariableId.finger5Pressure,
         label: 'Finger 5 pressure',
         pickerName: 'Finger 5',
-        description: 'Pressure applied by finger 5 (0 to 1)',
+        description: 'Pressure applied by finger 5, in raw device units',
       ),
     ],
   ),
@@ -625,6 +627,13 @@ const List<VariableGroup> kVariableGroups = [
         pickerName: 'Fingers',
         description:
             'Finger count on device, e.g. == 3 for three-finger gestures',
+      ),
+      VariableInfo(
+        variable: ConditionVariableId.maxFingerDistancePercentage,
+        label: 'Max finger distance %',
+        pickerName: 'Max finger distance %',
+        description:
+            'Widest gap between two fingers, as a fraction of the diagonal',
       ),
       VariableInfo(
         variable: ConditionVariableId.keyboardModifiers,

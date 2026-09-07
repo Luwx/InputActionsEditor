@@ -2,6 +2,37 @@ import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 
+/// Static counterpart of [ModeSelector], for modes the user cannot change.
+class ModeBadge extends StatelessWidget {
+  const ModeBadge({required this.mode, super.key});
+
+  final ConditionGroupMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typography = context.theme.typography;
+
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.secondary.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.border),
+      ),
+      child: Text(
+        ModeSelector._format(mode),
+        style: typography.body.xs.copyWith(
+          color: colors.mutedForeground,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
 class ModeSelector extends StatelessWidget {
   const ModeSelector({
     required this.mode,

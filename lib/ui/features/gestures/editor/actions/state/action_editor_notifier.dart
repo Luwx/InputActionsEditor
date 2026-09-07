@@ -1,9 +1,12 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_ids.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/action_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -11,6 +14,8 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_clipboard.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
 
 part 'action_editor_notifier.freezed.dart';
 
@@ -45,6 +50,7 @@ abstract class ActionListEditorVm with _$ActionListEditorVm {
   const factory ActionListEditorVm({
     required GestureLocation location,
     required List<TriggerAction> actions,
+    required List<ActionRow> rows,
     required DirtyMarkState dirtyState,
     required List<TriggerAction>? savedActions,
   }) = _ActionListEditorVm;
@@ -74,6 +80,7 @@ enum ActionKind {
   replaceText,
   sleep,
   function,
+  group,
   raw,
   missing,
 }
@@ -82,6 +89,14 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   ActionListEditorNotifier(this.location);
 
   final GestureLocation location;
+
+  List<ActionRow> _rows = const [];
+
+  // select compares rows with ==, and a fresh list is never equal to the last.
+  List<ActionRow> _keepRows(List<ActionRow> next) =>
+      const ListEquality<ActionRow>().equals(_rows, next)
+      ? _rows
+      : _rows = next;
 
   @override
   ActionListEditorVm build() {
@@ -99,40 +114,83 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
       ),
     );
     final savedCommon = ref.watch(savedGestureCommonProvider(location));
+    final actions = common?.actions ?? const <TriggerAction>[];
     return ActionListEditorVm(
       location: location,
-      actions: common?.actions ?? const <TriggerAction>[],
+      actions: actions,
+      rows: _keepRows(flattenActionRows(location, actions)),
       dirtyState: dirtyState,
       savedActions: savedCommon?.actions,
     );
   }
 
   void _dispatch(ConfigEdit edit) {
-    ref.read(configControllerProvider.notifier).add(edit, scope: location);
+    ref
+        .read(configControllerProvider.notifier)
+        .add(edit, scope: const GesturesScope());
   }
 
-  void add(Action action) {
-    _dispatch(AddAction(location, TriggerAction(action: action)));
-  }
-
-  void remove(int index) => _dispatch(RemoveAction(location, index));
-
-  void duplicate(int index) => _dispatch(DuplicateAction(location, index));
-
-  void reorder(int oldIndex, int newIndex) =>
-      _dispatch(ReorderAction(location, oldIndex, newIndex));
-
-  void setEnabled(int index, bool enabled) {
+  void add(Action action, {int? parentKey}) {
     _dispatch(
-      SetLens<bool>(
-        actionEnabledLens(
-          ActionLocation(gesture: location, actionIndex: index),
-        ),
-        enabled,
-        label: enabled ? 'enable action' : 'disable action',
+      AddAction(
+        location,
+        TriggerAction(action: action, editId: reserveEditId()),
+        parentKey: parentKey,
       ),
     );
   }
+
+  void remove(List<int> keys) => _dispatch(RemoveActions(location, keys));
+
+  void duplicate(List<int> keys) => _dispatch(DuplicateActions(location, keys));
+
+  void move(List<int> keys, {int? beforeKey, int? newParentKey}) => _dispatch(
+    MoveActions(
+      location,
+      keys,
+      beforeKey: beforeKey,
+      newParentKey: newParentKey,
+    ),
+  );
+
+  void insert(
+    List<TriggerAction> actions, {
+    int? afterKey,
+    int? parentKey,
+  }) => _dispatch(
+    InsertActions(location, actions, afterKey: afterKey, parentKey: parentKey),
+  );
+
+  /// Puts [keys] on the clipboard, in the order they appear in the tree.
+  Future<void> copy(List<int> keys) async {
+    final draft = ref.read(configControllerProvider).requireValue.draft;
+    final actions = [
+      for (final row in state.rows)
+        if (keys.contains(row.editId)) ?actionAt(draft, row.location),
+    ];
+    if (actions.isNotEmpty) await ActionClipboard.write(actions);
+  }
+
+  /// Pastes the clipboard next to [anchorKey]: inside it when it is a group,
+  /// otherwise straight after it, which keeps the actions in the anchor's own
+  /// group. A null anchor appends to the root level. False when the clipboard
+  /// holds no actions to paste.
+  Future<bool> paste(int? anchorKey) async {
+    final actions = await ActionClipboard.read();
+    if (actions.isEmpty) return false;
+    final anchor = state.rows
+        .where((row) => row.editId == anchorKey)
+        .firstOrNull;
+    if (anchor != null && anchor.isGroup) {
+      insert(actions, parentKey: anchor.editId);
+    } else {
+      insert(actions, afterKey: anchor?.editId);
+    }
+    return true;
+  }
+
+  void setEnabled(List<int> keys, {required bool enabled}) =>
+      _dispatch(SetActionsEnabled(location, keys, enabled: enabled));
 
   /// Restores the whole action list to its last-saved value as one undo step.
   void revert() {
@@ -180,30 +238,20 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
             entries,
             label: 'Edit input entries',
           ),
-          scope: location.gesture,
+          scope: const GesturesScope(),
         );
   }
 
   void replaceTextRules(List<TextSubstitutionRule> rules) {
-    final config = ref.read(draftConfigProvider);
-    final actions = gestureActionsLens(location.gesture).get(config);
-    if (location.actionIndex < 0 || location.actionIndex >= actions.length) {
-      return;
-    }
-    final current = actions[location.actionIndex];
     ref
         .read(configControllerProvider.notifier)
         .add(
-          SetLens<List<TriggerAction>>(
-            gestureActionsLens(location.gesture),
-            [
-              ...actions.take(location.actionIndex),
-              current.copyWith(action: ReplaceTextAction(rules: rules)),
-              ...actions.skip(location.actionIndex + 1),
-            ],
+          SetLens<List<TextSubstitutionRule>>(
+            actionRulesLens(location),
+            rules,
             label: 'Edit replace text rules',
           ),
-          scope: location.gesture,
+          scope: const GesturesScope(),
         );
   }
 }
@@ -216,6 +264,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   ReplaceTextAction() => ActionKind.replaceText,
   SleepAction() => ActionKind.sleep,
   FunctionAction() => ActionKind.function,
+  ActionGroup() => ActionKind.group,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,
 };

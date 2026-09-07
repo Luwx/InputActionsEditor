@@ -1,14 +1,25 @@
+import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
+import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inherited_field_note.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -16,9 +27,50 @@ class TriggerAdvancedFields extends HookConsumerWidget {
   const TriggerAdvancedFields({
     super.key,
     this.fields = TriggerAdvancedField.values,
+    this.group,
+    this.inherited = const {},
+    this.inheritedConditions = const [],
+    this.onOpenGroup,
+    this.showLockPointer = false,
+    this.showSpeed = false,
   });
 
   final Iterable<TriggerAdvancedField> fields;
+
+  /// Properties of the trigger itself, rendered among [fields]. Not
+  /// [TriggerAdvancedField]s
+  final bool showLockPointer;
+  final bool showSpeed;
+
+  /// When set, the fields read and write the group node's shared properties
+  /// instead of the gesture in [EditLocationScope].
+  final GestureGroupLocation? group;
+
+  /// Properties this gesture picks up from an ancestor group, keyed by field.
+  /// Rendered as a note under the corresponding control. Empty in group and
+  /// bulk scope.
+  final Map<TriggerAdvancedField, InheritedProperty> inherited;
+
+  /// Conditions ancestor groups AND-merge into this node's own, outermost
+  /// first. Shown read-only inside the conditions editor.
+  final List<InheritedCondition> inheritedConditions;
+
+  /// Opens the group an inherited property or condition came from, by editId.
+  final ValueChanged<int>? onOpenGroup;
+
+  /// Which of [TriggerAdvancedField] a group shares with its subtree.
+  static Set<TriggerAdvancedField> nonDefaultGroupFields(GestureGroupNode g) =>
+      {
+        if (g.id != null) TriggerAdvancedField.id,
+        if (g.threshold != null) TriggerAdvancedField.threshold,
+        if (g.resumeTimeout != null) TriggerAdvancedField.resumeTimeout,
+        if (g.accelerated != null) TriggerAdvancedField.accelerated,
+        if (g.blockEvents != null) TriggerAdvancedField.blockEvents,
+        if (g.clearModifiers != null) TriggerAdvancedField.clearModifiers,
+        if (g.setLastTrigger != null) TriggerAdvancedField.setLastTrigger,
+        if (g.conditions != null) TriggerAdvancedField.conditions,
+        if (g.endConditions != null) TriggerAdvancedField.endConditions,
+      };
 
   static bool hasNonDefaultFields(TriggerCommon c) =>
       c.conditions != null ||
@@ -47,21 +99,39 @@ class TriggerAdvancedFields extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final visibleFields = fields.toSet();
-    if (visibleFields.isEmpty) return const SizedBox.shrink();
+    if (visibleFields.isEmpty && !showLockPointer && !showSpeed) {
+      return const SizedBox.shrink();
+    }
 
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
       context.theme.colors.background,
     );
 
-    final idField = ref.gestureSchemaField(context, gestureIdField);
-    final thresholdField = ref.gestureSchemaField(
-      context,
+    // One switch per field so gesture, bulk and group scopes render through
+    // exactly the same controls below.
+    final scope = group;
+    SchemaEditableField<T> resolve<T>(
+      GeneratedEditField<Config, GestureLocation, T, Lens<Config, T>> gestureF,
+      GeneratedEditField<Config, GestureGroupLocation, T, Lens<Config, T>>
+      groupF,
+    ) => scope == null
+        ? ref.gestureSchemaField(context, gestureF)
+        : ref.schemaField(
+            groupF,
+            location: scope,
+            scope: const GesturesScope(),
+            canRead: (config) => gestureGroupAt(config, scope) != null,
+          );
+
+    final idField = resolve(gestureIdField, gestureGroupIdField);
+    final thresholdField = resolve(
       gestureThresholdField,
+      gestureGroupThresholdField,
     );
-    final resumeTimeoutField = ref.gestureSchemaField(
-      context,
+    final resumeTimeoutField = resolve(
       gestureResumeTimeoutField,
+      gestureGroupResumeTimeoutField,
     );
     final idController = useSyncedTextController(
       idField.text,
@@ -75,30 +145,68 @@ class TriggerAdvancedFields extends HookConsumerWidget {
       resumeTimeoutField.text,
       resumeTimeoutField.onTextChanged,
     );
-    final acceleratedField = ref.gestureSchemaField(
-      context,
+    final acceleratedField = resolve(
       gestureAcceleratedField,
+      gestureGroupAcceleratedField,
     );
-    final blockEventsField = ref.gestureSchemaField(
-      context,
+    final blockEventsField = resolve(
       gestureBlockEventsField,
+      gestureGroupBlockEventsField,
     );
-    final clearModifiersField = ref.gestureSchemaField(
-      context,
+    final clearModifiersField = resolve(
       gestureClearModifiersField,
+      gestureGroupClearModifiersField,
     );
-    final setLastTriggerField = ref.gestureSchemaField(
-      context,
+    final setLastTriggerField = resolve(
       gestureSetLastTriggerField,
+      gestureGroupSetLastTriggerField,
     );
-    final conditionsField = ref.gestureSchemaField(
-      context,
+    final conditionsField = resolve(
       gestureConditionsField,
+      gestureGroupConditionsField,
     );
-    final endConditionsField = ref.gestureSchemaField(
-      context,
+    final endConditionsField = resolve(
       gestureEndConditionsField,
+      gestureGroupEndConditionsField,
     );
+
+    /// What a checkbox should show.
+    bool effective(TriggerAdvancedField field, bool own) {
+      final note = inherited[field];
+      if (note == null || note.setLocally) return own;
+      return note.value is bool ? note.value! as bool : own;
+    }
+
+    ConfigDirtyField dirtyFieldFor(TriggerAdvancedField field) =>
+        scope == null ? field.dirtyField : field.groupDirtyField;
+
+    /// Appends the inheritance note, when there is one, under [child], and
+    /// marks the field an undo just changed.
+    Widget withNote(
+      TriggerAdvancedField field,
+      Widget child, {
+      bool reveal = true,
+    }) {
+      final note = inherited[field];
+      final row = note == null
+          ? child
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                child,
+                InheritedFieldNote(
+                  inherited: note,
+                  onOpenGroup: onOpenGroup == null || note.groupEditId == null
+                      ? null
+                      : () => onOpenGroup!(note.groupEditId!),
+                ),
+              ],
+            );
+      // A group's fields are edited through the group node, which no reveal
+      // ever points at.
+      if (!reveal) return row;
+      return RevealedField(field: dirtyFieldFor(field), child: row);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,68 +214,103 @@ class TriggerAdvancedFields extends HookConsumerWidget {
       children: [
         if (visibleFields.contains(TriggerAdvancedField.id) ||
             visibleFields.contains(TriggerAdvancedField.threshold) ||
-            visibleFields.contains(TriggerAdvancedField.resumeTimeout)) ...[
+            visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
+            showSpeed) ...[
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 12,
             children: [
               if (visibleFields.contains(TriggerAdvancedField.id))
-                FTextField(
-                  label: UnsavedLabel(
-                    state: idField.dirty,
-                    onRevert: idField.onRevert,
-                    mixed: idField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldIdLabel,
-                      tooltipContent: const TriggerIdTooltip(),
-                    ),
-                  ),
-                  control: FTextFieldControl.managed(
-                    controller: idController,
-                  ),
-                  hint: l10n.triggerFieldIdHint,
-                ),
-              if (visibleFields.contains(TriggerAdvancedField.threshold))
-                FTextField(
-                  label: UnsavedLabel(
-                    state: thresholdField.dirty,
-                    onRevert: thresholdField.onRevert,
-                    mixed: thresholdField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldThresholdLabel,
-                      tooltipContent: const TriggerThresholdTooltip(),
-                      textStyle: const TextStyle(
-                        height: 1.4,
-                        fontFamily: 'monospaced',
+                withNote(
+                  TriggerAdvancedField.id,
+                  FTextField(
+                    label: UnsavedLabel(
+                      state: idField.dirty,
+                      onRevert: idField.onRevert,
+                      mixed: idField.mixed,
+                      child: LabelWithTooltip(
+                        label: l10n.triggerFieldIdLabel,
+                        tooltipContent: const TriggerIdTooltip(),
                       ),
                     ),
-                  ),
-                  control: FTextFieldControl.managed(
-                    controller: thresholdController,
-                  ),
-                  hint: l10n.triggerFieldThresholdHint,
-                ),
-              if (visibleFields.contains(TriggerAdvancedField.resumeTimeout))
-                FTextField(
-                  label: UnsavedLabel(
-                    state: resumeTimeoutField.dirty,
-                    onRevert: resumeTimeoutField.onRevert,
-                    mixed: resumeTimeoutField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldResumeTimeoutLabel,
-                      tooltipContent: const TriggerResumeTimeoutTooltip(),
+                    control: FTextFieldControl.managed(
+                      controller: idController,
                     ),
+                    hint: l10n.triggerFieldIdHint,
                   ),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  keyboardType: TextInputType.number,
-                  control: FTextFieldControl.managed(
-                    controller: resumeTimeoutController,
-                  ),
-                  hint: l10n.triggerFieldResumeTimeoutHint,
+                ),
+              if (visibleFields.contains(TriggerAdvancedField.threshold) ||
+                  visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
+                  showSpeed)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    if (visibleFields.contains(TriggerAdvancedField.threshold))
+                      SizedBox(
+                        width: _fieldWidth,
+                        child: withNote(
+                          TriggerAdvancedField.threshold,
+                          FTextField(
+                            label: UnsavedLabel(
+                              state: thresholdField.dirty,
+                              onRevert: thresholdField.onRevert,
+                              mixed: thresholdField.mixed,
+                              child: LabelWithTooltip(
+                                label: l10n.triggerFieldThresholdLabel,
+                                tooltipContent: const TriggerThresholdTooltip(),
+                                textStyle: const TextStyle(
+                                  height: 1.4,
+                                  fontFamily: 'monospaced',
+                                ),
+                              ),
+                            ),
+                            inputFormatters: thresholdInputFormatters,
+                            control: FTextFieldControl.managed(
+                              controller: thresholdController,
+                            ),
+                            hint: l10n.triggerFieldThresholdHint,
+                          ),
+                        ),
+                      ),
+                    if (visibleFields.contains(
+                      TriggerAdvancedField.resumeTimeout,
+                    ))
+                      SizedBox(
+                        width: _fieldWidth,
+                        child: withNote(
+                          TriggerAdvancedField.resumeTimeout,
+                          FTextField(
+                            label: UnsavedLabel(
+                              state: resumeTimeoutField.dirty,
+                              onRevert: resumeTimeoutField.onRevert,
+                              mixed: resumeTimeoutField.mixed,
+                              child: LabelWithTooltip(
+                                label: l10n.triggerFieldResumeTimeoutLabel,
+                                tooltipContent:
+                                    const TriggerResumeTimeoutTooltip(),
+                              ),
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            keyboardType: TextInputType.number,
+                            control: FTextFieldControl.managed(
+                              controller: resumeTimeoutController,
+                            ),
+                            hint: l10n.triggerFieldResumeTimeoutHint,
+                          ),
+                        ),
+                      ),
+                    if (showSpeed)
+                      const SizedBox(width: _fieldWidth, child: SpeedField()),
+                  ],
                 ),
             ],
           ),
         ],
-        if (visibleFields.contains(TriggerAdvancedField.accelerated) ||
+        if (showLockPointer ||
+            visibleFields.contains(TriggerAdvancedField.accelerated) ||
             visibleFields.contains(TriggerAdvancedField.blockEvents) ||
             visibleFields.contains(TriggerAdvancedField.clearModifiers) ||
             visibleFields.contains(TriggerAdvancedField.setLastTrigger)) ...[
@@ -175,92 +318,139 @@ class TriggerAdvancedFields extends HookConsumerWidget {
             spacing: 8,
             children: [
               if (visibleFields.contains(TriggerAdvancedField.accelerated))
-                FCheckbox(
-                  value: acceleratedField.value,
-                  onChange: acceleratedField.onChanged,
-                  label: UnsavedLabel(
-                    state: acceleratedField.dirty,
-                    onRevert: acceleratedField.onRevert,
-                    mixed: acceleratedField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldAcceleratedLabel,
-                      tooltipContent: const TriggerAcceleratedTooltip(),
+                withNote(
+                  TriggerAdvancedField.accelerated,
+                  FCheckbox(
+                    value: effective(
+                      TriggerAdvancedField.accelerated,
+                      acceleratedField.value,
+                    ),
+                    onChange: acceleratedField.onChanged,
+                    label: UnsavedLabel(
+                      state: acceleratedField.dirty,
+                      onRevert: acceleratedField.onRevert,
+                      mixed: acceleratedField.mixed,
+                      child: LabelWithTooltip(
+                        label: l10n.triggerFieldAcceleratedLabel,
+                        tooltipContent: const TriggerAcceleratedTooltip(),
+                      ),
                     ),
                   ),
                 ),
               if (visibleFields.contains(TriggerAdvancedField.blockEvents))
-                FCheckbox(
-                  value: blockEventsField.value,
-                  onChange: blockEventsField.onChanged,
-                  label: UnsavedLabel(
-                    state: blockEventsField.dirty,
-                    onRevert: blockEventsField.onRevert,
-                    mixed: blockEventsField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldBlockEventsLabel,
-                      tooltipContent: const TriggerBlockEventsTooltip(),
+                withNote(
+                  TriggerAdvancedField.blockEvents,
+                  FCheckbox(
+                    value: effective(
+                      TriggerAdvancedField.blockEvents,
+                      blockEventsField.value,
+                    ),
+                    onChange: blockEventsField.onChanged,
+                    label: UnsavedLabel(
+                      state: blockEventsField.dirty,
+                      onRevert: blockEventsField.onRevert,
+                      mixed: blockEventsField.mixed,
+                      child: LabelWithTooltip(
+                        label: l10n.triggerFieldBlockEventsLabel,
+                        tooltipContent: const TriggerBlockEventsTooltip(),
+                      ),
                     ),
                   ),
                 ),
               if (visibleFields.contains(TriggerAdvancedField.clearModifiers))
-                FCheckbox(
-                  value: clearModifiersField.value,
-                  onChange: clearModifiersField.onChanged,
-                  label: UnsavedLabel(
-                    state: clearModifiersField.dirty,
-                    onRevert: clearModifiersField.onRevert,
-                    mixed: clearModifiersField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldClearModifiersLabel,
-                      tooltipContent: const TriggerClearModifiersTooltip(),
+                withNote(
+                  TriggerAdvancedField.clearModifiers,
+                  FCheckbox(
+                    value: effective(
+                      TriggerAdvancedField.clearModifiers,
+                      clearModifiersField.value,
+                    ),
+                    onChange: clearModifiersField.onChanged,
+                    label: UnsavedLabel(
+                      state: clearModifiersField.dirty,
+                      onRevert: clearModifiersField.onRevert,
+                      mixed: clearModifiersField.mixed,
+                      child: LabelWithTooltip(
+                        label: l10n.triggerFieldClearModifiersLabel,
+                        tooltipContent: const TriggerClearModifiersTooltip(),
+                      ),
                     ),
                   ),
                 ),
               if (visibleFields.contains(TriggerAdvancedField.setLastTrigger))
-                FCheckbox(
-                  value: setLastTriggerField.value,
-                  onChange: setLastTriggerField.onChanged,
-                  label: UnsavedLabel(
-                    state: setLastTriggerField.dirty,
-                    onRevert: setLastTriggerField.onRevert,
-                    mixed: setLastTriggerField.mixed,
-                    child: LabelWithTooltip(
-                      label: l10n.triggerFieldSetLastTriggerLabel,
-                      tooltipContent: const TriggerSetLastTriggerTooltip(),
+                withNote(
+                  TriggerAdvancedField.setLastTrigger,
+                  FCheckbox(
+                    value: effective(
+                      TriggerAdvancedField.setLastTrigger,
+                      setLastTriggerField.value,
+                    ),
+                    onChange: setLastTriggerField.onChanged,
+                    label: UnsavedLabel(
+                      state: setLastTriggerField.dirty,
+                      onRevert: setLastTriggerField.onRevert,
+                      mixed: setLastTriggerField.mixed,
+                      child: LabelWithTooltip(
+                        label: l10n.triggerFieldSetLastTriggerLabel,
+                        tooltipContent: const TriggerSetLastTriggerTooltip(),
+                      ),
                     ),
                   ),
                 ),
+              if (showLockPointer) const LockPointerField(),
             ],
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.conditions)) ...[
-          ConditionEditor.generic(
-            condition: conditionsField.value,
-            onConditionChanged: conditionsField.onChanged,
-            title: l10n.triggerConditionsTitle,
-            titleTooltipContent: const TriggerConditionsTooltip(),
-            bodyBackgroundColor: conditionsBodyBackgroundColor,
-            dirtyState: conditionsField.dirty,
-            onRevert: conditionsField.onRevert,
-            mixed: conditionsField.mixed,
+          withNote(
+            TriggerAdvancedField.conditions,
+            ConditionEditor.generic(
+              condition: conditionsField.value,
+              onConditionChanged: conditionsField.onChanged,
+              title: l10n.triggerConditionsTitle,
+              titleTooltipContent: const TriggerConditionsTooltip(),
+              bodyBackgroundColor: conditionsBodyBackgroundColor,
+              dirtyState: conditionsField.dirty,
+              onRevert: conditionsField.onRevert,
+              mixed: conditionsField.mixed,
+              inherited: inheritedConditions,
+              inheritedForGroup: scope != null,
+              onOpenInheritedGroup: onOpenGroup == null
+                  ? null
+                  : (source) {
+                      final editId = source.groupEditId;
+                      if (editId != null) onOpenGroup!(editId);
+                    },
+              revealField: dirtyFieldFor(TriggerAdvancedField.conditions),
+            ),
+            reveal: false,
           ),
         ],
         if (visibleFields.contains(TriggerAdvancedField.endConditions)) ...[
-          ConditionEditor.generic(
-            title: l10n.triggerEndConditionsTitle,
-            dirtyState: endConditionsField.dirty,
-            onRevert: endConditionsField.onRevert,
-            titleTooltipContent: const TriggerEndConditionsTooltip(),
-            condition: endConditionsField.value,
-            bodyBackgroundColor: conditionsBodyBackgroundColor,
-            onConditionChanged: endConditionsField.onChanged,
-            mixed: endConditionsField.mixed,
+          withNote(
+            TriggerAdvancedField.endConditions,
+            ConditionEditor.generic(
+              title: l10n.triggerEndConditionsTitle,
+              dirtyState: endConditionsField.dirty,
+              onRevert: endConditionsField.onRevert,
+              titleTooltipContent: const TriggerEndConditionsTooltip(),
+              emptyMessage: l10n.triggerEndConditionsEmpty,
+              condition: endConditionsField.value,
+              bodyBackgroundColor: conditionsBodyBackgroundColor,
+              onConditionChanged: endConditionsField.onChanged,
+              mixed: endConditionsField.mixed,
+              revealField: dirtyFieldFor(TriggerAdvancedField.endConditions),
+            ),
+            reveal: false,
           ),
         ],
       ],
     );
   }
 }
+
+/// Matches the action card's advanced options.
+const double _fieldWidth = 180;
 
 enum TriggerAdvancedField {
   id,
@@ -272,4 +462,53 @@ enum TriggerAdvancedField {
   setLastTrigger,
   conditions,
   endConditions,
+}
+
+/// The row a shared property is edited in. Conditions have no counterpart
+/// here: a group merges them into its subtree instead of sharing a value.
+TriggerAdvancedField triggerAdvancedFieldFor(
+  SharedTriggerProperty property,
+) => switch (property) {
+  SharedTriggerProperty.id => TriggerAdvancedField.id,
+  SharedTriggerProperty.threshold => TriggerAdvancedField.threshold,
+  SharedTriggerProperty.resumeTimeout => TriggerAdvancedField.resumeTimeout,
+  SharedTriggerProperty.accelerated => TriggerAdvancedField.accelerated,
+  SharedTriggerProperty.blockEvents => TriggerAdvancedField.blockEvents,
+  SharedTriggerProperty.clearModifiers => TriggerAdvancedField.clearModifiers,
+  SharedTriggerProperty.setLastTrigger => TriggerAdvancedField.setLastTrigger,
+  SharedTriggerProperty.endConditions => TriggerAdvancedField.endConditions,
+};
+
+extension TriggerAdvancedFieldSchema on TriggerAdvancedField {
+  ConfigDirtyField get dirtyField => switch (this) {
+    TriggerAdvancedField.id => ConfigDirtyField.gestureId,
+    TriggerAdvancedField.threshold => ConfigDirtyField.gestureThreshold,
+    TriggerAdvancedField.resumeTimeout => ConfigDirtyField.gestureResumeTimeout,
+    TriggerAdvancedField.accelerated => ConfigDirtyField.gestureAccelerated,
+    TriggerAdvancedField.blockEvents => ConfigDirtyField.gestureBlockEvents,
+    TriggerAdvancedField.clearModifiers =>
+      ConfigDirtyField.gestureClearModifiers,
+    TriggerAdvancedField.setLastTrigger =>
+      ConfigDirtyField.gestureSetLastTrigger,
+    TriggerAdvancedField.conditions => ConfigDirtyField.gestureConditions,
+    TriggerAdvancedField.endConditions => ConfigDirtyField.gestureEndConditions,
+  };
+
+  ConfigDirtyField get groupDirtyField => switch (this) {
+    TriggerAdvancedField.id => ConfigDirtyField.gestureGroupId,
+    TriggerAdvancedField.threshold => ConfigDirtyField.gestureGroupThreshold,
+    TriggerAdvancedField.resumeTimeout =>
+      ConfigDirtyField.gestureGroupResumeTimeout,
+    TriggerAdvancedField.accelerated =>
+      ConfigDirtyField.gestureGroupAccelerated,
+    TriggerAdvancedField.blockEvents =>
+      ConfigDirtyField.gestureGroupBlockEvents,
+    TriggerAdvancedField.clearModifiers =>
+      ConfigDirtyField.gestureGroupClearModifiers,
+    TriggerAdvancedField.setLastTrigger =>
+      ConfigDirtyField.gestureGroupSetLastTrigger,
+    TriggerAdvancedField.conditions => ConfigDirtyField.gestureGroupConditions,
+    TriggerAdvancedField.endConditions =>
+      ConfigDirtyField.gestureGroupEndConditions,
+  };
 }

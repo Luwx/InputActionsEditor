@@ -7,11 +7,18 @@
   "actionDiscardChanges": "Discard changes",
   "actionLoadFromClipboard": "Load from clipboard",
   "actionCopyToClipboard": "Copy to clipboard",
+  "actionReload": "Reload",
   "actionOk": "OK",
   "actionCancel": "Cancel",
+  "actionCreate": "Create",
+  "actionRename": "Rename",
   "actionAdd": "Add",
   "actionDelete": "Delete",
   "actionDuplicate": "Duplicate",
+  "actionCopy": "Copy",
+  "actionPasteEmptyTitle": "Nothing pasted",
+  "actionPasteEmptyDescription": "The clipboard does not hold copied actions.",
+  "actionPaste": "Paste",
   "actionUndo": "Undo",
   "actionRedo": "Redo",
   "actionExit": "Exit",
@@ -43,7 +50,7 @@
   "settingsGeneral": "General",
   "settingsDeviceSettings": "Device Settings",
   "settingsEffect": "Effect",
-  "settingsInterface": "Interface",
+  "settingsInterface": "Editor",
   "settingsDeviceRules": "Device Rules",
   "deviceTypeMouse": "Mouse",
   "deviceTypePointer": "Pointer",
@@ -142,6 +149,14 @@
       }
     }
   },
+  "tokenLabelTextCommand": "Text from: {val}",
+  "@tokenLabelTextCommand": {
+    "placeholders": {
+      "val": {
+        "type": "String"
+      }
+    }
+  },
   "tokenLabelMoveBy": "Move by {v1}, {v2}",
   "@tokenLabelMoveBy": {
     "placeholders": {
@@ -186,10 +201,73 @@
   },
   "gestureSelectPrompt": "Select a gesture to edit",
   "configSaveSuccess": "Config saved.",
+  "configSaveFailedTitle": "Couldn't save your configuration",
   "configCopyToClipboardSuccess": "Config copied to clipboard.",
   "configLoadClipboardError": "Could not parse clipboard YAML.",
   "configLoadClipboardDetailsButton": "Details",
   "configLoadFailedTitle": "Couldn't load your configuration",
+  "configIssuesTitle": "{count, plural, =1{1 condition couldn't be read} other{{count} conditions couldn't be read}}",
+  "@configIssuesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "configIssuesDescription": "They're shown read-only. Saving will overwrite them.",
+  "configIssuesDialogBody": "The editor couldn't understand these conditions and shows them read-only. If you save, they'll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.",
+  "configIssuesUnnamedGesture": "Unnamed gesture",
+  "gestureGroupUnnamed": "Group",
+  "inheritedFieldFrom": "Inherited from {group}: {value}",
+  "@inheritedFieldFrom": {
+    "description": "Muted note under a trigger field whose value comes from an ancestor group.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "inheritedFieldConflict": "Also set by {group}. The daemon does not resolve this: it merges the group's value in without checking, and which one wins is undefined.",
+  "@inheritedFieldConflict": {
+    "description": "Warning under a trigger field that both the gesture and an ancestor group set.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "groupSettingsTitle": "Shared properties",
+  "@groupSettingsTitle": {
+    "description": "Title of the panel editing properties every gesture in a group inherits."
+  },
+  "groupSettingsSubtitle": "{count, plural, =1{Applies to 1 gesture} other{Applies to {count} gestures}}",
+  "@groupSettingsSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupSettingsDescription": "Every gesture in this group inherits these.",
+  "@groupSettingsDescription": {
+    "description": "Explains group property inheritance and the daemon's lack of override support."
+  },
+  "configIssuesDeviceRule": "Device rules",
+  "configIssuesLine": "line {number}",
+  "@configIssuesLine": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "configIssuesSourceConditions": "conditions",
+  "configIssuesSourceEndConditions": "end conditions",
+  "configIssuesSourceActionConditions": "action conditions",
+  "configIssuesSourceDeviceRule": "device rule",
   "actionRetry": "Retry",
   "actionDetails": "Details",
   "dialogClipboardLoadTitle": "Load from Clipboard",
@@ -197,6 +275,7 @@
   "dialogClipboardLoadActionNew": "New config",
   "dialogClipboardLoadActionMerge": "Merge",
   "gestureCopyYamlSuccess": "Gesture YAML copied.",
+  "gestureDisabledLabel": "DISABLED",
   "gestureMenuEnable": "Enable",
   "gestureMenuDisable": "Disable",
   "gestureMenuResetToDefaults": "Reset To Defaults",
@@ -225,6 +304,37 @@
   "triggerConditionsTitle": "Trigger Conditions",
   "triggerEndConditionsTitle": "End conditions",
   "triggerConditionsEmpty": "No conditions set. Add a condition or group to specify when this gesture should trigger.",
+  "triggerEndConditionsEmpty": "No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.",
+  "conditionsMergedRootLabel": "must match: group conditions merged with this gesture's",
+  "@conditionsMergedRootLabel": {
+    "description": "Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge."
+  },
+  "conditionsMergedRootLabelGroup": "must match: conditions from enclosing groups merged with this group's",
+  "@conditionsMergedRootLabelGroup": {
+    "description": "Same header, shown while editing a group nested inside other groups."
+  },
+  "conditionsInheritedFrom": "Inherited from {group}",
+  "@conditionsInheritedFrom": {
+    "description": "Header of a read-only branch holding one ancestor group's conditions.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "conditionsInheritedReadOnly": "Set on {group}. Open that group to change it.",
+  "@conditionsInheritedReadOnly": {
+    "description": "Tooltip on a read-only inherited condition branch.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "conditionsNoneOfItsOwn": "No conditions of its own.",
+  "@conditionsNoneOfItsOwn": {
+    "description": "Placeholder row where the local conditions would be, when only inherited ones exist."
+  },
   "triggerFieldIdLabel": "ID",
   "triggerFieldIdHint": "e.g. my_trigger",
   "triggerFieldThresholdLabel": "Threshold",
@@ -288,6 +398,7 @@
   "actionChipThreshold": "Threshold",
   "actionChipLimit": "Limit",
   "actionChipConflicting": "Conflicting",
+  "actionChipDelay": "Delay",
   "actionMetaCommandLabel": "Command",
   "actionMetaCommandSubtitle": "Run a shell command",
   "actionMetaInputLabel": "Input",
@@ -304,10 +415,52 @@
   "actionMetaFunctionSubtitle": "Run a JavaScript function",
   "actionMetaRawLabel": "Raw YAML",
   "actionMetaRawSubtitle": "Hand-authored unsupported action config",
+  "actionMetaGroupLabel": "First match",
+  "actionMetaGroupSubtitle": "Runs the first nested action whose conditions match",
+  "actionGroupSummary": "{count, plural, =0{No actions} =1{1 action} other{{count} actions}}",
+  "@actionGroupSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "actionGroupExplanation": "Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.",
+  "actionGroupAddAction": "Add action",
+  "actionGroupFlowTitle": "What runs",
+  "actionGroupFlowIf": "If",
+  "actionGroupFlowElseIf": "Else if",
+  "actionGroupFlowThen": "Then",
+  "actionGroupFlowVerbRun": "run",
+  "actionGroupFlowVerbSend": "send",
+  "actionGroupFlowVerbTrigger": "trigger",
+  "actionGroupFlowAlways": "Always",
+  "actionGroupFlowOtherwise": "Otherwise",
+  "actionGroupFlowNeverRuns": "never runs",
+  "actionGroupFlowDisabled": "disabled",
+  "actionGroupFlowEmpty": "No actions yet. Add a few and give them conditions to pick between them.",
+  "actionGroupFlowFirstAlwaysNote": "The first action has no conditions, so it always runs.",
+  "actionGroupFlowFirstAlwaysNoteRest": "The first action has no conditions, so it always runs and the ones below it never do.",
+  "conditionSummaryNot": "not",
+  "conditionSummaryAnd": "and",
+  "conditionSummaryOr": "or",
+  "conditionSummaryNoneOf": "none of",
+  "conditionSummaryNoRules": "no rules",
+  "conditionSummaryFunction": "custom function",
+  "conditionSummaryEmptyValue": "(empty)",
+  "actionsSelectedCount": "{count, plural, =1{1 action selected} other{{count} actions selected}}",
+  "@actionsSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "actionSummaryNoCommand": "No command",
   "actionSummaryNotConfigured": "Not configured",
   "actionSummaryEmpty": "Empty",
   "actionSummaryNoInput": "No input",
+  "actionSummaryNoAction": "No action",
   "actionSummaryNoKeys": "No keys",
   "actionSummaryNoButtons": "No buttons",
   "actionCommandLabel": "Command",
@@ -504,7 +657,8 @@
   "effectSettingsEmergencyComboKeysLabel": "Keys (comma-separated scancodes)",
   "effectSettingsEmergencyComboKeysHint": "backspace, enter, space",
   "effectSettingsEmergencyComboDescription": "Keyboard keys that can be pressed in any order and held for 2 seconds to suspend InputActions until the next config reload. Set to empty to disable.",
-  "appearanceTitle": "Appearance",
+  "appearanceTitle": "Editor",
+  "appearanceGroupTitle": "Appearance",
   "appearanceMinimizeToTrayLabel": "Minimize to tray",
   "appearanceMinimizeToTraySubtitle": "Keep running in background when closed",
   "appearanceTransparentSidebarLabel": "Transparent sidebar",
@@ -515,15 +669,35 @@
   "appearanceThemeSystem": "System",
   "appearanceColorThemeKde": "KDE System",
   "appearanceColorThemeNeutral": "Neutral",
+  "appearanceColorThemeStone": "Stone",
   "appearanceColorThemeZinc": "Zinc",
+  "appearanceColorThemeMauve": "Mauve",
+  "appearanceColorThemeOlive": "Olive",
+  "appearanceColorThemeMist": "Mist",
+  "appearanceColorThemeTaupe": "Taupe",
   "appearanceColorThemeSlate": "Slate",
+  "appearanceColorThemeAmber": "Amber",
   "appearanceColorThemeBlue": "Blue",
+  "appearanceColorThemeCyan": "Cyan",
+  "appearanceColorThemeEmerald": "Emerald",
+  "appearanceColorThemeFuchsia": "Fuchsia",
   "appearanceColorThemeGreen": "Green",
+  "appearanceColorThemeIndigo": "Indigo",
+  "appearanceColorThemeLime": "Lime",
   "appearanceColorThemeOrange": "Orange",
+  "appearanceColorThemePink": "Pink",
+  "appearanceColorThemePurple": "Purple",
   "appearanceColorThemeRed": "Red",
   "appearanceColorThemeRose": "Rose",
+  "appearanceColorThemeSky": "Sky",
+  "appearanceColorThemeTeal": "Teal",
   "appearanceColorThemeViolet": "Violet",
   "appearanceColorThemeYellow": "Yellow",
+  "appearanceColorThemeGroupBase": "Base",
+  "appearanceColorThemeGroupPrimary": "Primary",
+  "backupsLabel": "Config backups",
+  "backupsSubtitle": "Keep copies of the previous config in .backups",
+  "backupsCountLabel": "Backups kept",
   "historyTitle": "Recognition History",
   "historyEmpty": "No recognition events yet.",
   "historyEmptyHint": "Perform a gesture while the daemon is running.",
@@ -606,6 +780,11 @@
   "tooltip_triggerConditions_ex4Label": "cursor at right edge",
   "tooltip_triggerConditions_ex5Label": "exactly 3 fingers",
   "tooltip_triggerConditions_noteAnd": "Rows are AND-ed. Use an \"any\" group inside for OR logic.",
+  "tooltip_pointPixels_body": "Previews the position or size of the selected fraction in pixels.",
+  "tooltip_pointPixels_sectionLabel": "On the chosen resolution",
+  "tooltip_pointPixels_pointLabel": "a point: the pointer position",
+  "tooltip_pointPixels_rangeLabel": "a range: the size of the area",
+  "tooltip_pointPixels_notePreview": "Only the preview changes. The value stays a fraction of the screen, so it works on any display.",
   "tooltip_triggerEndConditions_body": "Checked at the moment the gesture ends.",
   "tooltip_triggerEndConditions_metLabel": "Met",
   "tooltip_triggerEndConditions_metDesc": "gesture ends normally · on:end actions fire",
@@ -633,6 +812,8 @@
   "tooltip_triggerAccelerated_body": "Scale delta values by pointer acceleration.",
   "tooltip_triggerAccelerated_bulletOn": "Enable for proportional feel, e.g. move_by_delta actions.",
   "tooltip_triggerAccelerated_bulletOff": "Disable for uniform response, e.g. fixed key per tick.",
+  "tooltip_triggerLockPointer_body": "Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.",
+  "tooltip_triggerLockPointer_warning": "Locks the pointer for every motion trigger active at the same time, not just this one.",
   "tooltip_triggerBlockEvents_body": "Suppress raw input from reaching other applications.",
   "tooltip_triggerBlockEvents_sectionLabel": "Example",
   "tooltip_triggerBlockEvents_exCode": "right-click stroke gesture",
@@ -690,7 +871,12 @@
   "actionSleepDurationHint": "500",
   "actionFunctionLabel": "Function",
   "actionFunctionHint": "() => initialDirection = \"l\"",
+  "dialogNewGroupTitle": "New group",
+  "dialogNewSubgroupTitle": "New subgroup",
+  "dialogRenameGroupTitle": "Rename group",
+  "gesturePasteEmpty": "The clipboard holds no gestures for this device.",
   "groupMenuRename": "Rename",
+  "groupMenuNewSubgroup": "New subgroup",
   "groupMenuBreakdown": "Ungroup",
   "groupMenuDeleteWithGestures": "Delete",
   "strokeRowTitle": "Stroke {n}",
@@ -710,7 +896,6 @@
     }
   },
   "strokeRowInvalidData": "Invalid stroke data",
-  "strokePreviewTitle": "Stroke preview",
   "inputDevicesLabel": "Input devices",
   "inputAddDevice": "Add device",
   "inputKeySequenceLabel": "Key Sequence",
@@ -730,6 +915,11 @@
   "inputButtonSequenceRecordPrompt": "Click any mouse button here",
   "inputButtonSequenceAddToSeq": "Add to sequence",
   "inputTextToTypeLabel": "Text to type",
+  "inputTextCommandMode": "Command",
+  "inputTextCommandTooltip": "Runs the command in a shell and types its standard output. Variables can be referenced by name.",
+  "inputTextCommandHint": "date",
+  "inputDelayLabel": "Delay",
+  "inputDelayTooltip": "Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.",
   "inputDeviceFieldLabel": "Device",
   "inputDeviceFieldTooltip": "Whether to simulate keyboard or mouse input.",
   "inputActionTypeLabel": "Action type",
@@ -737,9 +927,39 @@
   "mouseDeltaMultiplierLabel": "Multiplier",
   "mouseDeltaMultiplierTooltip": "Scale factor applied to the gesture movement delta. 1 moves the pointer by the same distance as the gesture, 2 doubles it, 0.5 halves it.",
   "motionSpeedLabel": "Motion Speed",
-  "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.",
+  "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.",
   "motionLockPointerLabel": "Lock pointer",
-  "motionLockPointerTooltip": "Prevent the pointer from moving on screen while this gesture is active.",
+  "numberRangeBetween": "Must be {min} to {max}",
+  "@numberRangeBetween": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeMin": "Must be at least {min}",
+  "@numberRangeMin": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeMax": "Must be at most {max}",
+  "@numberRangeMax": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "numberRangeWhole": "Whole numbers only",
+  "pointRangeFromLabel": "From",
+  "pointRangeToLabel": "To",
+  "pointPixelReadoutPrefix": "on",
   "swipeMinAngleLabel": "Min angle °",
   "swipeMinAngleTooltip": "Start of the angle range. 0° = right, 90° = up, 180° = left, 270° = down. Drag the handle on the wheel or type a value.",
   "swipeMaxAngleLabel": "Max angle °",
@@ -853,6 +1073,7 @@
   "varLabel_thumbInitialPositionX": "Thumb initial position X %",
   "varLabel_thumbInitialPositionY": "Thumb initial position Y %",
   "varLabel_fingers": "Number of fingers",
+  "varLabel_maxFingerDistance": "Max finger distance %",
   "varLabel_keyboardModifiers": "Held modifier keys",
   "varLabel_cursorShape": "Cursor shape",
   "varLabel_screenName": "Screen name",

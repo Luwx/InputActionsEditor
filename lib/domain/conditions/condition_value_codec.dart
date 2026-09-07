@@ -44,13 +44,11 @@ ConditionValue parseConditionValue(
   }
 
   return switch (type) {
-    ConditionValueType.bool_ => ConditionValue.boolean(
-      raw.trim().toLowerCase() == 'true',
-    ),
+    ConditionValueType.bool_ => _parseBoolValue(raw),
     ConditionValueType.flags => ConditionValue.flags(_parseListValue(raw)),
     ConditionValueType.point => _parsePointValue(raw),
-    ConditionValueType.number || ConditionValueType.time =>
-      ConditionValue.number(double.tryParse(raw.trim()) ?? 0),
+    ConditionValueType.number ||
+    ConditionValueType.time => _parseNumberValue(raw),
     ConditionValueType.enum_ ||
     ConditionValueType.string => ConditionValue.text(raw),
   };
@@ -81,6 +79,20 @@ const Map<ConditionOperator, String> _operatorTokens = {
   ConditionOperator.matches: 'matches',
   ConditionOperator.oneOf: 'one_of',
 };
+
+/// Values we don't support go raw.
+ConditionValue _parseNumberValue(String raw) {
+  final value = double.tryParse(raw.trim());
+  return value == null ? ConditionValue.raw(raw) : ConditionValue.number(value);
+}
+
+/// The daemon reads these through YAML, which spells booleans several ways.
+ConditionValue _parseBoolValue(String raw) =>
+    switch (raw.trim().toLowerCase()) {
+      'true' || 'yes' || 'on' || 'y' => const ConditionValue.boolean(true),
+      'false' || 'no' || 'off' || 'n' => const ConditionValue.boolean(false),
+      _ => ConditionValue.raw(raw),
+    };
 
 ConditionValue _parsePointValue(String raw) {
   var separator = raw.indexOf(',');

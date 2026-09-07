@@ -1,3 +1,4 @@
+import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
@@ -21,27 +22,28 @@ List<ModeOption> inputModeOptions(
   ],
 };
 
-String tokenLabel(String token, InputDevice device, AppLocalizations l10n) {
-  if (device == InputDevice.keyboard) {
-    final (:type, :val) = parseKeyToken(token);
-    return switch (type) {
-      KeyTokenType.press => '↓ $val',
-      KeyTokenType.release => '↑ $val',
-      KeyTokenType.text => l10n.tokenLabelText(val),
-      KeyTokenType.combo => val,
-    };
-  }
-  final (:type, :v1, :v2) = parseMouseToken(token);
-  return switch (type) {
-    MouseTokenType.press => '↓ $v1',
-    MouseTokenType.release => '↑ $v1',
-    MouseTokenType.moveBy => l10n.tokenLabelMoveBy(v1, v2),
-    MouseTokenType.moveByDelta =>
-      v1.isEmpty
-          ? l10n.tokenLabelMoveByDelta
-          : l10n.tokenLabelMoveByDeltaParam(v1),
-    MouseTokenType.moveTo => l10n.tokenLabelMoveTo(v1, v2),
-    MouseTokenType.wheel => l10n.tokenLabelWheel(v1, v2),
-    MouseTokenType.combo => v1,
-  };
-}
+String tokenLabel(InputToken token, AppLocalizations l10n) => switch (token) {
+  PressInputToken(:final key) => '↓ $key',
+  ReleaseInputToken(:final key) => '↑ $key',
+  ComboInputToken(:final keys) => keys.join('+'),
+  TextInputToken(value: LiteralText(:final text)) => l10n.tokenLabelText(text),
+  TextInputToken(value: CommandText(:final command)) =>
+    l10n.tokenLabelTextCommand(command),
+  MoveByInputToken(:final x, :final y) => l10n.tokenLabelMoveBy(
+    formatInputNumber(x),
+    formatInputNumber(y),
+  ),
+  MoveByDeltaInputToken(:final multiplier) =>
+    multiplier == null
+        ? l10n.tokenLabelMoveByDelta
+        : l10n.tokenLabelMoveByDeltaParam(formatInputNumber(multiplier)),
+  MoveToInputToken(:final x, :final y) => l10n.tokenLabelMoveTo(
+    formatInputNumber(x),
+    formatInputNumber(y),
+  ),
+  WheelInputToken(:final x, :final y) => l10n.tokenLabelWheel(
+    formatInputNumber(x),
+    formatInputNumber(y),
+  ),
+  RawInputToken(:final token) => token,
+};

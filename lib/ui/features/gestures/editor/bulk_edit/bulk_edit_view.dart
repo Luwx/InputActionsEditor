@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/card_footer.dart';
+import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
+import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
@@ -16,7 +20,6 @@ import 'package:input_actions_editor/ui/features/gestures/editor/widgets/mouse_b
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Undo/redo scope key for bulk-edit fan-out writes.
-const Object bulkEditScope = #bulkEditScope;
 
 /// `id` is intentionally excluded from bulk editing, it must stay unique per
 /// gesture. Everything else in [TriggerAdvancedField] is a shared-value field.
@@ -75,8 +78,22 @@ class BulkEditView extends HookConsumerWidget {
       child: SectionCard(
         color: colors.card.withValues(alpha: 0.55),
         title: l10n.triggerConfigTitle,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Column(
+        padding: const EdgeInsets.all(16),
+        footer: accordionFields.isEmpty
+            ? null
+            : CardFooter(
+                expanded: optionsExpanded.value,
+                child: CollapsibleSection(
+                  title: Text(l10n.triggerOtherOptions),
+                  expanded: optionsExpanded.value,
+                  onExpanded: (expanded) => optionsExpanded.value = expanded,
+                  child: StaggeredBuild(
+                    immediate: optionsExpanded.value,
+                    child: TriggerAdvancedFields(fields: accordionFields),
+                  ),
+                ),
+              ),
+        body: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 16,
@@ -84,28 +101,6 @@ class BulkEditView extends HookConsumerWidget {
             if (allMouse) const MouseButtonsField(),
             if (pinnedFields.isNotEmpty)
               TriggerAdvancedFields(fields: pinnedFields),
-            if (accordionFields.isNotEmpty)
-              FAccordion(
-                control: FAccordionControl.lifted(
-                  expanded: (index) => index == 0 && optionsExpanded.value,
-                  onChange: (index, exp) {
-                    if (index != 0 || optionsExpanded.value == exp) return;
-                    optionsExpanded.value = exp;
-                  },
-                ),
-                style: const .delta(
-                  dividerStyle: .delta(
-                    color: Colors.transparent,
-                    padding: .value(EdgeInsets.zero),
-                  ),
-                ),
-                children: [
-                  FAccordionItem(
-                    title: Text(l10n.triggerOtherOptions),
-                    child: TriggerAdvancedFields(fields: accordionFields),
-                  ),
-                ],
-              ),
           ],
         ),
       ),
@@ -122,13 +117,13 @@ class BulkEditView extends HookConsumerWidget {
         actions: <Type, Action<Intent>>{
           _UndoIntent: CallbackAction<_UndoIntent>(
             onInvoke: (_) {
-              controller.undo(scope: bulkEditScope);
+              controller.undo(scope: const GesturesScope());
               return null;
             },
           ),
           _RedoIntent: CallbackAction<_RedoIntent>(
             onInvoke: (_) {
-              controller.redo(scope: bulkEditScope);
+              controller.redo(scope: const GesturesScope());
               return null;
             },
           ),

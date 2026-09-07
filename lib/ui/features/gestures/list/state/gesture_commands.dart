@@ -1,24 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/group_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
-import 'package:input_actions_editor/model/gesture_group.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
-/// Stateless facade for the *structural* gesture/group operations the list view
-/// triggers — add / remove / duplicate / reorder / (un)group. These are the
-/// edits a single lens cannot express.
-///
-/// It is deliberately not a `Notifier`: a list section owns no state of its own
-/// (selection, multi-select, collapsed groups, the added-marker all live in
-/// their own providers, and the structure it renders is derived by
-/// [gestureListStructureProvider]). Single-address reads/writes go through
-/// `ref.field(lens)` and the per-row gesture watch; only the irreducible
-/// structural intents live here. This replaced `GestureListNotifier`, whose
-/// `state` was an unused whole-config passthrough the command methods never
-/// read — a stateful notifier was the wrong shape for a pure command surface.
+/// Stateless facade for the structural gesture/group operations the list view
+/// triggers, edits a single lens cannot express.
 class GestureCommands {
   const GestureCommands(this._ref);
 
@@ -26,12 +17,32 @@ class GestureCommands {
 
   ConfigController get _config => _ref.read(configControllerProvider.notifier);
 
-  void addGesture(DeviceType device, Gesture gesture) {
-    _config.add(AddGesture(device, gesture));
+  void addGesture(DeviceType device, Gesture gesture, {int? groupKey}) {
+    _config.add(
+      AddGesture(device, gesture, groupKey: groupKey),
+      scope: const GesturesScope(),
+    );
   }
 
-  void duplicateGesture(GestureLocation location) {
-    _config.add(DuplicateGesture(location));
+  void duplicateGestures(Iterable<GestureLocation> gestures) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      DuplicateGestures(gestures.toList()),
+      scope: const GesturesScope(),
+    );
+  }
+
+  void insertGestures(
+    DeviceType device,
+    List<Gesture> gestures, {
+    GestureLocation? after,
+    int? groupKey,
+  }) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      InsertGestures(device, gestures, after: after, groupKey: groupKey),
+      scope: const GesturesScope(),
+    );
   }
 
   void renameGesture(GestureLocation location, String name) {
@@ -40,61 +51,84 @@ class GestureCommands {
         location,
         (common) => common.copyWith(name: name.isEmpty ? null : name),
       ),
+      scope: const GesturesScope(),
     );
   }
 
-  void removeGesture(GestureLocation location) {
-    _config.add(RemoveGesture(location));
+  void removeGestures(Iterable<GestureLocation> gestures) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      RemoveGestures(gestures.toList()),
+      scope: const GesturesScope(),
+    );
   }
 
-  void enableGestures(Iterable<GestureLocation> gestures) {
-    for (final gesture in gestures) {
-      _config.add(
-        UpdateGestureCommon(
-          gesture,
-          (common) => common.copyWith(enabled: null),
-        ),
-      );
-    }
+  void setGesturesEnabled(
+    Iterable<GestureLocation> gestures, {
+    required bool enabled,
+  }) {
+    if (gestures.isEmpty) return;
+    _config.add(
+      SetGesturesEnabled(gestures.toList(), enabled: enabled),
+      scope: const GesturesScope(),
+    );
   }
 
-  void disableGestures(Iterable<GestureLocation> gestures) {
-    for (final gesture in gestures) {
-      _config.add(
-        UpdateGestureCommon(
-          gesture,
-          (common) => common.copyWith(enabled: false),
-        ),
-      );
-    }
+  void addGroup(DeviceType device, GestureGroupNode group, {int? parentKey}) {
+    _config.add(
+      AddGestureGroup(device, group, parentKey: parentKey),
+      scope: const GesturesScope(),
+    );
   }
 
-  void addGroup(GestureGroup group) {
-    _config.add(AddGestureGroup(group));
+  void updateGroup(
+    GestureGroupLocation location,
+    GestureGroupNode Function(GestureGroupNode) update,
+  ) {
+    _config.add(
+      UpdateGestureGroup(location, update),
+      scope: const GesturesScope(),
+    );
   }
 
-  void updateGroup(String id, GestureGroup Function(GestureGroup) update) {
-    _config.add(UpdateGestureGroup(id, update));
+  void removeGroupAndUngroup(GestureGroupLocation location) {
+    _config.add(
+      RemoveGestureGroupAndUngroup(location),
+      scope: const GesturesScope(),
+    );
   }
 
-  void removeGroupAndUngroup(String id) {
-    _config.add(RemoveGestureGroupAndUngroup(id));
+  void deleteGroupWithGestures(GestureGroupLocation location) {
+    _config.add(
+      DeleteGestureGroupWithGestures(location),
+      scope: const GesturesScope(),
+    );
   }
 
-  void deleteGroupWithGestures(String id, DeviceType device) {
-    _config.add(DeleteGestureGroupWithGestures(id));
-  }
-
-  void reorderGroups(DeviceType device, int from, int to) {
-    _config.add(ReorderGestureGroup(device, from, to));
+  void moveGroup(
+    GestureGroupLocation location, {
+    int? beforeKey,
+    int? newParentKey,
+  }) {
+    _config.add(
+      MoveGestureGroup(
+        location,
+        beforeKey: beforeKey,
+        newParentKey: newParentKey,
+      ),
+      scope: const GesturesScope(),
+    );
   }
 
   void reorderGesturesAndGroups(
     DeviceType device,
     List<GestureLocation> newOrder,
-    Map<GestureLocation, String?> assignments,
+    Map<GestureLocation, int?> assignments,
   ) {
-    _config.add(ReorderAndUpdateGroups(device, newOrder, assignments));
+    _config.add(
+      ReorderAndUpdateGroups(device, newOrder, assignments),
+      scope: const GesturesScope(),
+    );
   }
 }
 

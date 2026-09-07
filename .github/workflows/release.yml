@@ -69,6 +69,7 @@ jobs:
 
           mkdir -p "$STAGE/opt/$APP_NAME"
           cp -r "$BUNDLE"/. "$STAGE/opt/$APP_NAME/"
+          rm -f "$STAGE/opt/$APP_NAME/data/flutter_assets/kernel_blob.bin"
 
           mkdir -p "$STAGE/usr/bin"
           {

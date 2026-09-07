@@ -136,6 +136,12 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get actionCopyToClipboard;
 
+  /// No description provided for @actionReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get actionReload;
+
   /// No description provided for @actionOk.
   ///
   /// In en, this message translates to:
@@ -147,6 +153,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get actionCancel;
+
+  /// No description provided for @actionCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get actionCreate;
+
+  /// No description provided for @actionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get actionRename;
 
   /// No description provided for @actionAdd.
   ///
@@ -165,6 +183,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duplicate'**
   String get actionDuplicate;
+
+  /// No description provided for @actionCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get actionCopy;
+
+  /// No description provided for @actionPasteEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing pasted'**
+  String get actionPasteEmptyTitle;
+
+  /// No description provided for @actionPasteEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard does not hold copied actions.'**
+  String get actionPasteEmptyDescription;
+
+  /// No description provided for @actionPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get actionPaste;
 
   /// No description provided for @actionUndo.
   ///
@@ -319,7 +361,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsInterface.
   ///
   /// In en, this message translates to:
-  /// **'Interface'**
+  /// **'Editor'**
   String get settingsInterface;
 
   /// No description provided for @settingsDeviceRules.
@@ -868,6 +910,12 @@ abstract class AppLocalizations {
   /// **'Text: {val}'**
   String tokenLabelText(String val);
 
+  /// No description provided for @tokenLabelTextCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Text from: {val}'**
+  String tokenLabelTextCommand(String val);
+
   /// No description provided for @tokenLabelMoveBy.
   ///
   /// In en, this message translates to:
@@ -910,6 +958,12 @@ abstract class AppLocalizations {
   /// **'Config saved.'**
   String get configSaveSuccess;
 
+  /// No description provided for @configSaveFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save your configuration'**
+  String get configSaveFailedTitle;
+
   /// No description provided for @configCopyToClipboardSuccess.
   ///
   /// In en, this message translates to:
@@ -933,6 +987,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load your configuration'**
   String get configLoadFailedTitle;
+
+  /// No description provided for @configIssuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 condition couldn\'t be read} other{{count} conditions couldn\'t be read}}'**
+  String configIssuesTitle(int count);
+
+  /// No description provided for @configIssuesDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'re shown read-only. Saving will overwrite them.'**
+  String get configIssuesDescription;
+
+  /// No description provided for @configIssuesDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The editor couldn\'t understand these conditions and shows them read-only. If you save, they\'ll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.'**
+  String get configIssuesDialogBody;
+
+  /// No description provided for @configIssuesUnnamedGesture.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed gesture'**
+  String get configIssuesUnnamedGesture;
+
+  /// No description provided for @gestureGroupUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get gestureGroupUnnamed;
+
+  /// Muted note under a trigger field whose value comes from an ancestor group.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from {group}: {value}'**
+  String inheritedFieldFrom(String group, String value);
+
+  /// Warning under a trigger field that both the gesture and an ancestor group set.
+  ///
+  /// In en, this message translates to:
+  /// **'Also set by {group}. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.'**
+  String inheritedFieldConflict(String group);
+
+  /// Title of the panel editing properties every gesture in a group inherits.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared properties'**
+  String get groupSettingsTitle;
+
+  /// No description provided for @groupSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Applies to 1 gesture} other{Applies to {count} gestures}}'**
+  String groupSettingsSubtitle(int count);
+
+  /// Explains group property inheritance and the daemon's lack of override support.
+  ///
+  /// In en, this message translates to:
+  /// **'Every gesture in this group inherits these.'**
+  String get groupSettingsDescription;
+
+  /// No description provided for @configIssuesDeviceRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Device rules'**
+  String get configIssuesDeviceRule;
+
+  /// No description provided for @configIssuesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'line {number}'**
+  String configIssuesLine(int number);
+
+  /// No description provided for @configIssuesSourceConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'conditions'**
+  String get configIssuesSourceConditions;
+
+  /// No description provided for @configIssuesSourceEndConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'end conditions'**
+  String get configIssuesSourceEndConditions;
+
+  /// No description provided for @configIssuesSourceActionConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'action conditions'**
+  String get configIssuesSourceActionConditions;
+
+  /// No description provided for @configIssuesSourceDeviceRule.
+  ///
+  /// In en, this message translates to:
+  /// **'device rule'**
+  String get configIssuesSourceDeviceRule;
 
   /// No description provided for @actionRetry.
   ///
@@ -975,6 +1125,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gesture YAML copied.'**
   String get gestureCopyYamlSuccess;
+
+  /// No description provided for @gestureDisabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DISABLED'**
+  String get gestureDisabledLabel;
 
   /// No description provided for @gestureMenuEnable.
   ///
@@ -1059,6 +1215,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No conditions set. Add a condition or group to specify when this gesture should trigger.'**
   String get triggerConditionsEmpty;
+
+  /// No description provided for @triggerEndConditionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.'**
+  String get triggerEndConditionsEmpty;
+
+  /// Header of the synthetic root grouping inherited group conditions with the gesture's own. Follows an ALL badge.
+  ///
+  /// In en, this message translates to:
+  /// **'must match: group conditions merged with this gesture\'s'**
+  String get conditionsMergedRootLabel;
+
+  /// Same header, shown while editing a group nested inside other groups.
+  ///
+  /// In en, this message translates to:
+  /// **'must match: conditions from enclosing groups merged with this group\'s'**
+  String get conditionsMergedRootLabelGroup;
+
+  /// Header of a read-only branch holding one ancestor group's conditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Inherited from {group}'**
+  String conditionsInheritedFrom(String group);
+
+  /// Tooltip on a read-only inherited condition branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Set on {group}. Open that group to change it.'**
+  String conditionsInheritedReadOnly(String group);
+
+  /// Placeholder row where the local conditions would be, when only inherited ones exist.
+  ///
+  /// In en, this message translates to:
+  /// **'No conditions of its own.'**
+  String get conditionsNoneOfItsOwn;
 
   /// No description provided for @triggerFieldIdLabel.
   ///
@@ -1438,6 +1630,12 @@ abstract class AppLocalizations {
   /// **'Conflicting'**
   String get actionChipConflicting;
 
+  /// No description provided for @actionChipDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get actionChipDelay;
+
   /// No description provided for @actionMetaCommandLabel.
   ///
   /// In en, this message translates to:
@@ -1534,6 +1732,168 @@ abstract class AppLocalizations {
   /// **'Hand-authored unsupported action config'**
   String get actionMetaRawSubtitle;
 
+  /// No description provided for @actionMetaGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First match'**
+  String get actionMetaGroupLabel;
+
+  /// No description provided for @actionMetaGroupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the first nested action whose conditions match'**
+  String get actionMetaGroupSubtitle;
+
+  /// No description provided for @actionGroupSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No actions} =1{1 action} other{{count} actions}}'**
+  String actionGroupSummary(int count);
+
+  /// No description provided for @actionGroupExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.'**
+  String get actionGroupExplanation;
+
+  /// No description provided for @actionGroupAddAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add action'**
+  String get actionGroupAddAction;
+
+  /// No description provided for @actionGroupFlowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What runs'**
+  String get actionGroupFlowTitle;
+
+  /// No description provided for @actionGroupFlowIf.
+  ///
+  /// In en, this message translates to:
+  /// **'If'**
+  String get actionGroupFlowIf;
+
+  /// No description provided for @actionGroupFlowElseIf.
+  ///
+  /// In en, this message translates to:
+  /// **'Else if'**
+  String get actionGroupFlowElseIf;
+
+  /// No description provided for @actionGroupFlowThen.
+  ///
+  /// In en, this message translates to:
+  /// **'Then'**
+  String get actionGroupFlowThen;
+
+  /// No description provided for @actionGroupFlowVerbRun.
+  ///
+  /// In en, this message translates to:
+  /// **'run'**
+  String get actionGroupFlowVerbRun;
+
+  /// No description provided for @actionGroupFlowVerbSend.
+  ///
+  /// In en, this message translates to:
+  /// **'send'**
+  String get actionGroupFlowVerbSend;
+
+  /// No description provided for @actionGroupFlowVerbTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'trigger'**
+  String get actionGroupFlowVerbTrigger;
+
+  /// No description provided for @actionGroupFlowAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always'**
+  String get actionGroupFlowAlways;
+
+  /// No description provided for @actionGroupFlowOtherwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Otherwise'**
+  String get actionGroupFlowOtherwise;
+
+  /// No description provided for @actionGroupFlowNeverRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'never runs'**
+  String get actionGroupFlowNeverRuns;
+
+  /// No description provided for @actionGroupFlowDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'disabled'**
+  String get actionGroupFlowDisabled;
+
+  /// No description provided for @actionGroupFlowEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No actions yet. Add a few and give them conditions to pick between them.'**
+  String get actionGroupFlowEmpty;
+
+  /// No description provided for @actionGroupFlowFirstAlwaysNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The first action has no conditions, so it always runs.'**
+  String get actionGroupFlowFirstAlwaysNote;
+
+  /// No description provided for @actionGroupFlowFirstAlwaysNoteRest.
+  ///
+  /// In en, this message translates to:
+  /// **'The first action has no conditions, so it always runs and the ones below it never do.'**
+  String get actionGroupFlowFirstAlwaysNoteRest;
+
+  /// No description provided for @conditionSummaryNot.
+  ///
+  /// In en, this message translates to:
+  /// **'not'**
+  String get conditionSummaryNot;
+
+  /// No description provided for @conditionSummaryAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'and'**
+  String get conditionSummaryAnd;
+
+  /// No description provided for @conditionSummaryOr.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get conditionSummaryOr;
+
+  /// No description provided for @conditionSummaryNoneOf.
+  ///
+  /// In en, this message translates to:
+  /// **'none of'**
+  String get conditionSummaryNoneOf;
+
+  /// No description provided for @conditionSummaryNoRules.
+  ///
+  /// In en, this message translates to:
+  /// **'no rules'**
+  String get conditionSummaryNoRules;
+
+  /// No description provided for @conditionSummaryFunction.
+  ///
+  /// In en, this message translates to:
+  /// **'custom function'**
+  String get conditionSummaryFunction;
+
+  /// No description provided for @conditionSummaryEmptyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get conditionSummaryEmptyValue;
+
+  /// No description provided for @actionsSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 action selected} other{{count} actions selected}}'**
+  String actionsSelectedCount(int count);
+
   /// No description provided for @actionSummaryNoCommand.
   ///
   /// In en, this message translates to:
@@ -1557,6 +1917,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No input'**
   String get actionSummaryNoInput;
+
+  /// No description provided for @actionSummaryNoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'No action'**
+  String get actionSummaryNoAction;
 
   /// No description provided for @actionSummaryNoKeys.
   ///
@@ -2467,8 +2833,14 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceTitle.
   ///
   /// In en, this message translates to:
-  /// **'Appearance'**
+  /// **'Editor'**
   String get appearanceTitle;
+
+  /// No description provided for @appearanceGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceGroupTitle;
 
   /// No description provided for @appearanceMinimizeToTrayLabel.
   ///
@@ -2530,11 +2902,41 @@ abstract class AppLocalizations {
   /// **'Neutral'**
   String get appearanceColorThemeNeutral;
 
+  /// No description provided for @appearanceColorThemeStone.
+  ///
+  /// In en, this message translates to:
+  /// **'Stone'**
+  String get appearanceColorThemeStone;
+
   /// No description provided for @appearanceColorThemeZinc.
   ///
   /// In en, this message translates to:
   /// **'Zinc'**
   String get appearanceColorThemeZinc;
+
+  /// No description provided for @appearanceColorThemeMauve.
+  ///
+  /// In en, this message translates to:
+  /// **'Mauve'**
+  String get appearanceColorThemeMauve;
+
+  /// No description provided for @appearanceColorThemeOlive.
+  ///
+  /// In en, this message translates to:
+  /// **'Olive'**
+  String get appearanceColorThemeOlive;
+
+  /// No description provided for @appearanceColorThemeMist.
+  ///
+  /// In en, this message translates to:
+  /// **'Mist'**
+  String get appearanceColorThemeMist;
+
+  /// No description provided for @appearanceColorThemeTaupe.
+  ///
+  /// In en, this message translates to:
+  /// **'Taupe'**
+  String get appearanceColorThemeTaupe;
 
   /// No description provided for @appearanceColorThemeSlate.
   ///
@@ -2542,11 +2944,35 @@ abstract class AppLocalizations {
   /// **'Slate'**
   String get appearanceColorThemeSlate;
 
+  /// No description provided for @appearanceColorThemeAmber.
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get appearanceColorThemeAmber;
+
   /// No description provided for @appearanceColorThemeBlue.
   ///
   /// In en, this message translates to:
   /// **'Blue'**
   String get appearanceColorThemeBlue;
+
+  /// No description provided for @appearanceColorThemeCyan.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get appearanceColorThemeCyan;
+
+  /// No description provided for @appearanceColorThemeEmerald.
+  ///
+  /// In en, this message translates to:
+  /// **'Emerald'**
+  String get appearanceColorThemeEmerald;
+
+  /// No description provided for @appearanceColorThemeFuchsia.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuchsia'**
+  String get appearanceColorThemeFuchsia;
 
   /// No description provided for @appearanceColorThemeGreen.
   ///
@@ -2554,11 +2980,35 @@ abstract class AppLocalizations {
   /// **'Green'**
   String get appearanceColorThemeGreen;
 
+  /// No description provided for @appearanceColorThemeIndigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get appearanceColorThemeIndigo;
+
+  /// No description provided for @appearanceColorThemeLime.
+  ///
+  /// In en, this message translates to:
+  /// **'Lime'**
+  String get appearanceColorThemeLime;
+
   /// No description provided for @appearanceColorThemeOrange.
   ///
   /// In en, this message translates to:
   /// **'Orange'**
   String get appearanceColorThemeOrange;
+
+  /// No description provided for @appearanceColorThemePink.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get appearanceColorThemePink;
+
+  /// No description provided for @appearanceColorThemePurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get appearanceColorThemePurple;
 
   /// No description provided for @appearanceColorThemeRed.
   ///
@@ -2572,6 +3022,18 @@ abstract class AppLocalizations {
   /// **'Rose'**
   String get appearanceColorThemeRose;
 
+  /// No description provided for @appearanceColorThemeSky.
+  ///
+  /// In en, this message translates to:
+  /// **'Sky'**
+  String get appearanceColorThemeSky;
+
+  /// No description provided for @appearanceColorThemeTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get appearanceColorThemeTeal;
+
   /// No description provided for @appearanceColorThemeViolet.
   ///
   /// In en, this message translates to:
@@ -2583,6 +3045,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yellow'**
   String get appearanceColorThemeYellow;
+
+  /// No description provided for @appearanceColorThemeGroupBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base'**
+  String get appearanceColorThemeGroupBase;
+
+  /// No description provided for @appearanceColorThemeGroupPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary'**
+  String get appearanceColorThemeGroupPrimary;
+
+  /// No description provided for @backupsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Config backups'**
+  String get backupsLabel;
+
+  /// No description provided for @backupsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep copies of the previous config in .backups'**
+  String get backupsSubtitle;
+
+  /// No description provided for @backupsCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Backups kept'**
+  String get backupsCountLabel;
 
   /// No description provided for @historyTitle.
   ///
@@ -3076,6 +3568,36 @@ abstract class AppLocalizations {
   /// **'Rows are AND-ed. Use an \"any\" group inside for OR logic.'**
   String get tooltip_triggerConditions_noteAnd;
 
+  /// No description provided for @tooltip_pointPixels_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Previews the position or size of the selected fraction in pixels.'**
+  String get tooltip_pointPixels_body;
+
+  /// No description provided for @tooltip_pointPixels_sectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On the chosen resolution'**
+  String get tooltip_pointPixels_sectionLabel;
+
+  /// No description provided for @tooltip_pointPixels_pointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'a point: the pointer position'**
+  String get tooltip_pointPixels_pointLabel;
+
+  /// No description provided for @tooltip_pointPixels_rangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'a range: the size of the area'**
+  String get tooltip_pointPixels_rangeLabel;
+
+  /// No description provided for @tooltip_pointPixels_notePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the preview changes. The value stays a fraction of the screen, so it works on any display.'**
+  String get tooltip_pointPixels_notePreview;
+
   /// No description provided for @tooltip_triggerEndConditions_body.
   ///
   /// In en, this message translates to:
@@ -3237,6 +3759,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disable for uniform response, e.g. fixed key per tick.'**
   String get tooltip_triggerAccelerated_bulletOff;
+
+  /// No description provided for @tooltip_triggerLockPointer_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.'**
+  String get tooltip_triggerLockPointer_body;
+
+  /// No description provided for @tooltip_triggerLockPointer_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Locks the pointer for every motion trigger active at the same time, not just this one.'**
+  String get tooltip_triggerLockPointer_warning;
 
   /// No description provided for @tooltip_triggerBlockEvents_body.
   ///
@@ -3580,11 +4114,41 @@ abstract class AppLocalizations {
   /// **'() => initialDirection = \"l\"'**
   String get actionFunctionHint;
 
+  /// No description provided for @dialogNewGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New group'**
+  String get dialogNewGroupTitle;
+
+  /// No description provided for @dialogNewSubgroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New subgroup'**
+  String get dialogNewSubgroupTitle;
+
+  /// No description provided for @dialogRenameGroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename group'**
+  String get dialogRenameGroupTitle;
+
+  /// No description provided for @gesturePasteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard holds no gestures for this device.'**
+  String get gesturePasteEmpty;
+
   /// No description provided for @groupMenuRename.
   ///
   /// In en, this message translates to:
   /// **'Rename'**
   String get groupMenuRename;
+
+  /// No description provided for @groupMenuNewSubgroup.
+  ///
+  /// In en, this message translates to:
+  /// **'New subgroup'**
+  String get groupMenuNewSubgroup;
 
   /// No description provided for @groupMenuBreakdown.
   ///
@@ -3615,12 +4179,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid stroke data'**
   String get strokeRowInvalidData;
-
-  /// No description provided for @strokePreviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stroke preview'**
-  String get strokePreviewTitle;
 
   /// No description provided for @inputDevicesLabel.
   ///
@@ -3736,6 +4294,36 @@ abstract class AppLocalizations {
   /// **'Text to type'**
   String get inputTextToTypeLabel;
 
+  /// No description provided for @inputTextCommandMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get inputTextCommandMode;
+
+  /// No description provided for @inputTextCommandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs the command in a shell and types its standard output. Variables can be referenced by name.'**
+  String get inputTextCommandTooltip;
+
+  /// No description provided for @inputTextCommandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'date'**
+  String get inputTextCommandHint;
+
+  /// No description provided for @inputDelayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delay'**
+  String get inputDelayLabel;
+
+  /// No description provided for @inputDelayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.'**
+  String get inputDelayTooltip;
+
   /// No description provided for @inputDeviceFieldLabel.
   ///
   /// In en, this message translates to:
@@ -3781,7 +4369,7 @@ abstract class AppLocalizations {
   /// No description provided for @motionSpeedTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.'**
+  /// **'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.'**
   String get motionSpeedTooltip;
 
   /// No description provided for @motionLockPointerLabel.
@@ -3790,11 +4378,47 @@ abstract class AppLocalizations {
   /// **'Lock pointer'**
   String get motionLockPointerLabel;
 
-  /// No description provided for @motionLockPointerTooltip.
+  /// No description provided for @numberRangeBetween.
   ///
   /// In en, this message translates to:
-  /// **'Prevent the pointer from moving on screen while this gesture is active.'**
-  String get motionLockPointerTooltip;
+  /// **'Must be {min} to {max}'**
+  String numberRangeBetween(String min, String max);
+
+  /// No description provided for @numberRangeMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at least {min}'**
+  String numberRangeMin(String min);
+
+  /// No description provided for @numberRangeMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be at most {max}'**
+  String numberRangeMax(String max);
+
+  /// No description provided for @numberRangeWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole numbers only'**
+  String get numberRangeWhole;
+
+  /// No description provided for @pointRangeFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get pointRangeFromLabel;
+
+  /// No description provided for @pointRangeToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get pointRangeToLabel;
+
+  /// No description provided for @pointPixelReadoutPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'on'**
+  String get pointPixelReadoutPrefix;
 
   /// No description provided for @swipeMinAngleLabel.
   ///
@@ -4473,6 +5097,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Number of fingers'**
   String get varLabel_fingers;
+
+  /// No description provided for @varLabel_maxFingerDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Max finger distance %'**
+  String get varLabel_maxFingerDistance;
 
   /// No description provided for @varLabel_keyboardModifiers.
   ///

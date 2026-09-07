@@ -8,6 +8,7 @@ import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MouseButtonsField extends ConsumerWidget {
@@ -58,31 +59,37 @@ class MouseButtonsField extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final btn in MouseButtonValue.values)
-                _ButtonChip(
-                  label: _label(btn),
-                  order: buttons.indexOf(btn),
-                  onTap: () {
-                    final next = buttons.contains(btn)
-                        ? buttons.where((b) => b != btn).toList()
-                        : [...buttons, btn];
-                    buttonsField.onChanged(next);
-                  },
-                ),
-            ],
+          RevealedField(
+            field: ConfigDirtyField.gestureMouseButtons,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final btn in MouseButtonValue.values)
+                  _ButtonChip(
+                    label: _label(btn),
+                    order: buttons.indexOf(btn),
+                    onTap: () {
+                      final next = buttons.contains(btn)
+                          ? buttons.where((b) => b != btn).toList()
+                          : [...buttons, btn];
+                      buttonsField.onChanged(next);
+                    },
+                  ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(top: 16),
-            child: FCheckbox(
-              value: exactOrderField.value,
-              onChange: exactOrderField.onChanged,
-              label: LabelWithTooltip(
-                label: context.l10n.mouseButtonsExactOrderLabel,
-                tooltip: context.l10n.mouseButtonsExactOrderTooltip,
+            child: RevealedField(
+              field: ConfigDirtyField.gestureMouseButtonsExactOrder,
+              child: FCheckbox(
+                value: exactOrderField.value,
+                onChange: exactOrderField.onChanged,
+                label: LabelWithTooltip(
+                  label: context.l10n.mouseButtonsExactOrderLabel,
+                  tooltip: context.l10n.mouseButtonsExactOrderTooltip,
+                ),
               ),
             ),
           ).appearToggle(visible: buttons.length > 1),

@@ -1,15 +1,21 @@
 import 'package:collection/collection.dart';
 import 'package:edit_schema_generator/edit_schema_generator.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/bulk_edit_view.dart';
+
+/// See [ConfigController.tagEdits].
+void tagEdits(BuildContext context, Object source, VoidCallback run) =>
+    ProviderScope.containerOf(
+      context,
+    ).read(configControllerProvider.notifier).tagEdits(source, run);
 
 class EditableField<T> {
   const EditableField({
@@ -66,11 +72,24 @@ class SchemaEditableField<T> {
 }
 
 extension FieldAccess on WidgetRef {
+  EditableField<T> settingsField<T>(
+    Lens<Config, T> lens, {
+    DirtyMarkState? dirty,
+    T Function()? fallbackValue,
+    bool Function(Config config)? canRead,
+  }) => field<T>(
+    lens,
+    dirty: dirty,
+    fallbackValue: fallbackValue,
+    canRead: canRead,
+    scope: const SettingsScope(),
+  );
+
   EditableField<T> field<T>(
     Lens<Config, T> lens, {
     DirtyMarkState? dirty,
     T Function()? fallbackValue,
-    Object? scope,
+    EditScope? scope,
     bool Function(Config config)? canRead,
   }) {
     final controller = read(configControllerProvider.notifier);
@@ -101,7 +120,7 @@ extension FieldAccess on WidgetRef {
     GeneratedEditField<Config, TLocation, T, Lens<Config, T>> field, {
     required TLocation location,
     DirtyMarkState? dirty,
-    Object? scope,
+    EditScope? scope,
     bool Function(Config config)? canRead,
   }) {
     final editable = this.field<T>(
@@ -146,7 +165,7 @@ extension FieldAccess on WidgetRef {
           [for (final loc in selection) SetLens<T>(lensFor(loc), value)],
           label: 'bulk edit ${lensFor(selection.first).name}',
         ),
-        scope: bulkEditScope,
+        scope: const GesturesScope(),
       ),
       onRevert: null,
     );

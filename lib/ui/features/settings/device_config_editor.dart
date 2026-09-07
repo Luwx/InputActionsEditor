@@ -14,6 +14,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
+import 'package:input_actions_editor/ui/features/settings/number_input_formatters.dart';
 import 'package:input_actions_editor/ui/features/settings/speed_settings_editor.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
@@ -145,13 +146,13 @@ class _DevicePropertiesSection extends ConsumerWidget {
         _ => RootConfigDirtyField.mouseDeviceProperties,
       }),
     );
-    final propertiesField = ref.field(
+    final propertiesField = ref.settingsField(
       defaultDevicePropertiesLens(device),
     );
 
     EditableField<T> field<T>(
       Lens<Config, T> Function(DeviceType device) lens,
-    ) => ref.field(lens(device));
+    ) => ref.settingsField(lens(device));
 
     Widget dirtyTitle<T>(EditableField<T> field, String label) {
       return UnsavedLabel(
@@ -431,10 +432,24 @@ class _NumberField extends HookWidget {
       controller.text = _fmt(value);
     }
 
+    void set(double? next) {
+      if (next != value) onChanged(next);
+    }
+
+    void emit(String text) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        set(null);
+        return;
+      }
+      final parsed = double.tryParse(trimmed);
+      if (parsed != null) set(parsed);
+    }
+
     void commit(String text) {
       final trimmed = text.trim();
       if (trimmed.isEmpty) {
-        onChanged(null);
+        set(null);
         return;
       }
       final parsed = double.tryParse(trimmed);
@@ -447,8 +462,8 @@ class _NumberField extends HookWidget {
       final mx = max;
       if (mn != null && clamped < mn) clamped = mn;
       if (mx != null && clamped > mx) clamped = mx;
-      onChanged(clamped);
-      if (clamped != parsed) controller.text = _fmt(clamped);
+      set(clamped);
+      controller.text = _fmt(clamped);
     }
 
     return SizedBox(
@@ -459,9 +474,12 @@ class _NumberField extends HookWidget {
           if (!f) commit(controller.text);
         },
         child: FTextField(
+          inputFormatters: [
+            if (isInt) integerOnlyFormatter else decimalOnlyFormatter,
+          ],
           control: FTextFieldControl.managed(
             controller: controller,
-            onChange: (_) {},
+            onChange: (value) => emit(value.text),
           ),
           hint: context.l10n.fieldDefaultHint,
           onSubmit: commit,

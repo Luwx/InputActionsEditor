@@ -30,10 +30,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
+  String get actionReload => 'Reload';
+
+  @override
   String get actionOk => 'OK';
 
   @override
   String get actionCancel => 'Cancel';
+
+  @override
+  String get actionCreate => 'Create';
+
+  @override
+  String get actionRename => 'Rename';
 
   @override
   String get actionAdd => 'Add';
@@ -43,6 +52,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionDuplicate => 'Duplicate';
+
+  @override
+  String get actionCopy => 'Copy';
+
+  @override
+  String get actionPasteEmptyTitle => 'Nothing pasted';
+
+  @override
+  String get actionPasteEmptyDescription =>
+      'The clipboard does not hold copied actions.';
+
+  @override
+  String get actionPaste => 'Paste';
 
   @override
   String get actionUndo => 'Undo';
@@ -120,7 +142,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsEffect => 'Effect';
 
   @override
-  String get settingsInterface => 'Interface';
+  String get settingsInterface => 'Editor';
 
   @override
   String get settingsDeviceRules => 'Device Rules';
@@ -398,6 +420,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String tokenLabelTextCommand(String val) {
+    return 'Text from: $val';
+  }
+
+  @override
   String tokenLabelMoveBy(String v1, String v2) {
     return 'Move by $v1, $v2';
   }
@@ -427,6 +454,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configSaveSuccess => 'Config saved.';
 
   @override
+  String get configSaveFailedTitle => 'Couldn\'t save your configuration';
+
+  @override
   String get configCopyToClipboardSuccess => 'Config copied to clipboard.';
 
   @override
@@ -437,6 +467,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configLoadFailedTitle => 'Couldn\'t load your configuration';
+
+  @override
+  String configIssuesTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count conditions couldn\'t be read',
+      one: '1 condition couldn\'t be read',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get configIssuesDescription =>
+      'They\'re shown read-only. Saving will overwrite them.';
+
+  @override
+  String get configIssuesDialogBody =>
+      'The editor couldn\'t understand these conditions and shows them read-only. If you save, they\'ll be written back in the form below, losing whatever the file originally said. Fix them in a text editor first.';
+
+  @override
+  String get configIssuesUnnamedGesture => 'Unnamed gesture';
+
+  @override
+  String get gestureGroupUnnamed => 'Group';
+
+  @override
+  String inheritedFieldFrom(String group, String value) {
+    return 'Inherited from $group: $value';
+  }
+
+  @override
+  String inheritedFieldConflict(String group) {
+    return 'Also set by $group. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.';
+  }
+
+  @override
+  String get groupSettingsTitle => 'Shared properties';
+
+  @override
+  String groupSettingsSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Applies to $count gestures',
+      one: 'Applies to 1 gesture',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupSettingsDescription =>
+      'Every gesture in this group inherits these.';
+
+  @override
+  String get configIssuesDeviceRule => 'Device rules';
+
+  @override
+  String configIssuesLine(int number) {
+    return 'line $number';
+  }
+
+  @override
+  String get configIssuesSourceConditions => 'conditions';
+
+  @override
+  String get configIssuesSourceEndConditions => 'end conditions';
+
+  @override
+  String get configIssuesSourceActionConditions => 'action conditions';
+
+  @override
+  String get configIssuesSourceDeviceRule => 'device rule';
 
   @override
   String get actionRetry => 'Retry';
@@ -459,6 +562,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gestureCopyYamlSuccess => 'Gesture YAML copied.';
+
+  @override
+  String get gestureDisabledLabel => 'DISABLED';
 
   @override
   String get gestureMenuEnable => 'Enable';
@@ -518,6 +624,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get triggerConditionsEmpty =>
       'No conditions set. Add a condition or group to specify when this gesture should trigger.';
+
+  @override
+  String get triggerEndConditionsEmpty =>
+      'No end conditions set. Add a condition or group to decide whether this gesture ends normally or is cancelled.';
+
+  @override
+  String get conditionsMergedRootLabel =>
+      'must match: group conditions merged with this gesture\'s';
+
+  @override
+  String get conditionsMergedRootLabelGroup =>
+      'must match: conditions from enclosing groups merged with this group\'s';
+
+  @override
+  String conditionsInheritedFrom(String group) {
+    return 'Inherited from $group';
+  }
+
+  @override
+  String conditionsInheritedReadOnly(String group) {
+    return 'Set on $group. Open that group to change it.';
+  }
+
+  @override
+  String get conditionsNoneOfItsOwn => 'No conditions of its own.';
 
   @override
   String get triggerFieldIdLabel => 'ID';
@@ -723,6 +854,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionChipConflicting => 'Conflicting';
 
   @override
+  String get actionChipDelay => 'Delay';
+
+  @override
   String get actionMetaCommandLabel => 'Command';
 
   @override
@@ -772,6 +906,109 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaRawSubtitle => 'Hand-authored unsupported action config';
 
   @override
+  String get actionMetaGroupLabel => 'First match';
+
+  @override
+  String get actionMetaGroupSubtitle =>
+      'Runs the first nested action whose conditions match';
+
+  @override
+  String actionGroupSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+      zero: 'No actions',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionGroupExplanation =>
+      'Only one of the nested actions runs: the first one whose conditions match. The rest are skipped.';
+
+  @override
+  String get actionGroupAddAction => 'Add action';
+
+  @override
+  String get actionGroupFlowTitle => 'What runs';
+
+  @override
+  String get actionGroupFlowIf => 'If';
+
+  @override
+  String get actionGroupFlowElseIf => 'Else if';
+
+  @override
+  String get actionGroupFlowThen => 'Then';
+
+  @override
+  String get actionGroupFlowVerbRun => 'run';
+
+  @override
+  String get actionGroupFlowVerbSend => 'send';
+
+  @override
+  String get actionGroupFlowVerbTrigger => 'trigger';
+
+  @override
+  String get actionGroupFlowAlways => 'Always';
+
+  @override
+  String get actionGroupFlowOtherwise => 'Otherwise';
+
+  @override
+  String get actionGroupFlowNeverRuns => 'never runs';
+
+  @override
+  String get actionGroupFlowDisabled => 'disabled';
+
+  @override
+  String get actionGroupFlowEmpty =>
+      'No actions yet. Add a few and give them conditions to pick between them.';
+
+  @override
+  String get actionGroupFlowFirstAlwaysNote =>
+      'The first action has no conditions, so it always runs.';
+
+  @override
+  String get actionGroupFlowFirstAlwaysNoteRest =>
+      'The first action has no conditions, so it always runs and the ones below it never do.';
+
+  @override
+  String get conditionSummaryNot => 'not';
+
+  @override
+  String get conditionSummaryAnd => 'and';
+
+  @override
+  String get conditionSummaryOr => 'or';
+
+  @override
+  String get conditionSummaryNoneOf => 'none of';
+
+  @override
+  String get conditionSummaryNoRules => 'no rules';
+
+  @override
+  String get conditionSummaryFunction => 'custom function';
+
+  @override
+  String get conditionSummaryEmptyValue => '(empty)';
+
+  @override
+  String actionsSelectedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions selected',
+      one: '1 action selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get actionSummaryNoCommand => 'No command';
 
   @override
@@ -782,6 +1019,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionSummaryNoInput => 'No input';
+
+  @override
+  String get actionSummaryNoAction => 'No action';
 
   @override
   String get actionSummaryNoKeys => 'No keys';
@@ -1339,7 +1579,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keyboard keys that can be pressed in any order and held for 2 seconds to suspend InputActions until the next config reload. Set to empty to disable.';
 
   @override
-  String get appearanceTitle => 'Appearance';
+  String get appearanceTitle => 'Editor';
+
+  @override
+  String get appearanceGroupTitle => 'Appearance';
 
   @override
   String get appearanceMinimizeToTrayLabel => 'Minimize to tray';
@@ -1373,19 +1616,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceColorThemeNeutral => 'Neutral';
 
   @override
+  String get appearanceColorThemeStone => 'Stone';
+
+  @override
   String get appearanceColorThemeZinc => 'Zinc';
+
+  @override
+  String get appearanceColorThemeMauve => 'Mauve';
+
+  @override
+  String get appearanceColorThemeOlive => 'Olive';
+
+  @override
+  String get appearanceColorThemeMist => 'Mist';
+
+  @override
+  String get appearanceColorThemeTaupe => 'Taupe';
 
   @override
   String get appearanceColorThemeSlate => 'Slate';
 
   @override
+  String get appearanceColorThemeAmber => 'Amber';
+
+  @override
   String get appearanceColorThemeBlue => 'Blue';
+
+  @override
+  String get appearanceColorThemeCyan => 'Cyan';
+
+  @override
+  String get appearanceColorThemeEmerald => 'Emerald';
+
+  @override
+  String get appearanceColorThemeFuchsia => 'Fuchsia';
 
   @override
   String get appearanceColorThemeGreen => 'Green';
 
   @override
+  String get appearanceColorThemeIndigo => 'Indigo';
+
+  @override
+  String get appearanceColorThemeLime => 'Lime';
+
+  @override
   String get appearanceColorThemeOrange => 'Orange';
+
+  @override
+  String get appearanceColorThemePink => 'Pink';
+
+  @override
+  String get appearanceColorThemePurple => 'Purple';
 
   @override
   String get appearanceColorThemeRed => 'Red';
@@ -1394,10 +1676,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceColorThemeRose => 'Rose';
 
   @override
+  String get appearanceColorThemeSky => 'Sky';
+
+  @override
+  String get appearanceColorThemeTeal => 'Teal';
+
+  @override
   String get appearanceColorThemeViolet => 'Violet';
 
   @override
   String get appearanceColorThemeYellow => 'Yellow';
+
+  @override
+  String get appearanceColorThemeGroupBase => 'Base';
+
+  @override
+  String get appearanceColorThemeGroupPrimary => 'Primary';
+
+  @override
+  String get backupsLabel => 'Config backups';
+
+  @override
+  String get backupsSubtitle =>
+      'Keep copies of the previous config in .backups';
+
+  @override
+  String get backupsCountLabel => 'Backups kept';
 
   @override
   String get historyTitle => 'Recognition History';
@@ -1697,6 +2001,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Rows are AND-ed. Use an \"any\" group inside for OR logic.';
 
   @override
+  String get tooltip_pointPixels_body =>
+      'Previews the position or size of the selected fraction in pixels.';
+
+  @override
+  String get tooltip_pointPixels_sectionLabel => 'On the chosen resolution';
+
+  @override
+  String get tooltip_pointPixels_pointLabel => 'a point: the pointer position';
+
+  @override
+  String get tooltip_pointPixels_rangeLabel => 'a range: the size of the area';
+
+  @override
+  String get tooltip_pointPixels_notePreview =>
+      'Only the preview changes. The value stays a fraction of the screen, so it works on any display.';
+
+  @override
   String get tooltip_triggerEndConditions_body =>
       'Checked at the moment the gesture ends.';
 
@@ -1792,6 +2113,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tooltip_triggerAccelerated_bulletOff =>
       'Disable for uniform response, e.g. fixed key per tick.';
+
+  @override
+  String get tooltip_triggerLockPointer_body =>
+      'Freeze the on-screen pointer while this gesture is running, so the cursor stays put as you draw or swipe.';
+
+  @override
+  String get tooltip_triggerLockPointer_warning =>
+      'Locks the pointer for every motion trigger active at the same time, not just this one.';
 
   @override
   String get tooltip_triggerBlockEvents_body =>
@@ -1985,7 +2314,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionFunctionHint => '() => initialDirection = \"l\"';
 
   @override
+  String get dialogNewGroupTitle => 'New group';
+
+  @override
+  String get dialogNewSubgroupTitle => 'New subgroup';
+
+  @override
+  String get dialogRenameGroupTitle => 'Rename group';
+
+  @override
+  String get gesturePasteEmpty =>
+      'The clipboard holds no gestures for this device.';
+
+  @override
   String get groupMenuRename => 'Rename';
+
+  @override
+  String get groupMenuNewSubgroup => 'New subgroup';
 
   @override
   String get groupMenuBreakdown => 'Ungroup';
@@ -2005,9 +2350,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get strokeRowInvalidData => 'Invalid stroke data';
-
-  @override
-  String get strokePreviewTitle => 'Stroke preview';
 
   @override
   String get inputDevicesLabel => 'Input devices';
@@ -2067,6 +2409,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputTextToTypeLabel => 'Text to type';
 
   @override
+  String get inputTextCommandMode => 'Command';
+
+  @override
+  String get inputTextCommandTooltip =>
+      'Runs the command in a shell and types its standard output. Variables can be referenced by name.';
+
+  @override
+  String get inputTextCommandHint => 'date';
+
+  @override
+  String get inputDelayLabel => 'Delay';
+
+  @override
+  String get inputDelayTooltip =>
+      'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.';
+
+  @override
   String get inputDeviceFieldLabel => 'Device';
 
   @override
@@ -2092,14 +2451,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motionSpeedTooltip =>
-      'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both.';
+      'Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.';
 
   @override
   String get motionLockPointerLabel => 'Lock pointer';
 
   @override
-  String get motionLockPointerTooltip =>
-      'Prevent the pointer from moving on screen while this gesture is active.';
+  String numberRangeBetween(String min, String max) {
+    return 'Must be $min to $max';
+  }
+
+  @override
+  String numberRangeMin(String min) {
+    return 'Must be at least $min';
+  }
+
+  @override
+  String numberRangeMax(String max) {
+    return 'Must be at most $max';
+  }
+
+  @override
+  String get numberRangeWhole => 'Whole numbers only';
+
+  @override
+  String get pointRangeFromLabel => 'From';
+
+  @override
+  String get pointRangeToLabel => 'To';
+
+  @override
+  String get pointPixelReadoutPrefix => 'on';
 
   @override
   String get swipeMinAngleLabel => 'Min angle °';
@@ -2469,6 +2851,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get varLabel_fingers => 'Number of fingers';
+
+  @override
+  String get varLabel_maxFingerDistance => 'Max finger distance %';
 
   @override
   String get varLabel_keyboardModifiers => 'Held modifier keys';

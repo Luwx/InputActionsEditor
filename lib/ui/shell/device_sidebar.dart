@@ -1,4 +1,8 @@
+import 'dart:async' show unawaited;
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,9 +12,15 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
-import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
+import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_navigation.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/app_sidebar.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/app_sidebar_group.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/app_sidebar_item.dart';
+import 'package:input_actions_editor/ui/shell/sidebar/widgets/sidebar_collapse_fade.dart';
 
 class DeviceSidebar extends HookConsumerWidget {
   const DeviceSidebar({super.key});
@@ -27,34 +37,14 @@ class DeviceSidebar extends HookConsumerWidget {
     final currentView = ref.watch(currentViewProvider);
     final isGestures = currentView == AppView.gestures;
     final configController = ref.read(configControllerProvider.notifier);
+    final configLoaded = ref.watch(
+      configControllerProvider.select((config) => config.hasValue),
+    );
     // Only rebuilds when discardability flips, not on every edit.
     final canDiscard = ref.watch(canDiscardChangesProvider);
     final canSave = ref.watch(isDirtyProvider);
 
-    void goToDevice(DeviceType? device) {
-      final currentView = ref.read(currentViewProvider);
-      final currentFilter = ref.read(deviceFilterProvider);
-      final changingFilter =
-          currentView != AppView.gestures || currentFilter != device;
-
-      if (changingFilter) {
-        final config = ref.read(configControllerProvider).value?.draft;
-        final first = config == null
-            ? null
-            : firstGestureForFilter(config, device);
-        if (first != null) {
-          context.goToGesturesSelectFirst(filter: device, location: first);
-          return;
-        }
-      }
-
-      context.goToGestures(device: device);
-    }
-
-    return FSidebar.raw(
-      style: const .delta(
-        constraints: BoxConstraints(maxWidth: 180),
-      ),
+    return AppSidebar(
       child: Column(
         children: [
           Expanded(
@@ -64,136 +54,64 @@ class DeviceSidebar extends HookConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 2,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, left: 16),
+                  SidebarCollapseBuilder(
+                    builder: (context, progress, child) => Padding(
+                      padding: EdgeInsetsDirectional.only(
+                        top: 2,
+                        start: lerpDouble(12, 16, progress)!,
+                        end: lerpDouble(12, 4, progress)!,
+                      ),
+                      child: child,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              'Input Actions',
-                              style: context.theme.typography.body.lg.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                        Expanded(
+                          child: SidebarCollapseFade(
+                            clip: true,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  'Input Actions',
+                                  style: context.theme.typography.body.lg
+                                      .copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Editor',
+                                  style: context.theme.typography.body.xs
+                                      .copyWith(
+                                        color: context
+                                            .theme
+                                            .colors
+                                            .mutedForeground,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: 1.8,
+                                        fontFamily: 'monospace',
+                                      ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Editor',
-                              style: context.theme.typography.body.xs.copyWith(
-                                color: context.theme.colors.mutedForeground,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 1.8,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const Spacer(),
                         FPopoverMenu(
+                          // The default 250 cuts the longest labels off once
+                          // their shortcut hint is beside them.
+                          style: const .delta(maxWidth: 340),
                           menuAnchor: .topRight,
                           childAnchor: .bottomLeft,
-                          menuBuilder: (context, controller, _) => [
-                            .group(
-                              children: [
-                                .item(
-                                  prefix: const Icon(FLucideIcons.filePlus2),
-                                  title: Text(l10n.actionNew),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await newConfigDocument(rootContext, ref);
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.folderOpen),
-                                  title: Text(l10n.actionLoad),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await loadConfigDocument(rootContext, ref);
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.clipboard),
-                                  title: Text(l10n.actionLoadFromClipboard),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await loadConfigFromClipboard(
-                                      rootContext,
-                                      ref,
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            .group(
-                              children: [
-                                .item(
-                                  prefix: const Icon(FLucideIcons.save),
-                                  title: Text(l10n.actionSave),
-                                  enabled: canSave,
-                                  onPress: canSave
-                                      ? () async {
-                                          await controller.hide();
-                                          await configController.save();
-                                          if (!rootContext.mounted) return;
-                                          showFToast(
-                                            context: rootContext,
-                                            title: Text(l10n.configSaveSuccess),
-                                            suffixBuilder: (context, entry) =>
-                                                FButton.icon(
-                                                  onPress: entry.dismiss,
-                                                  child: const Icon(
-                                                    FLucideIcons.x,
-                                                  ),
-                                                ),
-                                            duration: const Duration(
-                                              seconds: 3,
-                                            ),
-                                          );
-                                        }
-                                      : null,
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.save),
-                                  title: Text(l10n.actionSaveAs),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    await configController.saveAs();
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(
-                                    FLucideIcons.clipboardCopy,
-                                  ),
-                                  title: Text(l10n.actionCopyToClipboard),
-                                  onPress: () async {
-                                    await controller.hide();
-                                    if (!rootContext.mounted) return;
-                                    await copyConfigToClipboard(
-                                      rootContext,
-                                      configController,
-                                    );
-                                  },
-                                ),
-                                .item(
-                                  prefix: const Icon(FLucideIcons.undo2),
-                                  title: Text(l10n.actionDiscardChanges),
-                                  enabled: canDiscard,
-                                  onPress: canDiscard
-                                      ? () async {
-                                          await controller.hide();
-                                          configController.discardChanges();
-                                        }
-                                      : null,
-                                ),
-                              ],
-                            ),
-                          ],
+                          menuBuilder: (context, controller, _) =>
+                              _fileMenuItems(
+                                l10n: l10n,
+                                controller: controller,
+                                rootContext: rootContext,
+                                ref: ref,
+                                configController: configController,
+                                canSave: canSave,
+                                canDiscard: canDiscard,
+                              ),
                           builder: (context, controller, _) => FButton.icon(
                             variant: .ghost,
                             size: .sm,
@@ -201,58 +119,65 @@ class DeviceSidebar extends HookConsumerWidget {
                             child: const Icon(FLucideIcons.menu, size: 13),
                           ),
                         ),
-                        const SizedBox(width: 4),
                       ],
                     ),
                   ),
                   const SizedBox(height: 4),
                   const SizedBox(height: 8),
                   const SizedBox(height: 4),
-                  FSidebarGroup(
+                  AppSidebarGroup(
                     label: Text(l10n.sidebarDeviceGesturesGroup),
                     children: [
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.list),
                         label: Text(l10n.sidebarAllDevices),
                         selected: isGestures && deviceFilter == null,
-                        onPress: () => goToDevice(null),
+                        onPress: () => goToDeviceFilter(context, ref, null),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.mouse),
                         label: Text(l10n.deviceTypeMouse),
                         selected: isGestures && deviceFilter == .mouse,
-                        onPress: () => goToDevice(DeviceType.mouse),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.mouse),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.mousePointer2),
                         label: Text(l10n.deviceTypePointer),
                         selected: isGestures && deviceFilter == .pointer,
-                        onPress: () => goToDevice(DeviceType.pointer),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.pointer),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.keyboard),
                         label: Text(l10n.deviceTypeKeyboard),
                         selected: isGestures && deviceFilter == .keyboard,
-                        onPress: () => goToDevice(DeviceType.keyboard),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.keyboard),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.touchpad),
                         label: Text(l10n.deviceTypeTouchpad),
                         selected: isGestures && deviceFilter == .touchpad,
-                        onPress: () => goToDevice(DeviceType.touchpad),
+                        onPress: () =>
+                            goToDeviceFilter(context, ref, DeviceType.touchpad),
                       ),
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.monitor),
                         label: Text(l10n.deviceTypeTouchscreen),
                         selected: isGestures && deviceFilter == .touchscreen,
-                        onPress: () => goToDevice(DeviceType.touchscreen),
+                        onPress: () => goToDeviceFilter(
+                          context,
+                          ref,
+                          DeviceType.touchscreen,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  FSidebarGroup(
+                  AppSidebarGroup(
                     children: [
-                      FSidebarItem(
+                      AppSidebarItem(
                         icon: const Icon(FLucideIcons.history),
                         label: Text(l10n.navHistory),
                         selected: currentView == AppView.history,
@@ -264,13 +189,15 @@ class DeviceSidebar extends HookConsumerWidget {
               ),
             ),
           ),
-          FSidebarGroup(
+          AppSidebarGroup(
             children: [
-              FSidebarItem(
+              AppSidebarItem(
                 icon: const Icon(FLucideIcons.cog),
                 label: Text(l10n.navSettings),
                 selected: currentView == AppView.settings,
-                onPress: context.openSettings,
+                // Settings reads the config, so it stays shut until there is
+                // one: the page is not gated behind a loader of its own.
+                onPress: configLoaded ? context.openSettings : null,
               ),
             ],
           ),
@@ -278,4 +205,135 @@ class DeviceSidebar extends HookConsumerWidget {
       ),
     );
   }
+}
+
+List<FItemGroupMixin> _fileMenuItems({
+  required AppLocalizations l10n,
+  required FPopoverController controller,
+  required BuildContext rootContext,
+  required WidgetRef ref,
+  required ConfigController configController,
+  required bool canSave,
+  required bool canDiscard,
+}) {
+  return [
+    FItemGroup(
+      children: [
+        FItem(
+          title: Text(l10n.actionNew),
+          prefix: const Icon(FLucideIcons.filePlus2),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyN,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await newConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionLoad),
+          prefix: const Icon(FLucideIcons.folderOpen),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyO,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await loadConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionReload),
+          prefix: const Icon(FLucideIcons.refreshCw),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await reloadConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionLoadFromClipboard),
+          prefix: const Icon(FLucideIcons.clipboard),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyV,
+              control: true,
+              shift: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await loadConfigFromClipboard(rootContext, ref);
+          },
+        ),
+      ],
+    ),
+    FItemGroup(
+      children: [
+        FItem(
+          title: Text(l10n.actionSave),
+          prefix: const Icon(FLucideIcons.save),
+          enabled: canSave,
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyS,
+              control: true,
+            ),
+          ),
+          onPress: () async {
+            unawaited(controller.hide());
+            await saveConfigDocument(rootContext, ref);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionSaveAs),
+          prefix: const Icon(FLucideIcons.save),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyS,
+              control: true,
+              shift: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            await configController.saveAs();
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionCopyToClipboard),
+          prefix: const Icon(FLucideIcons.clipboardCopy),
+          details: const MenuShortcutHint(
+            SingleActivator(
+              LogicalKeyboardKey.keyC,
+              control: true,
+              alt: true,
+            ),
+          ),
+          onPress: () async {
+            await controller.hide();
+            if (!rootContext.mounted) return;
+            await copyConfigToClipboard(rootContext, configController);
+          },
+        ),
+        FItem(
+          title: Text(l10n.actionDiscardChanges),
+          prefix: const Icon(FLucideIcons.undo2),
+          enabled: canDiscard,
+          onPress: () async {
+            await controller.hide();
+            configController.discardChanges();
+          },
+        ),
+      ],
+    ),
+  ];
 }

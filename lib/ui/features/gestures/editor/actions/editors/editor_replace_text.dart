@@ -31,7 +31,7 @@ class EditorReplaceText extends ConsumerWidget {
         ...rules,
         const TextSubstitutionRule(
           regex: '',
-          replace: LiteralTextReplacementValue(text: ''),
+          replace: LiteralText(''),
         ),
       ]);
     }
@@ -146,12 +146,12 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
     final colors = context.theme.colors;
     final replace = rule.replace;
     final replacementText = switch (replace) {
-      LiteralTextReplacementValue(:final text) => text,
-      CommandTextReplacementValue(:final command) => command,
+      LiteralText(:final text) => text,
+      CommandText(:final command) => command,
     };
     final replacementMode = switch (replace) {
-      LiteralTextReplacementValue() => _ReplacementMode.literal,
-      CommandTextReplacementValue() => _ReplacementMode.command,
+      LiteralText() => _ReplacementMode.literal,
+      CommandText() => _ReplacementMode.command,
     };
     final valueKey = [
       'replace-text-value',
@@ -266,11 +266,11 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
                       onChanged(
                         rule.copyWith(
                           replace: mode == _ReplacementMode.literal
-                              ? LiteralTextReplacementValue(
-                                  text: replacementText,
+                              ? LiteralText(
+                                  replacementText,
                                 )
-                              : CommandTextReplacementValue(
-                                  command: replacementText,
+                              : CommandText(
+                                  replacementText,
                                 ),
                         ),
                       );
@@ -287,9 +287,9 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
                     onChange: (value) => onChanged(
                       rule.copyWith(
                         replace: replacementMode == _ReplacementMode.literal
-                            ? LiteralTextReplacementValue(text: value.text)
-                            : CommandTextReplacementValue(
-                                command: value.text,
+                            ? LiteralText(value.text)
+                            : CommandText(
+                                value.text,
                               ),
                       ),
                     ),

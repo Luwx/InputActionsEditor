@@ -11,15 +11,17 @@ import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/app_state/app/kde_color_scheme_provider.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
+import 'package:input_actions_editor/services/ui_scale_binding.dart';
 import 'package:input_actions_editor/services/ui_server.dart';
 import 'package:input_actions_editor/services/window_service.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 import 'package:linux_app_menu/linux_app_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  UiScaleBinding.ensureInitialized();
   LinuxAppMenu.initialize();
   await windowManager.ensureInitialized();
 
@@ -43,15 +45,20 @@ void main() async {
       ? KdeColorSchemeWatcher().current
       : null;
 
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      initialAppStateProvider.overrideWithValue(appState),
+      windowServiceProvider.overrideWithValue(windowService),
+      if (initialKde != null)
+        kdeColorSchemeInitialProvider.overrideWithValue(initialKde),
+    ],
+  );
+  unawaited(container.read(configControllerProvider.future));
+
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        initialAppStateProvider.overrideWithValue(appState),
-        windowServiceProvider.overrideWithValue(windowService),
-        if (initialKde != null)
-          kdeColorSchemeInitialProvider.overrideWithValue(initialKde),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const App(),
     ),
   );
