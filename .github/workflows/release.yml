@@ -171,6 +171,10 @@ jobs:
         run: |
           export VERSION=${GITHUB_REF_NAME#v}
 
+          # dnf upgrades on NVR, so a rebuild of the same version needs the
+          # rpm release to move: it tracks the pubspec build number.
+          export RELEASE=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
+
           # Write the COPR API token (paste the whole config block from
           # https://copr.fedorainfracloud.org/api/ into the COPR_API_TOKEN secret).
           mkdir -p ~/.config
