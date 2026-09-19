@@ -391,6 +391,7 @@ class _ReorderableGroupableListState<I, G>
               ),
             ),
         ],
+        ...widget.trailingSlivers,
       ],
     );
 

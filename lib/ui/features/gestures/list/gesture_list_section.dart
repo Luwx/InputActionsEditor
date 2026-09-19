@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
@@ -22,8 +23,10 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/rename_dialog.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
@@ -174,10 +177,22 @@ class GestureListSection extends HookConsumerWidget {
       if (byDevice.isNotEmpty) await GestureClipboard.write(byDevice);
     }
 
-    Future<void> pasteGestures(GestureLocation anchor) async {
-      final gestures = await GestureClipboard.read(anchor.device);
+    Future<void> pasteGestures(GestureLocation? anchor) async {
+      final devices = anchor != null
+          ? [anchor.device]
+          : deviceFilter != null
+          ? [deviceFilter]
+          : DeviceType.values;
+      var inserted = false;
+      for (final device in devices) {
+        final gestures = await GestureClipboard.read(device);
+        if (!context.mounted) return;
+        if (gestures.isEmpty) continue;
+        listNotifier.insertGestures(device, gestures, after: anchor);
+        inserted = true;
+      }
       if (!context.mounted) return;
-      if (gestures.isEmpty) {
+      if (!inserted) {
         showFToast(
           context: context,
           title: Text(context.l10n.gesturePasteEmpty),
@@ -185,8 +200,13 @@ class GestureListSection extends HookConsumerWidget {
         );
         return;
       }
-      listNotifier.insertGestures(anchor.device, gestures, after: anchor);
     }
+
+    final pasteMenu = useFPopoverController();
+    useListenable(pasteMenu);
+    useMenuShortcuts(pasteMenu, {
+      pasteShortcut: () => unawaited(pasteGestures(null)),
+    });
 
     void dropFromSelection(List<GestureLocation> targets) {
       if (multiSelect == null) return;
@@ -374,14 +394,45 @@ class GestureListSection extends HookConsumerWidget {
                   ),
                 ),
               ],
-              emptyPlaceholder: Center(
-                child: Text(
-                  'No gestures yet.',
-                  style: typography.body.sm.copyWith(
-                    color: colors.mutedForeground,
+              trailingSlivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: FContextMenu(
+                    control: FPopoverControl.managed(controller: pasteMenu),
+                    builder: dismissibleContextMenuBuilder,
+                    secondaryPress: !pasteMenu.isShown,
+                    longPress: false,
+                    menu: [
+                      FItemGroup(
+                        children: [
+                          FItem(
+                            prefix: const Icon(FLucideIcons.clipboardPaste),
+                            title: Text(context.l10n.actionPaste),
+                            details: const MenuShortcutHint(pasteShortcut),
+                            onPress: dismissThen(
+                              pasteMenu,
+                              () => unawaited(pasteGestures(null)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      child: withGhosts.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No gestures yet.',
+                                style: typography.body.sm.copyWith(
+                                  color: colors.mutedForeground,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.expand(),
+                    ),
                   ),
                 ),
-              ),
+              ],
               entries: withGhosts,
               borderColor: colors.border,
               groupHeaderExtent: kGestureGroupHeaderExtent,

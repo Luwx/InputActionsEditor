@@ -178,6 +178,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
     this.groupDragLabelBuilder,
     this.showTrailingDropZone = true,
     this.leadingSlivers = const [],
+    this.trailingSlivers = const [],
     this.leadingPinnedExtent = 0,
     this.emptyPlaceholder,
     this.marqueeEnabled = false,
@@ -213,6 +214,7 @@ class ReorderableGroupableList<I, G> extends StatefulWidget {
   /// widget owns the [CustomScrollView], so they are supplied here rather than
   /// wrapped around it, letting each group be a direct sliver child.
   final List<Widget> leadingSlivers;
+  final List<Widget> trailingSlivers;
 
   /// Combined extent of the pinned [leadingSlivers] (the app header height),
   /// used as the pin line a group header fades against as it scrolls behind it.

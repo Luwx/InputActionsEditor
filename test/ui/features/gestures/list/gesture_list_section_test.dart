@@ -672,6 +672,33 @@ mouse:
     expect(tester.state(find.byType(AttentionFlash)), same(flashing));
   });
 
+  for (final names in [
+    <String>[],
+    ['First', 'Second', 'Third'],
+  ]) {
+    testWidgets('empty-space menu appends a gesture to $names', (tester) async {
+      _mockClipboard(tester);
+      await _pumpList(tester, names: names);
+      await Clipboard.setData(
+        const ClipboardData(
+          text: 'mouse:\n  gestures:\n    - type: press\n      name: First\n',
+        ),
+      );
+
+      final bounds = tester.getRect(find.byType(GestureListSection));
+      await tester.tapAt(
+        bounds.bottomCenter - const Offset(0, 40),
+        buttons: kSecondaryButton,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(FLucideIcons.clipboardPaste), findsOneWidget);
+      await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+      await tester.pumpAndSettle();
+
+      expect(_order(tester), [...names, 'First']);
+    });
+  }
+
   testWidgets('copy and paste land the gesture after the row pasted on', (
     tester,
   ) async {
@@ -680,6 +707,7 @@ mouse:
 
     await tester.tap(find.text('Second'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
+    expect(find.byIcon(FLucideIcons.clipboardPaste), findsOneWidget);
     await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
     await tester.pumpAndSettle();
 
