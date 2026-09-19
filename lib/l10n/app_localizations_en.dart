@@ -499,9 +499,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String inheritedFieldConflict(String group) {
-    return 'Also set by $group. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.';
-  }
+  String get groupOtherKeysTitle => 'Other trigger keys';
 
   @override
   String get groupSettingsTitle => 'Shared properties';

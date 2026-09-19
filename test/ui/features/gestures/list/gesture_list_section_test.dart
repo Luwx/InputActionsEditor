@@ -8,7 +8,9 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -72,21 +74,23 @@ Widget _host({
   bool preselected = false,
   int? groupAt,
   int groupSize = 2,
+  Config? config,
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: ProviderScope(
     overrides: [
       configControllerProvider.overrideWith(
-        () => names == null
-            ? SeededController(_listConfig())
-            : SeededController(
-                _listConfig(
-                  names: names,
-                  groupAt: groupAt,
-                  groupSize: groupSize,
-                ),
-              ),
+        () => SeededController(
+          config ??
+              (names == null
+                  ? _listConfig()
+                  : _listConfig(
+                      names: names,
+                      groupAt: groupAt,
+                      groupSize: groupSize,
+                    )),
+        ),
       ),
       deviceFilterProvider.overrideWith(_MouseFilter.new),
       if (preselected)
@@ -148,6 +152,7 @@ Future<void> _pumpList(
   bool preselected = false,
   int? groupAt,
   int groupSize = 2,
+  Config? config,
 }) async {
   tester.view
     ..physicalSize = const Size(900, 900)
@@ -159,6 +164,7 @@ Future<void> _pumpList(
       preselected: preselected,
       groupAt: groupAt,
       groupSize: groupSize,
+      config: config,
     ),
   );
   await tester.pumpAndSettle();
@@ -355,6 +361,82 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.getRect(_tileOf('G0')), before);
+  });
+
+  group('a group handing down a type and a button', () {
+    final config = decodeConfig('''
+mouse:
+  gestures:
+    - name: Strokes
+      type: stroke
+      mouse_buttons: [ back ]
+      gestures:
+        - name: Draw
+          strokes: [ 'MGQA0DMnPMwwAGQA' ]
+    - type: press
+      name: Tap
+''');
+
+    GestureGroupNode groupOf(WidgetTester tester) =>
+        withInheritedValues(_draftOf(tester)).mouseNodes.first
+            as GestureGroupNode;
+
+    testWidgets('a gesture row shows the button its group hands down', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+      expect(find.text('1 stroke · back'), findsOneWidget);
+    });
+
+    testWidgets('offers every type to add, with the group keys', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+
+      await tester.tap(
+        find.descendant(
+          of: find
+              .ancestor(of: find.text('Strokes'), matching: find.byType(Row))
+              .first,
+          matching: find.byIcon(FLucideIcons.plus),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: find.byType(FTile), matching: find.text('Press')),
+      );
+      await tester.pumpAndSettle();
+
+      final added = groupOf(tester).gestures.last;
+      expect(added, isA<PressGesture>());
+      expect(added.common.mouseButtons, [MouseButtonValue.back]);
+    });
+
+    testWidgets('takes a dropped gesture of another type as it is', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+
+      final tapY = tester.getCenter(find.text('Tap')).dy;
+      final handle = find
+          .byIcon(FLucideIcons.gripVertical)
+          .evaluate()
+          .map((e) => tester.getCenter(find.byWidget(e.widget)))
+          .reduce((a, b) => (a.dy - tapY).abs() < (b.dy - tapY).abs() ? a : b);
+      final gesture = await tester.startGesture(handle);
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getCenter(find.text('Draw')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final moved = groupOf(
+        tester,
+      ).gestures.firstWhere((g) => g.common.name == 'Tap');
+      expect(moved, isA<PressGesture>());
+      expect(moved.common.mouseButtons, [MouseButtonValue.back]);
+    });
   });
 
   testWidgets('a far target travels one way', (tester) async {

@@ -14,6 +14,7 @@ import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
+import 'package:input_actions_editor/projections/inheritance_provider.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
@@ -76,7 +77,12 @@ class GestureListTile extends ConsumerWidget {
     final isDirty =
         gestureOverride == null && ref.watch(gestureDirtyProvider(location));
     final isDisabled = common.enabled == false || groupDisabled;
-    final summaryText = _summary(gesture);
+    final effective = gestureOverride == null
+        ? ref.watch(
+            effectiveConfigProvider.select((c) => gestureAt(c, location)),
+          )
+        : null;
+    final summaryText = _summary(effective ?? gesture);
     final hasAction = common.actions.isNotEmpty;
     final firstAction = _firstActionSummary(common, context.l10n);
     final firstActionIcon = hasAction

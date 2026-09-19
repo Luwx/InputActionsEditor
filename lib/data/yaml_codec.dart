@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
@@ -93,13 +95,7 @@ Config _decodeConfigText(String parseText) {
   );
 }
 
-/// Group keys the model holds as typed fields. Anything else on a group node
-/// lands in [GestureGroupNode.extra] and round-trips untouched.
-const _groupNodeKeys = {
-  'gestures',
-  'conditions',
-  'name',
-  'enabled',
+const _sharedKeys = {
   'id',
   'threshold',
   'resume_timeout',
@@ -108,13 +104,24 @@ const _groupNodeKeys = {
   'clear_modifiers',
   'set_last_trigger',
   'end_conditions',
+  'mouse_buttons',
+  'mouse_buttons_exact_order',
+  'fingers',
+  'speed',
+  'instant',
+  'lock_pointer',
 };
 
-/// Parses a device's `gestures:` list into the gesture tree. Untyped list
-/// items with a `gestures:` key are the daemon's trigger groups; they nest to
-/// any depth and become [GestureGroupNode]s. The pre-nesting flat format
-/// (`groups:` device key + `group:` refs on gestures) is migrated into
-/// nesting on the spot and never written back.
+/// Other group keys go to [GestureGroupNode.extra]; `type` to each gesture.
+const Set<String> _groupNodeKeys = {
+  'gestures',
+  'conditions',
+  'name',
+  'enabled',
+  ..._sharedKeys,
+};
+
+/// Any item with `gestures:` is a group, typed or not, as `parseTriggerList`.
 List<GestureNode> _parseDeviceNodes(
   dynamic deviceNode,
   Gesture? Function(YamlMap) parseGesture,
@@ -125,16 +132,29 @@ List<GestureNode> _parseDeviceNodes(
 
   final legacyRefs = Map<GestureNode, String>.identity();
 
-  List<GestureNode> walk(YamlList list) {
+  List<GestureNode> walk(
+    YamlList list,
+    Map<String, YamlNode> inherited,
+    Set<String> shared,
+  ) {
     final out = <GestureNode>[];
     for (final item in list) {
       if (item is! YamlMap) continue;
-      if (item.containsKey('gestures') && !item.containsKey('type')) {
+      if (item.containsKey('gestures')) {
         final extra = <String, dynamic>{};
+        final handedDown = {...inherited};
+        final sharedBelow = {
+          ...shared,
+          for (final key in _sharedKeys)
+            if (item.containsKey(key) &&
+                !(key == 'mouse_buttons' &&
+                    _parseMouseButtons(item[key]).isEmpty))
+              key,
+        };
         for (final key in item.keys) {
-          if (!_groupNodeKeys.contains(key)) {
-            extra[key as String] = plainYamlValue(item[key]);
-          }
+          if (_groupNodeKeys.contains(key)) continue;
+          if (key != 'type') extra[key as String] = plainYamlValue(item[key]);
+          handedDown[key as String] = item.nodes[key]!;
         }
         final sub = item['gestures'];
         out.add(
@@ -154,13 +174,27 @@ List<GestureNode> _parseDeviceNodes(
             endConditions: item.containsKey('end_conditions')
                 ? _parseCondition(item.nodes['end_conditions'])
                 : null,
+            mouseButtons: item.containsKey('mouse_buttons')
+                ? _parseMouseButtons(item['mouse_buttons'])
+                : null,
+            mouseButtonsExactOrder: item['mouse_buttons_exact_order'] as bool?,
+            fingers: yamlInt(item['fingers']),
+            speed: TriggerSpeed.fromYaml(item['speed'] as String? ?? ''),
+            instant: item['instant'] as bool?,
+            lockPointer: item['lock_pointer'] as bool?,
             extra: extra,
-            children: sub is YamlList ? walk(sub) : const [],
+            children: sub is YamlList
+                ? walk(sub, handedDown, sharedBelow)
+                : const [],
           ),
         );
         continue;
       }
-      final g = _parseGestureItem(item, parseGesture);
+      final g = parseGesture(
+        inherited.isEmpty && shared.isEmpty
+            ? item
+            : _InheritingYamlMap(item, inherited, shared),
+      );
       if (g == null) continue;
       final node = GestureNode.leaf(g);
       final legacyGroup = item['group'] as String?;
@@ -170,43 +204,44 @@ List<GestureNode> _parseDeviceNodes(
     return out;
   }
 
-  final nodes = walk(gesturesNode);
+  final nodes = walk(gesturesNode, const {}, const {});
   return _migrateLegacyGroups(nodes, deviceNode['groups'], legacyRefs);
 }
 
-/// Parses one typed gesture item. Nested conditional sub-gestures are
-/// flattened into per-action conditions so the rest of the model stays
-/// uniform.
-Gesture? _parseGestureItem(
-  YamlMap item,
-  Gesture? Function(YamlMap) parseGesture,
-) {
-  final g = parseGesture(item);
-  if (g == null) return null;
-  final subList = item.containsKey('type') ? item['gestures'] : null;
-  if (subList is! YamlList) return g;
-  final flatActions = <TriggerAction>[...g.common.actions];
-  for (final sub in subList) {
-    if (sub is! YamlMap) continue;
-    final subCond = sub.containsKey('conditions')
-        ? _parseCondition(sub.nodes['conditions'])
-        : null;
-    final subActions = _parseActions(sub['actions']);
-    if (subCond == null) {
-      flatActions.addAll(subActions);
-    } else {
-      flatActions.addAll(
-        subActions.map(
-          (a) => a.copyWith(
-            conditions: a.conditions == null
-                ? subCond
-                : ConditionGroup(children: [subCond, a.conditions!]),
-          ),
-        ),
+final class _InheritingYamlMap extends YamlMap {
+  _InheritingYamlMap(
+    YamlMap own,
+    Map<String, YamlNode> inherited,
+    Set<String> shared,
+  ) : super.internal(
+        _InheritingNodes(own.nodes, inherited, shared),
+        own.span,
+        own.style,
       );
-    }
+}
+
+/// A group's keys win over the child's own; shared properties it sets drop.
+final class _InheritingNodes extends UnmodifiableMapBase<dynamic, YamlNode> {
+  _InheritingNodes(this._own, this._inherited, this._shared);
+
+  final Map<dynamic, YamlNode> _own;
+  final Map<String, YamlNode> _inherited;
+  final Set<String> _shared;
+
+  @override
+  YamlNode? operator [](Object? key) {
+    final name = key is YamlNode ? key.value : key;
+    if (_shared.contains(name)) return null;
+    return _inherited[name] ?? _own[key];
   }
-  return g.withCommon(g.common.copyWith(actions: flatActions));
+
+  @override
+  Iterable<dynamic> get keys => [
+    for (final key in _own.keys)
+      if (!_shared.contains((key as YamlNode).value)) key,
+    for (final key in _inherited.keys)
+      if (!_own.containsKey(key)) YamlScalar.wrap(key),
+  ];
 }
 
 /// Folds the legacy flat grouping (`groups:` defs + `group:` refs) into

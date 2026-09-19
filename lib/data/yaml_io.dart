@@ -210,32 +210,72 @@ String encodeConfig(Config config, String originalText) {
 /// is the nesting; nothing about grouping needs reconstruction.
 List<dynamic> _nodesToYaml(
   List<GestureNode> nodes,
-  Map<String, dynamic> Function(Gesture) toMap,
-) => [
+  Map<String, dynamic> Function(Gesture) toMap, [
+  Map<String, dynamic> inherited = const {},
+]) => [
   for (final node in nodes)
     switch (node) {
-      GestureLeaf(:final gesture) => toMap(gesture),
-      GestureGroupNode() => {
-        if (node.name.isNotEmpty) 'name': node.name,
-        if (!node.enabled) 'enabled': false,
-        if (node.conditions != null)
-          'conditions': conditionToYaml(node.conditions!),
-        // Shared trigger properties, in the same key order gestures use.
-        if (node.id != null) 'id': node.id,
-        if (node.endConditions != null)
-          'end_conditions': conditionToYaml(node.endConditions!),
-        if (node.blockEvents != null) 'block_events': node.blockEvents,
-        if (node.clearModifiers != null) 'clear_modifiers': node.clearModifiers,
-        if (node.resumeTimeout != null) 'resume_timeout': node.resumeTimeout,
-        if (node.setLastTrigger != null)
-          'set_last_trigger': node.setLastTrigger,
-        if (node.threshold != null) 'threshold': node.threshold,
-        if (node.accelerated != null) 'accelerated': node.accelerated,
-        ...node.extra,
-        'gestures': _nodesToYaml(node.children, toMap),
-      },
+      GestureLeaf(:final gesture) => _withoutInherited(
+        toMap(gesture),
+        inherited,
+      ),
+      GestureGroupNode() => _groupToYaml(node, toMap, inherited),
     },
 ];
+
+Map<String, dynamic> _groupToYaml(
+  GestureGroupNode node,
+  Map<String, dynamic> Function(Gesture) toMap,
+  Map<String, dynamic> inherited,
+) {
+  final type = _hoistedType(node, toMap, inherited);
+  final handed = {'type': ?type, ...node.extra};
+  return {
+    if (node.name.isNotEmpty) 'name': node.name,
+    if (!node.enabled) 'enabled': false,
+    if (node.conditions != null)
+      'conditions': conditionToYaml(node.conditions!),
+    // Shared trigger properties, in the same key order gestures use.
+    'fingers': ?node.fingers,
+    'instant': ?node.instant,
+    'speed': ?node.speed?.toYaml(),
+    'lock_pointer': ?node.lockPointer,
+    if (node.id != null) 'id': node.id,
+    if (node.mouseButtons case final buttons? when buttons.isNotEmpty)
+      'mouse_buttons': [for (final b in buttons) b.toYaml()],
+    if (node.mouseButtonsExactOrder == true) 'mouse_buttons_exact_order': true,
+    if (node.endConditions != null)
+      'end_conditions': conditionToYaml(node.endConditions!),
+    if (node.blockEvents != null) 'block_events': node.blockEvents,
+    if (node.clearModifiers != null) 'clear_modifiers': node.clearModifiers,
+    if (node.resumeTimeout != null) 'resume_timeout': node.resumeTimeout,
+    if (node.setLastTrigger != null) 'set_last_trigger': node.setLastTrigger,
+    if (node.threshold != null) 'threshold': node.threshold,
+    if (node.accelerated != null) 'accelerated': node.accelerated,
+    ...handed,
+    'gestures': _nodesToYaml(node.children, toMap, {...inherited, ...handed}),
+  };
+}
+
+/// Null when the gestures under [node] differ or a group above writes it.
+String? _hoistedType(
+  GestureGroupNode node,
+  Map<String, dynamic> Function(Gesture) toMap,
+  Map<String, dynamic> inherited,
+) {
+  final types = {for (final gesture in node.gestures) toMap(gesture)['type']};
+  if (types.length != 1) return null;
+  final type = types.single as String?;
+  return type == inherited['type'] ? null : type;
+}
+
+Map<String, dynamic> _withoutInherited(
+  Map<String, dynamic> map,
+  Map<String, dynamic> inherited,
+) => {
+  for (final MapEntry(:key, :value) in map.entries)
+    if (!inherited.containsKey(key)) key: value,
+};
 
 void _saveDeviceSection(
   YamlEditor editor,

@@ -8,7 +8,6 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/motion_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/pinch_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/rotation_direction_select.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/strokes_field.dart';
@@ -53,89 +52,55 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
         };
       }),
     );
-    final motionField = ref.gestureField(context, touchscreenMotionLens);
-    final motion = RevealedField(
-      field: ConfigDirtyField.touchscreenMotion,
-      child: MotionField(
-        motion: motionField.value,
-        onChanged: motionField.onChanged,
-      ),
-    );
-
     return switch (kind) {
-      TouchscreenTriggerType.swipe => Column(
-        spacing: 16,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Builder(
-            builder: (context) {
-              final modeField = ref.gestureField(
-                context,
-                touchscreenSwipeModeLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchscreenSwipeMode,
-                child: SwipeModeSelector(
-                  mode: modeField.value,
-                  onModeChanged: modeField.onChanged,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchscreenTriggerType.swipe => Builder(
+        builder: (context) {
+          final modeField = ref.gestureField(
+            context,
+            touchscreenSwipeModeLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchscreenSwipeMode,
+            child: SwipeModeSelector(
+              mode: modeField.value,
+              onModeChanged: modeField.onChanged,
+            ),
+          );
+        },
       ),
-      TouchscreenTriggerType.pinch => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Builder(
-            builder: (context) {
-              final directionField = ref.gestureField(
-                context,
-                touchscreenPinchDirectionLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchscreenPinchDirection,
-                child: PinchSection(
-                  direction: directionField.value,
-                  onDirectionChanged: directionField.onChanged,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchscreenTriggerType.pinch => Builder(
+        builder: (context) {
+          final directionField = ref.gestureField(
+            context,
+            touchscreenPinchDirectionLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchscreenPinchDirection,
+            child: PinchSection(
+              direction: directionField.value,
+              onDirectionChanged: directionField.onChanged,
+            ),
+          );
+        },
       ),
-      TouchscreenTriggerType.rotate => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Builder(
-            builder: (context) {
-              final directionField = ref.gestureField(
-                context,
-                touchscreenRotateDirectionLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchscreenRotateDirection,
-                child: RotationDirectionSelect(
-                  direction: directionField.value,
-                  onDirectionChanged: directionField.onChanged,
-                  label: context.l10n.sectionRotateDirectionLabel,
-                  tooltip: context.l10n.sectionRotateDirectionTooltip,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchscreenTriggerType.rotate => Builder(
+        builder: (context) {
+          final directionField = ref.gestureField(
+            context,
+            touchscreenRotateDirectionLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchscreenRotateDirection,
+            child: RotationDirectionSelect(
+              direction: directionField.value,
+              onDirectionChanged: directionField.onChanged,
+              label: context.l10n.sectionRotateDirectionLabel,
+              tooltip: context.l10n.sectionRotateDirectionTooltip,
+            ),
+          );
+        },
       ),
-      TouchscreenTriggerType.circle => Column(
-        spacing: 12,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [const CircleSection(), motion],
-      ),
+      TouchscreenTriggerType.circle => const CircleSection(),
       TouchscreenTriggerType.tap => const InfoSection(
         title: 'Tap',
         description:
@@ -147,27 +112,21 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
             'Activates while the specified number of fingers are held on the '
             'screen.',
       ),
-      TouchscreenTriggerType.stroke => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Builder(
-            builder: (context) {
-              final strokesField = ref.gestureField(
-                context,
-                touchscreenStrokeStrokesLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchscreenStrokeStrokes,
-                child: StrokesField(
-                  strokes: strokesField.value,
-                  onStrokesChanged: strokesField.onChanged,
-                  deviceType: DeviceType.touchscreen,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchscreenTriggerType.stroke => Builder(
+        builder: (context) {
+          final strokesField = ref.gestureField(
+            context,
+            touchscreenStrokeStrokesLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchscreenStrokeStrokes,
+            child: StrokesField(
+              strokes: strokesField.value,
+              onStrokesChanged: strokesField.onChanged,
+              deviceType: DeviceType.touchscreen,
+            ),
+          );
+        },
       ),
       null => const SizedBox.shrink(),
     };

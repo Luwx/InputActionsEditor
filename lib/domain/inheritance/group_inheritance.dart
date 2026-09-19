@@ -1,17 +1,17 @@
+import 'package:collection/collection.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureGroupLocation, GestureLocation;
+    show ConfigDirtyField, GestureGroupLocation, GestureLocation;
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/touchpad_gesture.dart';
+import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
-/// A trigger property a group can share with everything in its subtree.
-///
-/// These are exactly the keys the daemon's trigger-group parser copies onto
-/// child nodes (`parseTriggerList` in `config/parsers/triggers.h`), minus the
-/// two it handles specially: `gestures` is the recursion, and `conditions`
-/// AND-merges instead of being copied.
+/// A group key the editor models; the codec hands the unmodelled ones down.
 enum SharedTriggerProperty {
   id,
   threshold,
@@ -20,7 +20,13 @@ enum SharedTriggerProperty {
   blockEvents,
   clearModifiers,
   setLastTrigger,
-  endConditions;
+  endConditions,
+  mouseButtons,
+  mouseButtonsExactOrder,
+  fingers,
+  speed,
+  instant,
+  lockPointer;
 
   /// The group's value for this property, or null when the group does not
   /// share it.
@@ -33,8 +39,148 @@ enum SharedTriggerProperty {
     SharedTriggerProperty.clearModifiers => group.clearModifiers,
     SharedTriggerProperty.setLastTrigger => group.setLastTrigger,
     SharedTriggerProperty.endConditions => group.endConditions,
+    SharedTriggerProperty.mouseButtons =>
+      group.mouseButtons?.isEmpty ?? true ? null : group.mouseButtons,
+    SharedTriggerProperty.mouseButtonsExactOrder =>
+      group.mouseButtonsExactOrder,
+    SharedTriggerProperty.fingers => group.fingers,
+    SharedTriggerProperty.speed => group.speed,
+    SharedTriggerProperty.instant => group.instant,
+    SharedTriggerProperty.lockPointer => group.lockPointer,
   };
+
+  /// Null when the gesture leaves the property to its groups.
+  Object? readOn(Gesture gesture) {
+    final common = gesture.common;
+    return switch (this) {
+      SharedTriggerProperty.id => common.id,
+      SharedTriggerProperty.threshold => common.threshold,
+      SharedTriggerProperty.resumeTimeout => common.resumeTimeout,
+      SharedTriggerProperty.accelerated => common.accelerated,
+      SharedTriggerProperty.blockEvents => common.blockEvents,
+      SharedTriggerProperty.clearModifiers => common.clearModifiers,
+      SharedTriggerProperty.setLastTrigger => common.setLastTrigger,
+      SharedTriggerProperty.endConditions => common.endConditions,
+      SharedTriggerProperty.mouseButtons =>
+        common.mouseButtons.isEmpty ? null : common.mouseButtons,
+      SharedTriggerProperty.mouseButtonsExactOrder =>
+        common.mouseButtonsExactOrder ? true : null,
+      SharedTriggerProperty.fingers => switch (gesture) {
+        TouchpadGesture(:final fingers) => fingers,
+        TouchscreenGesture(:final fingers) => fingers,
+        _ => null,
+      },
+      SharedTriggerProperty.speed => _motionOf(gesture)?.speed,
+      SharedTriggerProperty.instant => switch (gesture) {
+        PressGesture(:final instant) => instant,
+        _ => null,
+      },
+      SharedTriggerProperty.lockPointer => _motionOf(gesture)?.lockPointer,
+    };
+  }
+
+  /// A null [value] leaves the property to the gesture's groups.
+  Gesture writeOn(Gesture gesture, Object? value) {
+    final common = gesture.common;
+    Gesture withCommon(TriggerCommon next) => gesture.withCommon(next);
+    Gesture withMotion(MotionCommon Function(MotionCommon) update) =>
+        switch (_motionOf(gesture)) {
+          final motion? => _withMotion(gesture, update(motion)),
+          null => gesture,
+        };
+    return switch (this) {
+      SharedTriggerProperty.id => withCommon(
+        common.copyWith(id: value as String?),
+      ),
+      SharedTriggerProperty.threshold => withCommon(
+        common.copyWith(threshold: value as String?),
+      ),
+      SharedTriggerProperty.resumeTimeout => withCommon(
+        common.copyWith(resumeTimeout: value as int?),
+      ),
+      SharedTriggerProperty.accelerated => withCommon(
+        common.copyWith(accelerated: value as bool?),
+      ),
+      SharedTriggerProperty.blockEvents => withCommon(
+        common.copyWith(blockEvents: value as bool?),
+      ),
+      SharedTriggerProperty.clearModifiers => withCommon(
+        common.copyWith(clearModifiers: value as bool?),
+      ),
+      SharedTriggerProperty.setLastTrigger => withCommon(
+        common.copyWith(setLastTrigger: value as bool?),
+      ),
+      SharedTriggerProperty.endConditions => withCommon(
+        common.copyWith(endConditions: value as Condition?),
+      ),
+      SharedTriggerProperty.mouseButtons => withCommon(
+        common.copyWith(
+          mouseButtons: value as List<MouseButtonValue>? ?? const [],
+        ),
+      ),
+      SharedTriggerProperty.mouseButtonsExactOrder => withCommon(
+        common.copyWith(mouseButtonsExactOrder: value as bool? ?? false),
+      ),
+      SharedTriggerProperty.fingers => switch (gesture) {
+        TouchpadGesture() => gesture.withFingers(value as int?),
+        TouchscreenGesture() => gesture.withFingers(value as int?),
+        _ => gesture,
+      },
+      SharedTriggerProperty.speed => withMotion(
+        (m) => m.copyWith(speed: value as TriggerSpeed?),
+      ),
+      SharedTriggerProperty.instant => switch (gesture) {
+        PressGesture() => gesture.copyWith(instant: value as bool?),
+        _ => gesture,
+      },
+      SharedTriggerProperty.lockPointer => withMotion(
+        (m) => m.copyWith(lockPointer: value as bool?),
+      ),
+    };
+  }
 }
+
+/// Gesture fields absent here never inherit.
+const Map<ConfigDirtyField, SharedTriggerProperty> sharedPropertyOfField = {
+  ConfigDirtyField.gestureId: SharedTriggerProperty.id,
+  ConfigDirtyField.gestureThreshold: SharedTriggerProperty.threshold,
+  ConfigDirtyField.gestureResumeTimeout: SharedTriggerProperty.resumeTimeout,
+  ConfigDirtyField.gestureAccelerated: SharedTriggerProperty.accelerated,
+  ConfigDirtyField.gestureBlockEvents: SharedTriggerProperty.blockEvents,
+  ConfigDirtyField.gestureClearModifiers: SharedTriggerProperty.clearModifiers,
+  ConfigDirtyField.gestureSetLastTrigger: SharedTriggerProperty.setLastTrigger,
+  ConfigDirtyField.gestureEndConditions: SharedTriggerProperty.endConditions,
+  ConfigDirtyField.gestureMouseButtons: SharedTriggerProperty.mouseButtons,
+  ConfigDirtyField.gestureMouseButtonsExactOrder:
+      SharedTriggerProperty.mouseButtonsExactOrder,
+  ConfigDirtyField.touchpadFingers: SharedTriggerProperty.fingers,
+  ConfigDirtyField.touchscreenFingers: SharedTriggerProperty.fingers,
+  ConfigDirtyField.mouseGestureStrokeMotionSpeed: SharedTriggerProperty.speed,
+  ConfigDirtyField.mouseGestureSwipeMotionSpeed: SharedTriggerProperty.speed,
+  ConfigDirtyField.circleMotionSpeed: SharedTriggerProperty.speed,
+  ConfigDirtyField.touchpadMotionSpeed: SharedTriggerProperty.speed,
+  ConfigDirtyField.touchscreenMotionSpeed: SharedTriggerProperty.speed,
+  ConfigDirtyField.pressInstant: SharedTriggerProperty.instant,
+  ConfigDirtyField.mouseGestureStrokeMotionLockPointer:
+      SharedTriggerProperty.lockPointer,
+  ConfigDirtyField.mouseGestureSwipeMotionLockPointer:
+      SharedTriggerProperty.lockPointer,
+  ConfigDirtyField.circleMotionLockPointer: SharedTriggerProperty.lockPointer,
+};
+
+MotionCommon? _motionOf(Gesture gesture) => switch (gesture) {
+  MouseGesture(:final motion) => motion,
+  TouchpadGesture() => gesture.motionOrNull,
+  TouchscreenGesture() => gesture.motionOrNull,
+  _ => null,
+};
+
+Gesture _withMotion(Gesture gesture, MotionCommon motion) => switch (gesture) {
+  MouseGesture() => gesture.withMotion(motion),
+  TouchpadGesture() => gesture.withMotion(motion),
+  TouchscreenGesture() => gesture.withMotion(motion),
+  _ => gesture,
+};
 
 /// One property a gesture picks up from an ancestor group.
 class InheritedProperty {
@@ -43,15 +189,11 @@ class InheritedProperty {
     required this.value,
     required this.groupName,
     required this.groupEditId,
-    required this.overridden,
-    required this.setLocally,
   });
 
   final SharedTriggerProperty property;
 
-  /// The ancestor group's value. When more than one ancestor shares the
-  /// property this is the nearest one's, but see [overridden]: the daemon does
-  /// not actually resolve competing values in a defined way.
+  /// The nearest ancestor's value when several set it.
   final Object? value;
 
   final String groupName;
@@ -59,32 +201,10 @@ class InheritedProperty {
   /// Identifies the group for [GestureGroupLocation]-based navigation. Null
   /// only before `assignEditIds` has run.
   final int? groupEditId;
-
-  /// True when the gesture (or a nearer group) also sets this property, so the
-  /// config contains the same key twice on one merged node.
-  ///
-  /// The daemon does not treat this as an override. `parseTriggerList` appends
-  /// the group's key to the child's map without checking for a collision, and
-  /// `Node`'s map is keyed by node identity rather than key string, so the
-  /// duplicate is resolved by `Node::at` taking whichever key node sorts first
-  /// by heap address. The winner is not the child's, not the group's, and not
-  /// stable between runs of the same file.
-  final bool overridden;
-
-  /// True when the gesture itself sets the key. Distinct from [overridden],
-  /// which is also true when two ancestor groups collide over a gesture that
-  /// sets nothing. Controls with no unset state (checkboxes) display [value]
-  /// while this is false, so what they show is what the gesture will run with.
-  final bool setLocally;
 }
 
 /// Resolves, per gesture editId, the properties that gesture inherits from its
 /// ancestor groups on [device].
-///
-/// A property set by more than one ancestor, or by both an ancestor and the
-/// gesture itself, is reported with [InheritedProperty.overridden] set. The
-/// nearest ancestor that sets it supplies the reported value, which is what
-/// the user most likely intended, not a prediction of what the daemon will do.
 Map<int, List<InheritedProperty>> inheritedPropertiesForDevice(
   Config config,
   DeviceType device,
@@ -99,28 +219,18 @@ Map<int, List<InheritedProperty>> inheritedPropertiesForDevice(
         case GestureLeaf(:final gesture):
           final editId = gesture.common.editId;
           if (editId == null || ancestors.isEmpty) continue;
-          final common = gesture.common;
           final inherited = <InheritedProperty>[];
           for (final property in SharedTriggerProperty.values) {
-            // Nearest ancestor wins the displayed value; any further ancestor
-            // that also sets it is a collision, same as the gesture setting it.
-            GestureGroupNode? source;
-            var setters = 0;
-            for (final ancestor in ancestors) {
-              if (property.read(ancestor) == null) continue;
-              setters++;
-              source = ancestor;
-            }
+            final source = ancestors.lastWhereOrNull(
+              (ancestor) => property.read(ancestor) != null,
+            );
             if (source == null) continue;
-            final setLocally = _isSetOnGesture(common, property);
             inherited.add(
               InheritedProperty(
                 property: property,
                 value: property.read(source),
                 groupName: source.name,
                 groupEditId: source.editId,
-                overridden: setters > 1 || setLocally,
-                setLocally: setLocally,
               ),
             );
           }
@@ -216,14 +326,64 @@ List<InheritedCondition> inheritedConditionsForGroup(
     inheritedConditionsForDevice(config, location.device)[location.editId] ??
     const [];
 
-bool _isSetOnGesture(TriggerCommon common, SharedTriggerProperty property) =>
-    switch (property) {
-      SharedTriggerProperty.id => common.id != null,
-      SharedTriggerProperty.threshold => common.threshold != null,
-      SharedTriggerProperty.resumeTimeout => common.resumeTimeout != null,
-      SharedTriggerProperty.accelerated => common.accelerated != null,
-      SharedTriggerProperty.blockEvents => common.blockEvents != null,
-      SharedTriggerProperty.clearModifiers => common.clearModifiers != null,
-      SharedTriggerProperty.setLastTrigger => common.setLastTrigger != null,
-      SharedTriggerProperty.endConditions => common.endConditions != null,
-    };
+/// Where a gesture sets a value its groups also set, the group's replaces it.
+Config withGroupValues(Config config) => _mapLeaves(
+  config,
+  (gesture, handed) {
+    var next = gesture;
+    for (final property in handed.keys) {
+      if (property.readOn(next) != null) next = property.writeOn(next, null);
+    }
+    return next;
+  },
+);
+
+/// [config] as the daemon runs it, group values filled into each gesture.
+Config withInheritedValues(Config config) => _mapLeaves(
+  config,
+  (gesture, handed) {
+    var next = gesture;
+    for (final MapEntry(key: property, :value) in handed.entries) {
+      if (property.readOn(next) == null) next = property.writeOn(next, value);
+    }
+    return next;
+  },
+);
+
+Config _mapLeaves(
+  Config config,
+  Gesture Function(Gesture gesture, Map<SharedTriggerProperty, Object> handed)
+  map,
+) {
+  List<GestureNode>? walk(
+    List<GestureNode> nodes,
+    Map<SharedTriggerProperty, Object> handed,
+  ) {
+    var changed = false;
+    final out = <GestureNode>[];
+    for (final node in nodes) {
+      switch (node) {
+        case GestureGroupNode(:final children):
+          final below = walk(children, {
+            ...handed,
+            for (final property in SharedTriggerProperty.values)
+              property: ?property.read(node),
+          });
+          changed |= below != null;
+          out.add(below == null ? node : node.copyWith(children: below));
+        case GestureLeaf(:final gesture):
+          final next = handed.isEmpty ? gesture : map(gesture, handed);
+          changed |= next != gesture;
+          out.add(next == gesture ? node : GestureNode.leaf(next));
+      }
+    }
+    return changed ? out : null;
+  }
+
+  var result = config;
+  for (final device in DeviceType.values) {
+    final nodes = walk(config.nodesForDevice(device), const {});
+    if (nodes != null) result = result.withNodesForDevice(device, nodes);
+  }
+  return result;
+}

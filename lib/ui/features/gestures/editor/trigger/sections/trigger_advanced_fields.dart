@@ -1,62 +1,42 @@
-import 'package:edit_schema_generator/edit_schema_generator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
-import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inherited_field_note.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inheritable_field.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-class TriggerAdvancedFields extends HookConsumerWidget {
+class TriggerAdvancedFields extends ConsumerWidget {
   const TriggerAdvancedFields({
     super.key,
     this.fields = TriggerAdvancedField.values,
-    this.group,
-    this.inherited = const {},
     this.inheritedConditions = const [],
-    this.onOpenGroup,
-    this.showLockPointer = false,
-    this.showSpeed = false,
+    this.lockPointer,
+    this.speed,
   });
 
   final Iterable<TriggerAdvancedField> fields;
 
-  /// Properties of the trigger itself, rendered among [fields]. Not
-  /// [TriggerAdvancedField]s
-  final bool showLockPointer;
-  final bool showSpeed;
-
-  /// When set, the fields read and write the group node's shared properties
-  /// instead of the gesture in [EditLocationScope].
-  final GestureGroupLocation? group;
-
-  /// Properties this gesture picks up from an ancestor group, keyed by field.
-  /// Rendered as a note under the corresponding control. Empty in group and
-  /// bulk scope.
-  final Map<TriggerAdvancedField, InheritedProperty> inherited;
+  /// Rendered among [fields], though not [TriggerAdvancedField]s.
+  final Widget? lockPointer;
+  final Widget? speed;
 
   /// Conditions ancestor groups AND-merge into this node's own, outermost
   /// first. Shown read-only inside the conditions editor.
   final List<InheritedCondition> inheritedConditions;
-
-  /// Opens the group an inherited property or condition came from, by editId.
-  final ValueChanged<int>? onOpenGroup;
 
   /// Which of [TriggerAdvancedField] a group shares with its subtree.
   static Set<TriggerAdvancedField> nonDefaultGroupFields(GestureGroupNode g) =>
@@ -98,353 +78,237 @@ class TriggerAdvancedFields extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final visibleFields = fields.toSet();
-    if (visibleFields.isEmpty && !showLockPointer && !showSpeed) {
+    final visible = fields.toSet().contains;
+    if (fields.isEmpty && lockPointer == null && speed == null) {
       return const SizedBox.shrink();
     }
-
     final conditionsBodyBackgroundColor = Color.alphaBlend(
       context.theme.colors.card.withValues(alpha: 0.55),
       context.theme.colors.background,
     );
 
-    // One switch per field so gesture, bulk and group scopes render through
-    // exactly the same controls below.
-    final scope = group;
-    SchemaEditableField<T> resolve<T>(
-      GeneratedEditField<Config, GestureLocation, T, Lens<Config, T>> gestureF,
-      GeneratedEditField<Config, GestureGroupLocation, T, Lens<Config, T>>
-      groupF,
-    ) => scope == null
-        ? ref.gestureSchemaField(context, gestureF)
-        : ref.schemaField(
-            groupF,
-            location: scope,
-            scope: const GesturesScope(),
-            canRead: (config) => gestureGroupAt(config, scope) != null,
-          );
-
-    final idField = resolve(gestureIdField, gestureGroupIdField);
-    final thresholdField = resolve(
-      gestureThresholdField,
-      gestureGroupThresholdField,
+    Widget flag(
+      GestureSchemaField<bool> field,
+      GroupSchemaField<bool> groupField,
+      String label,
+      Widget tooltip,
+    ) => InheritableField(
+      field: field,
+      groupField: groupField,
+      builder: (context, field) => FCheckbox(
+        value: field.value,
+        onChange: field.onChanged,
+        label: UnsavedLabel(
+          state: field.dirty,
+          onRevert: field.onRevert,
+          mixed: field.mixed,
+          child: LabelWithTooltip(label: label, tooltipContent: tooltip),
+        ),
+      ),
     );
-    final resumeTimeoutField = resolve(
-      gestureResumeTimeoutField,
-      gestureGroupResumeTimeoutField,
-    );
-    final idController = useSyncedTextController(
-      idField.text,
-      idField.onTextChanged,
-    );
-    final thresholdController = useSyncedTextController(
-      thresholdField.text,
-      thresholdField.onTextChanged,
-    );
-    final resumeTimeoutController = useSyncedTextController(
-      resumeTimeoutField.text,
-      resumeTimeoutField.onTextChanged,
-    );
-    final acceleratedField = resolve(
-      gestureAcceleratedField,
-      gestureGroupAcceleratedField,
-    );
-    final blockEventsField = resolve(
-      gestureBlockEventsField,
-      gestureGroupBlockEventsField,
-    );
-    final clearModifiersField = resolve(
-      gestureClearModifiersField,
-      gestureGroupClearModifiersField,
-    );
-    final setLastTriggerField = resolve(
-      gestureSetLastTriggerField,
-      gestureGroupSetLastTriggerField,
-    );
-    final conditionsField = resolve(
-      gestureConditionsField,
-      gestureGroupConditionsField,
-    );
-    final endConditionsField = resolve(
-      gestureEndConditionsField,
-      gestureGroupEndConditionsField,
-    );
-
-    /// What a checkbox should show.
-    bool effective(TriggerAdvancedField field, bool own) {
-      final note = inherited[field];
-      if (note == null || note.setLocally) return own;
-      return note.value is bool ? note.value! as bool : own;
-    }
-
-    ConfigDirtyField dirtyFieldFor(TriggerAdvancedField field) =>
-        scope == null ? field.dirtyField : field.groupDirtyField;
-
-    /// Appends the inheritance note, when there is one, under [child], and
-    /// marks the field an undo just changed.
-    Widget withNote(
-      TriggerAdvancedField field,
-      Widget child, {
-      bool reveal = true,
-    }) {
-      final note = inherited[field];
-      final row = note == null
-          ? child
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                child,
-                InheritedFieldNote(
-                  inherited: note,
-                  onOpenGroup: onOpenGroup == null || note.groupEditId == null
-                      ? null
-                      : () => onOpenGroup!(note.groupEditId!),
-                ),
-              ],
-            );
-      // A group's fields are edited through the group node, which no reveal
-      // ever points at.
-      if (!reveal) return row;
-      return RevealedField(field: dirtyFieldFor(field), child: row);
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 16,
       children: [
-        if (visibleFields.contains(TriggerAdvancedField.id) ||
-            visibleFields.contains(TriggerAdvancedField.threshold) ||
-            visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
-            showSpeed) ...[
+        if (visible(TriggerAdvancedField.id) ||
+            visible(TriggerAdvancedField.threshold) ||
+            visible(TriggerAdvancedField.resumeTimeout) ||
+            speed != null)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: 12,
             children: [
-              if (visibleFields.contains(TriggerAdvancedField.id))
-                withNote(
-                  TriggerAdvancedField.id,
-                  FTextField(
-                    label: UnsavedLabel(
-                      state: idField.dirty,
-                      onRevert: idField.onRevert,
-                      mixed: idField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldIdLabel,
-                        tooltipContent: const TriggerIdTooltip(),
-                      ),
-                    ),
-                    control: FTextFieldControl.managed(
-                      controller: idController,
+              if (visible(TriggerAdvancedField.id))
+                InheritableField(
+                  field: gestureIdField,
+                  groupField: gestureGroupIdField,
+                  builder: (context, field) => _TextRow(
+                    field: field,
+                    label: LabelWithTooltip(
+                      label: l10n.triggerFieldIdLabel,
+                      tooltipContent: const TriggerIdTooltip(),
                     ),
                     hint: l10n.triggerFieldIdHint,
                   ),
                 ),
-              if (visibleFields.contains(TriggerAdvancedField.threshold) ||
-                  visibleFields.contains(TriggerAdvancedField.resumeTimeout) ||
-                  showSpeed)
+              if (visible(TriggerAdvancedField.threshold) ||
+                  visible(TriggerAdvancedField.resumeTimeout) ||
+                  speed != null)
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    if (visibleFields.contains(TriggerAdvancedField.threshold))
+                    if (visible(TriggerAdvancedField.threshold))
                       SizedBox(
                         width: _fieldWidth,
-                        child: withNote(
-                          TriggerAdvancedField.threshold,
-                          FTextField(
-                            label: UnsavedLabel(
-                              state: thresholdField.dirty,
-                              onRevert: thresholdField.onRevert,
-                              mixed: thresholdField.mixed,
-                              child: LabelWithTooltip(
-                                label: l10n.triggerFieldThresholdLabel,
-                                tooltipContent: const TriggerThresholdTooltip(),
-                                textStyle: const TextStyle(
-                                  height: 1.4,
-                                  fontFamily: 'monospaced',
-                                ),
+                        child: InheritableField(
+                          field: gestureThresholdField,
+                          groupField: gestureGroupThresholdField,
+                          builder: (context, field) => _TextRow(
+                            field: field,
+                            label: LabelWithTooltip(
+                              label: l10n.triggerFieldThresholdLabel,
+                              tooltipContent: const TriggerThresholdTooltip(),
+                              textStyle: const TextStyle(
+                                height: 1.4,
+                                fontFamily: 'monospaced',
                               ),
                             ),
                             inputFormatters: thresholdInputFormatters,
-                            control: FTextFieldControl.managed(
-                              controller: thresholdController,
-                            ),
                             hint: l10n.triggerFieldThresholdHint,
                           ),
                         ),
                       ),
-                    if (visibleFields.contains(
-                      TriggerAdvancedField.resumeTimeout,
-                    ))
+                    if (visible(TriggerAdvancedField.resumeTimeout))
                       SizedBox(
                         width: _fieldWidth,
-                        child: withNote(
-                          TriggerAdvancedField.resumeTimeout,
-                          FTextField(
-                            label: UnsavedLabel(
-                              state: resumeTimeoutField.dirty,
-                              onRevert: resumeTimeoutField.onRevert,
-                              mixed: resumeTimeoutField.mixed,
-                              child: LabelWithTooltip(
-                                label: l10n.triggerFieldResumeTimeoutLabel,
-                                tooltipContent:
-                                    const TriggerResumeTimeoutTooltip(),
-                              ),
+                        child: InheritableField(
+                          field: gestureResumeTimeoutField,
+                          groupField: gestureGroupResumeTimeoutField,
+                          builder: (context, field) => _TextRow(
+                            field: field,
+                            label: LabelWithTooltip(
+                              label: l10n.triggerFieldResumeTimeoutLabel,
+                              tooltipContent:
+                                  const TriggerResumeTimeoutTooltip(),
                             ),
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             keyboardType: TextInputType.number,
-                            control: FTextFieldControl.managed(
-                              controller: resumeTimeoutController,
-                            ),
                             hint: l10n.triggerFieldResumeTimeoutHint,
                           ),
                         ),
                       ),
-                    if (showSpeed)
-                      const SizedBox(width: _fieldWidth, child: SpeedField()),
+                    if (speed case final speed?)
+                      SizedBox(width: _fieldWidth, child: speed),
                   ],
                 ),
             ],
           ),
-        ],
-        if (showLockPointer ||
-            visibleFields.contains(TriggerAdvancedField.accelerated) ||
-            visibleFields.contains(TriggerAdvancedField.blockEvents) ||
-            visibleFields.contains(TriggerAdvancedField.clearModifiers) ||
-            visibleFields.contains(TriggerAdvancedField.setLastTrigger)) ...[
+        if (lockPointer != null ||
+            visible(TriggerAdvancedField.accelerated) ||
+            visible(TriggerAdvancedField.blockEvents) ||
+            visible(TriggerAdvancedField.clearModifiers) ||
+            visible(TriggerAdvancedField.setLastTrigger))
           Column(
             spacing: 8,
             children: [
-              if (visibleFields.contains(TriggerAdvancedField.accelerated))
-                withNote(
-                  TriggerAdvancedField.accelerated,
-                  FCheckbox(
-                    value: effective(
-                      TriggerAdvancedField.accelerated,
-                      acceleratedField.value,
-                    ),
-                    onChange: acceleratedField.onChanged,
-                    label: UnsavedLabel(
-                      state: acceleratedField.dirty,
-                      onRevert: acceleratedField.onRevert,
-                      mixed: acceleratedField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldAcceleratedLabel,
-                        tooltipContent: const TriggerAcceleratedTooltip(),
-                      ),
-                    ),
-                  ),
+              if (visible(TriggerAdvancedField.accelerated))
+                flag(
+                  gestureAcceleratedField,
+                  gestureGroupAcceleratedField,
+                  l10n.triggerFieldAcceleratedLabel,
+                  const TriggerAcceleratedTooltip(),
                 ),
-              if (visibleFields.contains(TriggerAdvancedField.blockEvents))
-                withNote(
-                  TriggerAdvancedField.blockEvents,
-                  FCheckbox(
-                    value: effective(
-                      TriggerAdvancedField.blockEvents,
-                      blockEventsField.value,
-                    ),
-                    onChange: blockEventsField.onChanged,
-                    label: UnsavedLabel(
-                      state: blockEventsField.dirty,
-                      onRevert: blockEventsField.onRevert,
-                      mixed: blockEventsField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldBlockEventsLabel,
-                        tooltipContent: const TriggerBlockEventsTooltip(),
-                      ),
-                    ),
-                  ),
+              if (visible(TriggerAdvancedField.blockEvents))
+                flag(
+                  gestureBlockEventsField,
+                  gestureGroupBlockEventsField,
+                  l10n.triggerFieldBlockEventsLabel,
+                  const TriggerBlockEventsTooltip(),
                 ),
-              if (visibleFields.contains(TriggerAdvancedField.clearModifiers))
-                withNote(
-                  TriggerAdvancedField.clearModifiers,
-                  FCheckbox(
-                    value: effective(
-                      TriggerAdvancedField.clearModifiers,
-                      clearModifiersField.value,
-                    ),
-                    onChange: clearModifiersField.onChanged,
-                    label: UnsavedLabel(
-                      state: clearModifiersField.dirty,
-                      onRevert: clearModifiersField.onRevert,
-                      mixed: clearModifiersField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldClearModifiersLabel,
-                        tooltipContent: const TriggerClearModifiersTooltip(),
-                      ),
-                    ),
-                  ),
+              if (visible(TriggerAdvancedField.clearModifiers))
+                flag(
+                  gestureClearModifiersField,
+                  gestureGroupClearModifiersField,
+                  l10n.triggerFieldClearModifiersLabel,
+                  const TriggerClearModifiersTooltip(),
                 ),
-              if (visibleFields.contains(TriggerAdvancedField.setLastTrigger))
-                withNote(
-                  TriggerAdvancedField.setLastTrigger,
-                  FCheckbox(
-                    value: effective(
-                      TriggerAdvancedField.setLastTrigger,
-                      setLastTriggerField.value,
-                    ),
-                    onChange: setLastTriggerField.onChanged,
-                    label: UnsavedLabel(
-                      state: setLastTriggerField.dirty,
-                      onRevert: setLastTriggerField.onRevert,
-                      mixed: setLastTriggerField.mixed,
-                      child: LabelWithTooltip(
-                        label: l10n.triggerFieldSetLastTriggerLabel,
-                        tooltipContent: const TriggerSetLastTriggerTooltip(),
-                      ),
-                    ),
-                  ),
+              if (visible(TriggerAdvancedField.setLastTrigger))
+                flag(
+                  gestureSetLastTriggerField,
+                  gestureGroupSetLastTriggerField,
+                  l10n.triggerFieldSetLastTriggerLabel,
+                  const TriggerSetLastTriggerTooltip(),
                 ),
-              if (showLockPointer) const LockPointerField(),
+              ?lockPointer,
             ],
           ),
-        ],
-        if (visibleFields.contains(TriggerAdvancedField.conditions)) ...[
-          withNote(
-            TriggerAdvancedField.conditions,
-            ConditionEditor.generic(
-              condition: conditionsField.value,
-              onConditionChanged: conditionsField.onChanged,
+        if (visible(TriggerAdvancedField.conditions))
+          InheritableField(
+            field: gestureConditionsField,
+            groupField: gestureGroupConditionsField,
+            reveal: false,
+            builder: (context, field) => ConditionEditor.generic(
+              condition: field.value,
+              onConditionChanged: field.onChanged,
               title: l10n.triggerConditionsTitle,
               titleTooltipContent: const TriggerConditionsTooltip(),
               bodyBackgroundColor: conditionsBodyBackgroundColor,
-              dirtyState: conditionsField.dirty,
-              onRevert: conditionsField.onRevert,
-              mixed: conditionsField.mixed,
+              dirtyState: field.dirty,
+              onRevert: field.onRevert,
+              mixed: field.mixed,
               inherited: inheritedConditions,
-              inheritedForGroup: scope != null,
-              onOpenInheritedGroup: onOpenGroup == null
-                  ? null
-                  : (source) {
-                      final editId = source.groupEditId;
-                      if (editId != null) onOpenGroup!(editId);
-                    },
-              revealField: dirtyFieldFor(TriggerAdvancedField.conditions),
+              inheritedForGroup:
+                  EditLocationScope.maybeOf(context)?.group != null,
+              onOpenInheritedGroup: (source) {
+                final editId = source.groupEditId;
+                final device = EditLocationScope.deviceOf(context);
+                if (editId == null || device == null) return;
+                ref
+                    .read(selectedGroupProvider.notifier)
+                    .open(GestureGroupLocation(device: device, editId: editId));
+              },
+              revealField: field.dirtyField,
             ),
-            reveal: false,
           ),
-        ],
-        if (visibleFields.contains(TriggerAdvancedField.endConditions)) ...[
-          withNote(
-            TriggerAdvancedField.endConditions,
-            ConditionEditor.generic(
+        if (visible(TriggerAdvancedField.endConditions))
+          InheritableField(
+            field: gestureEndConditionsField,
+            groupField: gestureGroupEndConditionsField,
+            reveal: false,
+            builder: (context, field) => ConditionEditor.generic(
               title: l10n.triggerEndConditionsTitle,
-              dirtyState: endConditionsField.dirty,
-              onRevert: endConditionsField.onRevert,
+              dirtyState: field.dirty,
+              onRevert: field.onRevert,
               titleTooltipContent: const TriggerEndConditionsTooltip(),
               emptyMessage: l10n.triggerEndConditionsEmpty,
-              condition: endConditionsField.value,
+              condition: field.value,
               bodyBackgroundColor: conditionsBodyBackgroundColor,
-              onConditionChanged: endConditionsField.onChanged,
-              mixed: endConditionsField.mixed,
-              revealField: dirtyFieldFor(TriggerAdvancedField.endConditions),
+              onConditionChanged: field.onChanged,
+              mixed: field.mixed,
+              revealField: field.dirtyField,
             ),
-            reveal: false,
           ),
-        ],
       ],
+    );
+  }
+}
+
+class _TextRow<T> extends HookWidget {
+  const _TextRow({
+    required this.field,
+    required this.label,
+    required this.hint,
+    this.inputFormatters,
+    this.keyboardType,
+  });
+
+  final SchemaEditableField<T> field;
+  final Widget label;
+  final String hint;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = useSyncedTextController(
+      field.text,
+      field.onTextChanged,
+    );
+    return FTextField(
+      label: UnsavedLabel(
+        state: field.dirty,
+        onRevert: field.onRevert,
+        mixed: field.mixed,
+        child: label,
+      ),
+      inputFormatters: inputFormatters,
+      keyboardType: keyboardType,
+      control: FTextFieldControl.managed(controller: controller),
+      hint: hint,
     );
   }
 }
@@ -463,21 +327,6 @@ enum TriggerAdvancedField {
   conditions,
   endConditions,
 }
-
-/// The row a shared property is edited in. Conditions have no counterpart
-/// here: a group merges them into its subtree instead of sharing a value.
-TriggerAdvancedField triggerAdvancedFieldFor(
-  SharedTriggerProperty property,
-) => switch (property) {
-  SharedTriggerProperty.id => TriggerAdvancedField.id,
-  SharedTriggerProperty.threshold => TriggerAdvancedField.threshold,
-  SharedTriggerProperty.resumeTimeout => TriggerAdvancedField.resumeTimeout,
-  SharedTriggerProperty.accelerated => TriggerAdvancedField.accelerated,
-  SharedTriggerProperty.blockEvents => TriggerAdvancedField.blockEvents,
-  SharedTriggerProperty.clearModifiers => TriggerAdvancedField.clearModifiers,
-  SharedTriggerProperty.setLastTrigger => TriggerAdvancedField.setLastTrigger,
-  SharedTriggerProperty.endConditions => TriggerAdvancedField.endConditions,
-};
 
 extension TriggerAdvancedFieldSchema on TriggerAdvancedField {
   ConfigDirtyField get dirtyField => switch (this) {

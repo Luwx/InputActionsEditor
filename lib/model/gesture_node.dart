@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/model/condition.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:meta_generator/meta_generator.dart';
 
@@ -34,6 +35,12 @@ sealed class GestureNode with _$GestureNode {
     bool? clearModifiers,
     bool? setLastTrigger,
     Condition? endConditions,
+    List<MouseButtonValue>? mouseButtons,
+    bool? mouseButtonsExactOrder,
+    int? fingers,
+    TriggerSpeed? speed,
+    bool? instant,
+    bool? lockPointer,
 
     /// Unmodelled properties of the group node, preserved for round-trip.
     @Default(<String, dynamic>{}) Map<String, dynamic> extra,

@@ -86,6 +86,29 @@ sealed class TouchpadGesture with _$TouchpadGesture implements Gesture {
     final TouchpadStrokeGesture g => g.copyWith(common: c),
   };
 
+  MotionCommon? get motionOrNull => switch (this) {
+    final TouchpadSwipeGesture g => g.motion,
+    final TouchpadPinchGesture g => g.motion,
+    final TouchpadRotateGesture g => g.motion,
+    final TouchpadCircleGesture g => g.motion,
+    final TouchpadStrokeGesture g => g.motion,
+    TouchpadTapGesture() => null,
+    TouchpadClickGesture() => null,
+    TouchpadHoldGesture() => null,
+  };
+
+  /// No-op for the kinds without motion.
+  TouchpadGesture withMotion(MotionCommon m) => switch (this) {
+    final TouchpadSwipeGesture g => g.copyWith(motion: m),
+    final TouchpadPinchGesture g => g.copyWith(motion: m),
+    final TouchpadRotateGesture g => g.copyWith(motion: m),
+    final TouchpadCircleGesture g => g.copyWith(motion: m),
+    final TouchpadStrokeGesture g => g.copyWith(motion: m),
+    TouchpadTapGesture() => this,
+    TouchpadClickGesture() => this,
+    TouchpadHoldGesture() => this,
+  };
+
   TouchpadGesture withFingers(int? f) => switch (this) {
     final TouchpadSwipeGesture g => g.copyWith(fingers: f),
     final TouchpadPinchGesture g => g.copyWith(fingers: f),

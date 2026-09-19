@@ -79,6 +79,27 @@ sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
     final TouchscreenStrokeGesture g => g.copyWith(common: c),
   };
 
+  MotionCommon? get motionOrNull => switch (this) {
+    final TouchscreenSwipeGesture g => g.motion,
+    final TouchscreenPinchGesture g => g.motion,
+    final TouchscreenRotateGesture g => g.motion,
+    final TouchscreenCircleGesture g => g.motion,
+    final TouchscreenStrokeGesture g => g.motion,
+    TouchscreenTapGesture() => null,
+    TouchscreenHoldGesture() => null,
+  };
+
+  /// No-op for the kinds without motion.
+  TouchscreenGesture withMotion(MotionCommon m) => switch (this) {
+    final TouchscreenSwipeGesture g => g.copyWith(motion: m),
+    final TouchscreenPinchGesture g => g.copyWith(motion: m),
+    final TouchscreenRotateGesture g => g.copyWith(motion: m),
+    final TouchscreenCircleGesture g => g.copyWith(motion: m),
+    final TouchscreenStrokeGesture g => g.copyWith(motion: m),
+    TouchscreenTapGesture() => this,
+    TouchscreenHoldGesture() => this,
+  };
+
   TouchscreenGesture withFingers(int? f) => switch (this) {
     final TouchscreenSwipeGesture g => g.copyWith(fingers: f),
     final TouchscreenPinchGesture g => g.copyWith(fingers: f),

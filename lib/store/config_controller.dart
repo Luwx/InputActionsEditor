@@ -10,6 +10,7 @@ import 'package:input_actions_editor/domain/edit/edit_ids.dart';
 import 'package:input_actions_editor/domain/edit/edit_reveal.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/store/edit_history.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
@@ -122,13 +123,19 @@ class ConfigController extends AsyncNotifier<EditSession> {
   void add(ConfigEdit edit, {EditScope? scope}) {
     final before = _draft;
     if (before == null) return;
-    _applyConfig(edit.apply(before));
-    final coalesceKey = coalesceEnabled
+    final applied = edit.apply(before);
+    final adopted = withGroupValues(applied);
+    // Group values also cleared gestures the edit never touched.
+    final cleared = !identical(adopted, applied);
+    _setDraft(adopted);
+    final coalesceKey = coalesceEnabled && !cleared
         ? _coalesceKey(edit, before, _editSource)
         : null;
     _history.push(
       edit,
-      edit.inverse(before),
+      cleared
+          ? RestoreGestures(before, label: edit.label)
+          : edit.inverse(before),
       scope: scope,
       coalesceKey: coalesceKey,
       at: clock(),
@@ -175,7 +182,9 @@ class ConfigController extends AsyncNotifier<EditSession> {
   }
 
   /// Replace the draft, keeping the saved baseline untouched.
-  void _applyConfig(Config config) {
+  void _applyConfig(Config config) => _setDraft(withGroupValues(config));
+
+  void _setDraft(Config config) {
     final session = state.value;
     if (session == null) return;
     state = AsyncData(session.withDraft(assignEditIds(config)));

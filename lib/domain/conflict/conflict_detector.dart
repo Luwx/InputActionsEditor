@@ -1,6 +1,7 @@
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -29,14 +30,17 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 ///   *equal*. Differing conditions (e.g. `$keyboard_modifiers == meta`) are
 ///   assumed to disambiguate, so they are never flagged, this avoids false
 ///   positives on the common "X normally / modifier+X otherwise" pattern.
-List<GestureConflict> detectConflicts(Config config) => [
-  for (final device in DeviceType.values)
-    ..._detectForDevice(
-      device,
-      config.gesturesForDevice(device),
-      _chainKeysForDevice(config.nodesForDevice(device)),
-    ),
-];
+List<GestureConflict> detectConflicts(Config config) {
+  final effective = withInheritedValues(config);
+  return [
+    for (final device in DeviceType.values)
+      ..._detectForDevice(
+        device,
+        effective.gesturesForDevice(device),
+        _chainKeysForDevice(effective.nodesForDevice(device)),
+      ),
+  ];
+}
 
 /// Condition-key prefix each gesture inherits from its ancestor groups. Group
 /// conditions apply to every member, so they take part in the "same

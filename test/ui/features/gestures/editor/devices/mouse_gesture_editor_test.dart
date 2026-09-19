@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -12,6 +14,7 @@ import 'package:input_actions_editor/services/kwin_window_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/devices/mouse_gesture_editor.dart';
+import 'package:yaml/yaml.dart';
 
 import '../../../../../helpers/load_fonts.dart';
 import '../../../../../helpers/seeded_config_controller.dart';
@@ -32,6 +35,11 @@ Widget _host(ProviderContainer container, GestureLocation location) =>
 Future<(ProviderContainer, GestureLocation)> _mount(
   WidgetTester tester,
   List<GestureNode> gestures,
+) => _mountConfig(tester, Config(mouseNodes: gestures));
+
+Future<(ProviderContainer, GestureLocation)> _mountConfig(
+  WidgetTester tester,
+  Config config,
 ) async {
   tester.view
     ..physicalSize = const Size(900, 1800)
@@ -42,7 +50,7 @@ Future<(ProviderContainer, GestureLocation)> _mount(
     overrides: [
       kwinSupportedProvider.overrideWith((ref) => false),
       configControllerProvider.overrideWith(
-        () => SeededController(Config(mouseNodes: gestures)),
+        () => SeededController(config),
       ),
     ],
   );
@@ -158,5 +166,127 @@ void main() {
     expect(find.text('Accelerated'), findsOneWidget);
     expect(find.text('Lock pointer'), findsNothing);
     expect(find.text('Motion Speed'), findsNothing);
+  });
+
+  group('keys a group hands down', () {
+    MouseGesture draftGesture(ProviderContainer container) =>
+        container.read(draftConfigProvider).mouseGestures.single;
+
+    testWidgets('lock the field and name the group', (tester) async {
+      final (container, _) = await _mountConfig(
+        tester,
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Firefox
+      mouse_buttons: [ back ]
+      gestures:
+        - type: press
+'''),
+      );
+
+      expect(find.text('Inherited from Firefox: back'), findsOneWidget);
+      expect(find.text('Forward').hitTestable(), findsNothing);
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Back'),
+            matching: find.byType(FButton),
+          ),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Forward'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(draftGesture(container).common.mouseButtons, isEmpty);
+    });
+
+    testWidgets('a group type is the gesture own, not inherited', (
+      tester,
+    ) async {
+      await _mountConfig(
+        tester,
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Firefox
+      type: stroke
+      gestures:
+        - strokes: [ 'MGQA0DMnPMwwAGQA' ]
+'''),
+      );
+
+      expect(find.textContaining('Inherited from'), findsNothing);
+    });
+
+    testWidgets('a gesture value the group also sets gives way to it', (
+      tester,
+    ) async {
+      const source = '''
+mouse:
+  gestures:
+    - name: Firefox
+      mouse_buttons: [ back ]
+      gestures:
+        - type: press
+          mouse_buttons: [ forward ]
+''';
+      final (container, _) = await _mountConfig(tester, decodeConfig(source));
+
+      expect(find.text('Inherited from Firefox: back'), findsOneWidget);
+      expect(draftGesture(container).common.mouseButtons, isEmpty);
+      final child =
+          (loadYaml(
+                encodeConfig(container.read(draftConfigProvider), source),
+              )
+              as YamlMap)['mouse']['gestures'][0]['gestures'][0];
+      expect((child as YamlMap).containsKey('mouse_buttons'), isFalse);
+    });
+
+    testWidgets('an inherited checkbox shows the group value', (
+      tester,
+    ) async {
+      await _mountConfig(
+        tester,
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Firefox
+      block_events: false
+      gestures:
+        - type: press
+'''),
+      );
+
+      final checkbox = tester.widget<FCheckbox>(
+        find.ancestor(
+          of: find.text('Block events'),
+          matching: find.byType(FCheckbox),
+        ),
+      );
+      expect(checkbox.value, isFalse);
+      expect(find.text('Inherited from Firefox: off'), findsOneWidget);
+    });
+
+    testWidgets('a shared property handed down locks its field too', (
+      tester,
+    ) async {
+      await _mountConfig(
+        tester,
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Firefox
+      threshold: 5
+      gestures:
+        - type: press
+'''),
+      );
+
+      expect(find.text('Inherited from Firefox: 5'), findsOneWidget);
+      expect(find.text('Threshold').hitTestable(), findsNothing);
+    });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -11,6 +12,7 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 part 'gesture_editor_notifier.freezed.dart';
 
@@ -120,5 +122,20 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
         ),
       );
     });
+  }
+}
+
+extension ScopedGestureAccess on WidgetRef {
+  /// Null where there is no single gesture, such as a group's page.
+  T? selectScopedGesture<T>(
+    BuildContext context,
+    T? Function(Gesture? gesture) select,
+  ) {
+    final scope = EditLocationScope.maybeOf(context);
+    final location = scope?.gesture ?? scope?.action?.gesture;
+    if (location == null) return null;
+    return watch(
+      gestureEditorProvider(location).select((s) => select(s.gesture)),
+    );
   }
 }

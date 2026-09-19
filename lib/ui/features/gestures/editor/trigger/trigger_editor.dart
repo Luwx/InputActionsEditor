@@ -21,7 +21,6 @@ import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
@@ -45,9 +44,12 @@ class TriggerEditor extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = context.gestureLocation;
-    final inherited = _byField(
-      ref.watch(gestureInheritedPropertiesProvider(location)),
+    final inheritedProperties = ref.watch(
+      gestureInheritedPropertiesProvider(location),
     );
+    final inheritedSet = {for (final p in inheritedProperties) p.property};
+    bool inherits(SharedTriggerProperty property) =>
+        inheritedSet.contains(property);
     final inheritedConditions = ref.watch(
       gestureInheritedConditionsProvider(location),
     );
@@ -55,7 +57,10 @@ class TriggerEditor extends HookConsumerWidget {
     // unset, so it joins the pinned set rather than hiding in the accordion.
     final pinnedFields = useState({
       ...initialAdvancedFields,
-      ...inherited.keys,
+      for (final field in TriggerAdvancedField.values)
+        if (sharedPropertyOfField[field.dirtyField] case final property?
+            when inherits(property))
+          field,
       if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
     });
     final lockPointer = ref.watch(
@@ -67,8 +72,13 @@ class TriggerEditor extends HookConsumerWidget {
       gestureEditorProvider(location).select((s) => speedTargetFor(s.gesture)),
     );
 
-    final pinLockPointer = useState(lockPointer?.isSet ?? false);
-    final pinSpeed = useState(speed?.isSet ?? false);
+    final pinLockPointer = useState(
+      (lockPointer?.isSet ?? false) ||
+          inherits(SharedTriggerProperty.lockPointer),
+    );
+    final pinSpeed = useState(
+      (speed?.isSet ?? false) || inherits(SharedTriggerProperty.speed),
+    );
     final bodyLockPointer = lockPointer != null && pinLockPointer.value;
     final bodySpeed = speed != null && pinSpeed.value;
     final foldedLockPointer = lockPointer != null && !pinLockPointer.value;
@@ -87,21 +97,14 @@ class TriggerEditor extends HookConsumerWidget {
         location,
       );
       if (accordionFields.any((field) => changed.contains(field.dirtyField)) ||
-          (foldedLockPointer && changed.contains(lockPointer.dirty)) ||
-          (foldedSpeed && changed.contains(speed.dirty))) {
+          (foldedLockPointer &&
+              changed.contains(lockPointer.field.dirtyField)) ||
+          (foldedSpeed && changed.contains(speed.field.dirtyField))) {
         optionsExpanded.value = true;
       }
       return null;
     }, [reveal]);
     final conflicts = ref.watch(conflictReportProvider).forGesture(location);
-
-    void openGroup(int editId) {
-      ref
-          .read(selectedGroupProvider.notifier)
-          .open(
-            GestureGroupLocation(device: location.device, editId: editId),
-          );
-    }
 
     return SectionCard(
       color: context.theme.colors.card.withValues(alpha: 0.55),
@@ -152,11 +155,11 @@ class TriggerEditor extends HookConsumerWidget {
                 delay: const Duration(milliseconds: 800),
                 child: TriggerAdvancedFields(
                   fields: accordionFields,
-                  inherited: inherited,
                   inheritedConditions: inheritedConditions,
-                  onOpenGroup: openGroup,
-                  showLockPointer: foldedLockPointer,
-                  showSpeed: foldedSpeed,
+                  lockPointer: foldedLockPointer
+                      ? const LockPointerField()
+                      : null,
+                  speed: foldedSpeed ? const SpeedField() : null,
                 ),
               ),
               SizedBox(key: optionsEndKey, height: 16),
@@ -179,11 +182,9 @@ class TriggerEditor extends HookConsumerWidget {
           if (pinnedFields.value.isNotEmpty || bodyLockPointer || bodySpeed)
             TriggerAdvancedFields(
               fields: pinnedFields.value,
-              inherited: inherited,
               inheritedConditions: inheritedConditions,
-              onOpenGroup: openGroup,
-              showLockPointer: bodyLockPointer,
-              showSpeed: bodySpeed,
+              lockPointer: bodyLockPointer ? const LockPointerField() : null,
+              speed: bodySpeed ? const SpeedField() : null,
             ),
         ],
       ),
@@ -206,16 +207,6 @@ void _revealOptionsEnd(GlobalKey marker) {
     );
   });
 }
-
-/// Indexes inherited properties by the field that renders them. Conditions are
-/// absent by construction: the daemon AND-merges those, so a group condition is
-/// never in tension with a gesture's own.
-Map<TriggerAdvancedField, InheritedProperty> _byField(
-  List<InheritedProperty> inherited,
-) => {
-  for (final property in inherited)
-    triggerAdvancedFieldFor(property.property): property,
-};
 
 class _TriggerConflictBadge extends StatelessWidget {
   const _TriggerConflictBadge({

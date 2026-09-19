@@ -3,10 +3,10 @@ import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/domain/edit/edit_ids.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/trigger_common.dart';
 
-/// The daemon copies a group's keys onto descendants at parse time, so what a
-/// gesture ends up running with is not what its own node says. These cover the
-/// editor's reconstruction of that.
 void main() {
   Map<int, List<InheritedProperty>> inheritedFor(String yaml) {
     final config = assignEditIds(decodeConfig(yaml));
@@ -32,7 +32,7 @@ mouse:
       );
     });
 
-    test('a property set only on the group is inherited, not a conflict', () {
+    test('a property set only on the group is inherited', () {
       final inherited = singleGesture('''
 mouse:
   gestures:
@@ -43,50 +43,29 @@ mouse:
       expect(inherited, hasLength(1));
       expect(inherited.single.property, SharedTriggerProperty.id);
       expect(inherited.single.value, 'shared');
-      expect(inherited.single.overridden, isFalse);
     });
 
-    test('setLocally separates a gesture override from an ancestor clash', () {
-      final gestureSets = singleGesture('''
-mouse:
-  gestures:
-    - block_events: false
-      gestures:
-        - type: press
-          block_events: true
-''').single;
-      expect(gestureSets.setLocally, isTrue);
-      expect(gestureSets.overridden, isTrue);
-
-      // Two groups clash over a gesture that sets nothing: still undefined,
-      // but the gesture's own controls should show the inherited value.
-      final groupsClash = singleGesture('''
-mouse:
-  gestures:
-    - block_events: false
-      gestures:
-        - block_events: true
-          gestures:
-            - type: press
-''').single;
-      expect(groupsClash.setLocally, isFalse);
-      expect(groupsClash.overridden, isTrue);
-    });
-
-    test('a property set on both group and gesture is flagged', () {
-      final inherited = singleGesture('''
+    test('a gesture value the group also sets gives way on load', () {
+      final config = decodeConfig('''
 mouse:
   gestures:
     - id: shared
+      mouse_buttons: [ back ]
       gestures:
         - type: press
           id: mine
+          mouse_buttons: [ forward ]
 ''');
-      expect(inherited.single.property, SharedTriggerProperty.id);
-      expect(inherited.single.overridden, isTrue);
+      final own = config.mouseGestures.single.common;
+      expect(own.id, isNull);
+      expect(own.mouseButtons, isEmpty);
+
+      final effective = withInheritedValues(config).mouseGestures.single.common;
+      expect(effective.id, 'shared');
+      expect(effective.mouseButtons, [MouseButtonValue.back]);
     });
 
-    test('two ancestors setting the same property is also flagged', () {
+    test('the nearest of several groups supplies the value', () {
       final inherited = singleGesture('''
 mouse:
   gestures:
@@ -96,14 +75,10 @@ mouse:
           gestures:
             - type: press
 ''');
-      expect(inherited.single.overridden, isTrue);
-      // Nearest ancestor supplies the shown value; the daemon itself does not
-      // resolve this in a defined way.
       expect(inherited.single.value, 'inner');
-      expect(inherited.single.groupName, '');
     });
 
-    test('properties accumulate across ancestors without colliding', () {
+    test('properties accumulate across ancestors', () {
       final inherited = singleGesture('''
 mouse:
   gestures:
@@ -114,7 +89,6 @@ mouse:
             - type: press
 ''');
       expect(inherited, hasLength(2));
-      expect(inherited.every((i) => !i.overridden), isTrue);
       expect(
         inherited.map((i) => i.property).toSet(),
         {SharedTriggerProperty.id, SharedTriggerProperty.resumeTimeout},
@@ -240,6 +214,12 @@ mouse:
       clear_modifiers: true
       set_last_trigger: false
       end_conditions: $a
+      mouse_buttons: [ back ]
+      mouse_buttons_exact_order: true
+      fingers: 3
+      speed: fast
+      instant: true
+      lock_pointer: true
       gestures:
         - type: press
 ''');
@@ -247,6 +227,75 @@ mouse:
         inherited.map((i) => i.property).toSet(),
         SharedTriggerProperty.values.toSet(),
       );
+    });
+  });
+
+  group('withGroupValues', () {
+    test('a gesture placed under a group drops what the group sets', () {
+      final config = decodeConfig('''
+mouse:
+  gestures:
+    - mouse_buttons: [ back ]
+      threshold: 5
+      gestures:
+        - type: press
+          name: In
+''');
+      final group = config.mouseNodes.single as GestureGroupNode;
+      final placed = config.withNodesForDevice(DeviceType.mouse, [
+        group.copyWith(
+          children: [
+            ...group.children,
+            const GestureNode.leaf(
+              PressGesture(
+                common: TriggerCommon(
+                  name: 'Moved',
+                  mouseButtons: [MouseButtonValue.forward],
+                  threshold: '9',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ]);
+
+      final adopted = withGroupValues(placed).mouseGestures.last.common;
+      expect(adopted.name, 'Moved');
+      expect(adopted.mouseButtons, isEmpty);
+      expect(adopted.threshold, isNull);
+    });
+
+    test('a config already following its groups is returned as is', () {
+      final config = decodeConfig('''
+mouse:
+  gestures:
+    - type: stroke
+      mouse_buttons: [ back ]
+      gestures:
+        - strokes: [ 'MGQA0DMnPMwwAGQA' ]
+''');
+      expect(identical(withGroupValues(config), config), isTrue);
+    });
+  });
+
+  group('withInheritedValues', () {
+    test('fills in what a gesture leaves to its groups, nearest first', () {
+      final config = decodeConfig('''
+mouse:
+  gestures:
+    - mouse_buttons: [ back ]
+      speed: slow
+      gestures:
+        - speed: fast
+          gestures:
+            - type: stroke
+              lock_pointer: true
+''');
+      final gesture =
+          withInheritedValues(config).mouseGestures.single as StrokeGesture;
+      expect(gesture.common.mouseButtons, [MouseButtonValue.back]);
+      expect(gesture.motion.speed, TriggerSpeed.fast);
+      expect(gesture.motion.lockPointer, isTrue);
     });
   });
 }

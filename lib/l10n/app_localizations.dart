@@ -1024,11 +1024,11 @@ abstract class AppLocalizations {
   /// **'Inherited from {group}: {value}'**
   String inheritedFieldFrom(String group, String value);
 
-  /// Warning under a trigger field that both the gesture and an ancestor group set.
+  /// Heading over the group keys the editor shows read-only, such as direction or strokes
   ///
   /// In en, this message translates to:
-  /// **'Also set by {group}. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.'**
-  String inheritedFieldConflict(String group);
+  /// **'Other trigger keys'**
+  String get groupOtherKeysTitle;
 
   /// Title of the panel editing properties every gesture in a group inherits.
   ///

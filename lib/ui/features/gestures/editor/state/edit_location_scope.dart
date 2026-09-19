@@ -6,7 +6,13 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
+
+typedef GestureSchemaField<T> =
+    GeneratedEditField<Config, GestureLocation, T, Lens<Config, T>>;
+typedef GroupSchemaField<T> =
+    GeneratedEditField<Config, GestureGroupLocation, T, Lens<Config, T>>;
 
 class EditLocationScope extends InheritedWidget {
   const EditLocationScope({
@@ -43,6 +49,13 @@ class EditLocationScope extends InheritedWidget {
       );
     }
     return location;
+  }
+
+  static DeviceType? deviceOf(BuildContext context) {
+    final scope = maybeOf(context);
+    return scope?.group?.device ??
+        (scope?.gesture ?? scope?.action?.gesture)?.device ??
+        scope?.bulk?.firstOrNull?.device;
   }
 
   static ActionLocation actionOf(BuildContext context) {
@@ -103,6 +116,25 @@ extension ScopedFieldAccess on WidgetRef {
       scope: const GesturesScope(),
       canRead: (config) => actionAt(config, location) != null,
     );
+  }
+
+  /// Null when the scope has no counterpart among [field] and [groupField].
+  SchemaEditableField<T>? scopedSchemaField<T>(
+    BuildContext context, {
+    GestureSchemaField<T>? field,
+    GroupSchemaField<T>? groupField,
+  }) {
+    final group = EditLocationScope.maybeOf(context)?.group;
+    if (group != null) {
+      if (groupField == null) return null;
+      return schemaField(
+        groupField,
+        location: group,
+        scope: const GesturesScope(),
+        canRead: (config) => gestureGroupAt(config, group) != null,
+      );
+    }
+    return field == null ? null : gestureSchemaField(context, field);
   }
 
   SchemaEditableField<T> gestureSchemaField<T>(

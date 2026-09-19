@@ -230,14 +230,9 @@
       }
     }
   },
-  "inheritedFieldConflict": "Also set by {group}. The daemon does not resolve this: it merges the group's value in without checking, and which one wins is undefined.",
-  "@inheritedFieldConflict": {
-    "description": "Warning under a trigger field that both the gesture and an ancestor group set.",
-    "placeholders": {
-      "group": {
-        "type": "String"
-      }
-    }
+  "groupOtherKeysTitle": "Other trigger keys",
+  "@groupOtherKeysTitle": {
+    "description": "Heading over the group keys the editor shows read-only, such as direction or strokes"
   },
   "groupSettingsTitle": "Shared properties",
   "@groupSettingsTitle": {

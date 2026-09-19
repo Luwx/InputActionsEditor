@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -17,6 +19,7 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
   group('input items', () {
@@ -401,30 +404,6 @@ mouse:
       expect(encodeConfig(config2, yaml1), yaml1);
     });
 
-    test('group shared properties are re-emitted', () {
-      const original = '''
-mouse:
-  gestures:
-    - mouse_buttons:
-        - right
-      speed: fast
-      gestures:
-        - type: press
-''';
-      final encoded = encodeConfig(decodeConfig(original), original);
-      expect(encoded, contains('mouse_buttons'));
-      expect(encoded, contains('speed: fast'));
-      expect(
-        decodeConfig(
-          encoded,
-        ).mouseNodes.whereType<GestureGroupNode>().single.extra,
-        {
-          'mouse_buttons': ['right'],
-          'speed': 'fast',
-        },
-      );
-    });
-
     test('modelled shared trigger properties survive a round-trip', () {
       const original = '''
 mouse:
@@ -432,6 +411,8 @@ mouse:
     - id: shared
       resume_timeout: 250
       block_events: false
+      mouse_buttons: [ right ]
+      speed: fast
       gestures:
         - type: press
 ''';
@@ -442,7 +423,10 @@ mouse:
       expect(group.id, 'shared');
       expect(group.resumeTimeout, 250);
       expect(group.blockEvents, false);
+      expect(group.mouseButtons, [MouseButtonValue.right]);
+      expect(group.speed, TriggerSpeed.fast);
       expect(group.extra, isEmpty);
+      expect(group.gestures.single.common.mouseButtons, isEmpty);
       expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
     });
 
@@ -479,6 +463,157 @@ mouse:
             .common
             .name,
         'AlsoIn',
+      );
+    });
+  });
+
+  group('typed trigger groups', () {
+    const original = r'''
+mouse:
+  gestures:
+    - conditions: $window_class == firefox
+      gestures:
+        - type: stroke
+          mouse_buttons: [ back ]
+          gestures:
+            - strokes: [ 'MGQA0DMnPMwwAGQA' ]
+              actions:
+                - input:
+                    - keyboard: [ leftctrl+t ]
+            - strokes: [ 'MAAAMTNkZAA=' ]
+              actions:
+                - input:
+                    - keyboard: [ leftctrl+n ]
+        - type: press
+          mouse_buttons: [ forward ]
+''';
+
+    GestureGroupNode strokeGroupOf(Config config) =>
+        (config.mouseNodes.single as GestureGroupNode).children.first
+            as GestureGroupNode;
+
+    test('children take the keys the group hands down', () {
+      final config = decodeConfig(original);
+      final strokeGroup = strokeGroupOf(config);
+      expect(strokeGroup.mouseButtons, [MouseButtonValue.back]);
+
+      final strokes = strokeGroup.gestures.cast<StrokeGesture>().toList();
+      expect(strokes.map((g) => g.strokes), [
+        ['MGQA0DMnPMwwAGQA'],
+        ['MAAAMTNkZAA='],
+      ]);
+      expect(strokes.map((g) => g.common.mouseButtons), everyElement(isEmpty));
+      expect(
+        strokeGroupOf(
+          withInheritedValues(config),
+        ).gestures.map((g) => g.common.mouseButtons),
+        everyElement([MouseButtonValue.back]),
+      );
+      expect(strokes.map((g) => g.common.actions.length), [1, 1]);
+    });
+
+    test('children do not repeat what they inherit', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(
+        plainYamlValue(loadYaml(encoded)),
+        equals(plainYamlValue(loadYaml(original))),
+      );
+    });
+
+    test(
+      'a child moved out of the group keeps its type, not the group keys',
+      () {
+        final config = decodeConfig(original);
+        final app = config.mouseNodes.single as GestureGroupNode;
+        final strokeGroup = strokeGroupOf(config);
+        final edited = config.withNodesForDevice(DeviceType.mouse, [
+          strokeGroup.children.first,
+          app.copyWith(
+            children: [
+              strokeGroup.copyWith(children: strokeGroup.children.sublist(1)),
+              ...app.children.skip(1),
+            ],
+          ),
+        ]);
+
+        final encoded = encodeConfig(edited, original);
+        final moved = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+        expect(moved['type'], 'stroke');
+        expect((moved as YamlMap).containsKey('mouse_buttons'), isFalse);
+
+        final gesture =
+            (decodeConfig(encoded).mouseNodes.first as GestureLeaf).gesture
+                as StrokeGesture;
+        expect(gesture.strokes, ['MGQA0DMnPMwwAGQA']);
+      },
+    );
+
+    YamlMap written(Config config) =>
+        (loadYaml(encodeConfig(config, '')) as YamlMap)['mouse']['gestures'][0]
+            as YamlMap;
+
+    test('a group whose gestures share a type writes it once', () {
+      final group = written(
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Buttons
+      gestures:
+        - type: press
+          name: A
+        - type: press
+          name: B
+'''),
+      );
+      expect(group['type'], 'press');
+      expect(
+        (group['gestures'] as YamlList).map((g) => (g as YamlMap)['type']),
+        everyElement(isNull),
+      );
+    });
+
+    test('nested groups sharing a type write it on the outermost', () {
+      final outer = written(
+        decodeConfig('''
+mouse:
+  gestures:
+    - name: Outer
+      gestures:
+        - name: Inner
+          gestures:
+            - type: press
+              name: A
+        - type: press
+          name: B
+'''),
+      );
+      expect(outer['type'], 'press');
+      expect((outer['gestures'][0] as YamlMap).containsKey('type'), isFalse);
+    });
+
+    test('another type joining a group puts the type back on each', () {
+      final config = decodeConfig(original);
+      final strokeGroup = strokeGroupOf(config);
+      final app = config.mouseNodes.single as GestureGroupNode;
+      final edited = config.withNodesForDevice(DeviceType.mouse, [
+        app.copyWith(
+          children: [
+            strokeGroup.copyWith(
+              children: [
+                ...strokeGroup.children,
+                const GestureNode.leaf(PressGesture(common: TriggerCommon())),
+              ],
+            ),
+            ...app.children.skip(1),
+          ],
+        ),
+      ]);
+
+      final group = written(edited)['gestures'][0] as YamlMap;
+      expect(group.containsKey('type'), isFalse);
+      expect(
+        (group['gestures'] as YamlList).map((g) => (g as YamlMap)['type']),
+        ['stroke', 'stroke', 'press'],
       );
     });
   });
@@ -671,7 +806,7 @@ touchpad:
 
       expect(
         encodeConfig(config, ''),
-        contains('          name: A\n\n        - type: press'),
+        contains('        - name: A\n\n        - name: B'),
       );
     });
   });

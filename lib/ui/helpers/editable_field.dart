@@ -6,7 +6,7 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
-    show GestureLocation;
+    show ConfigDirtyField, GestureLocation;
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -45,10 +45,14 @@ class SchemaEditableField<T> {
     required this.onChanged,
     required this.onRevert,
     required this.adapter,
+    required this.dirtyField,
     this.mixed = false,
   });
 
   final T value;
+
+  /// What an undo of this field reveals.
+  final ConfigDirtyField dirtyField;
   final DirtyMarkState dirty;
   final ValueChanged<T> onChanged;
   final VoidCallback? onRevert;
@@ -58,6 +62,16 @@ class SchemaEditableField<T> {
   final bool mixed;
 
   bool get isDirty => dirty.isDirty;
+
+  SchemaEditableField<T> withValue(T value) => SchemaEditableField<T>(
+    value: value,
+    dirty: dirty,
+    onChanged: onChanged,
+    onRevert: onRevert,
+    adapter: adapter,
+    dirtyField: dirtyField,
+    mixed: mixed,
+  );
 
   String get text => adapter.format(value);
 
@@ -140,6 +154,7 @@ extension FieldAccess on WidgetRef {
       onChanged: editable.onChanged,
       onRevert: editable.onRevert,
       adapter: field.adapter,
+      dirtyField: _dirtyFieldOf(field),
     );
   }
 
@@ -192,9 +207,15 @@ extension FieldAccess on WidgetRef {
       onChanged: editable.onChanged,
       onRevert: editable.onRevert,
       adapter: field.adapter,
+      dirtyField: _dirtyFieldOf(field),
     );
   }
 }
+
+// The generator types dirty fields as Object.
+ConfigDirtyField _dirtyFieldOf(
+  GeneratedEditField<Config, Object?, Object?, Object?> field,
+) => field.dirtyField as ConfigDirtyField;
 
 const DeepCollectionEquality _deepEquality = DeepCollectionEquality();
 

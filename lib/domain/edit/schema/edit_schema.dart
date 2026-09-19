@@ -251,11 +251,7 @@ final TreeNode<PointerGesture> pointerNode = subtree<PointerGesture>(
   cases: [valueCase<HoverGesture>('hover')],
 );
 
-// Touchpad/touchscreen `fingers` and `motion` are cross-case: a single lens
-// (`touchpadFingersLens`/`touchpadMotionLens`) dispatches across every case via
-// a `select:`. `motion` keeps the projected comparable (effective lock-pointer
-// normalization) via `composed()`; the cases lacking motion read a default
-// through the select getter. The `id` scopes every name to `touchpad…`.
+// `fingers` and motion speed span every touch case through one `select:` lens.
 final TreeNode<TouchpadGesture> touchpadNode = subtree<TouchpadGesture>(
   id: 'touchpad',
   fields: [
@@ -264,9 +260,8 @@ final TreeNode<TouchpadGesture> touchpadNode = subtree<TouchpadGesture>(
       select: lens(get: _touchpadFingers, set: _setTouchpadFingers),
     ),
     prop(
-      'motion',
-      compare: composed(),
-      select: lens(get: _touchpadMotion, set: _setTouchpadMotion),
+      'motionSpeed',
+      select: lens(get: _touchpadSpeed, set: _setTouchpadSpeed),
     ),
   ],
   cases: [
@@ -313,9 +308,8 @@ final TreeNode<TouchscreenGesture> touchscreenNode =
           select: lens(get: _touchscreenFingers, set: _setTouchscreenFingers),
         ),
         prop(
-          'motion',
-          compare: composed(),
-          select: lens(get: _touchscreenMotion, set: _setTouchscreenMotion),
+          'motionSpeed',
+          select: lens(get: _touchscreenSpeed, set: _setTouchscreenSpeed),
         ),
       ],
       cases: [
@@ -381,6 +375,15 @@ final TreeNode<GestureGroupNode> gestureGroupSubtree =
         prop(GestureGroupNodeMeta.clearModifiers, defaultsTo: false),
         prop(GestureGroupNodeMeta.setLastTrigger, defaultsTo: true),
         prop(GestureGroupNodeMeta.endConditions),
+        prop(
+          GestureGroupNodeMeta.mouseButtons,
+          defaultsTo: const <MouseButtonValue>[],
+        ),
+        prop(GestureGroupNodeMeta.mouseButtonsExactOrder, defaultsTo: false),
+        prop(GestureGroupNodeMeta.fingers),
+        prop(GestureGroupNodeMeta.speed),
+        prop(GestureGroupNodeMeta.instant, defaultsTo: false),
+        prop(GestureGroupNodeMeta.lockPointer, defaultsTo: false),
       ],
     );
 
@@ -534,50 +537,24 @@ TouchscreenGesture _setTouchscreenFingers(
   int? fingers,
 ) => gesture.withFingers(fingers);
 
-MotionCommon _touchpadMotion(TouchpadGesture gesture) => switch (gesture) {
-  TouchpadSwipeGesture(:final motion) => motion,
-  TouchpadPinchGesture(:final motion) => motion,
-  TouchpadRotateGesture(:final motion) => motion,
-  TouchpadCircleGesture(:final motion) => motion,
-  TouchpadStrokeGesture(:final motion) => motion,
-  TouchpadTapGesture() ||
-  TouchpadClickGesture() ||
-  TouchpadHoldGesture() => const MotionCommon(),
-};
+TriggerSpeed? _touchpadSpeed(TouchpadGesture gesture) =>
+    gesture.motionOrNull?.speed;
 
-TouchpadGesture _setTouchpadMotion(
+TouchpadGesture _setTouchpadSpeed(
   TouchpadGesture gesture,
-  MotionCommon value,
-) => switch (gesture) {
-  TouchpadSwipeGesture() => gesture.copyWith(motion: value),
-  TouchpadPinchGesture() => gesture.copyWith(motion: value),
-  TouchpadRotateGesture() => gesture.copyWith(motion: value),
-  TouchpadCircleGesture() => gesture.copyWith(motion: value),
-  TouchpadStrokeGesture() => gesture.copyWith(motion: value),
-  TouchpadTapGesture() ||
-  TouchpadClickGesture() ||
-  TouchpadHoldGesture() => gesture,
+  TriggerSpeed? speed,
+) => switch (gesture.motionOrNull) {
+  final motion? => gesture.withMotion(motion.copyWith(speed: speed)),
+  null => gesture,
 };
 
-MotionCommon _touchscreenMotion(TouchscreenGesture gesture) =>
-    switch (gesture) {
-      TouchscreenSwipeGesture(:final motion) => motion,
-      TouchscreenPinchGesture(:final motion) => motion,
-      TouchscreenRotateGesture(:final motion) => motion,
-      TouchscreenCircleGesture(:final motion) => motion,
-      TouchscreenStrokeGesture(:final motion) => motion,
-      TouchscreenTapGesture() ||
-      TouchscreenHoldGesture() => const MotionCommon(),
-    };
+TriggerSpeed? _touchscreenSpeed(TouchscreenGesture gesture) =>
+    gesture.motionOrNull?.speed;
 
-TouchscreenGesture _setTouchscreenMotion(
+TouchscreenGesture _setTouchscreenSpeed(
   TouchscreenGesture gesture,
-  MotionCommon value,
-) => switch (gesture) {
-  TouchscreenSwipeGesture() => gesture.copyWith(motion: value),
-  TouchscreenPinchGesture() => gesture.copyWith(motion: value),
-  TouchscreenRotateGesture() => gesture.copyWith(motion: value),
-  TouchscreenCircleGesture() => gesture.copyWith(motion: value),
-  TouchscreenStrokeGesture() => gesture.copyWith(motion: value),
-  TouchscreenTapGesture() || TouchscreenHoldGesture() => gesture,
+  TriggerSpeed? speed,
+) => switch (gesture.motionOrNull) {
+  final motion? => gesture.withMotion(motion.copyWith(speed: speed)),
+  null => gesture,
 };

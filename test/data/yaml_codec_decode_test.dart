@@ -1190,21 +1190,21 @@ mouse:
       expect(inner.children.single, isA<GestureLeaf>());
     });
 
-    test('unmodelled group properties are preserved in extra', () {
+    test('group keys decode onto typed fields, the rest into extra', () {
       final c = decodeConfig('''
 mouse:
   gestures:
     - mouse_buttons:
         - right
       speed: fast
+      direction: up
       gestures:
-        - type: press
+        - type: wheel
 ''');
       final group = c.mouseNodes.single as GestureGroupNode;
-      expect(group.extra, {
-        'mouse_buttons': ['right'],
-        'speed': 'fast',
-      });
+      expect(group.mouseButtons, [MouseButtonValue.right]);
+      expect(group.speed, TriggerSpeed.fast);
+      expect(group.extra, {'direction': 'up'});
     });
 
     test('shared trigger properties decode onto the group, not extra', () {
@@ -1232,16 +1232,13 @@ mouse:
       expect(group.extra, isEmpty);
     });
 
-    test('typed gesture with nested sub-gestures flattens into actions', () {
+    test('a typed item with nested gestures is a group, not a gesture', () {
       final c = decodeConfig(r'''
 touchpad:
   gestures:
     - type: swipe
       fingers: 3
       direction: any
-      actions:
-        - on: begin
-          command: base action
       gestures:
         - conditions: $window_maximized == true
           actions:
@@ -1249,14 +1246,20 @@ touchpad:
         - actions:
             - command: sub action b
 ''');
-      final g = c.touchpadGestures.single;
-      expect(g.common.actions.length, 3);
-      // Base action keeps no condition.
-      expect(g.common.actions[0].conditions, isNull);
-      // Sub action a is gated by the sub-gesture condition.
-      expect(g.common.actions[1].conditions, isNotNull);
-      // Sub action b had no condition.
-      expect(g.common.actions[2].conditions, isNull);
+      final group = c.touchpadNodes.single as GestureGroupNode;
+      expect(group.extra, {'direction': 'any'});
+      expect(group.fingers, 3);
+
+      final children = group.gestures.cast<TouchpadSwipeGesture>().toList();
+      expect(children.map((g) => g.fingers), [null, null]);
+      expect(children[0].common.conditions, isNotNull);
+      expect(children[1].common.conditions, isNull);
+      expect(
+        children.map(
+          (g) => (g.common.actions.single.action as CommandAction).command,
+        ),
+        ['sub action a', 'sub action b'],
+      );
     });
   });
 

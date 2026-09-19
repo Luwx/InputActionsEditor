@@ -92,6 +92,39 @@ void main() {
       expect(configOf(c).mouseSpeed?.events, 4);
     });
 
+    test('one undo brings back what a group value cleared', () async {
+      final c = seededContainer(
+        decodeConfig('''
+mouse:
+  gestures:
+    - gestures:
+        - type: press
+          mouse_buttons: [ left ]
+'''),
+      );
+      await c.read(configControllerProvider.future);
+      final group = sessionOf(c).draft.mouseNodes.single as GestureGroupNode;
+      List<MouseButtonValue> own() =>
+          sessionOf(c).draft.mouseGestures.single.common.mouseButtons;
+
+      notifierOf(c).add(
+        SetLens(
+          gestureGroupMouseButtonsLens(
+            GestureGroupLocation(
+              device: DeviceType.mouse,
+              editId: group.editId!,
+            ),
+          ),
+          [MouseButtonValue.right],
+        ),
+        scope: const GesturesScope(),
+      );
+      expect(own(), isEmpty);
+
+      notifierOf(c).undo(scope: const GesturesScope());
+      expect(own(), [MouseButtonValue.left]);
+    });
+
     test('revert dispatches a saved-value edit', () async {
       final c = seededContainer(const Config(mouseSpeed: speed1));
       await c.read(configControllerProvider.future);

@@ -8,7 +8,6 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/circle_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/info_section.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/motion_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/pinch_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/rotation_direction_select.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/strokes_field.dart';
@@ -53,92 +52,55 @@ class _TouchpadTriggerSection extends ConsumerWidget {
         };
       }),
     );
-    final motionField = ref.gestureField(context, touchpadMotionLens);
-    final motion = RevealedField(
-      field: ConfigDirtyField.touchpadMotion,
-      child: MotionField(
-        motion: motionField.value,
-        onChanged: motionField.onChanged,
-      ),
-    );
-
     return switch (kind) {
-      TouchpadTriggerType.swipe => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 16,
-        children: [
-          Builder(
-            builder: (context) {
-              final modeField = ref.gestureField(
-                context,
-                touchpadSwipeModeLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchpadSwipeMode,
-                child: SwipeModeSelector(
-                  mode: modeField.value,
-                  onModeChanged: modeField.onChanged,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchpadTriggerType.swipe => Builder(
+        builder: (context) {
+          final modeField = ref.gestureField(
+            context,
+            touchpadSwipeModeLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchpadSwipeMode,
+            child: SwipeModeSelector(
+              mode: modeField.value,
+              onModeChanged: modeField.onChanged,
+            ),
+          );
+        },
       ),
-      TouchpadTriggerType.pinch => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Builder(
-            builder: (context) {
-              final directionField = ref.gestureField(
-                context,
-                touchpadPinchDirectionLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchpadPinchDirection,
-                child: PinchSection(
-                  direction: directionField.value,
-                  onDirectionChanged: directionField.onChanged,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchpadTriggerType.pinch => Builder(
+        builder: (context) {
+          final directionField = ref.gestureField(
+            context,
+            touchpadPinchDirectionLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchpadPinchDirection,
+            child: PinchSection(
+              direction: directionField.value,
+              onDirectionChanged: directionField.onChanged,
+            ),
+          );
+        },
       ),
-      TouchpadTriggerType.rotate => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Builder(
-            builder: (context) {
-              final directionField = ref.gestureField(
-                context,
-                touchpadRotateDirectionLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchpadRotateDirection,
-                child: RotationDirectionSelect(
-                  direction: directionField.value,
-                  onDirectionChanged: directionField.onChanged,
-                  label: context.l10n.sectionRotateDirectionLabel,
-                  tooltip: context.l10n.sectionRotateDirectionTooltip,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchpadTriggerType.rotate => Builder(
+        builder: (context) {
+          final directionField = ref.gestureField(
+            context,
+            touchpadRotateDirectionLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchpadRotateDirection,
+            child: RotationDirectionSelect(
+              direction: directionField.value,
+              onDirectionChanged: directionField.onChanged,
+              label: context.l10n.sectionRotateDirectionLabel,
+              tooltip: context.l10n.sectionRotateDirectionTooltip,
+            ),
+          );
+        },
       ),
-      TouchpadTriggerType.circle => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          const CircleSection(),
-          motion,
-        ],
-      ),
+      TouchpadTriggerType.circle => const CircleSection(),
       TouchpadTriggerType.tap => const InfoSection(
         title: 'Tap',
         description:
@@ -156,28 +118,21 @@ class _TouchpadTriggerSection extends ConsumerWidget {
             'Activates while the specified number of fingers are held on the '
             'touchpad.',
       ),
-      TouchpadTriggerType.stroke => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 16,
-        children: [
-          Builder(
-            builder: (context) {
-              final strokesField = ref.gestureField(
-                context,
-                touchpadStrokeStrokesLens,
-              );
-              return RevealedField(
-                field: ConfigDirtyField.touchpadStrokeStrokes,
-                child: StrokesField(
-                  strokes: strokesField.value,
-                  onStrokesChanged: strokesField.onChanged,
-                  deviceType: DeviceType.touchpad,
-                ),
-              );
-            },
-          ),
-          motion,
-        ],
+      TouchpadTriggerType.stroke => Builder(
+        builder: (context) {
+          final strokesField = ref.gestureField(
+            context,
+            touchpadStrokeStrokesLens,
+          );
+          return RevealedField(
+            field: ConfigDirtyField.touchpadStrokeStrokes,
+            child: StrokesField(
+              strokes: strokesField.value,
+              onStrokesChanged: strokesField.onChanged,
+              deviceType: DeviceType.touchpad,
+            ),
+          );
+        },
       ),
       null => const SizedBox.shrink(),
     };
