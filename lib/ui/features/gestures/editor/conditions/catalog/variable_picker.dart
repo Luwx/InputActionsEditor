@@ -4,6 +4,7 @@ import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/catalog/variable_catalog_l10n.dart';
+import 'package:input_actions_editor/ui/helpers/use_revealed_list_item.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/l10n/labels/condition_labels.dart';
 
@@ -63,6 +64,19 @@ class _VariablePickerDialog extends HookWidget {
 
     final colors = context.theme.colors;
     final filteredList = filtered();
+    var itemCount = 0;
+    var selectedIndex = -1;
+    for (final entry in filteredList) {
+      itemCount++;
+      for (final variable in entry.variables) {
+        if (variable.name == currentVariable) selectedIndex = itemCount;
+        itemCount++;
+      }
+    }
+    final reveal = useRevealedListItem(
+      index: query.value.isEmpty ? selectedIndex : -1,
+      itemCount: itemCount,
+    );
     final motion = context.theme.dialogStyle.motion;
 
     final expand = useMemoized(
@@ -108,11 +122,9 @@ class _VariablePickerDialog extends HookWidget {
             Divider(color: colors.border, height: 1),
             Flexible(
               child: ListView.builder(
+                controller: reveal.controller,
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                itemCount: filteredList.fold<int>(
-                  0,
-                  (sum, e) => sum + 1 + e.variables.length,
-                ),
+                itemCount: itemCount,
                 itemBuilder: (_, index) {
                   var offset = 0;
                   for (final entry in filteredList) {
@@ -123,6 +135,7 @@ class _VariablePickerDialog extends HookWidget {
                     if (index < offset + entry.variables.length) {
                       final v = entry.variables[index - offset];
                       return _VariableItem(
+                        key: v.name == currentVariable ? reveal.itemKey : null,
                         info: v,
                         groupIcon: entry.group.icon,
                         isSelected: v.name == currentVariable,
@@ -240,6 +253,7 @@ class _VariableItem extends StatelessWidget {
     required this.groupIcon,
     required this.isSelected,
     required this.onTap,
+    super.key,
   });
 
   final VariableInfo info;
