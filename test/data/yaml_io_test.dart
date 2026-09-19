@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/data/yaml_codec.dart';
 import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
 
 /// The block from issue #4: a whole config kept as a comment for reference.
 const referenceBlock = r'''
@@ -225,5 +227,31 @@ mouse:
         TriggerOn.endCancel,
       );
     });
+  });
+
+  test('an edit near an anchor saves, written out in full', () {
+    const source = '''
+anchors:
+  - &button [ back ]
+
+custom_key: kept
+
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: *button
+''';
+    final config = decodeConfig(source);
+    final press = config.mouseGestures.single as PressGesture;
+    final edited = config.withNodesForDevice(DeviceType.mouse, [
+      GestureNode.leaf(
+        press.copyWith(common: press.common.copyWith(name: 'Back')),
+      ),
+    ]);
+    final encoded = encodeConfig(edited, source);
+
+    expect(encoded, isNot(contains('*button')));
+    expect(encoded, contains('custom_key: kept'));
+    expect(decodeConfig(encoded), edited);
   });
 }

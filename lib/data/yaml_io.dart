@@ -136,7 +136,17 @@ Future<void> saveConfigToPath(
 /// Serializes [config] into YAML text, merging changes into [originalText] so
 /// unmodelled keys, comments, and formatting are preserved. Pure (no I/O).
 String encodeConfig(Config config, String originalText) {
-  final source = originalText.trim().isEmpty
+  try {
+    return _encodeOnto(config, originalText);
+  } on AliasException {
+    // yaml_edit won't write near an alias; the model has every value anyway.
+    return _encodeOnto(config, '');
+  }
+}
+
+String _encodeOnto(Config config, String originalText) {
+  final fresh = originalText.trim().isEmpty;
+  final source = fresh
       ? 'mouse:\n  gestures: []\n'
       : materializeDisabledYamlCommentsRecursively(originalText);
   final editor = YamlEditor(source);
@@ -197,6 +207,11 @@ String encodeConfig(Config config, String originalText) {
 
   _saveDeviceRules(editor, doc, config);
   _saveGlobalSettings(editor, doc, config);
+  if (fresh) {
+    for (final MapEntry(:key, :value) in config.extra.entries) {
+      editor.update([key], value);
+    }
+  }
 
   return spaceOutGestures(
     restoreOriginalDisabledItemComments(
