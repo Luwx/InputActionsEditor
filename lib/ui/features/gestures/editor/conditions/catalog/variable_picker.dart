@@ -252,32 +252,26 @@ class _VariableItem extends StatelessWidget {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
 
-    return FTooltip(
-      tipBuilder: (context, controller) => Text(
-        '${info.localizedLabel(context.l10n)}\n'
-        'Type: ${info.type.typeName(context.l10n)}',
-      ),
-      child: FItem(
-        prefix: _TypeBadge(type: info.type),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                info.localizedLabel(context.l10n),
-                overflow: TextOverflow.ellipsis,
-              ),
+    return FItem(
+      prefix: _TypeBadge(type: info.type),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              info.localizedLabel(context.l10n),
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
-        subtitle: Text(
-          info.description,
-          style: typography.body.xs.copyWith(color: colors.mutedForeground),
-        ),
-        onPress: onTap,
-        selected: isSelected,
-        suffix: isSelected ? const Icon(FLucideIcons.check) : null,
+          ),
+        ],
       ),
+      subtitle: Text(
+        info.description,
+        style: typography.body.xs.copyWith(color: colors.mutedForeground),
+      ),
+      onPress: onTap,
+      selected: isSelected,
+      suffix: isSelected ? const Icon(FLucideIcons.check) : null,
     );
   }
 }
