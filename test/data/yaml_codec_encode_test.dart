@@ -151,8 +151,9 @@ void main() {
               ),
         ),
       );
-      expect(map['name'], 'My Press');
-      expect(map['enabled'], false);
+      expect(map['_extra'], {'name': 'My Press', 'enabled': false});
+      expect(map, isNot(contains('name')));
+      expect(map, isNot(contains('enabled')));
       expect(map['id'], 'press_1');
       expect(map['mouse_buttons'], ['right', 'left']);
       expect(map['mouse_buttons_exact_order'], true);
@@ -232,8 +233,9 @@ void main() {
 
       final yaml = encodeConfig(config, '');
       expect(yaml, contains('- type: press'));
-      expect(yaml, contains('# - enabled: false'));
-      expect(yaml, contains('# command: echo hi'));
+      expect(yaml, contains('# - command: echo hi'));
+      expect(yaml, contains('# _extra:'));
+      expect(yaml, contains('# enabled: false'));
       expect(yaml, isNot(contains('# - type: press')));
     });
 
@@ -260,7 +262,7 @@ void main() {
 
         final disabledYaml = encodeConfig(disabledConfig, '');
         expect(disabledYaml, contains('# - type: press'));
-        expect(disabledYaml, contains('# # - enabled: false'));
+        expect(disabledYaml, contains('# # - command: echo hi'));
         final decoded = decodeConfig(disabledYaml);
         expect(decoded.mouseGestures.single.common.enabled, isFalse);
         expect(
@@ -279,8 +281,8 @@ void main() {
         final yaml = encodeConfig(reenabled, disabledYaml);
         expect(yaml, contains('- type: press'));
         expect(yaml, isNot(contains('# - type: press')));
-        expect(yaml, contains('# - enabled: false'));
-        expect(yaml, contains('# command: echo hi'));
+        expect(yaml, contains('# - command: echo hi'));
+        expect(yaml, contains('# enabled: false'));
       },
     );
 
@@ -291,7 +293,8 @@ void main() {
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
 ''');
 
@@ -299,7 +302,8 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
 ''');
         expect(yaml, contains('#   # threshold: 42'));

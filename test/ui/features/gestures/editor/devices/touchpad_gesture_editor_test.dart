@@ -58,7 +58,8 @@ void main() {
     await _mount(tester, '''
 touchpad:
   gestures:
-    - name: Swipes
+    - _extra:
+        name: Swipes
       speed: fast
       fingers: 3
       gestures:

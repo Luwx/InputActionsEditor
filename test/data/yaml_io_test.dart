@@ -97,10 +97,12 @@ mouse:
 mouse:
   gestures:
     # - type: press
-      # enabled: false
       # actions:
-        # # - enabled: false
-          # # command: echo hi
+        # # - command: echo hi
+          # # _extra:
+            # # enabled: false
+      # _extra:
+        # enabled: false
 ''';
       final config = decodeConfig(source);
       expect(config.mouseGestures, hasLength(1));
@@ -113,9 +115,10 @@ mouse:
 mouse:
   gestures:
     - type: press
-      enabled: false
       actions:
         - command: echo hi
+      _extra:
+        enabled: false
 ''';
       final encoded = encodeConfig(decodeConfig(source), source);
       final back = decodeConfig(encoded);
@@ -132,7 +135,8 @@ mouse:
       actions:
         - command: echo hi
         # - command: echo bye
-          # enabled: false
+          # _extra:
+            # enabled: false
 ''');
       expect(config.mouseGestures.single.common.actions, hasLength(2));
       expect(

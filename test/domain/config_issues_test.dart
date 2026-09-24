@@ -167,7 +167,8 @@ device_rules:
 touchscreen:
   gestures:
     - type: tap
-      name: Broken One
+      _extra:
+        name: Broken One
       conditions: $cursor_shape ~~ pointer
 '''),
       );
@@ -211,8 +212,9 @@ touchpad:
 mouse:
   gestures:
     - type: press
-      name: A
-      name: B
+      _extra:
+        name: A
+        name: B
 ''');
     });
 
@@ -221,7 +223,8 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: "unclosed
+      _extra:
+        name: "unclosed
 ''');
     });
 
@@ -253,7 +256,8 @@ touchpad:
 mouse:
   gestures:
     - type: swip
-      name: Gone
+      _extra:
+        name: Gone
 ''');
       expect(config.mouseGestures, isEmpty);
       expect(findConfigIssues(config), isEmpty);
@@ -263,7 +267,8 @@ mouse:
       final config = decodeConfig('''
 mouse:
   gestures:
-    - name: Gone
+    - _extra:
+        name: Gone
       actions:
         - command: echo hi
 ''');
@@ -362,17 +367,37 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: First
+      _extra:
+        name: First
       conditions: $window_class == firefox
     - type: wheel
-      name: Second
+      _extra:
+        name: Second
       conditions: $cursor_shape ~~ pointer
 ''';
       final issue = only(yaml);
-      expect(issue.line, 8);
+      expect(issue.line, 10);
       expect(issue.sourceLine, r'      conditions: $cursor_shape ~~ pointer');
       expect(issue.gestureName, 'Second');
       expect(issue.source, ConfigIssueSource.conditions);
+    });
+
+    test('names the gesture from its _extra map', () {
+      const yaml = r'''
+mouse:
+  gestures:
+    - type: press
+      conditions: $window_class == firefox
+      _extra:
+        name: First
+    - type: wheel
+      conditions: $cursor_shape ~~ pointer
+      _extra:
+        name: Second
+''';
+      final issue = only(yaml);
+      expect(issue.line, 8);
+      expect(issue.gestureName, 'Second');
     });
 
     test('points at the offending line inside a nested group', () {
@@ -380,14 +405,15 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: Nested
+      _extra:
+        name: Nested
       conditions:
         - all:
             - $window_class == firefox
             - $cursor_shape ~~ pointer
 ''';
       final issue = only(yaml);
-      expect(issue.line, 8);
+      expect(issue.line, 9);
       expect(issue.sourceLine!.trim(), r'- $cursor_shape ~~ pointer');
     });
 
@@ -397,14 +423,15 @@ touchpad:
   gestures:
     - type: tap
       fingers: 3
-      name: Tap
+      _extra:
+        name: Tap
       end_conditions: $window_fullscreen ~~ a
       actions:
         - conditions: $window_maximized ~~ b
           command: echo hi
 ''';
       final issues = findConfigIssues(decodeConfig(yaml), yaml);
-      expect(issues.map((i) => i.line), [6, 8]);
+      expect(issues.map((i) => i.line), [7, 9]);
       expect(issues.map((i) => i.source), [
         ConfigIssueSource.endConditions,
         ConfigIssueSource.actionConditions,
@@ -442,25 +469,28 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: Ignored
+      _extra:
+        name: Ignored
     - type: wheel
-      name: Target
+      _extra:
+        name: Target
       direction: up
       conditions: $cursor_shape ~~ pointer
       actions:
         - command: echo hi
 ''';
       final issue = only(yaml);
-      expect(issue.contextStart, 5);
+      expect(issue.contextStart, 6);
       expect(issue.context, [
         '    - type: wheel',
-        '      name: Target',
+        '      _extra:',
+        '        name: Target',
         '      direction: up',
         r'      conditions: $cursor_shape ~~ pointer',
         '      actions:',
         '        - command: echo hi',
       ]);
-      expect(issue.sourceLine, issue.context[3]);
+      expect(issue.sourceLine, issue.context[4]);
     });
 
     test('context for an action condition is just that action', () {
@@ -468,7 +498,8 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: Multi
+      _extra:
+        name: Multi
       actions:
         - command: echo one
         - conditions: $window_maximized ~~ b
@@ -476,7 +507,7 @@ mouse:
         - command: echo three
 ''';
       final issue = only(yaml);
-      expect(issue.contextStart, 7);
+      expect(issue.contextStart, 8);
       expect(issue.context, [
         r'        - conditions: $window_maximized ~~ b',
         '          command: echo two',
@@ -505,14 +536,16 @@ device_rules:
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled
+    #   _extra:
+    #     name: Disabled
     - type: wheel
-      name: Real
+      _extra:
+        name: Real
       conditions: $cursor_shape ~~ pointer
 ''';
       final issue = only(yaml);
       expect(issue.gestureName, 'Real');
-      expect(issue.line, 7);
+      expect(issue.line, 9);
     });
 
     test('no location when the text does not contain the condition', () {
@@ -572,15 +605,17 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: A
+      _extra:
+        name: A
       conditions: $cursor_shape ~~ pointer
     - type: wheel
-      name: B
+      _extra:
+        name: B
       conditions: $cursor_shape ~~ pointer
 ''';
       expect(
         findConfigIssues(decodeConfig(yaml), yaml).map((i) => i.line),
-        [5, 8],
+        [6, 10],
       );
     });
   });
@@ -590,7 +625,8 @@ const _fixtureLike = r'''
 mouse:
   gestures:
     - type: press
-      name: Good
+      _extra:
+        name: Good
       conditions: $window_class == firefox
       actions:
         - command: echo hi

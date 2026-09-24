@@ -367,14 +367,17 @@ void main() {
     final config = decodeConfig('''
 mouse:
   gestures:
-    - name: Strokes
+    - _extra:
+        name: Strokes
       type: stroke
       mouse_buttons: [ back ]
       gestures:
-        - name: Draw
+        - _extra:
+            name: Draw
           strokes: [ 'MGQA0DMnPMwwAGQA' ]
     - type: press
-      name: Tap
+      _extra:
+        name: Tap
 ''');
 
     GestureGroupNode groupOf(WidgetTester tester) =>
@@ -681,7 +684,9 @@ mouse:
       await _pumpList(tester, names: names);
       await Clipboard.setData(
         const ClipboardData(
-          text: 'mouse:\n  gestures:\n    - type: press\n      name: First\n',
+          text:
+              'mouse:\n  gestures:\n    - type: press\n'
+              '      _extra:\n        name: First\n',
         ),
       );
 

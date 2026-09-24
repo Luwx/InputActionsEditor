@@ -111,7 +111,8 @@ mouse:
       final inherited = singleGesture('''
 mouse:
   gestures:
-    - name: Browser
+    - _extra:
+        name: Browser
       threshold: 10
       gestures:
         - type: press
@@ -139,10 +140,12 @@ mouse:
         decodeConfig(r'''
 mouse:
   gestures:
-    - name: Outer
+    - _extra:
+        name: Outer
       conditions: $a
       gestures:
-        - name: Inner
+        - _extra:
+            name: Inner
           conditions: $b
           gestures:
             - type: press
@@ -168,7 +171,8 @@ mouse:
           decodeConfig(r'''
 mouse:
   gestures:
-    - name: Outer
+    - _extra:
+        name: Outer
       threshold: 10
       gestures:
         - type: press
@@ -187,7 +191,8 @@ mouse:
           decodeConfig(r'''
 mouse:
   gestures:
-    - name: Browser
+    - _extra:
+        name: Browser
       conditions: $a
       gestures:
         - type: press
@@ -239,7 +244,8 @@ mouse:
       threshold: 5
       gestures:
         - type: press
-          name: In
+          _extra:
+            name: In
 ''');
       final group = config.mouseNodes.single as GestureGroupNode;
       final placed = config.withNodesForDevice(DeviceType.mouse, [

@@ -42,7 +42,8 @@ void main() {
       final c = decodeConfig('''
 mouse:
   gestures:
-    - name: no type here
+    - _extra:
+        name: no type here
       actions:
         - command: echo hi
 ''');
@@ -180,8 +181,9 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: My Press
-      enabled: false
+      _extra:
+        name: My Press
+        enabled: false
       id: press_1
       group: grp_a
       block_events: false
@@ -235,7 +237,8 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
     #   actions:
     #     - command: echo hi
@@ -255,10 +258,12 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   enabled: false
     #   actions:
-    #     # - enabled: false
-    #       # command: echo hi
+    #     # - command: echo hi
+    #     #   _extra:
+    #     #     enabled: false
+    #   _extra:
+    #     enabled: false
 ''');
       final common = c.mouseGestures.single.common;
       expect(common.enabled, isFalse);
@@ -949,7 +954,8 @@ keyboard:
 pointer:
   gestures:
     - type: hover
-      name: Hover
+      _extra:
+        name: Hover
 ''');
       expect(c.pointerGestures.single, isA<HoverGesture>());
       expect(c.pointerGestures.single.common.name, 'Hover');
@@ -1089,14 +1095,18 @@ mouse:
       name: Group One
   gestures:
     - type: press
-      name: before
+      _extra:
+        name: before
     - type: press
-      name: member a
+      _extra:
+        name: member a
       group: g1
     - type: press
-      name: between
+      _extra:
+        name: between
     - type: press
-      name: member b
+      _extra:
+        name: member b
       group: g1
 ''');
       expect(c.mouseNodes.length, 3);
@@ -1181,7 +1191,8 @@ mouse:
             - conditions: $c
               gestures:
                 - type: press
-                  name: Deep
+                  _extra:
+                    name: Deep
 ''');
       expect(c.mouseGestures.single.common.name, 'Deep');
       final outer = c.mouseNodes.single as GestureGroupNode;

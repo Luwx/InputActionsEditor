@@ -324,7 +324,8 @@ mouse:
   mouse:
     gestures:
       - type: press
-        name: first
+        _extra:
+          name: first
         threshold: 1
   ''';
 

@@ -178,7 +178,8 @@ void main() {
         decodeConfig('''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       mouse_buttons: [ back ]
       gestures:
         - type: press
@@ -211,7 +212,8 @@ mouse:
         decodeConfig('''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       type: stroke
       gestures:
         - strokes: [ 'MGQA0DMnPMwwAGQA' ]
@@ -227,7 +229,8 @@ mouse:
       const source = '''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       mouse_buttons: [ back ]
       gestures:
         - type: press
@@ -253,7 +256,8 @@ mouse:
         decodeConfig('''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       block_events: false
       gestures:
         - type: press
@@ -278,7 +282,8 @@ mouse:
         decodeConfig('''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       threshold: 5
       gestures:
         - type: press

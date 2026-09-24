@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:input_actions_editor/data/legacy_editor_keys.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
@@ -116,8 +117,8 @@ const _sharedKeys = {
 const Set<String> _groupNodeKeys = {
   'gestures',
   'conditions',
-  'name',
-  'enabled',
+  editorExtraKey,
+  ...legacyEditorKeys,
   ..._sharedKeys,
 };
 
@@ -159,8 +160,8 @@ List<GestureNode> _parseDeviceNodes(
         final sub = item['gestures'];
         out.add(
           GestureNode.group(
-            name: item['name'] as String? ?? '',
-            enabled: item['enabled'] as bool? ?? true,
+            name: _editorValue(item, 'name') as String? ?? '',
+            enabled: _editorValue(item, 'enabled') as bool? ?? true,
             conditions: item.containsKey('conditions')
                 ? _parseCondition(item.nodes['conditions'])
                 : null,
@@ -460,9 +461,15 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
 }
 
 // Shared parse helpers
+dynamic _editorValue(YamlMap item, String key) =>
+    switch (item[editorExtraKey]) {
+      final YamlMap extra when extra.containsKey(key) => extra[key],
+      _ => legacyEditorValue(item, key),
+    };
+
 TriggerCommon _parseTriggerCommon(YamlMap m) => TriggerCommon(
-  name: m['name'] as String?,
-  enabled: m['enabled'] as bool?,
+  name: _editorValue(m, 'name') as String?,
+  enabled: _editorValue(m, 'enabled') as bool?,
   id: m['id'] as String?,
   mouseButtons: _parseMouseButtons(m['mouse_buttons']),
   mouseButtonsExactOrder: m['mouse_buttons_exact_order'] as bool? ?? false,
@@ -603,7 +610,7 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   final action = _parseAction(node);
   if (action == null) return null;
   return TriggerAction(
-    enabled: node['enabled'] as bool?,
+    enabled: _editorValue(node, 'enabled') as bool?,
     on: node.containsKey('on')
         ? TriggerOn.fromYaml(node['on'] as String? ?? '')
         : null,
@@ -644,6 +651,38 @@ List<TriggerAction> decodeActionsYaml(String text) {
 /// commenting them out.
 bool isDisableableItemList(String key) =>
     key == 'gestures' || key == 'actions' || key == actionGroupYamlKey;
+
+const editorExtraKey = '_extra';
+
+String? itemEnabledLine(List<String> block, int itemIndent) {
+  final keyIndent = itemIndent + 2;
+  var inExtra = false;
+  for (final line in block) {
+    if (line.trim().isEmpty || line.trimLeft().startsWith('#')) continue;
+    final indent = indentOf(line);
+    if (isListItemAt(line, itemIndent) || indent == keyIndent) {
+      inExtra = _opensExtra(line, keyIndent);
+    } else if (inExtra && indent == keyIndent + 2 && keyAt(line, 'enabled')) {
+      return line;
+    }
+  }
+  return null;
+}
+
+List<String> withEnabledFalse(List<String> block, int itemIndent) {
+  final keyIndent = itemIndent + 2;
+  final flag = '${' ' * (keyIndent + 2)}enabled: false';
+  final extraAt = block.indexWhere((line) => _opensExtra(line, keyIndent));
+  if (extraAt == -1) {
+    return [...block, '${' ' * keyIndent}$editorExtraKey:', flag];
+  }
+  return [...block]..insert(extraAt + 1, flag);
+}
+
+bool _opensExtra(String line, int keyIndent) {
+  final context = blockContext(line);
+  return context?.key == editorExtraKey && context!.indent == keyIndent;
+}
 
 String materializeDisabledYamlCommentsRecursively(String yamlText) {
   var current = yamlText;
@@ -718,15 +757,11 @@ String materializeDisabledYamlComments(String yamlText) {
         block.add(' ' * indentOffset + candidateUncommented);
         j++;
       }
-      final hasEnabled = block.any(
-        (l) =>
-            listItemKeyAt(l, 'enabled', itemIndent) ||
-            (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4),
+      out.addAll(
+        itemEnabledLine(block, itemIndent) == null
+            ? withEnabledFalse(block, itemIndent)
+            : block,
       );
-      out.addAll(block);
-      if (!hasEnabled) {
-        out.add('${' '.padRight(parent.indent + 4)}enabled: false');
-      }
       i = j;
       continue;
     }

@@ -260,11 +260,13 @@ mouse:
       name: Navigation
   gestures:
     - type: press
-      name: A
+      _extra:
+        name: A
       group: grp_nav
     - type: wheel
       direction: up
-      name: B
+      _extra:
+        name: B
 ''';
       final encoded = encodeConfig(decodeConfig(original), original);
       expect(encoded.contains('groups:'), isFalse);
@@ -281,6 +283,115 @@ mouse:
 
       // Migrated text is a fixed point from here on.
       expect(encodeConfig(decoded, encoded), encoded);
+    });
+  });
+
+  group('editor keys', () {
+    test('name and enabled are kept under _extra', () {
+      const original = '''
+mouse:
+  gestures: []
+
+
+touchpad:
+  gestures:
+    - type: click
+      fingers: 2
+      _extra:
+        name: Click 2
+''';
+      final decoded = decodeConfig(original);
+      expect(decoded.touchpadGestures.single.common.name, 'Click 2');
+      expect(encodeConfig(decoded, original), original);
+    });
+
+    test('a disabled group comes back disabled from its comment', () {
+      const config = Config(
+        mouseNodes: [
+          GestureNode.group(
+            name: 'Nav',
+            enabled: false,
+            children: [GestureNode.leaf(PressGesture(common: TriggerCommon()))],
+          ),
+        ],
+      );
+      final encoded = encodeConfig(config, '');
+      expect(loadYaml(encoded)['mouse']['gestures'], isNull);
+
+      final group = decodeConfig(encoded).mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.enabled, isFalse);
+      expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
+    });
+
+    test('a group does not hand its _extra down to its gestures', () {
+      const original = '''
+mouse:
+  gestures:
+    - _extra:
+        name: Nav
+      gestures:
+        - type: press
+''';
+      final decoded = decodeConfig(original);
+      final group = decoded.mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.extra, isEmpty);
+      expect(decoded.mouseGestures.single.common.name, isNull);
+    });
+  });
+
+  group('legacy editor keys', () {
+    test('top-level name and enabled are read and moved on save', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      name: Old
+      actions:
+        - enabled: false
+          command: echo hi
+''';
+      final decoded = decodeConfig(original);
+      final common = decoded.mouseGestures.single.common;
+      expect(common.name, 'Old');
+      expect(common.actions.single.enabled, isFalse);
+
+      final encoded = encodeConfig(decoded, original);
+      final gesture = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+      expect(gesture.containsKey('name'), isFalse);
+      expect(gesture['_extra'], {'name': 'Old'});
+      expect(decodeConfig(encoded), decoded);
+    });
+
+    test('a top-level group name is read and not handed down', () {
+      const original = '''
+mouse:
+  gestures:
+    - name: Nav
+      enabled: false
+      gestures:
+        - type: press
+''';
+      final group =
+          decodeConfig(original).mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.enabled, isFalse);
+      expect(group.extra, isEmpty);
+      expect(group.gestures.single.common.name, isNull);
+    });
+
+    test('a commented-out gesture in the old layout comes back disabled', () {
+      const original = '''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Old
+    #   enabled: false
+''';
+      final common = decodeConfig(original).mouseGestures.single.common;
+      expect(common.name, 'Old');
+      expect(common.enabled, isFalse);
     });
   });
 
@@ -387,7 +498,8 @@ mouse:
             - conditions: $c
               gestures:
                 - type: press
-                  name: Deep
+                  _extra:
+                    name: Deep
                   actions:
                     - command: echo important
 ''';
@@ -437,10 +549,12 @@ mouse:
     - conditions: $a
       gestures:
         - type: press
-          name: In
+          _extra:
+            name: In
         - type: wheel
           direction: up
-          name: AlsoIn
+          _extra:
+            name: AlsoIn
 ''';
       final config = decodeConfig(original);
       final group = config.mouseNodes.single as GestureGroupNode;
@@ -557,12 +671,15 @@ mouse:
         decodeConfig('''
 mouse:
   gestures:
-    - name: Buttons
+    - _extra:
+        name: Buttons
       gestures:
         - type: press
-          name: A
+          _extra:
+            name: A
         - type: press
-          name: B
+          _extra:
+            name: B
 '''),
       );
       expect(group['type'], 'press');
@@ -577,14 +694,18 @@ mouse:
         decodeConfig('''
 mouse:
   gestures:
-    - name: Outer
+    - _extra:
+        name: Outer
       gestures:
-        - name: Inner
+        - _extra:
+            name: Inner
           gestures:
             - type: press
-              name: A
+              _extra:
+                name: A
         - type: press
-          name: B
+          _extra:
+            name: B
 '''),
       );
       expect(outer['type'], 'press');
@@ -674,7 +795,7 @@ mouse:
       );
 
       final encoded = encodeConfig(edited, original);
-      expect(encoded, contains('# sleep: 5'));
+      expect(encoded, contains('# - sleep: 5'));
       expect(encoded, contains('- sleep: 10'));
 
       final reDecoded = decodeConfig(encoded);
@@ -718,7 +839,8 @@ mouse:
   gestures:
 
     - type: press
-      name: A
+      _extra:
+        name: A
 
     - type: wheel
       direction: up
@@ -737,7 +859,8 @@ mouse:
   gestures:
 
     - type: press
-      name: A
+      _extra:
+        name: A
 
     - type: wheel
       direction: up
@@ -759,7 +882,7 @@ touchpad:
       final encoded = encodeConfig(edited, original);
 
       // The untouched mouse section keeps its internal blank lines...
-      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      expect(encoded, contains('        name: A\n\n    - type: wheel'));
       // ...while the edited touchpad section is rewritten with the new value.
       expect(encoded, contains('fingers: 4'));
     });
@@ -769,7 +892,8 @@ touchpad:
 mouse:
   gestures:
     - type: press
-      name: A
+      _extra:
+        name: A
     - type: wheel
       direction: up
 touchpad:
@@ -786,7 +910,7 @@ touchpad:
       ]);
       final encoded = encodeConfig(edited, original);
 
-      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      expect(encoded, contains('        name: A\n\n    - type: wheel'));
       expect(encoded, contains('      direction: up\n\n    - type: press'));
       expect(encoded, contains('\n\n\ntouchpad:'));
     });
@@ -806,7 +930,13 @@ touchpad:
 
       expect(
         encodeConfig(config, ''),
-        contains('        - name: A\n\n        - name: B'),
+        contains(
+          '        - _extra:\n'
+          '            name: A\n'
+          '\n'
+          '        - _extra:\n'
+          '            name: B',
+        ),
       );
     });
   });

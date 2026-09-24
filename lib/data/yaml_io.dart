@@ -246,8 +246,6 @@ Map<String, dynamic> _groupToYaml(
   final type = _hoistedType(node, toMap, inherited);
   final handed = {'type': ?type, ...node.extra};
   return {
-    if (node.name.isNotEmpty) 'name': node.name,
-    if (!node.enabled) 'enabled': false,
     if (node.conditions != null)
       'conditions': conditionToYaml(node.conditions!),
     // Shared trigger properties, in the same key order gestures use.
@@ -268,6 +266,10 @@ Map<String, dynamic> _groupToYaml(
     if (node.threshold != null) 'threshold': node.threshold,
     if (node.accelerated != null) 'accelerated': node.accelerated,
     ...handed,
+    ..._editorExtra({
+      if (node.name.isNotEmpty) 'name': node.name,
+      if (!node.enabled) 'enabled': false,
+    }),
     'gestures': _nodesToYaml(node.children, toMap, {...inherited, ...handed}),
   };
 }
@@ -511,8 +513,6 @@ void _writeCommon(
   TriggerCommon c, {
   bool includeMouseButtons = true,
 }) {
-  if (c.name != null) m['name'] = c.name;
-  if (c.enabled != null) m['enabled'] = c.enabled;
   if (c.id != null) m['id'] = c.id;
   if (includeMouseButtons && c.mouseButtons.isNotEmpty) {
     m['mouse_buttons'] = c.mouseButtons.map((b) => b.toYaml()).toList();
@@ -533,7 +533,12 @@ void _writeCommon(
   if (c.actions.isNotEmpty) {
     m['actions'] = c.actions.map(triggerActionToMap).toList();
   }
+  m.addAll(_editorExtra({'name': ?c.name, 'enabled': ?c.enabled}));
 }
+
+Map<String, dynamic> _editorExtra(Map<String, dynamic> values) => {
+  if (values.isNotEmpty) editorExtraKey: values,
+};
 
 void _writeMotion(Map<String, dynamic> m, MotionCommon mot) {
   if (mot.speed != null) m['speed'] = mot.speed!.toYaml();
@@ -550,7 +555,6 @@ String encodeActionsYaml(List<TriggerAction> actions) {
 
 Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   final m = <String, dynamic>{};
-  if (ta.enabled != null) m['enabled'] = ta.enabled;
   if (ta.on != null) m['on'] = ta.on!.toYaml();
   if (ta.conditions != null) m['conditions'] = conditionToYaml(ta.conditions!);
   if (!ta.conflicting) m['conflicting'] = false;
@@ -558,8 +562,9 @@ Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   if (ta.threshold != null) m['threshold'] = ta.threshold;
   if (ta.id != null) m['id'] = ta.id;
   if (ta.limit != null) m['limit'] = ta.limit;
-  m.addAll(actionToMap(ta.action));
-  return m;
+  return m
+    ..addAll(actionToMap(ta.action))
+    ..addAll(_editorExtra({'enabled': ?ta.enabled}));
 }
 
 Map<String, dynamic> actionToMap(Action action) => switch (action) {
@@ -707,12 +712,8 @@ String commentDisabledYamlItems(String yamlText) {
         block.add(candidate);
         j++;
       }
-      if (block.any(
-        (l) =>
-            (listItemKeyAt(l, 'enabled', itemIndent) ||
-                (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4)) &&
-            l.trimRight().endsWith('false'),
-      )) {
+      if (itemEnabledLine(block, itemIndent)?.trimRight().endsWith('false') ??
+          false) {
         final normalizedBlock = commentDisabledYamlItems(
           block.join('\n'),
         ).split('\n');

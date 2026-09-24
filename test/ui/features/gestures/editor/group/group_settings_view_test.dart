@@ -159,12 +159,15 @@ void main() {
     const source = '''
 mouse:
   gestures:
-    - name: Firefox
+    - _extra:
+        name: Firefox
       type: press
       mouse_buttons: [ back ]
       gestures:
-        - name: Inherits
-        - name: Own
+        - _extra:
+            name: Inherits
+        - _extra:
+            name: Own
           mouse_buttons: [ forward ]
 ''';
     final container = ProviderContainer(
@@ -263,12 +266,15 @@ mouse:
       const source = '''
 mouse:
   gestures:
-    - name: G
+    - _extra:
+        name: G
       gestures:
         - type: press
-          name: P
+          _extra:
+            name: P
         - type: stroke
-          name: S
+          _extra:
+            name: S
 ''';
       final container = await mountGroup(tester, source, DeviceType.mouse);
 
@@ -296,7 +302,8 @@ mouse:
       await mountGroup(tester, '''
 mouse:
   gestures:
-    - name: G
+    - _extra:
+        name: G
       gestures:
         - type: stroke
         - type: wheel
@@ -313,7 +320,8 @@ mouse:
       await mountGroup(tester, '''
 mouse:
   gestures:
-    - name: G
+    - _extra:
+        name: G
       speed: fast
       gestures:
         - type: stroke
@@ -336,7 +344,8 @@ mouse:
       final container = await mountGroup(tester, '''
 touchpad:
   gestures:
-    - name: G
+    - _extra:
+        name: G
       gestures:
         - type: swipe
           direction: left
