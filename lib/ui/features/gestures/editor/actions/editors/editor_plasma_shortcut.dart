@@ -1,13 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/services/kglobalaccel_service.dart';
+import 'package:input_actions_editor/ui/common/file_icon.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/kglobalaccel_provider.dart'
@@ -571,14 +569,10 @@ class _ComponentIcon extends StatelessWidget {
     if (path == null) {
       return Icon(fallbackIcon, size: size);
     }
-    if (path.endsWith('.svg')) {
-      return SvgPicture.file(File(path), width: size, height: size);
-    }
-    return Image.file(
-      File(path),
-      width: size,
-      height: size,
-      errorBuilder: (_, _, _) => Icon(fallbackIcon, size: size),
+    return FileIcon(
+      path: path,
+      size: size,
+      fallback: Icon(fallbackIcon, size: size),
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -560,6 +561,7 @@ class GestureListSection extends HookConsumerWidget {
       isCollapsed: item.isCollapsed,
       scrollBuilder: scrollBuilder,
       gestureCount: item.gestureCount,
+      appClass: item.appClass,
       borderColor: context.theme.colors.border,
       reorderHandle: reorderHandle,
       onToggleCollapse: () =>

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+
 /// Resolves KDE icon paths via the bundled `kde_icon_lookup` helper binary.
 class KIconService {
   const KIconService();
@@ -43,3 +46,12 @@ class KIconService {
     return File(candidate).existsSync() ? candidate : null;
   }
 }
+
+final kIconServiceProvider = Provider<KIconService>(
+  (_) => const KIconService(),
+);
+
+final FutureProviderFamily<String?, String> appIconPathProvider =
+    FutureProvider.family<String?, String>(
+      (ref, name) => ref.read(kIconServiceProvider).resolveIconPath(name),
+    );

@@ -89,6 +89,7 @@ List<_FlatItem> _buildDeviceFlatList(
               device: device,
               isCollapsed: isCollapsed,
               gestureCount: subtreeCount(node),
+              appClass: node.conditions?.soleWindowClass,
               depth: depth,
               parentKey: parentKey,
               isVisible: !anyAncestorCollapsed,

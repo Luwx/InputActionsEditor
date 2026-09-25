@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
@@ -14,18 +15,22 @@ import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/services/kicon_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
+import 'package:input_actions_editor/ui/common/file_icon.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/widgets/gesture_group_header_row.dart';
 
 import '../../../../helpers/mock_clipboard.dart';
 import '../../../../helpers/seeded_config_controller.dart';
@@ -78,6 +83,7 @@ Widget _host({
   int? groupAt,
   int groupSize = 2,
   Config? config,
+  List<Override> overrides = const [],
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -98,6 +104,7 @@ Widget _host({
       deviceFilterProvider.overrideWith(_MouseFilter.new),
       if (preselected)
         selectedGestureProvider.overrideWith(_PreselectedGesture.new),
+      ...overrides,
     ],
     child: FTheme(
       data: AppThemes.zinc.dark.desktop,
@@ -133,6 +140,7 @@ Future<void> _pumpList(
   int? groupAt,
   int groupSize = 2,
   Config? config,
+  List<Override> overrides = const [],
 }) async {
   tester.view
     ..physicalSize = const Size(900, 900)
@@ -145,6 +153,7 @@ Future<void> _pumpList(
       groupAt: groupAt,
       groupSize: groupSize,
       config: config,
+      overrides: overrides,
     ),
   );
   await tester.pumpAndSettle();
@@ -202,6 +211,57 @@ void main() {
 
     expect(find.text('No gestures yet.'), findsNothing);
     expect(_order(tester), ['First', 'Second', 'Third']);
+  });
+
+  testWidgets('a group limited to one app wears its icon', (tester) async {
+    Condition windowClass(String value) => Condition.variable(
+      variable: const ConditionVariableRef.known('window_class'),
+      operator: ConditionOperator.equals,
+      value: ConditionValue.text(value),
+    );
+    GestureNode group(String name, Condition conditions) => GestureGroupNode(
+      name: name,
+      conditions: conditions,
+      children: [
+        GestureNode.leaf(PressGesture(common: TriggerCommon(name: '$name 1'))),
+      ],
+    );
+    const iconPath =
+        'linux/icons/128x128/apps/dev.luwx.input_actions_editor.png';
+
+    await _pumpList(
+      tester,
+      config: Config(
+        mouseNodes: [
+          group(
+            'Browser',
+            ConditionGroup(children: [windowClass('firefox')]),
+          ),
+          group(
+            'Mixed',
+            ConditionGroup(
+              children: [windowClass('firefox'), windowClass('konsole')],
+            ),
+          ),
+        ],
+      ),
+      overrides: [
+        appIconPathProvider.overrideWith(
+          (_, name) async => name == 'firefox' ? iconPath : null,
+        ),
+      ],
+    );
+
+    Finder iconIn(String group) => find.descendant(
+      of: find.ancestor(
+        of: find.text(group),
+        matching: find.byType(GestureGroupHeaderRow),
+      ),
+      matching: find.byType(FileIcon),
+    );
+    expect(iconIn('Browser'), findsOneWidget);
+    expect(tester.widget<FileIcon>(iconIn('Browser')).path, iconPath);
+    expect(iconIn('Mixed'), findsNothing);
   });
 
   testWidgets('a redirect parks the row under the header', (tester) async {

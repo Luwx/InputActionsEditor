@@ -4,8 +4,10 @@ import 'package:forui/forui.dart';
 import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/services/kicon_service.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
+import 'package:input_actions_editor/ui/common/file_icon.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -25,6 +27,7 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
     required this.isCollapsed,
     required this.scrollBuilder,
     required this.gestureCount,
+    required this.appClass,
     required this.borderColor,
     required this.reorderHandle,
     required this.onToggleCollapse,
@@ -50,6 +53,7 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
   /// so the frosted backing does not move.
   final ReorderableHeaderScrollBuilder scrollBuilder;
   final int gestureCount;
+  final String? appClass;
   final Color borderColor;
   final Widget? reorderHandle;
   final VoidCallback onToggleCollapse;
@@ -84,6 +88,10 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
     final isSelected = ref.watch(
       selectedGroupProvider.select((open) => open == location),
     );
+    final appClass = this.appClass;
+    final appIconPath = appClass == null
+        ? null
+        : ref.watch(appIconPathProvider(appClass)).value;
     final folderColor = isDisabled
         ? colors.mutedForeground
         : isSelected
@@ -130,6 +138,10 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
                   duration: Durations.short4,
                 ),
                 const SizedBox(width: 8),
+                if (appIconPath != null) ...[
+                  FileIcon(path: appIconPath, size: 15),
+                  const SizedBox(width: 6),
+                ],
                 Expanded(
                   child: Text(
                     name.isEmpty ? context.l10n.gestureGroupUnnamed : name,
