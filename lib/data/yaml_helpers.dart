@@ -33,12 +33,6 @@ final class YamlListContext {
   final bool commented;
 }
 
-void popContexts(List<YamlListContext> contexts, int indent) {
-  while (contexts.isNotEmpty && indent <= contexts.last.indent) {
-    contexts.removeLast();
-  }
-}
-
 int indentOf(String line) {
   var i = 0;
   while (i < line.length && line.codeUnitAt(i) == 0x20) {
@@ -212,7 +206,7 @@ List<({int start, int end, int indent})> _listItems(
   required bool commented,
 }) {
   final items = <({int start, int end, int indent})>[];
-  final contexts = <YamlListContext>[];
+  final open = <({YamlListContext block, int itemIndent})>[];
 
   var i = 0;
   while (i < lines.length) {
@@ -224,6 +218,7 @@ List<({int start, int end, int indent})> _listItems(
     }
     final uncommented = uncommentYamlLine(line);
     final parseLine = uncommented ?? line;
+    final indent = indentOf(parseLine);
     bool opensItem(YamlListContext list, int indent) =>
         (uncommented != null) == commented &&
         !list.commented &&
@@ -232,30 +227,56 @@ List<({int start, int end, int indent})> _listItems(
 
     // A commented item may sit at its list key's indent ("      # - sleep: 1"
     // under "      actions:"), and must not close that list.
-    final peek = contexts.lastOrNull;
+    final peek = open.lastOrNull;
     final atKeyIndent =
-        commented && peek != null && opensItem(peek, peek.indent);
-    if (!atKeyIndent) popContexts(contexts, indentOf(parseLine));
+        commented && peek != null && opensItem(peek.block, peek.block.indent);
+    if (!atKeyIndent) {
+      while (open.isNotEmpty &&
+          indent <= open.last.block.indent &&
+          !(open.last.itemIndent == indent &&
+              isListItemAt(parseLine, indent))) {
+        open.removeLast();
+      }
+    }
 
-    final list = atKeyIndent ? peek : contexts.lastOrNull;
-    if (list != null && (atKeyIndent || opensItem(list, list.indent + 2))) {
-      final end = _itemEnd(lines, i, list.indent, commented: commented);
-      items.add((start: i, end: end, indent: list.indent + 2));
+    final list = atKeyIndent ? peek : open.lastOrNull;
+    if (list != null &&
+        (atKeyIndent || opensItem(list.block, list.itemIndent))) {
+      final end = _itemEnd(
+        lines,
+        i,
+        list.block.indent,
+        list.itemIndent,
+        commented: commented,
+      );
+      items.add((start: i, end: end, indent: list.itemIndent));
       i = end;
       continue;
     }
 
-    final context = blockContext(parseLine, commented: uncommented != null);
-    if (context != null) contexts.add(context);
+    final block = blockContext(parseLine, commented: uncommented != null);
+    if (block != null) {
+      open.add((block: block, itemIndent: _liveItemIndent(lines, i, block)));
+    }
     i++;
   }
   return items;
 }
 
+/// The column the block's live items sit at, its own in an indentless list.
+int _liveItemIndent(List<String> lines, int blockLine, YamlListContext block) {
+  for (final line in lines.skip(blockLine + 1)) {
+    if (line.trim().isEmpty || uncommentYamlLine(line) != null) continue;
+    return isListItemAt(line, block.indent) ? block.indent : block.indent + 2;
+  }
+  return block.indent + 2;
+}
+
 int _itemEnd(
   List<String> lines,
   int start,
-  int listIndent, {
+  int listIndent,
+  int itemIndent, {
   required bool commented,
 }) {
   var end = start + 1;
@@ -266,7 +287,7 @@ int _itemEnd(
     if (commented && uncommented == null) break;
     final parseLine = uncommented ?? line;
     if (indentOf(parseLine) <= listIndent ||
-        isListItemAt(parseLine, listIndent + 2)) {
+        isListItemAt(parseLine, itemIndent)) {
       break;
     }
     end = j + 1;

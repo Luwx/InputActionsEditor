@@ -860,6 +860,49 @@ mouse:
     });
   });
 
+  group('indentless lists', () {
+    const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+      # - sleep: 5
+      - sleep: 10
+      # - sleep: 6
+''';
+
+    List<(int, bool?)> actionsOf(Config config) => [
+      for (final action in config.mouseGestures.single.common.actions)
+        ((action.action as SleepAction).milliseconds, action.enabled),
+    ];
+
+    const expected = [(5, false), (10, null), (6, false)];
+
+    test('commented items at the list indent load as disabled', () {
+      expect(actionsOf(decodeConfig(original)), expected);
+    });
+
+    test('an unchanged list saves with its disabled items still commented', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+      final live = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+      expect(live['actions'], hasLength(1));
+      expect(actionsOf(decodeConfig(encoded)), expected);
+    });
+
+    test('an edited gesture saves and reloads its disabled items', () {
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+      expect(actionsOf(decodeConfig(encodeConfig(edited, original))), expected);
+    });
+  });
+
   group('single-child none group', () {
     test('survives a round-trip instead of collapsing to its child', () {
       const original = r'''
