@@ -2442,18 +2442,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.';
 
   @override
-  String get inputDeviceFieldLabel => 'Device';
-
-  @override
-  String get inputDeviceFieldTooltip =>
-      'Whether to simulate keyboard or mouse input.';
-
-  @override
   String get inputActionTypeLabel => 'Action type';
 
   @override
   String get inputActionTypeTooltip =>
-      'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.';
+      'The device and kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.';
 
   @override
   String get mouseDeltaMultiplierLabel => 'Multiplier';

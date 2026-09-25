@@ -4354,18 +4354,6 @@ abstract class AppLocalizations {
   /// **'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.'**
   String get inputDelayTooltip;
 
-  /// No description provided for @inputDeviceFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Device'**
-  String get inputDeviceFieldLabel;
-
-  /// No description provided for @inputDeviceFieldTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Whether to simulate keyboard or mouse input.'**
-  String get inputDeviceFieldTooltip;
-
   /// No description provided for @inputActionTypeLabel.
   ///
   /// In en, this message translates to:
@@ -4375,7 +4363,7 @@ abstract class AppLocalizations {
   /// No description provided for @inputActionTypeTooltip.
   ///
   /// In en, this message translates to:
-  /// **'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.'**
+  /// **'The device and kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.'**
   String get inputActionTypeTooltip;
 
   /// No description provided for @mouseDeltaMultiplierLabel.
