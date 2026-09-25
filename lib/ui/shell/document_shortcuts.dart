@@ -237,8 +237,16 @@ class _PasteAction extends CallbackAction<PasteIntent> {
   bool isEnabled(PasteIntent intent) => enabled() && !_textFieldFocused();
 }
 
-bool _textFieldFocused() =>
-    primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() != null;
+// extended_text_field's editable state is a copy of EditableTextState, not a
+// subtype, so the field is recognised by the interface both implement.
+bool _textFieldFocused() {
+  var found = false;
+  primaryFocus?.context?.visitAncestorElements((element) {
+    found = element is StatefulElement && element.state is TextInputClient;
+    return !found;
+  });
+  return found;
+}
 
 class _NavigationAction<T extends NavigationIntent> extends CallbackAction<T> {
   _NavigationAction({required super.onInvoke});

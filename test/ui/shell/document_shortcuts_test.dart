@@ -15,6 +15,7 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/key_sequence_text_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/collapsed_groups_provider.dart';
 import 'package:input_actions_editor/ui/shell/document_shortcuts.dart';
 
@@ -549,6 +550,30 @@ void main() {
           withKeys: [LogicalKeyboardKey.controlLeft],
         );
         expect(openName(container), 'inside');
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
+
+    testWidgets(
+      'a focused key sequence field keeps home and end',
+      (tester) async {
+        final controller = TextEditingController(text: 'leftctrl+t');
+        addTearDown(controller.dispose);
+        final container = await pumpShell(
+          tester,
+          filter: DeviceType.mouse,
+          child: KeySequenceTextField(controller: controller, autofocus: true),
+        );
+        await tester.pumpAndSettle();
+        controller.selection = const TextSelection.collapsed(offset: 4);
+
+        await press(tester, LogicalKeyboardKey.end);
+        expect(controller.selection.baseOffset, 'leftctrl+t'.length);
+        expect(openName(container), 'first');
+
+        await press(tester, LogicalKeyboardKey.home);
+        expect(controller.selection.baseOffset, 0);
+        expect(openName(container), 'first');
       },
       variant: TargetPlatformVariant.only(TargetPlatform.linux),
     );
