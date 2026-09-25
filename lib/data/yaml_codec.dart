@@ -24,7 +24,7 @@ import 'package:yaml/yaml.dart';
 
 Config decodeConfig(String yamlText) {
   if (yamlText.trim().isEmpty) return const Config();
-  final parseText = materializeDisabledYamlCommentsRecursively(yamlText);
+  final parseText = materializeDisabledYamlComments(yamlText);
   if (parseText != yamlText) {
     try {
       return _decodeConfigText(parseText);
@@ -639,7 +639,7 @@ List<TriggerAction> decodeActionsYaml(String text) {
   if (text.trim().isEmpty) return const [];
   final Object? doc;
   try {
-    doc = loadYaml(materializeDisabledYamlCommentsRecursively(text));
+    doc = loadYaml(materializeDisabledYamlComments(text));
   } on Object {
     return const [];
   }
@@ -684,96 +684,13 @@ bool _opensExtra(String line, int keyIndent) {
   return context?.key == editorExtraKey && context!.indent == keyIndent;
 }
 
-String materializeDisabledYamlCommentsRecursively(String yamlText) {
-  var current = yamlText;
-  while (true) {
-    final next = materializeDisabledYamlComments(current);
-    if (next == current) return current;
-    current = next;
-  }
-}
-
-/// Converts fully commented-out gesture/action list items back into ordinary
-/// YAML before parsing, with `enabled: false` injected when absent.
-///
-/// YAML libraries intentionally discard comments, but disabled items are stored
-/// as comments so the runtime ignores them. This boundary helper recognizes
-/// only list items under `gestures:` and `actions:` blocks; ordinary comments
-/// elsewhere remain comments.
-String materializeDisabledYamlComments(String yamlText) {
-  final lines = yamlText.split('\n');
-  final out = <String>[];
-  final contexts = <YamlListContext>[];
-
-  var i = 0;
-  while (i < lines.length) {
-    final line = lines[i];
-    // A blank line has no indentation to read, so it must not close a block.
-    if (line.trim().isEmpty) {
-      out.add(line);
-      i++;
-      continue;
-    }
-    final uncommented = uncommentYamlLine(line);
-    final parseLine = uncommented ?? line;
-    final indent = indentOf(parseLine);
-
-    // Before popping, check if this is a commented list item aligned with
-    // its parent key (e.g., "      # - sleep: 1" when "      actions:" is at
-    // indent 6). Such items must not pop the parent context.
-    final peekParent = contexts.isEmpty ? null : contexts.last;
-    final commentedAtKeyIndent =
-        peekParent != null &&
-        !peekParent.commented &&
-        isDisableableItemList(peekParent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, peekParent.indent);
-
-    if (!commentedAtKeyIndent) popContexts(contexts, indent);
-
-    final parent = commentedAtKeyIndent
-        ? peekParent
-        : (contexts.isEmpty ? null : contexts.last);
-    final atNormalIndent =
-        parent != null &&
-        !parent.commented &&
-        isDisableableItemList(parent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, parent.indent + 2);
-
-    if (atNormalIndent || commentedAtKeyIndent) {
-      final itemIndent = parent!.indent + 2;
-      // Re-indent lines when the comment was placed at the key level.
-      final indentOffset = commentedAtKeyIndent && !atNormalIndent ? 2 : 0;
-      final block = <String>[];
-      var j = i;
-      while (j < lines.length) {
-        final candidate = lines[j];
-        final candidateUncommented = uncommentYamlLine(candidate);
-        if (candidateUncommented == null) break;
-        final candidateIndent = indentOf(candidateUncommented);
-        if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
-        block.add(' ' * indentOffset + candidateUncommented);
-        j++;
-      }
-      out.addAll(
-        itemEnabledLine(block, itemIndent) == null
-            ? withEnabledFalse(block, itemIndent)
-            : block,
-      );
-      i = j;
-      continue;
-    }
-
-    final context = blockContext(parseLine, commented: uncommented != null);
-    if (context != null) contexts.add(context);
-    out.add(line);
-    i++;
-  }
-
-  return out.join('\n');
-}
+String materializeDisabledYamlComments(String yamlText) => uncommentListItems(
+  yamlText,
+  isItemList: isDisableableItemList,
+  onItem: (item, itemIndent) => itemEnabledLine(item, itemIndent) == null
+      ? withEnabledFalse(item, itemIndent)
+      : item,
+);
 
 /// A `function:` body. The trailing newline a `|` block scalar carries is not
 /// part of the source, and keeping it would force the encoder to write the

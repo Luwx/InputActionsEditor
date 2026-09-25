@@ -805,6 +805,59 @@ mouse:
       expect(reGroup.actions.first.enabled, false);
       expect(reGroup.actions.last.enabled, isNull);
     });
+
+    test('a note inside an action commented at key indent survives', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+      # - sleep: 5
+      #   # keep me
+        - sleep: 10
+''';
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(edited, original);
+      expect(encoded, contains('threshold:'));
+      expect(encoded, contains('# keep me'));
+    });
+
+    test('a note inside a disabled nested action survives an edit', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - one:
+            # - sleep: 5
+              # # keep me
+              # _extra:
+                # enabled: false
+            - sleep: 10
+''';
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(edited, original);
+      expect(encoded, contains('threshold:'));
+      expect(encoded, contains('# # keep me'));
+    });
   });
 
   group('single-child none group', () {
@@ -970,6 +1023,31 @@ mouse:
               '}',
         ),
       );
+    });
+
+    test('a disabled body with a blank line comes back whole', () {
+      const config = Config(
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(
+                    enabled: false,
+                    action: FunctionAction(expression: 'a()\n\nb()'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      final action = decodeConfig(
+        encodeConfig(config, ''),
+      ).mouseGestures.single.common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(action.action, const FunctionAction(expression: 'a()\n\nb()'));
     });
 
     test('re-encoding a written body changes nothing', () {

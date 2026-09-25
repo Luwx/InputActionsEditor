@@ -29,7 +29,7 @@ final class YamlListContext {
   final int indent;
 
   /// Whether the line opening this block was itself commented out. Items under
-  /// such a key are prose, not disabled entries.
+  /// such a key are prose, not commented-out items.
   final bool commented;
 }
 
@@ -91,6 +91,187 @@ String commentYamlLine(String line) {
   if (line.trim().isEmpty) return line;
   final indent = indentOf(line);
   return '${line.substring(0, indent)}# ${line.substring(indent)}';
+}
+
+String uncommentListItems(
+  String yamlText, {
+  required bool Function(String key) isItemList,
+  required List<String> Function(List<String> item, int itemIndent) onItem,
+}) {
+  var current = yamlText;
+  while (true) {
+    final next = _replaceListItems(
+      current,
+      isItemList: isItemList,
+      commented: true,
+      replace: (item, itemIndent) {
+        final lines = [
+          for (final line in item) uncommentYamlLine(line) ?? line,
+        ];
+        final shift = ' ' * (itemIndent - indentOf(lines.first));
+        return onItem([
+          for (final line in lines) line.trim().isEmpty ? line : '$shift$line',
+        ], itemIndent);
+      },
+    );
+    if (next == current) return current;
+    current = next;
+  }
+}
+
+String commentOutListItems(
+  String yamlText, {
+  required bool Function(String key) isItemList,
+  required bool Function(List<String> item, int itemIndent) shouldComment,
+}) => _replaceListItems(
+  yamlText,
+  isItemList: isItemList,
+  commented: false,
+  replace: (item, itemIndent) {
+    final inner = commentOutListItems(
+      item.join('\n'),
+      isItemList: isItemList,
+      shouldComment: shouldComment,
+    ).split('\n');
+    return shouldComment(item, itemIndent)
+        ? inner.map(commentYamlLine).toList()
+        : inner;
+  },
+);
+
+/// Puts back the comment lines [originalText] held inside its commented items.
+String restoreItemInnerComments(
+  String yamlText,
+  String originalText, {
+  required bool Function(String key) isItemList,
+}) {
+  final originalLines = originalText.split('\n');
+  final originalComments = [
+    for (final item in _listItems(originalLines, isItemList, commented: true))
+      _innerComments(originalLines.sublist(item.start, item.end)),
+  ];
+  if (originalComments.isEmpty) return yamlText;
+
+  var itemIndex = 0;
+  return _replaceListItems(
+    yamlText,
+    isItemList: isItemList,
+    commented: true,
+    replace: (item, _) => [
+      ...item,
+      for (final comment
+          in originalComments.elementAtOrNull(itemIndex++) ?? const <String>[])
+        if (!item.contains(comment)) comment,
+    ],
+  );
+}
+
+List<String> _innerComments(List<String> item) {
+  final comments = <String>[];
+  int? nestedItemIndent;
+  for (final line in item) {
+    final uncommented = uncommentYamlLine(line);
+    if (uncommented == null) continue;
+    final indent = indentOf(uncommented);
+    if (nestedItemIndent != null) {
+      if (indent > nestedItemIndent) continue;
+      nestedItemIndent = null;
+    }
+    final trimmed = uncommented.trimLeft();
+    if (trimmed.startsWith('# -')) {
+      nestedItemIndent = indent;
+    } else if (trimmed.startsWith('#')) {
+      comments.add(line);
+    }
+  }
+  return comments;
+}
+
+String _replaceListItems(
+  String yamlText, {
+  required bool Function(String key) isItemList,
+  required bool commented,
+  required List<String> Function(List<String> item, int itemIndent) replace,
+}) {
+  final lines = yamlText.split('\n');
+  final out = <String>[];
+  var at = 0;
+  for (final item in _listItems(lines, isItemList, commented: commented)) {
+    out
+      ..addAll(lines.sublist(at, item.start))
+      ..addAll(replace(lines.sublist(item.start, item.end), item.indent));
+    at = item.end;
+  }
+  return (out..addAll(lines.sublist(at))).join('\n');
+}
+
+/// Items of the lists [isItemList] accepts; nested items are not searched.
+List<({int start, int end, int indent})> _listItems(
+  List<String> lines,
+  bool Function(String key) isItemList, {
+  required bool commented,
+}) {
+  final items = <({int start, int end, int indent})>[];
+  final contexts = <YamlListContext>[];
+
+  var i = 0;
+  while (i < lines.length) {
+    final line = lines[i];
+    // A blank line has no indentation to read, so it must not close a block.
+    if (line.trim().isEmpty) {
+      i++;
+      continue;
+    }
+    final uncommented = uncommentYamlLine(line);
+    final parseLine = uncommented ?? line;
+    bool opensItem(YamlListContext list, int indent) =>
+        (uncommented != null) == commented &&
+        !list.commented &&
+        isItemList(list.key) &&
+        isListItemAt(parseLine, indent);
+
+    // A commented item may sit at its list key's indent ("      # - sleep: 1"
+    // under "      actions:"), and must not close that list.
+    final peek = contexts.lastOrNull;
+    final atKeyIndent =
+        commented && peek != null && opensItem(peek, peek.indent);
+    if (!atKeyIndent) popContexts(contexts, indentOf(parseLine));
+
+    final list = atKeyIndent ? peek : contexts.lastOrNull;
+    if (list != null && (atKeyIndent || opensItem(list, list.indent + 2))) {
+      final end = _itemEnd(lines, i, list.indent, commented: commented);
+      items.add((start: i, end: end, indent: list.indent + 2));
+      i = end;
+      continue;
+    }
+
+    final context = blockContext(parseLine, commented: uncommented != null);
+    if (context != null) contexts.add(context);
+    i++;
+  }
+  return items;
+}
+
+int _itemEnd(
+  List<String> lines,
+  int start,
+  int listIndent, {
+  required bool commented,
+}) {
+  var end = start + 1;
+  for (var j = start + 1; j < lines.length; j++) {
+    final line = lines[j];
+    if (line.trim().isEmpty) continue;
+    final uncommented = uncommentYamlLine(line);
+    if (commented && uncommented == null) break;
+    final parseLine = uncommented ?? line;
+    if (indentOf(parseLine) <= listIndent ||
+        isListItemAt(parseLine, listIndent + 2)) {
+      break;
+    }
+    end = j + 1;
+  }
+  return end;
 }
 
 /// Whether a parsed node holds exactly [value], comparing maps in key order so

@@ -148,7 +148,7 @@ String _encodeOnto(Config config, String originalText) {
   final fresh = originalText.trim().isEmpty;
   final source = fresh
       ? 'mouse:\n  gestures: []\n'
-      : materializeDisabledYamlCommentsRecursively(originalText);
+      : materializeDisabledYamlComments(originalText);
   final editor = YamlEditor(source);
   final doc = loadYaml(source);
 
@@ -214,9 +214,10 @@ String _encodeOnto(Config config, String originalText) {
   }
 
   return spaceOutGestures(
-    restoreOriginalDisabledItemComments(
+    restoreItemInnerComments(
       commentDisabledYamlItems(editor.toString()),
       originalText,
+      isItemList: isDisableableItemList,
     ),
   );
 }
@@ -672,205 +673,13 @@ void _ensureBlankLines(List<String> out, int count) {
   out.insertAll(at - blanks, List.filled(count - blanks, ''));
 }
 
-/// Comments out disabled gesture/action list items so the runtime ignores
-/// them. The normal YAML map still carries `enabled: false`, which lets
-/// [decodeConfig] recover the disabled state after stripping one comment layer.
-String commentDisabledYamlItems(String yamlText) {
-  final lines = yamlText.split('\n');
-  final out = <String>[];
-  final contexts = <YamlListContext>[];
-
-  var i = 0;
-  while (i < lines.length) {
-    final line = lines[i];
-    // A blank line has no indentation to read, so it must not close a block.
-    if (line.trim().isEmpty) {
-      out.add(line);
-      i++;
-      continue;
-    }
-    final indent = indentOf(line);
-    popContexts(contexts, indent);
-
-    final parent = contexts.isEmpty ? null : contexts.last;
-    if (parent != null &&
-        isDisableableItemList(parent.key) &&
-        isListItemAt(line, parent.indent + 2)) {
-      final itemIndent = parent.indent + 2;
-      final block = <String>[];
-      var j = i;
-      while (j < lines.length) {
-        final candidate = lines[j];
-        if (candidate.trim().isEmpty) {
-          block.add(candidate);
-          j++;
-          continue;
-        }
-        final candidateIndent = indentOf(candidate);
-        if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && isListItemAt(candidate, itemIndent)) break;
-        block.add(candidate);
-        j++;
-      }
-      if (itemEnabledLine(block, itemIndent)?.trimRight().endsWith('false') ??
-          false) {
-        final normalizedBlock = commentDisabledYamlItems(
-          block.join('\n'),
-        ).split('\n');
-        out.addAll(normalizedBlock.map(commentYamlLine));
-        i = j;
-        continue;
-      }
-    }
-
-    final context = blockContext(line);
-    if (context != null) contexts.add(context);
-    out.add(line);
-    i++;
-  }
-
-  return out.join('\n');
-}
-
-String restoreOriginalDisabledItemComments(
-  String yamlText,
-  String originalText,
-) {
-  final originalComments = _disabledItemInnerComments(originalText);
-  if (originalComments.isEmpty) return yamlText;
-
-  final lines = yamlText.split('\n');
-  final out = <String>[];
-  final contexts = <YamlListContext>[];
-  var disabledIndex = 0;
-
-  var i = 0;
-  while (i < lines.length) {
-    final line = lines[i];
-    if (line.trim().isEmpty) {
-      out.add(line);
-      i++;
-      continue;
-    }
-    final uncommented = uncommentYamlLine(line);
-    final parseLine = uncommented ?? line;
-    final indent = indentOf(parseLine);
-    popContexts(contexts, indent);
-    final key = blockKey(parseLine);
-    if (key != null) {
-      contexts.add(
-        YamlListContext(key, indent, commented: uncommented != null),
-      );
-    }
-
-    final parent = contexts.isEmpty ? null : contexts.last;
-    if (parent != null &&
-        !parent.commented &&
-        isDisableableItemList(parent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, parent.indent + 2)) {
-      final itemIndent = parent.indent + 2;
-      final block = <String>[];
-      var j = i;
-      while (j < lines.length) {
-        final candidate = lines[j];
-        final candidateUncommented = uncommentYamlLine(candidate);
-        if (candidateUncommented == null && candidate.trim().isNotEmpty) {
-          break;
-        }
-        final candidateParseLine = candidateUncommented ?? candidate;
-        final candidateIndent = indentOf(candidateParseLine);
-        if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && isListItemAt(candidateParseLine, itemIndent)) break;
-        block.add(candidate);
-        j++;
-      }
-      out.addAll(block);
-      if (disabledIndex < originalComments.length) {
-        for (final comment in originalComments[disabledIndex]) {
-          if (!block.contains(comment)) out.add(comment);
-        }
-      }
-      disabledIndex++;
-      i = j;
-      continue;
-    }
-
-    out.add(line);
-    i++;
-  }
-
-  return out.join('\n');
-}
-
-List<List<String>> _disabledItemInnerComments(String yamlText) {
-  final lines = yamlText.split('\n');
-  final results = <List<String>>[];
-  final contexts = <YamlListContext>[];
-
-  var i = 0;
-  while (i < lines.length) {
-    final line = lines[i];
-    if (line.trim().isEmpty) {
-      i++;
-      continue;
-    }
-    final uncommented = uncommentYamlLine(line);
-    final parseLine = uncommented ?? line;
-    final indent = indentOf(parseLine);
-    popContexts(contexts, indent);
-    final key = blockKey(parseLine);
-    if (key != null) {
-      contexts.add(
-        YamlListContext(key, indent, commented: uncommented != null),
-      );
-    }
-
-    final parent = contexts.isEmpty ? null : contexts.last;
-    if (parent != null &&
-        !parent.commented &&
-        isDisableableItemList(parent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, parent.indent + 2)) {
-      final itemIndent = parent.indent + 2;
-      final comments = <String>[];
-      int? skippedNestedItemIndent;
-      var j = i;
-      while (j < lines.length) {
-        final candidate = lines[j];
-        final candidateUncommented = uncommentYamlLine(candidate);
-        if (candidateUncommented == null) break;
-        final candidateIndent = indentOf(candidateUncommented);
-        if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
-        if (skippedNestedItemIndent != null) {
-          if (candidateIndent > skippedNestedItemIndent) {
-            j++;
-            continue;
-          }
-          skippedNestedItemIndent = null;
-        }
-        final uncommentedTrimmed = candidateUncommented.trimLeft();
-        if (uncommentedTrimmed.startsWith('# -')) {
-          skippedNestedItemIndent = candidateIndent;
-          j++;
-          continue;
-        }
-        if (uncommentedTrimmed.startsWith('#')) {
-          comments.add(candidate);
-        }
-        j++;
-      }
-      results.add(comments);
-      i = j;
-      continue;
-    }
-
-    i++;
-  }
-
-  return results;
-}
+/// Disabled items are commented out so the daemon skips them.
+String commentDisabledYamlItems(String yamlText) => commentOutListItems(
+  yamlText,
+  isItemList: isDisableableItemList,
+  shouldComment: (item, itemIndent) =>
+      itemEnabledLine(item, itemIndent)?.trimRight().endsWith('false') ?? false,
+);
 
 dynamic inputTokenToYaml(InputToken token) => switch (token) {
   TextInputToken(:final value) => {'text': dynamicTextToYaml(value)},
