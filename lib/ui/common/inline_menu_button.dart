@@ -76,28 +76,38 @@ class InlineMenuButton<T> extends HookWidget {
         child: GestureDetector(
           onTap: controller.toggle,
           behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: isHovered.value
-                  ? colors.secondary.withValues(alpha: 0.78)
-                  : null,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                child,
-                const SizedBox(width: 2),
-                Icon(
-                  FLucideIcons.chevronDown,
-                  size: 11,
-                  color: colors.mutedForeground,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: -4,
+                top: -2,
+                right: -4,
+                bottom: -2,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
+                  decoration: BoxDecoration(
+                    color: isHovered.value
+                        ? colors.secondary.withValues(alpha: 0.78)
+                        : null,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ],
-            ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  child,
+                  const SizedBox(width: 2),
+                  Icon(
+                    FLucideIcons.chevronDown,
+                    size: 11,
+                    color: colors.mutedForeground,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
