@@ -574,6 +574,11 @@ class _ComponentIcon extends StatelessWidget {
     if (path.endsWith('.svg')) {
       return SvgPicture.file(File(path), width: size, height: size);
     }
-    return Image.file(File(path), width: size, height: size);
+    return Image.file(
+      File(path),
+      width: size,
+      height: size,
+      errorBuilder: (_, _, _) => Icon(fallbackIcon, size: size),
+    );
   }
 }
