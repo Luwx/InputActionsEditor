@@ -1,9 +1,4 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:input_actions_editor/data/config_backups.dart';
-import 'package:input_actions_editor/data/paths.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_format.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
@@ -20,118 +15,7 @@ import 'package:input_actions_editor/model/speed_settings.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
-import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
-
-// Public API
-
-Future<(Config, String)> loadConfig() async {
-  final path = configFilePath();
-  final file = File(path);
-  if (!file.existsSync()) return (const Config(), '');
-  final text = await file.readAsString();
-  final config = await compute(decodeConfig, text);
-  return (config, text);
-}
-
-Future<String?> pickConfigFilePath() async {
-  String? path;
-  final home = Platform.environment['HOME'] ?? '.';
-  for (final tool in ['kdialog', 'zenity']) {
-    try {
-      ProcessResult result;
-      if (tool == 'kdialog') {
-        result = await Process.run('kdialog', [
-          '--getopenfilename',
-          home,
-          '*.yaml *.yml',
-          '--title',
-          'Load Config',
-        ]);
-      } else {
-        result = await Process.run('zenity', [
-          '--file-selection',
-          '--title=Load Config',
-          '--file-filter=YAML files | *.yaml *.yml',
-        ]);
-      }
-      if (result.exitCode == 0) {
-        path = (result.stdout as String).trim();
-      }
-      break;
-    } on Exception {
-      continue;
-    }
-  }
-
-  if (path == null || path.isEmpty) return null;
-  return path;
-}
-
-Future<(Config, String)> loadConfigFromPath(String path) async {
-  final file = File(path);
-  if (!file.existsSync()) return (const Config(), '');
-  final text = await file.readAsString();
-  return (decodeConfig(text), text);
-}
-
-/// Writes [config] and returns the YAML text now on disk.
-Future<String> saveConfig(
-  Config config,
-  String originalText, {
-  BackupPolicy backups = const BackupPolicy.disabled(),
-}) async {
-  final path = configFilePath();
-  final file = File(path);
-  if (!file.parent.existsSync()) await file.parent.create(recursive: true);
-  await backupConfigFile(path, backups);
-  final text = encodeConfig(config, originalText);
-  await file.writeAsString(text);
-  return text;
-}
-
-Future<String?> pickSaveFilePath() async {
-  final home = Platform.environment['HOME'] ?? '.';
-  for (final tool in ['kdialog', 'zenity']) {
-    try {
-      ProcessResult result;
-      if (tool == 'kdialog') {
-        result = await Process.run('kdialog', [
-          '--getsavefilename',
-          '$home/config.yaml',
-          '*.yaml *.yml',
-          '--title',
-          'Save As',
-        ]);
-      } else {
-        result = await Process.run('zenity', [
-          '--file-selection',
-          '--save',
-          '--confirm-overwrite',
-          '--title=Save As',
-          '--file-filter=YAML files | *.yaml *.yml',
-        ]);
-      }
-      if (result.exitCode == 0) {
-        return (result.stdout as String).trim();
-      }
-      break;
-    } on Exception {
-      continue;
-    }
-  }
-  return null;
-}
-
-Future<void> saveConfigToPath(
-  Config config,
-  String originalText,
-  String path,
-) async {
-  final file = File(path);
-  if (!file.parent.existsSync()) await file.parent.create(recursive: true);
-  await file.writeAsString(encodeConfig(config, originalText));
-}
 
 /// Serializes [config] into YAML text, merging changes into [originalText] so
 /// unmodelled keys, comments, and formatting are preserved. Pure (no I/O).
@@ -150,11 +34,9 @@ String _encodeOnto(Config config, String originalText) {
       ? 'mouse:\n  gestures: []\n'
       : materializeDisabledYamlComments(originalText);
   final editor = YamlEditor(source);
-  final doc = loadYaml(source);
 
   _saveDeviceSection(
     editor,
-    doc,
     'mouse',
     _nodesToYaml(
       config.mouseNodes,
@@ -164,7 +46,6 @@ String _encodeOnto(Config config, String originalText) {
   );
   _saveDeviceSection(
     editor,
-    doc,
     'keyboard',
     _nodesToYaml(
       config.keyboardNodes,
@@ -174,7 +55,6 @@ String _encodeOnto(Config config, String originalText) {
   );
   _saveDeviceSection(
     editor,
-    doc,
     'pointer',
     _nodesToYaml(
       config.pointerNodes,
@@ -184,7 +64,6 @@ String _encodeOnto(Config config, String originalText) {
   );
   _saveDeviceSection(
     editor,
-    doc,
     'touchpad',
     _nodesToYaml(
       config.touchpadNodes,
@@ -195,7 +74,6 @@ String _encodeOnto(Config config, String originalText) {
   );
   _saveDeviceSection(
     editor,
-    doc,
     'touchscreen',
     _nodesToYaml(
       config.touchscreenNodes,
@@ -205,8 +83,8 @@ String _encodeOnto(Config config, String originalText) {
     speed: config.touchscreenSpeed,
   );
 
-  _saveDeviceRules(editor, doc, config);
-  _saveGlobalSettings(editor, doc, config);
+  _saveDeviceRules(editor, config);
+  _saveGlobalSettings(editor, config);
   if (fresh) {
     for (final MapEntry(:key, :value) in config.extra.entries) {
       editor.update([key], value);
@@ -297,112 +175,42 @@ Map<String, dynamic> _withoutInherited(
 
 void _saveDeviceSection(
   YamlEditor editor,
-  dynamic doc,
   String key,
   List<dynamic> gestures, {
   bool omitIfEmpty = false,
   SpeedSettings? speed,
 }) {
-  final hasGestures = gestures.isNotEmpty;
-  final hasSpeed = speed != null && !speed.isEmpty;
-  if (omitIfEmpty && !hasGestures && !hasSpeed) return;
-
-  final hasSection = doc is YamlMap && doc.containsKey(key);
-  if (hasSection) {
-    final sectionMap = doc[key] is YamlMap ? doc[key] as YamlMap : null;
-    if (!yamlNodeMatches(sectionMap?['gestures'], gestures)) {
-      editor.update([key, 'gestures'], gestures);
-    }
-    // The editor's old flat `groups:` list is read for compatibility but no
-    // longer written: groups serialize as nesting. Drop it on save.
-    if (sectionMap != null && sectionMap.containsKey('groups')) {
-      editor.remove([key, 'groups']);
-    }
-    if (hasSpeed) {
-      final speedMap = speedSettingsToMap(speed);
-      if (!yamlNodeMatches(sectionMap?['speed'], speedMap)) {
-        editor.update([key, 'speed'], speedMap);
-      }
-    } else if (sectionMap != null && sectionMap.containsKey('speed')) {
-      editor.remove([key, 'speed']);
-    }
-  } else {
-    final section = <String, dynamic>{'gestures': gestures};
-    if (hasSpeed) section['speed'] = speedSettingsToMap(speed);
-    editor.update([key], section);
-  }
-}
-
-void _saveDeviceRules(YamlEditor editor, dynamic doc, Config config) {
-  final rules = config.deviceRules.map(deviceRuleToMap).toList();
-  final hasSection = doc is YamlMap && doc.containsKey('device_rules');
-  if (rules.isEmpty) {
-    if (hasSection) editor.remove(['device_rules']);
+  final speedMap = speed == null || speed.isEmpty
+      ? null
+      : speedSettingsToMap(speed);
+  if (omitIfEmpty &&
+      gestures.isEmpty &&
+      speedMap == null &&
+      yamlNodeAt(editor, [key]) == null) {
     return;
   }
-  final existing = hasSection ? doc['device_rules'] : null;
-  if (!yamlNodeMatches(existing, rules)) {
-    editor.update(['device_rules'], rules);
-  }
+  syncYamlPath(editor, [key, 'gestures'], gestures);
+  syncYamlPath(editor, [key, 'speed'], speedMap);
+  // The editor's old flat `groups:` list is read for compatibility but no
+  // longer written: groups serialize as nesting. Drop it on save.
+  syncYamlPath(editor, [key, 'groups'], null);
 }
 
-void _saveGlobalSettings(YamlEditor editor, dynamic doc, Config config) {
+void _saveDeviceRules(YamlEditor editor, Config config) {
+  final rules = config.deviceRules.map(deviceRuleToMap).toList();
+  syncYamlPath(editor, ['device_rules'], rules.isEmpty ? null : rules);
+}
+
+void _saveGlobalSettings(YamlEditor editor, Config config) {
   final gs = config.globalSettings;
-  _saveOrRemoveKey(editor, doc, 'autoreload', gs.autoreload);
-  _saveOrRemoveKey(
+  syncYamlPath(editor, ['autoreload'], gs.autoreload);
+  syncYamlPath(editor, ['emergency_combination'], gs.emergencyCombination);
+  syncYamlPath(editor, ['external_variable_access'], gs.externalVariableAccess);
+  syncYamlPath(
     editor,
-    doc,
-    'emergency_combination',
-    gs.emergencyCombination,
+    ['notifications', 'config_error'],
+    gs.notificationsConfigError,
   );
-  _saveOrRemoveKey(
-    editor,
-    doc,
-    'external_variable_access',
-    gs.externalVariableAccess,
-  );
-  if (gs.notificationsConfigError != null) {
-    final hasNotifications = doc is YamlMap && doc.containsKey('notifications');
-    if (hasNotifications) {
-      final notif = doc['notifications'];
-      final existing = notif is YamlMap ? notif['config_error'] : null;
-      if (!yamlNodeMatches(existing, gs.notificationsConfigError)) {
-        editor.update(
-          ['notifications', 'config_error'],
-          gs.notificationsConfigError,
-        );
-      }
-    } else {
-      // Parent map is absent; create it so update() has something to traverse.
-      editor.update(
-        ['notifications'],
-        {
-          'config_error': gs.notificationsConfigError,
-        },
-      );
-    }
-  } else if (doc is YamlMap && doc.containsKey('notifications')) {
-    final notif = doc['notifications'];
-    if (notif is YamlMap && notif.containsKey('config_error')) {
-      editor.remove(['notifications', 'config_error']);
-    }
-  }
-}
-
-void _saveOrRemoveKey(
-  YamlEditor editor,
-  dynamic doc,
-  String key,
-  dynamic value,
-) {
-  if (value != null) {
-    final hasKey = doc is YamlMap && doc.containsKey(key);
-    if (!hasKey || !yamlNodeMatches(doc[key], value)) {
-      editor.update([key], value);
-    }
-  } else if (doc is YamlMap && doc.containsKey(key)) {
-    editor.remove([key]);
-  }
 }
 
 // Encode  (model → plain Dart maps consumed by yaml_edit)
@@ -424,8 +232,6 @@ Map<String, dynamic> mouseGestureToMap(MouseGesture g) {
   _writeCommon(m, g.common);
   return m;
 }
-
-Map<String, dynamic> gestureToMap(MouseGesture g) => mouseGestureToMap(g);
 
 Map<String, dynamic> keyboardGestureToMap(KeyboardGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.toYaml()};
@@ -604,14 +410,6 @@ dynamic dynamicTextToYaml(DynamicText value) => switch (value) {
   CommandText(:final command) => {'command': command},
 };
 
-const _deviceSectionKeys = {
-  'mouse',
-  'keyboard',
-  'pointer',
-  'touchpad',
-  'touchscreen',
-};
-
 /// Separates sibling gestures with a blank line and device sections with two.
 /// Blank lines are only added, never taken away, so spacing already in the
 /// file survives and a second pass changes nothing.
@@ -638,7 +436,7 @@ String spaceOutGestures(String yamlText) {
 
     final key = blockKey(parseLine);
     final startsSection =
-        indent == 0 && uncommented == null && _deviceSectionKeys.contains(key);
+        indent == 0 && uncommented == null && deviceSectionKeys.contains(key);
     if (startsSection && !_endsWithComment(out)) {
       _ensureBlankLines(out, 2);
     } else if (itemIndents.isNotEmpty &&
@@ -673,14 +471,6 @@ void _ensureBlankLines(List<String> out, int count) {
   out.insertAll(at - blanks, List.filled(count - blanks, ''));
 }
 
-/// Disabled items are commented out so the daemon skips them.
-String commentDisabledYamlItems(String yamlText) => commentOutListItems(
-  yamlText,
-  isItemList: isDisableableItemList,
-  shouldComment: (item, itemIndent) =>
-      itemEnabledLine(item, itemIndent)?.trimRight().endsWith('false') ?? false,
-);
-
 dynamic inputTokenToYaml(InputToken token) => switch (token) {
   TextInputToken(:final value) => {'text': dynamicTextToYaml(value)},
   _ => formatInputToken(token),
@@ -714,7 +504,6 @@ dynamic conditionToYaml(Condition c) => switch (c) {
   RawCondition(:final raw) => raw,
 };
 
-//
 // Device rule and speed encode helpers
 Map<String, dynamic> deviceRuleToMap(DeviceRule rule) {
   final m = <String, dynamic>{};

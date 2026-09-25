@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:input_actions_editor/data/config_format.dart';
 import 'package:input_actions_editor/data/legacy_editor_keys.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
@@ -64,11 +65,7 @@ Config _decodeConfigText(String parseText) {
   final globalSettings = _parseGlobalSettings(map);
 
   const knownKeys = {
-    'mouse',
-    'keyboard',
-    'pointer',
-    'touchpad',
-    'touchscreen',
+    ...deviceSectionKeys,
     'device_rules',
     'autoreload',
     'emergency_combination',
@@ -160,29 +157,29 @@ List<GestureNode> _parseDeviceNodes(
         final sub = item['gestures'];
         out.add(
           GestureNode.group(
-            name: _editorValue(item, 'name') as String? ?? '',
-            enabled: _editorValue(item, 'enabled') as bool? ?? true,
+            name: yamlString(_editorValue(item, 'name')) ?? '',
+            enabled: yamlBool(_editorValue(item, 'enabled')) ?? true,
             conditions: item.containsKey('conditions')
                 ? _parseCondition(item.nodes['conditions'])
                 : null,
-            id: item['id'] as String?,
+            id: yamlString(item['id']),
             threshold: item['threshold']?.toString(),
-            resumeTimeout: item['resume_timeout'] as int?,
-            accelerated: item['accelerated'] as bool?,
-            blockEvents: item['block_events'] as bool?,
-            clearModifiers: item['clear_modifiers'] as bool?,
-            setLastTrigger: item['set_last_trigger'] as bool?,
+            resumeTimeout: yamlInt(item['resume_timeout']),
+            accelerated: yamlBool(item['accelerated']),
+            blockEvents: yamlBool(item['block_events']),
+            clearModifiers: yamlBool(item['clear_modifiers']),
+            setLastTrigger: yamlBool(item['set_last_trigger']),
             endConditions: item.containsKey('end_conditions')
                 ? _parseCondition(item.nodes['end_conditions'])
                 : null,
             mouseButtons: item.containsKey('mouse_buttons')
                 ? _parseMouseButtons(item['mouse_buttons'])
                 : null,
-            mouseButtonsExactOrder: item['mouse_buttons_exact_order'] as bool?,
+            mouseButtonsExactOrder: yamlBool(item['mouse_buttons_exact_order']),
             fingers: yamlInt(item['fingers']),
-            speed: TriggerSpeed.fromYaml(item['speed'] as String? ?? ''),
-            instant: item['instant'] as bool?,
-            lockPointer: item['lock_pointer'] as bool?,
+            speed: TriggerSpeed.fromYaml(yamlString(item['speed']) ?? ''),
+            instant: yamlBool(item['instant']),
+            lockPointer: yamlBool(item['lock_pointer']),
             extra: extra,
             children: sub is YamlList
                 ? walk(sub, handedDown, sharedBelow)
@@ -198,7 +195,7 @@ List<GestureNode> _parseDeviceNodes(
       );
       if (g == null) continue;
       final node = GestureNode.leaf(g);
-      final legacyGroup = item['group'] as String?;
+      final legacyGroup = yamlString(item['group']);
       if (legacyGroup != null) legacyRefs[node] = legacyGroup;
       out.add(node);
     }
@@ -258,12 +255,12 @@ List<GestureNode> _migrateLegacyGroups(
   final defs = <String, GestureGroupNode>{};
   for (final item in groupsNode) {
     if (item is! YamlMap) continue;
-    final id = item['id'] as String?;
-    final name = item['name'] as String?;
+    final id = yamlString(item['id']);
+    final name = yamlString(item['name']);
     if (id == null || name == null) continue;
     defs[id] = GestureGroupNode(
       name: name,
-      enabled: item['enabled'] as bool? ?? true,
+      enabled: yamlBool(item['enabled']) ?? true,
     );
   }
   if (defs.isEmpty) return nodes;
@@ -295,7 +292,7 @@ List<GestureNode> _migrateLegacyGroups(
 
 // Mouse
 MouseGesture? _parseMouseGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
@@ -304,7 +301,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
     'stroke' => StrokeGesture(
       common: common,
       motion: motion,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: yamlStringList(m['strokes']),
     ),
     'swipe' => SwipeGesture(
       common: common,
@@ -315,15 +312,15 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
       common: common,
       motion: motion,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
     ),
-    'press' => PressGesture(common: common, instant: m['instant'] as bool?),
+    'press' => PressGesture(common: common, instant: yamlBool(m['instant'])),
     'wheel' => WheelGesture(
       common: common,
       motion: motion,
       direction:
-          WheelDirection.fromYaml(m['direction'] as String? ?? '') ??
+          WheelDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           WheelDirection.any,
     ),
     _ => null,
@@ -332,7 +329,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
 
 // Keyboard
 KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
 
@@ -347,7 +344,7 @@ KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
 
 // Pointer
 PointerGesture? _parsePointerGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
 
@@ -359,11 +356,11 @@ PointerGesture? _parsePointerGesture(YamlMap m) {
 
 // Touchpad
 TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = m['fingers'] as int?;
+  final fingers = yamlInt(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchpadSwipeGesture(
@@ -376,7 +373,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          PinchDirection.fromYaml(m['direction'] as String? ?? '') ??
+          PinchDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           PinchDirection.any,
       motion: motion,
     ),
@@ -384,7 +381,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -392,7 +389,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -402,7 +399,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
     'stroke' => TouchpadStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: yamlStringList(m['strokes']),
       motion: motion,
     ),
     _ => null,
@@ -411,11 +408,11 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
 
 // Touchscreen
 TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = m['fingers'] as int?;
+  final fingers = yamlInt(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchscreenSwipeGesture(
@@ -428,7 +425,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          PinchDirection.fromYaml(m['direction'] as String? ?? '') ??
+          PinchDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           PinchDirection.any,
       motion: motion,
     ),
@@ -436,7 +433,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -444,7 +441,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -453,7 +450,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
     'stroke' => TouchscreenStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: yamlStringList(m['strokes']),
       motion: motion,
     ),
     _ => null,
@@ -468,29 +465,29 @@ dynamic _editorValue(YamlMap item, String key) =>
     };
 
 TriggerCommon _parseTriggerCommon(YamlMap m) => TriggerCommon(
-  name: _editorValue(m, 'name') as String?,
-  enabled: _editorValue(m, 'enabled') as bool?,
-  id: m['id'] as String?,
+  name: yamlString(_editorValue(m, 'name')),
+  enabled: yamlBool(_editorValue(m, 'enabled')),
+  id: yamlString(m['id']),
   mouseButtons: _parseMouseButtons(m['mouse_buttons']),
-  mouseButtonsExactOrder: m['mouse_buttons_exact_order'] as bool? ?? false,
+  mouseButtonsExactOrder: yamlBool(m['mouse_buttons_exact_order']) ?? false,
   conditions: m.containsKey('conditions')
       ? _parseCondition(m.nodes['conditions'])
       : null,
   endConditions: m.containsKey('end_conditions')
       ? _parseCondition(m.nodes['end_conditions'])
       : null,
-  blockEvents: m['block_events'] as bool?,
-  clearModifiers: m['clear_modifiers'] as bool?,
-  resumeTimeout: m['resume_timeout'] as int?,
-  setLastTrigger: m['set_last_trigger'] as bool?,
+  blockEvents: yamlBool(m['block_events']),
+  clearModifiers: yamlBool(m['clear_modifiers']),
+  resumeTimeout: yamlInt(m['resume_timeout']),
+  setLastTrigger: yamlBool(m['set_last_trigger']),
   threshold: m['threshold']?.toString(),
-  accelerated: m['accelerated'] as bool?,
+  accelerated: yamlBool(m['accelerated']),
   actions: _parseActions(m['actions']),
 );
 
 MotionCommon _parseMotionCommon(YamlMap m) => MotionCommon(
-  speed: TriggerSpeed.fromYaml(m['speed'] as String? ?? ''),
-  lockPointer: m['lock_pointer'] as bool?,
+  speed: TriggerSpeed.fromYaml(yamlString(m['speed']) ?? ''),
+  lockPointer: yamlBool(m['lock_pointer']),
 );
 
 List<MouseButtonValue> _parseMouseButtons(dynamic node) {
@@ -501,16 +498,11 @@ List<MouseButtonValue> _parseMouseButtons(dynamic node) {
       .toList();
 }
 
-List<String> _parseStrokes(dynamic node) {
-  if (node is YamlList) return node.map((e) => e.toString()).toList();
-  return [];
-}
-
 SwipeMode _parseSwipeMode(YamlMap m) {
   if (m.containsKey('direction')) {
     return SwipeDirectionMode(
       direction:
-          SwipeDirection.fromYaml(m['direction'] as String? ?? '') ??
+          SwipeDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           SwipeDirection.any,
     );
   }
@@ -521,7 +513,7 @@ SwipeMode _parseSwipeMode(YamlMap m) {
   return SwipeAngleMode(
     minAngle: min,
     maxAngle: max,
-    bidirectional: m['bidirectional'] as bool? ?? false,
+    bidirectional: yamlBool(m['bidirectional']) ?? false,
   );
 }
 
@@ -610,9 +602,9 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   final action = _parseAction(node);
   if (action == null) return null;
   return TriggerAction(
-    enabled: _editorValue(node, 'enabled') as bool?,
+    enabled: yamlBool(_editorValue(node, 'enabled')),
     on: node.containsKey('on')
-        ? TriggerOn.fromYaml(node['on'] as String? ?? '')
+        ? TriggerOn.fromYaml(yamlString(node['on']) ?? '')
         : null,
     conditions: node.containsKey('conditions')
         ? _parseCondition(node.nodes['conditions'])
@@ -620,18 +612,11 @@ TriggerAction? _parseTriggerAction(dynamic node) {
     action: action,
     interval: node['interval']?.toString(),
     threshold: node['threshold']?.toString(),
-    conflicting: node['conflicting'] as bool? ?? true,
-    id: node['id'] as String?,
-    limit: node['limit'] as int?,
+    conflicting: yamlBool(node['conflicting']) ?? true,
+    id: yamlString(node['id']),
+    limit: yamlInt(node['limit']),
   );
 }
-
-/// The YAML key holding an [ActionGroup]'s nested actions.
-const actionGroupYamlKey = 'one';
-
-/// Top-level key of a copied action snippet, so pasted text is recognisably
-/// ours and a stray YAML document is rejected.
-const actionsClipboardKey = 'actions';
 
 /// Parses a clipboard snippet written by `encodeActionsYaml`. Returns an empty
 /// list for anything that is not a readable action list.
@@ -647,51 +632,6 @@ List<TriggerAction> decodeActionsYaml(String text) {
   return _parseActions(doc[actionsClipboardKey]);
 }
 
-/// Block keys whose list items carry an `enabled:` flag and are disabled by
-/// commenting them out.
-bool isDisableableItemList(String key) =>
-    key == 'gestures' || key == 'actions' || key == actionGroupYamlKey;
-
-const editorExtraKey = '_extra';
-
-String? itemEnabledLine(List<String> block, int itemIndent) {
-  final keyIndent = itemIndent + 2;
-  var inExtra = false;
-  for (final line in block) {
-    if (line.trim().isEmpty || line.trimLeft().startsWith('#')) continue;
-    final indent = indentOf(line);
-    if (isListItemAt(line, itemIndent) || indent == keyIndent) {
-      inExtra = _opensExtra(line, keyIndent);
-    } else if (inExtra && indent == keyIndent + 2 && keyAt(line, 'enabled')) {
-      return line;
-    }
-  }
-  return null;
-}
-
-List<String> withEnabledFalse(List<String> block, int itemIndent) {
-  final keyIndent = itemIndent + 2;
-  final flag = '${' ' * (keyIndent + 2)}enabled: false';
-  final extraAt = block.indexWhere((line) => _opensExtra(line, keyIndent));
-  if (extraAt == -1) {
-    return [...block, '${' ' * keyIndent}$editorExtraKey:', flag];
-  }
-  return [...block]..insert(extraAt + 1, flag);
-}
-
-bool _opensExtra(String line, int keyIndent) {
-  final context = blockContext(line);
-  return context?.key == editorExtraKey && context!.indent == keyIndent;
-}
-
-String materializeDisabledYamlComments(String yamlText) => uncommentListItems(
-  yamlText,
-  isItemList: isDisableableItemList,
-  onItem: (item, itemIndent) => itemEnabledLine(item, itemIndent) == null
-      ? withEnabledFalse(item, itemIndent)
-      : item,
-);
-
 /// A `function:` body. The trailing newline a `|` block scalar carries is not
 /// part of the source, and keeping it would force the encoder to write the
 /// body back as one escaped double-quoted line.
@@ -701,17 +641,17 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey('command')) {
     return CommandAction(
       command: m['command'].toString(),
-      wait: m['wait'] as bool?,
+      wait: yamlBool(m['wait']),
     );
   }
   if (m.containsKey('input')) {
     return InputAction(
       entries: _parseInputEntries(m['input']),
-      delay: m['delay'] as int?,
+      delay: yamlInt(m['delay']),
     );
   }
   if (m.containsKey('plasma_shortcut')) {
-    final parts = (m['plasma_shortcut'] as String).split(',');
+    final parts = (yamlString(m['plasma_shortcut']) ?? '').split(',');
     return PlasmaShortcutAction(
       component: parts.elementAtOrNull(0)?.trim() ?? '',
       shortcut: parts.elementAtOrNull(1)?.trim() ?? '',
@@ -726,7 +666,7 @@ Action? _parseAction(YamlMap m) {
     );
   }
   if (m.containsKey('sleep')) {
-    return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
+    return SleepAction(milliseconds: yamlInt(m['sleep']) ?? 0);
   }
   if (m.containsKey('function')) {
     return FunctionAction(expression: _functionExpression(m['function']));
@@ -816,16 +756,16 @@ DeviceRuleProperties _parseDeviceRuleProperties(YamlMap m) {
       ? m['pressure_ranges'] as YamlMap
       : null;
   return DeviceRuleProperties(
-    grab: m['grab'] as bool?,
-    ignore: m['ignore'] as bool?,
+    grab: yamlBool(m['grab']),
+    ignore: yamlBool(m['ignore']),
     motionTimeout: yamlInt(m['motion_timeout']),
     motionThreshold: yamlDouble(m['motion_threshold']),
     pressTimeout: yamlInt(m['press_timeout']),
     swipeAngleTolerance: yamlDouble(swipeNode?['angle_tolerance']),
-    unblockButtonsOnTimeout: m['unblock_buttons_on_timeout'] as bool?,
-    buttonpad: m['buttonpad'] as bool?,
+    unblockButtonsOnTimeout: yamlBool(m['unblock_buttons_on_timeout']),
+    buttonpad: yamlBool(m['buttonpad']),
     clickTimeout: yamlInt(m['click_timeout']),
-    handleEvdevEvents: m['handle_evdev_events'] as bool?,
+    handleEvdevEvents: yamlBool(m['handle_evdev_events']),
     motionThreshold2: yamlDouble(m['motion_threshold_2']),
     motionThreshold3: yamlDouble(m['motion_threshold_3']),
     pressureRangesFinger: yamlInt(prNode?['finger']),
@@ -856,11 +796,11 @@ GlobalSettings _parseGlobalSettings(YamlMap doc) {
       : null;
   final combo = doc['emergency_combination'];
   return GlobalSettings(
-    autoreload: doc['autoreload'] as bool?,
+    autoreload: yamlBool(doc['autoreload']),
     emergencyCombination: combo is YamlList
         ? combo.map((e) => e.toString()).toList()
         : null,
-    externalVariableAccess: doc['external_variable_access'] as bool?,
-    notificationsConfigError: notifNode?['config_error'] as bool?,
+    externalVariableAccess: yamlBool(doc['external_variable_access']),
+    notificationsConfigError: yamlBool(notifNode?['config_error']),
   );
 }

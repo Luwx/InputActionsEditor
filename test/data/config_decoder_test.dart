@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -270,6 +270,71 @@ mouse:
       final action = common.actions.single;
       expect(action.enabled, isFalse);
       expect(action.action, const CommandAction(command: 'echo hi'));
+    });
+  });
+
+  group('decodeConfig - scalars written the way the daemon reads them', () {
+    test('quoted numbers are numbers', () {
+      final c = decodeConfig('''
+touchpad:
+  gestures:
+    - type: tap
+      fingers: '3'
+      resume_timeout: "200"
+      actions:
+        - sleep: "50"
+''');
+      final gesture = c.touchpadGestures.single as TouchpadTapGesture;
+      expect(gesture.fingers, 3);
+      expect(gesture.common.resumeTimeout, 200);
+      expect(
+        gesture.common.actions.single.action,
+        const SleepAction(milliseconds: 50),
+      );
+    });
+
+    test('numbers are text where text is expected', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      id: 123
+      _extra:
+        name: 2024
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.id, '123');
+      expect(common.name, '2024');
+    });
+
+    test('a single stroke may be written without a list', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: stroke
+      strokes: 'MgAAAA=='
+''');
+      expect((c.mouseGestures.single as StrokeGesture).strokes, ['MgAAAA==']);
+    });
+
+    test('yes, on and their negatives are booleans', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      instant: on
+      block_events: yes
+      actions:
+        - command: echo hi
+          wait: no
+''');
+      final gesture = c.mouseGestures.single as PressGesture;
+      expect(gesture.instant, isTrue);
+      expect(gesture.common.blockEvents, isTrue);
+      expect(
+        gesture.common.actions.single.action,
+        const CommandAction(command: 'echo hi', wait: false),
+      );
     });
   });
 

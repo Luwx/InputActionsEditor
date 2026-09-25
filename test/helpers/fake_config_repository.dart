@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/app_state/app/local_settings_provider.dart';
 import 'package:input_actions_editor/data/config_backups.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/data/config_repository.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

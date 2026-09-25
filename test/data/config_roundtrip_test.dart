@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/data/yaml_helpers.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -425,6 +425,20 @@ device_rules:
       final cleared = decodeConfig(original).copyWith(deviceRules: []);
       final encoded = encodeConfig(cleared, original);
       expect(encoded.contains('device_rules'), isFalse);
+    });
+
+    test('deleting every gesture of an optional section saves', () {
+      const original = '''
+mouse:
+  gestures: []
+keyboard:
+  gestures:
+    - type: shortcut
+      shortcut: [leftctrl+c]
+''';
+      final emptied = decodeConfig(original).copyWith(keyboardNodes: const []);
+      final encoded = encodeConfig(emptied, original);
+      expect(decodeConfig(encoded).keyboardGestures, isEmpty);
     });
 
     test('omits empty optional device sections', () {
@@ -1137,6 +1151,72 @@ mouse:
 
       expect(encoded, contains('- function: () => initialDirection = "l"'));
       expect(encoded, isNot(contains('|-')));
+    });
+  });
+
+  group('mouse button names', () {
+    List<MouseButtonValue> buttonsOf(String yaml) =>
+        decodeConfig(yaml).mouseGestures.single.common.mouseButtons;
+
+    test('legacy extra1..extra5 names map to their modern equivalents', () {
+      expect(
+        buttonsOf('''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ extra1, extra2, extra3, extra4, extra5 ]
+'''),
+        [
+          MouseButtonValue.back,
+          MouseButtonValue.forward,
+          MouseButtonValue.task,
+          MouseButtonValue.side,
+          MouseButtonValue.extra,
+        ],
+      );
+    });
+
+    test('names are matched case-insensitively, as the daemon does', () {
+      expect(
+        buttonsOf('''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ SIDE, Extra1 ]
+'''),
+        [MouseButtonValue.side, MouseButtonValue.back],
+      );
+    });
+
+    test('a legacy name is not dropped when the config is saved', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ extra1 ]
+      actions:
+        - command: echo hi
+''';
+      final encoded = encodeConfig(decodeConfig(source), source);
+      expect(encoded, contains('mouse_buttons'));
+      expect(decodeConfig(encoded).mouseGestures.single.common.mouseButtons, [
+        MouseButtonValue.back,
+      ]);
+    });
+
+    test("other enums accept the daemon's casing too", () {
+      final config = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: END_CANCEL
+          command: echo hi
+''');
+      expect(
+        config.mouseGestures.single.common.actions.single.on,
+        TriggerOn.endCancel,
+      );
     });
   });
 }

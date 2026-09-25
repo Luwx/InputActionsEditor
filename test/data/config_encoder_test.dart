@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';

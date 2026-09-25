@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/domain/config_issues.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -228,15 +228,15 @@ mouse:
 ''');
     });
 
-    test('wrong scalar type for a typed field', () {
+    test('a value the daemon cannot read for a typed field', () {
       expect(
         () => decodeConfig('''
 touchpad:
   gestures:
     - type: tap
-      fingers: "3"
+      fingers: three
 '''),
-        throwsA(isA<TypeError>()),
+        throwsA(isA<FormatException>()),
       );
     });
 

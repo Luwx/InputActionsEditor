@@ -295,6 +295,40 @@ int _itemEnd(
   return end;
 }
 
+YamlNode? yamlNodeAt(YamlEditor editor, Iterable<Object?> path) {
+  final node = editor.parseAt(path, orElse: () => _absent);
+  return identical(node, _absent) ? null : node;
+}
+
+final YamlNode _absent = wrapAsYamlNode(null);
+
+/// Writes [value] at [path] if it differs, creating parents; null removes it.
+void syncYamlPath(YamlEditor editor, List<Object> path, Object? value) {
+  var depth = path.length;
+  while (yamlNodeAt(editor, path.take(depth)) == null) {
+    depth--;
+  }
+  final node = yamlNodeAt(editor, path.take(depth))!;
+  if (depth == path.length) {
+    if (value == null) {
+      editor.remove(path);
+    } else if (!yamlNodeMatches(
+      node is YamlScalar ? node.value : node,
+      value,
+    )) {
+      editor.update(path, value);
+    }
+    return;
+  }
+  if (value == null) return;
+  final at = node is YamlMap ? depth + 1 : depth;
+  var nested = value;
+  for (final key in path.skip(at).toList().reversed) {
+    nested = {key: nested};
+  }
+  editor.update(path.take(at), nested);
+}
+
 /// Whether a parsed node holds exactly [value], comparing maps in key order so
 /// a rewrite that only reorders keys still counts as a change.
 bool yamlNodeMatches(dynamic node, dynamic value) {
@@ -355,16 +389,36 @@ List<String> yamlStringList(dynamic node) {
   return [];
 }
 
-int? yamlInt(dynamic v) {
-  if (v == null) return null;
-  if (v is int) return v;
-  if (v is double) return v.toInt();
-  return int.tryParse(v.toString());
-}
+// Scalars read as the daemon's yaml-cpp reads them; what it rejects fails.
 
-double? yamlDouble(dynamic v) {
-  if (v == null) return null;
-  if (v is double) return v;
-  if (v is int) return v.toDouble();
-  return double.tryParse(v.toString());
-}
+bool? yamlBool(dynamic v) => switch (v) {
+  null => null,
+  final bool b => b,
+  'y' || 'Y' || 'yes' || 'Yes' || 'YES' => true,
+  'true' || 'True' || 'TRUE' || 'on' || 'On' || 'ON' => true,
+  'n' || 'N' || 'no' || 'No' || 'NO' => false,
+  'false' || 'False' || 'FALSE' || 'off' || 'Off' || 'OFF' => false,
+  _ => throw FormatException('Value is not a boolean', v),
+};
+
+String? yamlString(dynamic v) => v is Map || v is List
+    ? throw FormatException('Value is not a scalar', v)
+    : v?.toString();
+
+int? yamlInt(dynamic v) => switch (v) {
+  null => null,
+  final int i => i,
+  final double d => d.toInt(),
+  _ =>
+    int.tryParse(v.toString()) ??
+        (throw FormatException('Value is not an integer', v)),
+};
+
+double? yamlDouble(dynamic v) => switch (v) {
+  null => null,
+  final double d => d,
+  final int i => i.toDouble(),
+  _ =>
+    double.tryParse(v.toString()) ??
+        (throw FormatException('Value is not a number', v)),
+};

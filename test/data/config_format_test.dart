@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -163,72 +163,6 @@ mouse:
       expect(
         () => decodeConfig('mouse:\n  gestures: [ unclosed\n'),
         throwsA(anything),
-      );
-    });
-  });
-
-  group('mouse button names', () {
-    List<MouseButtonValue> buttonsOf(String yaml) =>
-        decodeConfig(yaml).mouseGestures.single.common.mouseButtons;
-
-    test('legacy extra1..extra5 names map to their modern equivalents', () {
-      expect(
-        buttonsOf('''
-mouse:
-  gestures:
-    - type: press
-      mouse_buttons: [ extra1, extra2, extra3, extra4, extra5 ]
-'''),
-        [
-          MouseButtonValue.back,
-          MouseButtonValue.forward,
-          MouseButtonValue.task,
-          MouseButtonValue.side,
-          MouseButtonValue.extra,
-        ],
-      );
-    });
-
-    test('names are matched case-insensitively, as the daemon does', () {
-      expect(
-        buttonsOf('''
-mouse:
-  gestures:
-    - type: press
-      mouse_buttons: [ SIDE, Extra1 ]
-'''),
-        [MouseButtonValue.side, MouseButtonValue.back],
-      );
-    });
-
-    test('a legacy name is not dropped when the config is saved', () {
-      const source = '''
-mouse:
-  gestures:
-    - type: press
-      mouse_buttons: [ extra1 ]
-      actions:
-        - command: echo hi
-''';
-      final encoded = encodeConfig(decodeConfig(source), source);
-      expect(encoded, contains('mouse_buttons'));
-      expect(decodeConfig(encoded).mouseGestures.single.common.mouseButtons, [
-        MouseButtonValue.back,
-      ]);
-    });
-
-    test("other enums accept the daemon's casing too", () {
-      final config = decodeConfig('''
-mouse:
-  gestures:
-    - type: press
-      actions:
-        - on: END_CANCEL
-          command: echo hi
-''');
-      expect(
-        config.mouseGestures.single.common.actions.single.on,
-        TriggerOn.endCancel,
       );
     });
   });
