@@ -84,6 +84,11 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
     final isSelected = ref.watch(
       selectedGroupProvider.select((open) => open == location),
     );
+    final folderColor = isDisabled
+        ? colors.mutedForeground
+        : isSelected
+        ? colors.primary
+        : colors.foreground;
 
     // The disabled dimming wraps only the content, or no blur
     final content = Opacity(
@@ -108,14 +113,21 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  FLucideIcons.folder,
-                  size: 15,
-                  color: isDisabled
-                      ? colors.mutedForeground
-                      : isSelected
-                      ? colors.primary
-                      : colors.foreground,
+                AnimatedCrossFade(
+                  firstChild: Icon(
+                    FLucideIcons.folder,
+                    size: 15,
+                    color: folderColor,
+                  ),
+                  secondChild: Icon(
+                    FLucideIcons.folderOpen,
+                    size: 15,
+                    color: folderColor,
+                  ),
+                  crossFadeState: isCollapsed
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: Durations.short4,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -237,8 +249,8 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
 }
 
 /// Backs the group header, blending the in-flow tint into the frosted app-bar
-/// look as [frostT] rises. The [BackdropFilter] is only inserted once the blur
-/// is visible, so an unfrosted header pays no blur cost.
+/// look as [frostT] rises. The [BackdropFilter] stays mounted and is disabled
+/// while unfrosted: dropping it remounts the header content mid-animation.
 class _PinnedHeaderBacking extends StatelessWidget {
   const _PinnedHeaderBacking({
     required this.frostT,
@@ -289,9 +301,11 @@ class _PinnedHeaderBacking extends StatelessWidget {
       ),
       child: child,
     );
-    if (frostT < 0.001) return decorated;
+    final frosted = frostT >= 0.001;
     return ClipRect(
+      clipBehavior: frosted ? Clip.hardEdge : Clip.none,
       child: BackdropFilter(
+        enabled: frosted,
         filterConfig: ImageFilterConfig.blur(
           sigmaX: 8 * frostT,
           sigmaY: 8 * frostT,
