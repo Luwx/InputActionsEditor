@@ -22,26 +22,26 @@ class SequenceFieldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppTooltip(
-      tipBuilder: (context, _) => Text(
-        tooltip,
-        style: context.theme.typography.body.xs.copyWith(
-          color: context.theme.colors.mutedForeground,
+    return FPopover(
+      groupId: groupId,
+      hideRegion: hideRegion,
+      constraints: constraints,
+      builder: (context, controller, child) => AppTooltip(
+        tipBuilder: (context, _) => Text(
+          tooltip,
+          style: context.theme.typography.body.xs.copyWith(
+            color: context.theme.colors.mutedForeground,
+          ),
         ),
-      ),
-      child: FPopover(
-        groupId: groupId,
-        hideRegion: hideRegion,
-        constraints: constraints,
-        builder: (context, controller, child) => FButton.icon(
+        child: FButton.icon(
           variant: .ghost,
           size: .xs,
           onPress: controller.toggle,
           child: child,
         ),
-        popoverBuilder: popoverBuilder,
-        child: icon,
       ),
+      popoverBuilder: popoverBuilder,
+      child: icon,
     );
   }
 }
