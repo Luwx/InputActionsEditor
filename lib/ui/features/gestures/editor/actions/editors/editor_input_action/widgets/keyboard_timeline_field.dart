@@ -41,26 +41,35 @@ class KeyboardTimelineField extends HookWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        SequenceFieldButton(
-          tooltip: context.l10n.inputKeySequenceRecordTip,
-          icon: const Icon(Icons.radio_button_checked, size: 16),
-          groupId: recorder.isRecording ? null : popoverGroup,
-          hideRegion: recorder.isRecording ? .none : .excludeChild,
-          constraints: const FPortalConstraints(maxWidth: 300),
-          popoverBuilder: (context, controller) =>
-              KeyboardRecordPopover(controller: controller, recorder: recorder),
-        ),
         const SizedBox(width: 4),
-        SequenceFieldButton(
-          tooltip: context.l10n.inputKeySequenceBrowseTip,
-          icon: const Icon(FLucideIcons.search, size: 15),
-          groupId: popoverGroup,
-          constraints: const FPortalConstraints(maxWidth: 260),
-          popoverBuilder: (context, _) =>
-              _KeyBrowserPopover(onSelect: sequence.append),
+        SizedBox(
+          height: 34,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SequenceFieldButton(
+                tooltip: context.l10n.inputKeySequenceRecordTip,
+                icon: const Icon(Icons.radio_button_checked, size: 16),
+                groupId: recorder.isRecording ? null : popoverGroup,
+                hideRegion: recorder.isRecording ? .none : .excludeChild,
+                constraints: const FPortalConstraints(maxWidth: 300),
+                popoverBuilder: (context, controller) => KeyboardRecordPopover(
+                  controller: controller,
+                  recorder: recorder,
+                ),
+              ),
+              const SizedBox(width: 2),
+              SequenceFieldButton(
+                tooltip: context.l10n.inputKeySequenceBrowseTip,
+                icon: const Icon(FLucideIcons.search, size: 15),
+                groupId: popoverGroup,
+                constraints: const FPortalConstraints(maxWidth: 260),
+                popoverBuilder: (context, _) =>
+                    _KeyBrowserPopover(onSelect: sequence.append),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 8),
       ],
     );
   }

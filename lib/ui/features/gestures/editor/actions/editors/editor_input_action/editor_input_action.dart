@@ -31,7 +31,7 @@ class EditorInputAction extends HookConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            // crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               UnsavedLabel(
                 state: entriesField.dirty,
@@ -56,7 +56,6 @@ class EditorInputAction extends HookConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Column(

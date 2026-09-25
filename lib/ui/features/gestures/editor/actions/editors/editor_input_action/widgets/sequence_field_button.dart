@@ -33,8 +33,12 @@ class SequenceFieldButton extends StatelessWidget {
         groupId: groupId,
         hideRegion: hideRegion,
         constraints: constraints,
-        builder: (context, controller, child) =>
-            FButton.icon(size: .sm, onPress: controller.toggle, child: child),
+        builder: (context, controller, child) => FButton.icon(
+          variant: .ghost,
+          size: .xs,
+          onPress: controller.toggle,
+          child: child,
+        ),
         popoverBuilder: popoverBuilder,
         child: icon,
       ),

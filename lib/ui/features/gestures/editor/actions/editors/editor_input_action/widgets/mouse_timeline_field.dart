@@ -42,22 +42,26 @@ class MouseTimelineField extends HookWidget {
           ),
         ),
         const SizedBox(width: 8),
-        SequenceFieldButton(
-          tooltip: context.l10n.inputButtonSequenceRecordTip,
-          icon: const Icon(Icons.radio_button_checked, size: 16),
-          constraints: const FPortalConstraints(maxWidth: 300),
-          popoverBuilder: (context, controller) => RecordingScope(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: MouseRecordPopover(
-                controller: controller,
-                recorder: recorder,
-                onAppend: sequence.append,
+        SizedBox(
+          height: 34,
+          child: Center(
+            child: SequenceFieldButton(
+              tooltip: context.l10n.inputButtonSequenceRecordTip,
+              icon: const Icon(Icons.radio_button_checked, size: 16),
+              constraints: const FPortalConstraints(maxWidth: 300),
+              popoverBuilder: (context, controller) => RecordingScope(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: MouseRecordPopover(
+                    controller: controller,
+                    recorder: recorder,
+                    onAppend: sequence.append,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
       ],
     );
   }
