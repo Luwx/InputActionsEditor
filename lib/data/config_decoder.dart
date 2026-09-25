@@ -2,7 +2,9 @@ import 'dart:collection';
 
 import 'package:input_actions_editor/data/config_format.dart';
 import 'package:input_actions_editor/data/legacy_editor_keys.dart';
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/yaml/stroke_yaml.dart';
+import 'package:input_actions_editor/data/yaml/yaml_anchors.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
@@ -42,8 +44,12 @@ Config _decodeConfigText(String parseText) {
   final doc = loadYaml(parseText);
   if (doc == null) return const Config();
   final map = doc as YamlMap;
+  final anchors = anchorNamesByOffset(parseText);
 
-  final mouseNodes = _parseDeviceNodes(map['mouse'], _parseMouseGesture);
+  final mouseNodes = _parseDeviceNodes(
+    map['mouse'],
+    (m) => _parseMouseGesture(m, anchors),
+  );
   final keyboardNodes = _parseDeviceNodes(
     map['keyboard'],
     _parseKeyboardGesture,
@@ -51,11 +57,11 @@ Config _decodeConfigText(String parseText) {
   final pointerNodes = _parseDeviceNodes(map['pointer'], _parsePointerGesture);
   final touchpadNodes = _parseDeviceNodes(
     map['touchpad'],
-    _parseTouchpadGesture,
+    (m) => _parseTouchpadGesture(m, anchors),
   );
   final touchscreenNodes = _parseDeviceNodes(
     map['touchscreen'],
-    _parseTouchscreenGesture,
+    (m) => _parseTouchscreenGesture(m, anchors),
   );
 
   final deviceRules = _parseDeviceRules(map['device_rules']);
@@ -291,7 +297,7 @@ List<GestureNode> _migrateLegacyGroups(
 }
 
 // Mouse
-MouseGesture? _parseMouseGesture(YamlMap m) {
+MouseGesture? _parseMouseGesture(YamlMap m, Map<int, String> anchors) {
   final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
@@ -301,7 +307,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
     'stroke' => StrokeGesture(
       common: common,
       motion: motion,
-      strokes: yamlStringList(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
     ),
     'swipe' => SwipeGesture(
       common: common,
@@ -355,7 +361,7 @@ PointerGesture? _parsePointerGesture(YamlMap m) {
 }
 
 // Touchpad
-TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
+TouchpadGesture? _parseTouchpadGesture(YamlMap m, Map<int, String> anchors) {
   final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
@@ -399,7 +405,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
     'stroke' => TouchpadStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: yamlStringList(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
       motion: motion,
     ),
     _ => null,
@@ -407,7 +413,10 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
 }
 
 // Touchscreen
-TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
+TouchscreenGesture? _parseTouchscreenGesture(
+  YamlMap m,
+  Map<int, String> anchors,
+) {
   final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
@@ -450,7 +459,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
     'stroke' => TouchscreenStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: yamlStringList(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
       motion: motion,
     ),
     _ => null,

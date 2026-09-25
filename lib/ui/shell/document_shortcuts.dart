@@ -11,6 +11,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_navigation.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
@@ -42,6 +43,11 @@ class DocumentShortcuts extends ConsumerWidget {
         ? ref.read(selectedGestureProvider)
         : null;
 
+    GestureLocation? strokeTarget() => switch (selectedGesture()) {
+      final location? when holdsStrokes(ref, location) => location,
+      _ => null,
+    };
+
     return Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.keyZ, control: true): UndoIntent(),
@@ -68,6 +74,7 @@ class DocumentShortcuts extends ConsumerWidget {
         renameShortcut: RenameGestureIntent(),
         duplicateShortcut: DuplicateGestureIntent(),
         copyYamlShortcut: CopyGestureYamlIntent(),
+        pasteShortcut: PasteStrokesIntent(),
         SingleActivator(LogicalKeyboardKey.arrowUp, alt: true):
             StepGestureIntent(-1, yieldsToTextField: true),
         SingleActivator(LogicalKeyboardKey.arrowDown, alt: true):
@@ -173,6 +180,15 @@ class DocumentShortcuts extends ConsumerWidget {
               return null;
             },
           ),
+          PasteStrokesIntent: _StrokePasteAction(
+            target: strokeTarget,
+            onInvoke: (_) {
+              if (strokeTarget() case final location?) {
+                unawaited(pasteStrokes(ref, location));
+              }
+              return null;
+            },
+          ),
           StepGestureIntent: _NavigationAction<StepGestureIntent>(
             onInvoke: (intent) {
               stepGesture(context, ref, intent.delta);
@@ -218,14 +234,24 @@ class DocumentShortcuts extends ConsumerWidget {
   }
 }
 
+class _StrokePasteAction extends CallbackAction<PasteStrokesIntent> {
+  _StrokePasteAction({required this.target, required super.onInvoke});
+
+  final GestureLocation? Function() target;
+
+  @override
+  bool isEnabled(PasteStrokesIntent intent) =>
+      target() != null && !_textFieldFocused();
+}
+
+bool _textFieldFocused() =>
+    primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() != null;
+
 class _NavigationAction<T extends NavigationIntent> extends CallbackAction<T> {
   _NavigationAction({required super.onInvoke});
 
   // A disabled action leaves the key unhandled, so it keeps travelling up to
   // the text field's own shortcuts instead of being swallowed here.
   @override
-  bool isEnabled(T intent) =>
-      !intent.yieldsToTextField ||
-      primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() ==
-          null;
+  bool isEnabled(T intent) => !intent.yieldsToTextField || !_textFieldFocused();
 }

@@ -1,5 +1,7 @@
 import 'package:input_actions_editor/data/config_format.dart';
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/yaml/stroke_yaml.dart';
+import 'package:input_actions_editor/data/yaml/yaml_anchors.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -30,13 +32,37 @@ String encodeConfig(Config config, String originalText) {
 
 String _encodeOnto(Config config, String originalText) {
   final fresh = originalText.trim().isEmpty;
-  final source = fresh
-      ? 'mouse:\n  gestures: []\n'
-      : materializeDisabledYamlComments(originalText);
-  final editor = YamlEditor(source);
+  final strokes = config.strokes;
+  final source = syncStrokeAnchors(
+    fresh
+        ? 'mouse:\n  gestures: []\n'
+        : materializeDisabledYamlComments(originalText),
+    strokes,
+  );
+  final owned = strokeAnchorNames(strokes);
+  var expand = <String>{};
+  while (true) {
+    final aliases = YamlAliases.of(source, expand: expand, owned: owned);
+    final encoded = _encodeInto(
+      _Document(aliases),
+      config,
+      originalText,
+      fresh: fresh,
+    );
+    final lost = aliases.lostIn(encoded);
+    if (lost.isEmpty) return aliases.restore(encoded);
+    expand = {...expand, ...lost};
+  }
+}
 
+String _encodeInto(
+  _Document doc,
+  Config config,
+  String originalText, {
+  required bool fresh,
+}) {
   _saveDeviceSection(
-    editor,
+    doc,
     'mouse',
     _nodesToYaml(
       config.mouseNodes,
@@ -45,7 +71,7 @@ String _encodeOnto(Config config, String originalText) {
     speed: config.mouseSpeed,
   );
   _saveDeviceSection(
-    editor,
+    doc,
     'keyboard',
     _nodesToYaml(
       config.keyboardNodes,
@@ -54,7 +80,7 @@ String _encodeOnto(Config config, String originalText) {
     omitIfEmpty: true,
   );
   _saveDeviceSection(
-    editor,
+    doc,
     'pointer',
     _nodesToYaml(
       config.pointerNodes,
@@ -63,7 +89,7 @@ String _encodeOnto(Config config, String originalText) {
     omitIfEmpty: true,
   );
   _saveDeviceSection(
-    editor,
+    doc,
     'touchpad',
     _nodesToYaml(
       config.touchpadNodes,
@@ -73,7 +99,7 @@ String _encodeOnto(Config config, String originalText) {
     speed: config.touchpadSpeed,
   );
   _saveDeviceSection(
-    editor,
+    doc,
     'touchscreen',
     _nodesToYaml(
       config.touchscreenNodes,
@@ -83,21 +109,33 @@ String _encodeOnto(Config config, String originalText) {
     speed: config.touchscreenSpeed,
   );
 
-  _saveDeviceRules(editor, config);
-  _saveGlobalSettings(editor, config);
+  _saveDeviceRules(doc, config);
+  _saveGlobalSettings(doc, config);
   if (fresh) {
     for (final MapEntry(:key, :value) in config.extra.entries) {
-      editor.update([key], value);
+      doc.editor.update([key], value);
     }
   }
 
   return spaceOutGestures(
     restoreItemInnerComments(
-      commentDisabledYamlItems(editor.toString()),
+      commentDisabledYamlItems(doc.editor.toString()),
       originalText,
       isItemList: isDisableableItemList,
     ),
   );
+}
+
+final class _Document {
+  _Document(this.aliases) : editor = YamlEditor(aliases.text);
+
+  final YamlAliases aliases;
+  final YamlEditor editor;
+
+  bool has(List<Object> path) => yamlNodeAt(editor, path) != null;
+
+  void sync(List<Object> path, Object? value) =>
+      syncYamlPath(editor, path, aliases.realias(value, path.last));
 }
 
 /// Lays out a device's gesture tree as the YAML `gestures:` list. Membership
@@ -174,7 +212,7 @@ Map<String, dynamic> _withoutInherited(
 };
 
 void _saveDeviceSection(
-  YamlEditor editor,
+  _Document doc,
   String key,
   List<dynamic> gestures, {
   bool omitIfEmpty = false,
@@ -183,34 +221,29 @@ void _saveDeviceSection(
   final speedMap = speed == null || speed.isEmpty
       ? null
       : speedSettingsToMap(speed);
-  if (omitIfEmpty &&
-      gestures.isEmpty &&
-      speedMap == null &&
-      yamlNodeAt(editor, [key]) == null) {
+  if (omitIfEmpty && gestures.isEmpty && speedMap == null && !doc.has([key])) {
     return;
   }
-  syncYamlPath(editor, [key, 'gestures'], gestures);
-  syncYamlPath(editor, [key, 'speed'], speedMap);
-  // The editor's old flat `groups:` list is read for compatibility but no
-  // longer written: groups serialize as nesting. Drop it on save.
-  syncYamlPath(editor, [key, 'groups'], null);
+  doc
+    ..sync([key, 'gestures'], gestures)
+    ..sync([key, 'speed'], speedMap)
+    // The editor's old flat `groups:` list is read for compatibility but no
+    // longer written: groups serialize as nesting. Drop it on save.
+    ..sync([key, 'groups'], null);
 }
 
-void _saveDeviceRules(YamlEditor editor, Config config) {
+void _saveDeviceRules(_Document doc, Config config) {
   final rules = config.deviceRules.map(deviceRuleToMap).toList();
-  syncYamlPath(editor, ['device_rules'], rules.isEmpty ? null : rules);
+  doc.sync(['device_rules'], rules.isEmpty ? null : rules);
 }
 
-void _saveGlobalSettings(YamlEditor editor, Config config) {
+void _saveGlobalSettings(_Document doc, Config config) {
   final gs = config.globalSettings;
-  syncYamlPath(editor, ['autoreload'], gs.autoreload);
-  syncYamlPath(editor, ['emergency_combination'], gs.emergencyCombination);
-  syncYamlPath(editor, ['external_variable_access'], gs.externalVariableAccess);
-  syncYamlPath(
-    editor,
-    ['notifications', 'config_error'],
-    gs.notificationsConfigError,
-  );
+  doc
+    ..sync(['autoreload'], gs.autoreload)
+    ..sync(['emergency_combination'], gs.emergencyCombination)
+    ..sync(['external_variable_access'], gs.externalVariableAccess)
+    ..sync(['notifications', 'config_error'], gs.notificationsConfigError);
 }
 
 // Encode  (model → plain Dart maps consumed by yaml_edit)
@@ -218,7 +251,7 @@ Map<String, dynamic> mouseGestureToMap(MouseGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.name};
   switch (g) {
     case StrokeGesture(:final strokes):
-      if (strokes.isNotEmpty) m['strokes'] = strokes;
+      if (strokes.isNotEmpty) m[strokesYamlKey] = strokesToYaml(strokes);
     case SwipeGesture(:final mode):
       _writeSwipeMode(m, mode);
     case CircleGesture(:final direction):
@@ -267,7 +300,7 @@ Map<String, dynamic> touchpadGestureToMap(TouchpadGesture g) {
       m['direction'] = direction.toYaml();
       _writeMotion(m, motion);
     case TouchpadStrokeGesture(:final strokes, :final motion):
-      if (strokes.isNotEmpty) m['strokes'] = strokes;
+      if (strokes.isNotEmpty) m[strokesYamlKey] = strokesToYaml(strokes);
       _writeMotion(m, motion);
     case TouchpadTapGesture():
     case TouchpadClickGesture():
@@ -295,7 +328,7 @@ Map<String, dynamic> touchscreenGestureToMap(TouchscreenGesture g) {
       m['direction'] = direction.toYaml();
       _writeMotion(m, motion);
     case TouchscreenStrokeGesture(:final strokes, :final motion):
-      if (strokes.isNotEmpty) m['strokes'] = strokes;
+      if (strokes.isNotEmpty) m[strokesYamlKey] = strokesToYaml(strokes);
       _writeMotion(m, motion);
     case TouchscreenTapGesture():
     case TouchscreenHoldGesture():
@@ -337,10 +370,10 @@ void _writeCommon(
   if (c.setLastTrigger != null) m['set_last_trigger'] = c.setLastTrigger;
   if (c.threshold != null) m['threshold'] = c.threshold;
   if (c.accelerated != null) m['accelerated'] = c.accelerated;
+  m.addAll(_editorExtra({'name': ?c.name, 'enabled': ?c.enabled}));
   if (c.actions.isNotEmpty) {
     m['actions'] = c.actions.map(triggerActionToMap).toList();
   }
-  m.addAll(_editorExtra({'name': ?c.name, 'enabled': ?c.enabled}));
 }
 
 Map<String, dynamic> _editorExtra(Map<String, dynamic> values) => {

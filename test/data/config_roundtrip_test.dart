@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/data/config_encoder.dart';
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
@@ -16,6 +16,7 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -104,7 +105,7 @@ keyboard:
                   MouseButtonValue.right,
                 ],
               ),
-              strokes: ['AAA=='],
+              strokes: [Stroke('AAA==')],
             ),
           ),
           GestureNode.leaf(
@@ -626,9 +627,9 @@ mouse:
       expect(strokeGroup.mouseButtons, [MouseButtonValue.back]);
 
       final strokes = strokeGroup.gestures.cast<StrokeGesture>().toList();
-      expect(strokes.map((g) => g.strokes), [
-        ['MGQA0DMnPMwwAGQA'],
-        ['MAAAMTNkZAA='],
+      expect(strokes.map((g) => g.strokes), const [
+        [Stroke('MGQA0DMnPMwwAGQA')],
+        [Stroke('MAAAMTNkZAA=')],
       ]);
       expect(strokes.map((g) => g.common.mouseButtons), everyElement(isEmpty));
       expect(
@@ -672,7 +673,7 @@ mouse:
         final gesture =
             (decodeConfig(encoded).mouseNodes.first as GestureLeaf).gesture
                 as StrokeGesture;
-        expect(gesture.strokes, ['MGQA0DMnPMwwAGQA']);
+        expect(gesture.strokes, const [Stroke('MGQA0DMnPMwwAGQA')]);
       },
     );
 

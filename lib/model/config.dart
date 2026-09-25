@@ -8,6 +8,7 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:meta_generator/meta_generator.dart';
@@ -79,6 +80,17 @@ abstract class Config with _$Config {
 
   int get totalGestureCount =>
       DeviceType.values.fold(0, (sum, d) => sum + gestureCountForDevice(d));
+
+  List<Stroke> get strokes => [
+    for (final device in DeviceType.values)
+      for (final gesture in gesturesForDevice(device))
+        ...switch (gesture) {
+          StrokeGesture(:final strokes) ||
+          TouchpadStrokeGesture(:final strokes) ||
+          TouchscreenStrokeGesture(:final strokes) => strokes,
+          _ => const <Stroke>[],
+        },
+  ];
 
   SpeedSettings? speedForDevice(DeviceType device) => switch (device) {
     DeviceType.mouse => mouseSpeed,

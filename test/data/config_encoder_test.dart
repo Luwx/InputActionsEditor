@@ -11,6 +11,7 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
@@ -19,7 +20,10 @@ void main() {
     test('stroke writes strokes only when non-empty', () {
       expect(
         mouseGestureToMap(
-          const StrokeGesture(common: TriggerCommon(), strokes: ['AAA==']),
+          const StrokeGesture(
+            common: TriggerCommon(),
+            strokes: [Stroke('AAA==')],
+          ),
         ),
         {
           'type': 'stroke',
@@ -175,6 +179,31 @@ void main() {
         const PressGesture(common: TriggerCommon()),
       );
       expect(map.keys, ['type']);
+    });
+
+    test('a saved gesture carries _extra above its actions', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - command: echo hi
+      _extra:
+        name: Old
+''';
+      final config = decodeConfig(source);
+      final press = config.mouseGestures.single as PressGesture;
+      final renamed = config.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            press.copyWith(common: press.common.copyWith(name: 'New')),
+          ),
+        ],
+      );
+      final saved = encodeConfig(renamed, source);
+
+      expect(saved.indexOf('_extra:'), lessThan(saved.indexOf('actions:')));
+      expect(decodeConfig(saved), renamed);
     });
 
     test('mouse_buttons_exact_order omitted when false', () {
@@ -369,7 +398,7 @@ mouse:
           const TouchpadStrokeGesture(
             common: TriggerCommon(),
             fingers: 3,
-            strokes: ['AAA=='],
+            strokes: [Stroke('AAA==')],
           ),
         ),
         {

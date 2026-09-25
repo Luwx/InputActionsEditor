@@ -33,6 +33,7 @@ import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
@@ -703,6 +704,8 @@ class GestureListSection extends HookConsumerWidget {
               false;
           rowCommands.setEnabled(targets(), enabled: !enabled);
         },
+        onDiscardChanges: () =>
+            ref.read(gestureEditorProvider(location).notifier).discardChanges(),
         onDelete: () => rowCommands.delete(targets()),
       ),
     );

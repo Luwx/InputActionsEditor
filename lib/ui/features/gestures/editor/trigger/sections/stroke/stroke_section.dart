@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/strokes_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
@@ -14,7 +15,7 @@ class StrokeSection extends ConsumerWidget {
     final field = ref.gestureField(
       context,
       mouseGestureStrokeStrokesLens,
-      fallbackValue: () => const <String>[],
+      fallbackValue: () => const <Stroke>[],
     );
     return RevealedField(
       field: ConfigDirtyField.mouseGestureStrokeStrokes,

@@ -4180,6 +4180,36 @@ abstract class AppLocalizations {
   /// **'Invalid stroke data'**
   String get strokeRowInvalidData;
 
+  /// No description provided for @strokeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke copied.'**
+  String get strokeCopied;
+
+  /// No description provided for @strokeRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename stroke'**
+  String get strokeRenameTitle;
+
+  /// No description provided for @strokeNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke name'**
+  String get strokeNameHint;
+
+  /// No description provided for @strokeNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A name cannot contain spaces, commas, brackets or braces.'**
+  String get strokeNameInvalid;
+
+  /// No description provided for @strokeNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Another stroke is already named {name}.'**
+  String strokeNameTaken(String name);
+
   /// No description provided for @inputDevicesLabel.
   ///
   /// In en, this message translates to:

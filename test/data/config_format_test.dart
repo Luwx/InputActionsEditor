@@ -167,7 +167,7 @@ mouse:
     });
   });
 
-  test('an edit near an anchor saves, written out in full', () {
+  test('an edit near an anchor saves and keeps the alias', () {
     const source = '''
 anchors:
   - &button [ back ]
@@ -188,7 +188,8 @@ mouse:
     ]);
     final encoded = encodeConfig(edited, source);
 
-    expect(encoded, isNot(contains('*button')));
+    expect(encoded, contains('  - &button [ back ]'));
+    expect(encoded, contains('mouse_buttons: *button'));
     expect(encoded, contains('custom_key: kept'));
     expect(decodeConfig(encoded), edited);
   });

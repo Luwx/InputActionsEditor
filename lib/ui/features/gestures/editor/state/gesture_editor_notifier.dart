@@ -5,9 +5,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/stroke_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
@@ -107,8 +109,29 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
     );
   }
 
+  void renameStroke(String data, String? name) {
+    _config.add(RenameStroke(data, name), scope: const GesturesScope());
+  }
+
+  void insertStrokes(List<Stroke> strokes, {int? at}) {
+    _config.add(
+      InsertStrokes(location, strokes, at: at),
+      scope: const GesturesScope(),
+    );
+  }
+
   void updateMouse(MouseGesture Function(MouseGesture) update) =>
       updateGesture((g) => update(g as MouseGesture));
+
+  void discardChanges() {
+    final saved = state.savedGesture;
+    if (saved == null) return;
+    updateGesture(
+      (current) => saved.withCommon(
+        saved.common.copyWith(editId: (current as Gesture).common.editId),
+      ),
+    );
+  }
 
   void revertTriggerConfig(Gesture saved) {
     updateGesture((g) {

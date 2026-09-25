@@ -687,7 +687,7 @@ void main() {
         buttons: kSecondaryButton,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+      await tester.tap(find.byIcon(FLucideIcons.copy));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('root two'), buttons: kSecondaryButton);
@@ -923,7 +923,7 @@ void main() {
       await marqueeOver(tester, find.text('alpha'), find.text('beta'));
       await tester.tap(find.text('alpha'), buttons: kSecondaryButton);
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+      await tester.tap(find.byIcon(FLucideIcons.copy));
       await tester.pumpAndSettle();
 
       expect(clipboard, contains('alpha'));
@@ -980,7 +980,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The menu closed behind the shortcut.
-      expect(find.byIcon(FLucideIcons.clipboardCopy), findsNothing);
+      expect(find.byIcon(FLucideIcons.copy), findsNothing);
 
       await tester.tap(find.text('gamma'), buttons: kSecondaryButton);
       await tester.pumpAndSettle();

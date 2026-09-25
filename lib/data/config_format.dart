@@ -1,4 +1,4 @@
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/model/action.dart';
 
 /// The YAML key holding an [ActionGroup]'s nested actions.

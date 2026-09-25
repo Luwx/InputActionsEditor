@@ -9,6 +9,8 @@ import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
@@ -25,6 +27,7 @@ import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_butto
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
 
+import '../../../../helpers/mock_clipboard.dart';
 import '../../../../helpers/seeded_config_controller.dart';
 
 /// [groupAt] is the slot a group sits in, so a test can add into a group that
@@ -110,29 +113,6 @@ List<String> _order(WidgetTester tester) {
     for (final text in tester.widgetList<Text>(find.byType(Text)))
       if (names.contains(text.data)) text.data!,
   ];
-}
-
-/// Routes the platform clipboard through a local string for the test.
-void _mockClipboard(WidgetTester tester) {
-  String? clipboard;
-  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-    SystemChannels.platform,
-    (call) async {
-      if (call.method == 'Clipboard.setData') {
-        clipboard = (call.arguments as Map)['text'] as String;
-      }
-      if (call.method == 'Clipboard.getData') {
-        return <String, dynamic>{'text': clipboard};
-      }
-      return null;
-    },
-  );
-  addTearDown(
-    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    ),
-  );
 }
 
 /// Opens the new-group dialog and confirms it with Enter.
@@ -680,7 +660,7 @@ mouse:
     ['First', 'Second', 'Third'],
   ]) {
     testWidgets('empty-space menu appends a gesture to $names', (tester) async {
-      _mockClipboard(tester);
+      mockClipboard(tester);
       await _pumpList(tester, names: names);
       await Clipboard.setData(
         const ClipboardData(
@@ -707,13 +687,13 @@ mouse:
   testWidgets('copy and paste land the gesture after the row pasted on', (
     tester,
   ) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
 
     await tester.tap(find.text('Second'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
     expect(find.byIcon(FLucideIcons.clipboardPaste), findsOneWidget);
-    await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+    await tester.tap(find.byIcon(FLucideIcons.copy));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Third'), buttons: kSecondaryButton);
@@ -725,7 +705,7 @@ mouse:
   });
 
   testWidgets('ctrl+c copies the row whose menu is open', (tester) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
@@ -736,7 +716,7 @@ mouse:
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(FLucideIcons.clipboardCopy), findsNothing);
+    expect(find.byIcon(FLucideIcons.copy), findsNothing);
 
     await tester.tap(find.text('Third'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
@@ -876,13 +856,13 @@ mouse:
   testWidgets('the menu copies the selection and pastes after its last row', (
     tester,
   ) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
     await _selectRows(tester, ['First', 'Second']);
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+    await tester.tap(find.byIcon(FLucideIcons.copy));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
@@ -912,7 +892,7 @@ mouse:
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.tap(find.byIcon(FLucideIcons.copyPlus));
     await tester.pumpAndSettle();
 
     expect(_draftNames(tester), [
@@ -935,6 +915,70 @@ mouse:
     await tester.pumpAndSettle();
 
     expect(_order(tester), ['First', 'Second']);
+  });
+
+  testWidgets('the menu discards a changed gesture back to its saved one', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GestureListSection)),
+    );
+    Config draft() =>
+        container.read(configControllerProvider).requireValue.draft;
+    final saved = draft().mouseGestures[1];
+    final location = gestureLocationAt(draft(), DeviceType.mouse, 1)!;
+    container
+        .read(configControllerProvider.notifier)
+        .add(
+          UpdateGestureCommon(
+            location,
+            (common) => common.copyWith(threshold: '42'),
+          ),
+          scope: const GesturesScope(),
+        );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+
+    expect(draft().mouseGestures[1], saved);
+  });
+
+  testWidgets('a gesture with one named stroke is summed up by its name', (
+    tester,
+  ) async {
+    await _pumpList(
+      tester,
+      config: decodeConfig('''
+anchors:
+  - &Top 'MGQA0DMnPMwwAGQA'
+
+mouse:
+  gestures:
+    - type: stroke
+      mouse_buttons: [ back ]
+      strokes: [ *Top ]
+    - type: stroke
+      mouse_buttons: [ back ]
+      strokes: [ *Top, 'MAAAMTNkZAA=' ]
+'''),
+    );
+
+    expect(find.text('Top · back'), findsOneWidget);
+    expect(find.text('2 strokes · back'), findsOneWidget);
+  });
+
+  testWidgets('an unchanged gesture offers no discard', (tester) async {
+    await _pumpList(tester);
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rename'), findsOneWidget);
+    expect(find.text('Discard changes'), findsNothing);
   });
 
   testWidgets('rename drops out of the menu over several rows', (tester) async {
@@ -990,7 +1034,7 @@ mouse:
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.tap(find.byIcon(FLucideIcons.copyPlus));
     await tester.pumpAndSettle();
 
     _controllerOf(tester).undo();

@@ -2350,6 +2350,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strokeRowInvalidData => 'Invalid stroke data';
 
   @override
+  String get strokeCopied => 'Stroke copied.';
+
+  @override
+  String get strokeRenameTitle => 'Rename stroke';
+
+  @override
+  String get strokeNameHint => 'Stroke name';
+
+  @override
+  String get strokeNameInvalid =>
+      'A name cannot contain spaces, commas, brackets or braces.';
+
+  @override
+  String strokeNameTaken(String name) {
+    return 'Another stroke is already named $name.';
+  }
+
+  @override
   String get inputDevicesLabel => 'Input devices';
 
   @override

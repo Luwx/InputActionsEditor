@@ -891,6 +891,18 @@
     }
   },
   "strokeRowInvalidData": "Invalid stroke data",
+  "strokeCopied": "Stroke copied.",
+  "strokeRenameTitle": "Rename stroke",
+  "strokeNameHint": "Stroke name",
+  "strokeNameInvalid": "A name cannot contain spaces, commas, brackets or braces.",
+  "strokeNameTaken": "Another stroke is already named {name}.",
+  "@strokeNameTaken": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "inputDevicesLabel": "Input devices",
   "inputAddDevice": "Add device",
   "inputKeySequenceLabel": "Key Sequence",

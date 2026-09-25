@@ -10,6 +10,7 @@ import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -226,7 +227,7 @@ String _summary(Gesture g) {
   switch (g) {
     // Mouse
     case StrokeGesture(:final strokes):
-      parts.add('${strokes.length} stroke${strokes.length == 1 ? '' : 's'}');
+      parts.add(_strokesSummary(strokes));
     case SwipeGesture():
       break;
     case CircleGesture(:final direction):
@@ -287,9 +288,9 @@ void _addTouchSummary(Object g, List<String> parts) {
         when direction != RotationDirection.any:
       parts.add(direction.name);
     case TouchpadStrokeGesture(:final strokes):
-      parts.add('${strokes.length} stroke${strokes.length == 1 ? '' : 's'}');
+      parts.add(_strokesSummary(strokes));
     case TouchscreenStrokeGesture(:final strokes):
-      parts.add('${strokes.length} stroke${strokes.length == 1 ? '' : 's'}');
+      parts.add(_strokesSummary(strokes));
     default:
       break;
   }
@@ -470,10 +471,17 @@ class _GestureTypeIcon extends StatelessWidget {
   }
 }
 
+String _strokesSummary(List<Stroke> strokes) => switch (strokes) {
+  [Stroke(:final name?)] => name,
+  _ => '${strokes.length} stroke${strokes.length == 1 ? '' : 's'}',
+};
+
 List<String> _strokeValues(Object gesture) => switch (gesture) {
-  StrokeGesture(:final strokes) => strokes,
-  TouchpadStrokeGesture(:final strokes) => strokes,
-  TouchscreenStrokeGesture(:final strokes) => strokes,
+  StrokeGesture(:final strokes) ||
+  TouchpadStrokeGesture(:final strokes) ||
+  TouchscreenStrokeGesture(:final strokes) => [
+    for (final stroke in strokes) stroke.data,
+  ],
   _ => const [],
 };
 

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/data/yaml/stroke_yaml.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 
 class StrokeRecordingNotifier extends AsyncNotifier<String?> {
@@ -12,7 +13,7 @@ class StrokeRecordingNotifier extends AsyncNotifier<String?> {
     });
     state = nextState;
     return switch (nextState) {
-      AsyncData(:final value) => value,
+      AsyncData(:final value) => unquoteStroke(value),
       _ => null,
     };
   }

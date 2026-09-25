@@ -703,7 +703,7 @@ List<FItemGroupMixin> _actionContextMenuItems(
     FItemGroup(
       children: [
         FItem(
-          prefix: const Icon(FLucideIcons.clipboardCopy),
+          prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.actionCopy),
           details: const MenuShortcutHint(copyShortcut),
           onPress: dismissThen(controller, onCopy),
@@ -715,7 +715,7 @@ List<FItemGroupMixin> _actionContextMenuItems(
           onPress: dismissThen(controller, onPaste),
         ),
         FItem(
-          prefix: const Icon(FLucideIcons.copy),
+          prefix: const Icon(FLucideIcons.copyPlus),
           title: Text(l10n.actionDuplicate),
           details: const MenuShortcutHint(duplicateShortcut),
           onPress: dismissThen(controller, onDuplicate),

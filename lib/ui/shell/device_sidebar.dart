@@ -310,7 +310,7 @@ List<FItemGroupMixin> _fileMenuItems({
         ),
         FItem(
           title: Text(l10n.actionCopyToClipboard),
-          prefix: const Icon(FLucideIcons.clipboardCopy),
+          prefix: const Icon(FLucideIcons.copy),
           details: const MenuShortcutHint(
             SingleActivator(
               LogicalKeyboardKey.keyC,

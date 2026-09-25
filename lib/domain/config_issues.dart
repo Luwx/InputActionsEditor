@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:input_actions_editor/data/config_format.dart'
     show editorExtraKey;
 import 'package:input_actions_editor/data/legacy_editor_keys.dart';
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';

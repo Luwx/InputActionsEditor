@@ -412,9 +412,11 @@ bool _strokesIdentical(Object a, Object b) {
 }
 
 List<String> _strokesOf(Object g) => switch (g) {
-  StrokeGesture(:final strokes) => strokes,
-  TouchpadStrokeGesture(:final strokes) => strokes,
-  TouchscreenStrokeGesture(:final strokes) => strokes,
+  StrokeGesture(:final strokes) ||
+  TouchpadStrokeGesture(:final strokes) ||
+  TouchscreenStrokeGesture(:final strokes) => [
+    for (final stroke in strokes) stroke.data,
+  ],
   _ => const [],
 };
 

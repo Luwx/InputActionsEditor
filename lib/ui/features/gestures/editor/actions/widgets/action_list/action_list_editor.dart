@@ -95,6 +95,7 @@ class ActionListEditor extends HookConsumerWidget {
         child: Stack(
           key: listKey,
           children: [
+            // HACK: nested FContextMenus both open, so this one sits behind.
             Positioned.fill(
               child: ActionListPasteMenu(
                 onPaste: () => unawaited(choreo.paste(null)),

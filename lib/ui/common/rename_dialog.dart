@@ -11,6 +11,8 @@ class RenameDialog extends HookWidget {
     required this.confirmLabel,
     required this.allowEmpty,
     required this.onConfirm,
+    this.hint,
+    this.validate,
     this.animation,
     super.key,
   });
@@ -20,6 +22,8 @@ class RenameDialog extends HookWidget {
   final String confirmLabel;
   final bool allowEmpty;
   final void Function(String) onConfirm;
+  final String? hint;
+  final String? Function(String text)? validate;
   final Animation<double>? animation;
 
   @override
@@ -35,7 +39,9 @@ class RenameDialog extends HookWidget {
       return null;
     }, const []);
 
-    final canConfirm = allowEmpty || controller.text.trim().isNotEmpty;
+    final error = validate?.call(controller.text);
+    final canConfirm =
+        error == null && (allowEmpty || controller.text.trim().isNotEmpty);
 
     void handleConfirm() {
       if (!canConfirm) return;
@@ -46,11 +52,13 @@ class RenameDialog extends HookWidget {
     final l10n = context.l10n;
     return AppDialog(
       animation: animation,
+      constraints: const BoxConstraints(minWidth: 280, maxWidth: 380),
       title: Text(title),
       body: FTextField(
         control: .managed(controller: controller),
         autofocus: true,
-        hint: l10n.renameGroupHint,
+        hint: hint ?? l10n.renameGroupHint,
+        error: error == null ? null : Text(error),
         onSubmit: (_) => handleConfirm(),
       ),
       actions: [
@@ -75,6 +83,8 @@ Future<void> showRenameDialog(
   required String confirmLabel,
   required void Function(String) onConfirm,
   bool allowEmpty = false,
+  String? hint,
+  String? Function(String text)? validate,
 }) async {
   await showFDialog<void>(
     context: context,
@@ -86,6 +96,8 @@ Future<void> showRenameDialog(
       confirmLabel: confirmLabel,
       allowEmpty: allowEmpty,
       onConfirm: onConfirm,
+      hint: hint,
+      validate: validate,
     ),
   );
 }

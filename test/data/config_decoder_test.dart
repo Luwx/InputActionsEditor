@@ -9,6 +9,7 @@ import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 
@@ -69,7 +70,7 @@ mouse:
       strokes: [ AAA==, BBB== ]
 ''');
       final g = c.mouseGestures.single as StrokeGesture;
-      expect(g.strokes, ['AAA==', 'BBB==']);
+      expect(g.strokes, const [Stroke('AAA=='), Stroke('BBB==')]);
     });
 
     test('swipe with direction parses SwipeDirectionMode', () {
@@ -314,7 +315,9 @@ mouse:
     - type: stroke
       strokes: 'MgAAAA=='
 ''');
-      expect((c.mouseGestures.single as StrokeGesture).strokes, ['MgAAAA==']);
+      expect((c.mouseGestures.single as StrokeGesture).strokes, const [
+        Stroke('MgAAAA=='),
+      ]);
     });
 
     test('yes, on and their negatives are booleans', () {
