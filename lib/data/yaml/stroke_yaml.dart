@@ -10,10 +10,11 @@ const _anchorsKey = 'anchors';
 const strokesYamlKey = 'strokes';
 
 List<Stroke> strokesFromYaml(YamlNode? node, Map<int, String> anchorNames) {
+  final listName = node is YamlList ? _listAnchorName(node, anchorNames) : null;
   Stroke? read(YamlNode item) => switch (item) {
     YamlScalar(:final value?) => Stroke(
       unquoteStroke(value.toString()),
-      name: anchorNames[item.span.start.offset],
+      name: anchorNames[item.span.start.offset] ?? listName,
     ),
     _ => null,
   };
@@ -23,6 +24,9 @@ List<Stroke> strokesFromYaml(YamlNode? node, Map<int, String> anchorNames) {
     _ => const [],
   };
 }
+
+String? _listAnchorName(YamlList list, Map<int, String> anchorNames) =>
+    list.nodes.length == 1 ? anchorNames[list.span.start.offset] : null;
 
 // The daemon hands a recorded stroke out wrapped in single quotes.
 String unquoteStroke(String data) =>
@@ -51,12 +55,12 @@ String syncStrokeAnchors(String yamlText, Iterable<Stroke> strokes) {
   final present = _strokeAnchors(yamlText);
   final stale = {
     for (final MapEntry(key: name, value: anchor) in present.entries)
-      if (wanted[name] != anchor.data) name,
+      if (wanted[name] != anchor.data || anchor.onList) name,
   };
   final renames = <String, String>{};
   for (final name in stale) {
     final anchor = present[name]!;
-    if (!anchor.atRoot) continue;
+    if (!anchor.atRoot || anchor.onList) continue;
     final target = wanted.entries.firstWhereOrNull(
       (entry) =>
           entry.value == anchor.data &&
@@ -106,7 +110,7 @@ String syncStrokeAnchors(String yamlText, Iterable<Stroke> strokes) {
   });
 }
 
-typedef _StrokeAnchor = ({String data, bool atRoot});
+typedef _StrokeAnchor = ({String data, bool atRoot, bool onList});
 
 Map<String, _StrokeAnchor> _strokeAnchors(String yamlText) {
   final root = loadYamlNode(yamlText);
@@ -121,14 +125,19 @@ Map<String, _StrokeAnchor> _strokeAnchors(String yamlText) {
       case YamlMap():
         node.nodes.forEach((key, value) {
           if ((key as YamlNode).value == strokesYamlKey && value is YamlList) {
+            final listName = _listAnchorName(value, names);
             for (final item in value.nodes) {
               final offset = item.span.start.offset;
-              if (names[offset] case final name? when item is YamlScalar) {
+              final anchored = names[offset];
+              final name = anchored ?? listName;
+              if (name != null && item is YamlScalar) {
+                final at = anchored != null ? offset : value.span.start.offset;
                 found.putIfAbsent(
                   name,
                   () => (
                     data: item.value.toString(),
-                    atRoot: atRoot.contains(offset),
+                    atRoot: atRoot.contains(at),
+                    onList: anchored == null,
                   ),
                 );
               }

@@ -95,8 +95,13 @@ extension InheritedFieldAccess on WidgetRef {
       ).firstWhereOrNull((p) => p.property == property);
       if (source == null) continue;
       final lens = field.lens(target);
-      final value = watch(effectiveConfigProvider.select(lens.get));
-      return (source: source, value: value, at: target);
+      final read = watch(
+        effectiveConfigProvider.select(
+          (config) => lens.canGet(config) ? (lens.get(config),) : null,
+        ),
+      );
+      if (read == null) continue;
+      return (source: source, value: read.$1, at: target);
     }
     return null;
   }

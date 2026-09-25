@@ -41,6 +41,23 @@ mouse:
       strokes: [ '$_up', '$_down' ]
 ''';
 
+const _listAnchors =
+    '''
+anchors:
+  - &button [ back ]
+  - &stroke_up [ '$_up' ]
+  - &stroke_down [ '$_down' ]
+
+
+mouse:
+  gestures:
+    - type: stroke
+      mouse_buttons: *button
+      gestures:
+        - strokes: *stroke_up
+        - strokes: *stroke_down
+''';
+
 List<Stroke> _mouseStrokes(Config config) =>
     (config.mouseGestures.single as StrokeGesture).strokes;
 
@@ -81,22 +98,45 @@ mouse:
       ]);
     });
 
-    test('a list anchor names no stroke', () {
+    test('a list anchor around one stroke names it', () {
+      final config = decodeConfig(_listAnchors);
+
+      expect(config.strokes, const [
+        Stroke(_up, name: 'stroke_up'),
+        Stroke(_down, name: 'stroke_down'),
+      ]);
+    });
+
+    test('a list anchor around several strokes names none', () {
       final config = decodeConfig('''
 anchors:
-  - &stroke_up [ '$_up' ]
+  - &both [ '$_up', '$_down' ]
 
 mouse:
   gestures:
     - type: stroke
-      strokes: *stroke_up
+      strokes: *both
 ''');
 
-      expect(config.strokes, const [Stroke(_up)]);
+      expect(config.strokes, const [Stroke(_up), Stroke(_down)]);
     });
   });
 
   group('encoding', () {
+    test('a list anchor around one stroke saves as a stroke anchor', () {
+      final config = decodeConfig(_listAnchors);
+      final saved = encodeConfig(config, _listAnchors);
+
+      expect(saved, contains('  - &button [ back ]'));
+      expect(saved, contains("  - &stroke_up '$_up'"));
+      expect(saved, contains("  - &stroke_down '$_down'"));
+      expect(saved, isNot(contains("[ '")));
+      expect(saved, contains('mouse_buttons: *button'));
+      expect(() => loadYaml(saved), returnsNormally);
+      expect(decodeConfig(saved), config);
+      expect(encodeConfig(decodeConfig(saved), saved), saved);
+    });
+
     test('an untouched file with named strokes saves as it was', () {
       expect(encodeConfig(decodeConfig(_named), _named), _named);
     });

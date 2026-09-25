@@ -64,8 +64,8 @@ mouse:
 const _anchorsSection = '''
 anchors:
   - &mouse_stroke_button [ back ]
-  - &stroke_up [ 'MGQA0DMnPMwwAGQA' ]
-  - &stroke_down [ 'MAAAMTNkZAA=' ]
+  - &stroke_up 'MGQA0DMnPMwwAGQA'
+  - &stroke_down 'MAAAMTNkZAA='
 ''';
 
 int _count(String text, String pattern) => pattern.allMatches(text).length;
@@ -149,7 +149,7 @@ void main() {
     ]);
     final encoded = encodeConfig(edited, _wiki);
 
-    expect(encoded, contains('# - strokes: *stroke_up'));
+    expect(encoded, contains('# - *stroke_up'));
     expect(decodeConfig(encoded), edited);
   });
 
@@ -158,7 +158,7 @@ void main() {
 mouse:
   gestures:
     - type: stroke
-      strokes: &up [ 'MGQA0DMnPMwwAGQA' ]
+      strokes: &up [ 'MGQA0DMnPMwwAGQA', 'ZDMAnQAwNABaMWQA' ]
     - type: stroke
       strokes: *up
 
