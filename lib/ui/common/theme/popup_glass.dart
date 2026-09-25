@@ -89,6 +89,7 @@ FThemeData withGlassPopups(FThemeData theme) {
       contentStyle: .delta(
         decoration: .shapeDelta(color: popupSurface),
         backgroundFilter: () => _popupBlur,
+        barrierFilter: () => _popupBarrier,
       ),
     ),
     // FTooltip takes a static filter rather than an animation-driven one.
