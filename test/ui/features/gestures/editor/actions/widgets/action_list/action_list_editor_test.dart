@@ -1133,6 +1133,24 @@ void main() {
       expect(find.byType(ActionExpandedEditor), findsNothing);
     });
 
+    testWidgets('the header keeps its way out with nothing selected', (
+      tester,
+    ) async {
+      await pumpEditor(tester);
+
+      await longPressRow(tester, 'first');
+      await longPressRow(tester, 'first');
+
+      expect(find.text('Actions'), findsNothing);
+      expect(find.text('0 actions selected'), findsOneWidget);
+
+      await tester.tap(find.byIcon(FLucideIcons.x));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Actions'), findsOneWidget);
+      expect(find.byType(FCheckbox), findsNothing);
+    });
+
     testWidgets('escape leaves selection mode', (tester) async {
       await pumpEditor(tester);
 

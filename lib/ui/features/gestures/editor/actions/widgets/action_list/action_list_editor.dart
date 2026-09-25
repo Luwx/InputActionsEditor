@@ -108,6 +108,7 @@ class ActionListEditor extends HookConsumerWidget {
                 ActionListHeader(
                   key: scope?.headerKey,
                   location: gestureLocation,
+                  selectMode: choreo.selectMode,
                   selectionCount: choreo.selected.length,
                   onExitSelection: choreo.clearSelection,
                   onAdd: pickAndAdd,

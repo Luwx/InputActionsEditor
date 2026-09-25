@@ -11,6 +11,7 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 class ActionListHeader extends ConsumerWidget {
   const ActionListHeader({
     required this.location,
+    required this.selectMode,
     required this.selectionCount,
     required this.onExitSelection,
     this.onAdd,
@@ -20,8 +21,7 @@ class ActionListHeader extends ConsumerWidget {
   });
 
   final GestureLocation location;
-
-  /// Rows currently selected; 0 means the list is not in select mode.
+  final bool selectMode;
   final int selectionCount;
   final VoidCallback onExitSelection;
   final Future<void> Function()? onAdd;
@@ -49,7 +49,7 @@ class ActionListHeader extends ConsumerWidget {
 
     // In select mode the section reads as the selection, with a way out of it,
     // the same shape the gesture list header takes.
-    if (selectionCount > 0) {
+    if (selectMode) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
