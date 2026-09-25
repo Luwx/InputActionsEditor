@@ -28,49 +28,38 @@ class KeyboardTimelineField extends HookWidget {
     final recorder = useKeyboardRecorder(sequence.append);
     final popoverGroup = useMemoized(Object.new);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: KeySequenceTextField(
-            controller: sequence.controller,
-            onChanged: sequence.onTokensTyped,
-            labelWidget: LabelWithTooltip(
-              label: context.l10n.inputKeySequenceLabel,
-              tooltipContent: const KeySequenceTooltip(),
+    return KeySequenceTextField(
+      controller: sequence.controller,
+      onChanged: sequence.onTokensTyped,
+      labelWidget: LabelWithTooltip(
+        label: context.l10n.inputKeySequenceLabel,
+        tooltipContent: const KeySequenceTooltip(),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          SequenceFieldButton(
+            tooltip: context.l10n.inputKeySequenceRecordTip,
+            icon: const Icon(Icons.radio_button_checked, size: 16),
+            groupId: recorder.isRecording ? null : popoverGroup,
+            hideRegion: recorder.isRecording ? .none : .excludeChild,
+            constraints: const FPortalConstraints(maxWidth: 300),
+            popoverBuilder: (context, controller) => KeyboardRecordPopover(
+              controller: controller,
+              recorder: recorder,
             ),
           ),
-        ),
-        const SizedBox(width: 4),
-        SizedBox(
-          height: 34,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SequenceFieldButton(
-                tooltip: context.l10n.inputKeySequenceRecordTip,
-                icon: const Icon(Icons.radio_button_checked, size: 16),
-                groupId: recorder.isRecording ? null : popoverGroup,
-                hideRegion: recorder.isRecording ? .none : .excludeChild,
-                constraints: const FPortalConstraints(maxWidth: 300),
-                popoverBuilder: (context, controller) => KeyboardRecordPopover(
-                  controller: controller,
-                  recorder: recorder,
-                ),
-              ),
-              const SizedBox(width: 2),
-              SequenceFieldButton(
-                tooltip: context.l10n.inputKeySequenceBrowseTip,
-                icon: const Icon(FLucideIcons.search, size: 15),
-                groupId: popoverGroup,
-                constraints: const FPortalConstraints(maxWidth: 260),
-                popoverBuilder: (context, _) =>
-                    _KeyBrowserPopover(onSelect: sequence.append),
-              ),
-            ],
+          SequenceFieldButton(
+            tooltip: context.l10n.inputKeySequenceBrowseTip,
+            icon: const Icon(FLucideIcons.search, size: 15),
+            groupId: popoverGroup,
+            constraints: const FPortalConstraints(maxWidth: 260),
+            popoverBuilder: (context, _) =>
+                _KeyBrowserPopover(onSelect: sequence.append),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

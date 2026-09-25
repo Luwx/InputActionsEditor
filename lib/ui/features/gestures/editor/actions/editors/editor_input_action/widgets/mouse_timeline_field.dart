@@ -27,42 +27,29 @@ class MouseTimelineField extends HookWidget {
     final sequence = useTokenSequenceController(tokens, onChanged);
     final recorder = useMouseButtonRecorder();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: KeySequenceTextField(
-            controller: sequence.controller,
-            onChanged: sequence.onTokensTyped,
-            labelWidget: LabelWithTooltip(
-              label: context.l10n.inputButtonSequenceLabel,
-              tooltipContent: const ButtonSequenceTooltip(),
-            ),
-            hintText: 'e.g.  +left, -left   or   +right, +left, -left, -right',
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          height: 34,
-          child: Center(
-            child: SequenceFieldButton(
-              tooltip: context.l10n.inputButtonSequenceRecordTip,
-              icon: const Icon(Icons.radio_button_checked, size: 16),
-              constraints: const FPortalConstraints(maxWidth: 300),
-              popoverBuilder: (context, controller) => RecordingScope(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: MouseRecordPopover(
-                    controller: controller,
-                    recorder: recorder,
-                    onAppend: sequence.append,
-                  ),
-                ),
-              ),
+    return KeySequenceTextField(
+      controller: sequence.controller,
+      onChanged: sequence.onTokensTyped,
+      labelWidget: LabelWithTooltip(
+        label: context.l10n.inputButtonSequenceLabel,
+        tooltipContent: const ButtonSequenceTooltip(),
+      ),
+      hintText: 'e.g.  +left, -left   or   +right, +left, -left, -right',
+      trailing: SequenceFieldButton(
+        tooltip: context.l10n.inputButtonSequenceRecordTip,
+        icon: const Icon(Icons.radio_button_checked, size: 16),
+        constraints: const FPortalConstraints(maxWidth: 300),
+        popoverBuilder: (context, controller) => RecordingScope(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: MouseRecordPopover(
+              controller: controller,
+              recorder: recorder,
+              onAppend: sequence.append,
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

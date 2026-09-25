@@ -1,7 +1,7 @@
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart'
-    show Colors, InputDecoration, Material, OutlineInputBorder;
+    show Colors, InputDecoration, Material, OutlineInputBorder, VisualDensity;
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -42,6 +42,7 @@ class KeySequenceTextField extends HookWidget {
     this.hintText,
     this.autofocus = false,
     this.maxLines = 1,
+    this.trailing,
   });
 
   /// Optional external controller.  When provided, [initialValue] is ignored
@@ -62,6 +63,9 @@ class KeySequenceTextField extends HookWidget {
   final String? hintText;
   final bool autofocus;
   final int maxLines;
+
+  /// Centered on the field's first line, however many lines the field grows to.
+  final Widget? trailing;
 
   static KeySequenceSpanStyle _buildSpanStyle(BuildContext context) {
     final colors = context.theme.colors;
@@ -109,71 +113,82 @@ class KeySequenceTextField extends HookWidget {
 
     final colors = context.theme.colors;
     final spanStyle = _buildSpanStyle(context);
+    final fieldStyle = context.theme.textFieldStyles.resolve({
+      FTextFieldSizeVariant.md,
+      context.platformVariant,
+    });
 
-    return LayoutBuilder(
+    final field = LayoutBuilder(
       builder: (context, constraints) {
         var effectiveMaxLines = maxLines;
         if (maxLines == 1) {
           // Measure whether the current text overflows a single line.
           // If it does, expand to 3 lines so the user can see their input.
-          const horizontalPadding = 20.0; // contentPadding 10 × 2
-          final painter = TextPainter(
-            text: TextSpan(
-              text: effectiveController.text,
-              style: context.theme.typography.body.sm,
-            ),
-            textDirection: TextDirection.ltr,
-            maxLines: 1,
-          )..layout(maxWidth: constraints.maxWidth - horizontalPadding);
+          final painter =
+              TextPainter(
+                text: TextSpan(
+                  text: effectiveController.text,
+                  style: context.theme.typography.body.sm,
+                ),
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+              )..layout(
+                maxWidth:
+                    constraints.maxWidth - fieldStyle.contentPadding.horizontal,
+              );
           if (painter.didExceedMaxLines) effectiveMaxLines = 3;
         }
 
-        return Material(
-          color: Colors.transparent,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              labelWidget ?? Text(label ?? 'Key Sequence'),
-              const SizedBox(height: 4),
-              ExtendedTextField(
-                controller: effectiveController,
-                autofocus: autofocus,
-                maxLines: effectiveMaxLines,
-                minLines: 1,
-                inputFormatters: [
-                  FilteringTextInputFormatter.deny(RegExp(r'\n')),
-                ],
-                specialTextSpanBuilder: KeySequenceSpanBuilder(
-                  style: spanStyle,
-                ),
-                style: context.theme.typography.body.sm,
-                decoration: InputDecoration(
-                  hintText:
-                      hintText ?? 'e.g.  ctrl+c   or   +ctrl, +c, -c, -ctrl',
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: colors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: colors.primary, width: 1.5),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ],
+        return ExtendedTextField(
+          controller: effectiveController,
+          autofocus: autofocus,
+          maxLines: effectiveMaxLines,
+          minLines: 1,
+          inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\n'))],
+          specialTextSpanBuilder: KeySequenceSpanBuilder(style: spanStyle),
+          style: context.theme.typography.body.sm,
+          decoration: InputDecoration(
+            hintText: hintText ?? 'e.g.  ctrl+c   or   +ctrl, +c, -c, -ctrl',
+            isDense: true,
+            visualDensity: VisualDensity.standard,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: colors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: colors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: colors.primary, width: 1.5),
+            ),
+            contentPadding: fieldStyle.contentPadding,
           ),
         );
       },
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: FLabel(
+        layout: .vertical,
+        label: labelWidget ?? Text(label ?? 'Key Sequence'),
+        child: switch (trailing) {
+          final trailing? => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Expanded(child: field),
+              SizedBox(
+                height: fieldStyle.constraints.minHeight,
+                child: Center(child: trailing),
+              ),
+            ],
+          ),
+          null => field,
+        },
+      ),
     );
   }
 }
