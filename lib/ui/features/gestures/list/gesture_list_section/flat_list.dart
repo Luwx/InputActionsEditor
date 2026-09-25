@@ -69,7 +69,7 @@ List<_FlatItem> _buildDeviceFlatList(
               groupKey: parentKey,
               editId: gesture.common.editId,
               depth: depth,
-              localGroupIndex: parentKey == null ? null : localIndex,
+              localGroupIndex: parentKey == null ? null : childIndex,
               isLastInGroup: parentKey != null && localIndex == rowTotal - 1,
               isVisible: !anyAncestorCollapsed,
               // Raw sibling chain, own step last: ancestor guides draw only

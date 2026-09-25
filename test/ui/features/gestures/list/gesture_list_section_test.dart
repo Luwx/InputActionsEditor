@@ -264,6 +264,45 @@ void main() {
     expect(iconIn('Mixed'), findsNothing);
   });
 
+  testWidgets('a row after a subgroup is separated from it', (tester) async {
+    GestureNode leaf(String name) =>
+        GestureNode.leaf(PressGesture(common: TriggerCommon(name: name)));
+    await _pumpList(
+      tester,
+      config: Config(
+        mouseNodes: [
+          GestureGroupNode(
+            name: 'Outer',
+            children: [
+              GestureGroupNode(name: 'Inner', children: [leaf('Nested')]),
+              leaf('After'),
+            ],
+          ),
+          GestureGroupNode(name: 'Plain', children: [leaf('Lead')]),
+        ],
+      ),
+    );
+
+    Color topBorderOf(String name) {
+      final frame = tester
+          .widgetList<Container>(
+            find.ancestor(
+              of: find.text(name),
+              matching: find.byType(Container),
+            ),
+          )
+          .firstWhere(
+            (c) =>
+                c.decoration is BoxDecoration &&
+                (c.decoration! as BoxDecoration).border is Border,
+          );
+      return ((frame.decoration! as BoxDecoration).border! as Border).top.color;
+    }
+
+    expect(topBorderOf('After'), isNot(Colors.transparent));
+    expect(topBorderOf('Lead'), Colors.transparent);
+  });
+
   testWidgets('a redirect parks the row under the header', (tester) async {
     final names = [for (var i = 0; i < 40; i++) 'G$i'];
     await _pumpList(tester, names: names);
