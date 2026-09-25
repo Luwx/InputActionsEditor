@@ -36,14 +36,16 @@ Future<void> copyStroke(BuildContext context, Stroke stroke) async {
   );
 }
 
-Future<void> pasteStrokes(
+Future<bool> pasteStrokes(
   WidgetRef ref,
   GestureLocation location, {
   int? at,
 }) async {
   final notifier = ref.read(gestureEditorProvider(location).notifier);
   final strokes = await StrokeClipboard.read();
-  if (strokes.isNotEmpty) notifier.insertStrokes(strokes, at: at);
+  if (strokes.isEmpty) return false;
+  notifier.insertStrokes(strokes, at: at);
+  return true;
 }
 
 Future<void> showStrokeRenameDialog(

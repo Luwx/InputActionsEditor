@@ -52,8 +52,8 @@ class CopyGestureYamlIntent extends Intent {
   const CopyGestureYamlIntent();
 }
 
-class PasteStrokesIntent extends Intent {
-  const PasteStrokesIntent();
+class PasteIntent extends Intent {
+  const PasteIntent();
 }
 
 /// A move between gestures or devices.

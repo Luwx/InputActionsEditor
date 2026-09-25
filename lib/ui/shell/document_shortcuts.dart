@@ -11,7 +11,6 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_navigation.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
@@ -43,11 +42,6 @@ class DocumentShortcuts extends ConsumerWidget {
         ? ref.read(selectedGestureProvider)
         : null;
 
-    GestureLocation? strokeTarget() => switch (selectedGesture()) {
-      final location? when holdsStrokes(ref, location) => location,
-      _ => null,
-    };
-
     return Shortcuts(
       shortcuts: const <ShortcutActivator, Intent>{
         SingleActivator(LogicalKeyboardKey.keyZ, control: true): UndoIntent(),
@@ -74,7 +68,7 @@ class DocumentShortcuts extends ConsumerWidget {
         renameShortcut: RenameGestureIntent(),
         duplicateShortcut: DuplicateGestureIntent(),
         copyYamlShortcut: CopyGestureYamlIntent(),
-        pasteShortcut: PasteStrokesIntent(),
+        pasteShortcut: PasteIntent(),
         SingleActivator(LogicalKeyboardKey.arrowUp, alt: true):
             StepGestureIntent(-1, yieldsToTextField: true),
         SingleActivator(LogicalKeyboardKey.arrowDown, alt: true):
@@ -180,12 +174,12 @@ class DocumentShortcuts extends ConsumerWidget {
               return null;
             },
           ),
-          PasteStrokesIntent: _StrokePasteAction(
-            target: strokeTarget,
+          PasteIntent: _PasteAction(
+            enabled: () =>
+                hasConfig() &&
+                ref.read(currentViewProvider) == AppView.gestures,
             onInvoke: (_) {
-              if (strokeTarget() case final location?) {
-                unawaited(pasteStrokes(ref, location));
-              }
+              unawaited(pasteFromClipboard(ref, selectedGesture()));
               return null;
             },
           ),
@@ -234,14 +228,13 @@ class DocumentShortcuts extends ConsumerWidget {
   }
 }
 
-class _StrokePasteAction extends CallbackAction<PasteStrokesIntent> {
-  _StrokePasteAction({required this.target, required super.onInvoke});
+class _PasteAction extends CallbackAction<PasteIntent> {
+  _PasteAction({required this.enabled, required super.onInvoke});
 
-  final GestureLocation? Function() target;
+  final bool Function() enabled;
 
   @override
-  bool isEnabled(PasteStrokesIntent intent) =>
-      target() != null && !_textFieldFocused();
+  bool isEnabled(PasteIntent intent) => enabled() && !_textFieldFocused();
 }
 
 bool _textFieldFocused() =>

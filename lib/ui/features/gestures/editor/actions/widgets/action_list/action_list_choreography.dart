@@ -28,6 +28,7 @@ import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_paste_request.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_transitions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_scroll_anchor.dart';
@@ -460,6 +461,10 @@ ActionListChoreography useActionListChoreography(
     }..remove(anchorKey);
     clearSelection();
   }
+
+  ref.listen(actionPasteRequestProvider, (_, next) {
+    if (next?.gesture == location) unawaited(paste(null));
+  });
 
   void duplicate(ActionLocation target) {
     final before = {for (final row in rows()) row.editId};

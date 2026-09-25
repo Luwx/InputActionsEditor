@@ -4,10 +4,14 @@ import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/rename_dialog.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_clipboard.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_paste_request.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
@@ -31,6 +35,24 @@ Future<void> copyGestureYaml(
     ),
     duration: const Duration(seconds: 3),
   );
+}
+
+/// Pastes strokes or actions into [open], or else gestures after it.
+Future<void> pasteFromClipboard(WidgetRef ref, GestureLocation? open) async {
+  if (open != null) {
+    if (holdsStrokes(ref, open) && await pasteStrokes(ref, open)) return;
+    if ((await ActionClipboard.read()).isNotEmpty) {
+      ref.read(actionPasteRequestProvider.notifier).request(open);
+      return;
+    }
+  }
+  final filter = ref.read(deviceFilterProvider);
+  await ref
+      .read(gestureCommandsProvider)
+      .pasteGestures(
+        after: open,
+        devices: filter != null ? [filter] : DeviceType.values,
+      );
 }
 
 void duplicateGestureAndSelect(

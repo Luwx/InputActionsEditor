@@ -179,28 +179,20 @@ class GestureListSection extends HookConsumerWidget {
     }
 
     Future<void> pasteGestures(GestureLocation? anchor) async {
-      final devices = anchor != null
-          ? [anchor.device]
-          : deviceFilter != null
-          ? [deviceFilter]
-          : DeviceType.values;
-      var inserted = false;
-      for (final device in devices) {
-        final gestures = await GestureClipboard.read(device);
-        if (!context.mounted) return;
-        if (gestures.isEmpty) continue;
-        listNotifier.insertGestures(device, gestures, after: anchor);
-        inserted = true;
-      }
-      if (!context.mounted) return;
-      if (!inserted) {
-        showFToast(
-          context: context,
-          title: Text(context.l10n.gesturePasteEmpty),
-          duration: const Duration(seconds: 3),
-        );
-        return;
-      }
+      final inserted = await listNotifier.pasteGestures(
+        after: anchor,
+        devices: anchor != null
+            ? [anchor.device]
+            : deviceFilter != null
+            ? [deviceFilter]
+            : DeviceType.values,
+      );
+      if (!context.mounted || inserted) return;
+      showFToast(
+        context: context,
+        title: Text(context.l10n.gesturePasteEmpty),
+        duration: const Duration(seconds: 3),
+      );
     }
 
     final pasteMenu = useFPopoverController();

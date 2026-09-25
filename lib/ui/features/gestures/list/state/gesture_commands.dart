@@ -7,6 +7,7 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_clipboard.dart';
 
 /// Stateless facade for the structural gesture/group operations the list view
 /// triggers, edits a single lens cannot express.
@@ -43,6 +44,25 @@ class GestureCommands {
       InsertGestures(device, gestures, after: after, groupKey: groupKey),
       scope: const GesturesScope(),
     );
+  }
+
+  /// False when the clipboard holds no gestures for any of [devices].
+  Future<bool> pasteGestures({
+    required Iterable<DeviceType> devices,
+    GestureLocation? after,
+  }) async {
+    var inserted = false;
+    for (final device in devices) {
+      final gestures = await GestureClipboard.read(device);
+      if (gestures.isEmpty) continue;
+      insertGestures(
+        device,
+        gestures,
+        after: after?.device == device ? after : null,
+      );
+      inserted = true;
+    }
+    return inserted;
   }
 
   void renameGesture(GestureLocation location, String name) {
