@@ -5,18 +5,12 @@ import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_buttons.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inheritable_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class FingerCountField extends StatelessWidget {
-  const FingerCountField({
-    this.minFingers = 1,
-    this.maxFingers = 4,
-    super.key,
-  });
-
-  final int minFingers;
-  final int maxFingers;
+  const FingerCountField({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,24 +36,7 @@ class FingerCountField extends StatelessWidget {
               textStyle: titleStyle,
             ),
           ),
-          Row(
-            spacing: 6,
-            children: [
-              FButton(
-                variant: field.value == null ? .primary : .outline,
-                size: .sm,
-                onPress: () => field.onChanged(null),
-                child: Text(context.l10n.sectionFingersAny),
-              ),
-              for (int n = minFingers; n <= maxFingers; n++)
-                FButton(
-                  variant: field.value == n ? .primary : .outline,
-                  size: .sm,
-                  onPress: () => field.onChanged(n),
-                  child: Text('$n'),
-                ),
-            ],
-          ),
+          FingerButtons(value: field.value, onChanged: field.onChanged),
         ],
       ),
     );

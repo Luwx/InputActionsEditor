@@ -245,12 +245,12 @@ String _summary(Gesture g) {
     // Touchpad / touchscreen, show fingers if set
     case TouchpadGesture(:final fingers):
       if (fingers != null) {
-        parts.add('$fingers finger${fingers == 1 ? '' : 's'}');
+        parts.add('${fingers.label} finger${fingers.max == 1 ? '' : 's'}');
       }
       _addTouchSummary(g, parts);
     case TouchscreenGesture(:final fingers):
       if (fingers != null) {
-        parts.add('$fingers finger${fingers == 1 ? '' : 's'}');
+        parts.add('${fingers.label} finger${fingers.max == 1 ? '' : 's'}');
       }
       _addTouchSummary(g, parts);
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Note shown under a trigger field the gesture picks up from an ancestor
@@ -59,6 +60,7 @@ class InheritedFieldNote extends StatelessWidget {
     null => '-',
     final bool b => b ? 'on' : 'off',
     final Enum e => e.name,
+    final FingerRange f => f.label,
     final List<Object?> items => items.map(_formatValue).join(', '),
     _ => '$value',
   };

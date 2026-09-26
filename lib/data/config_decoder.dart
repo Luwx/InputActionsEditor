@@ -13,6 +13,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
@@ -182,7 +183,7 @@ List<GestureNode> _parseDeviceNodes(
                 ? _parseMouseButtons(item['mouse_buttons'])
                 : null,
             mouseButtonsExactOrder: yamlBool(item['mouse_buttons_exact_order']),
-            fingers: yamlInt(item['fingers']),
+            fingers: _parseFingers(item['fingers']),
             speed: TriggerSpeed.fromYaml(yamlString(item['speed']) ?? ''),
             instant: yamlBool(item['instant']),
             lockPointer: yamlBool(item['lock_pointer']),
@@ -366,7 +367,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m, Map<int, String> anchors) {
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = yamlInt(m['fingers']);
+  final fingers = _parseFingers(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchpadSwipeGesture(
@@ -401,7 +402,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m, Map<int, String> anchors) {
     ),
     'tap' => TouchpadTapGesture(common: common, fingers: fingers),
     'click' => TouchpadClickGesture(common: common, fingers: fingers),
-    'hold' => TouchpadHoldGesture(common: common, fingers: fingers),
+    'hold' || 'press' => TouchpadHoldGesture(common: common, fingers: fingers),
     'stroke' => TouchpadStrokeGesture(
       common: common,
       fingers: fingers,
@@ -421,7 +422,7 @@ TouchscreenGesture? _parseTouchscreenGesture(
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = yamlInt(m['fingers']);
+  final fingers = _parseFingers(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchscreenSwipeGesture(
@@ -455,7 +456,8 @@ TouchscreenGesture? _parseTouchscreenGesture(
       motion: motion,
     ),
     'tap' => TouchscreenTapGesture(common: common, fingers: fingers),
-    'hold' => TouchscreenHoldGesture(common: common, fingers: fingers),
+    'hold' ||
+    'press' => TouchscreenHoldGesture(common: common, fingers: fingers),
     'stroke' => TouchscreenStrokeGesture(
       common: common,
       fingers: fingers,
@@ -505,6 +507,19 @@ List<MouseButtonValue> _parseMouseButtons(dynamic node) {
       .map((e) => MouseButtonValue.fromYaml(e.toString()))
       .whereType<MouseButtonValue>()
       .toList();
+}
+
+FingerRange? _parseFingers(dynamic v) {
+  if (v == null) return null;
+  final parts = v.toString().split('-');
+  return switch (parts) {
+    [_] => FingerRange.exactly(yamlInt(v)!),
+    [final min, final max] => FingerRange(
+      min: yamlInt(min.trim())!,
+      max: yamlInt(max.trim())!,
+    ),
+    _ => throw FormatException('Value is not a finger count or range', v),
+  };
 }
 
 SwipeMode _parseSwipeMode(YamlMap m) {

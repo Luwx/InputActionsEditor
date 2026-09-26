@@ -1567,8 +1567,80 @@ abstract class AppLocalizations {
   /// No description provided for @actionTriggerOnDefaultOption.
   ///
   /// In en, this message translates to:
-  /// **'end (default)'**
-  String get actionTriggerOnDefaultOption;
+  /// **'{label} (default)'**
+  String actionTriggerOnDefaultOption(String label);
+
+  /// No description provided for @actionTriggerOnBegin.
+  ///
+  /// In en, this message translates to:
+  /// **'Begin'**
+  String get actionTriggerOnBegin;
+
+  /// No description provided for @actionTriggerOnUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get actionTriggerOnUpdate;
+
+  /// No description provided for @actionTriggerOnEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get actionTriggerOnEnd;
+
+  /// No description provided for @actionTriggerOnCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get actionTriggerOnCancel;
+
+  /// No description provided for @actionTriggerOnEndCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'End or cancel'**
+  String get actionTriggerOnEndCancel;
+
+  /// No description provided for @actionTriggerOnTick.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick'**
+  String get actionTriggerOnTick;
+
+  /// No description provided for @actionTriggerOnBeginDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, as soon as the gesture starts'**
+  String get actionTriggerOnBeginDescription;
+
+  /// No description provided for @actionTriggerOnUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeatedly, as the gesture progresses'**
+  String get actionTriggerOnUpdateDescription;
+
+  /// No description provided for @actionTriggerOnEndDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, when the gesture completes'**
+  String get actionTriggerOnEndDescription;
+
+  /// No description provided for @actionTriggerOnCancelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, if aborted or another gesture wins'**
+  String get actionTriggerOnCancelDescription;
+
+  /// No description provided for @actionTriggerOnEndCancelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, when the gesture stops either way'**
+  String get actionTriggerOnEndCancelDescription;
+
+  /// No description provided for @actionTriggerOnTickDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeatedly, at a fixed rate while active'**
+  String get actionTriggerOnTickDescription;
 
   /// No description provided for @actionIntervalLabel.
   ///
@@ -1593,6 +1665,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conflicting'**
   String get actionConflictingLabel;
+
+  /// No description provided for @actionConflictingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancels other gestures'**
+  String get actionConflictingDescription;
 
   /// No description provided for @actionConditionsTitle.
   ///
@@ -3295,44 +3373,26 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionTriggerOn_body.
   ///
   /// In en, this message translates to:
-  /// **'When during the gesture lifecycle this action fires.'**
+  /// **'When during the gesture this action runs.'**
   String get tooltip_actionTriggerOn_body;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleBegin.
+  /// No description provided for @tooltip_actionTriggerOn_intervalNote.
   ///
   /// In en, this message translates to:
-  /// **'immediately on recognition'**
-  String get tooltip_actionTriggerOn_lifecycleBegin;
+  /// **'Update and Tick repeat the action; Interval sets how often.'**
+  String get tooltip_actionTriggerOn_intervalNote;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleUpdate.
+  /// No description provided for @tooltip_actionTriggerOn_thresholdNote.
   ///
   /// In en, this message translates to:
-  /// **'every input move while active'**
-  String get tooltip_actionTriggerOn_lifecycleUpdate;
+  /// **'Threshold works with every option except Begin.'**
+  String get tooltip_actionTriggerOn_thresholdNote;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleEnd.
+  /// No description provided for @tooltip_actionTriggerOn_strokeNote.
   ///
   /// In en, this message translates to:
-  /// **'gesture completes normally'**
-  String get tooltip_actionTriggerOn_lifecycleEnd;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'gesture is aborted'**
-  String get tooltip_actionTriggerOn_lifecycleCancel;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleEndCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'on both end AND cancel'**
-  String get tooltip_actionTriggerOn_lifecycleEndCancel;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleTick.
-  ///
-  /// In en, this message translates to:
-  /// **'at fixed time intervals while active'**
-  String get tooltip_actionTriggerOn_lifecycleTick;
+  /// **'A stroke is only recognised on release, so a conflicting stroke action can only run on End. Turn Conflicting off to pick another option.'**
+  String get tooltip_actionTriggerOn_strokeNote;
 
   /// No description provided for @tooltip_actionInterval_body.
   ///
@@ -3409,7 +3469,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_body.
   ///
   /// In en, this message translates to:
-  /// **'Whether this action holds back competing gestures.'**
+  /// **'Whether running this action claims the gesture.'**
   String get tooltip_actionConflicting_body;
 
   /// No description provided for @tooltip_actionConflicting_onLabel.
@@ -3421,7 +3481,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_onDesc.
   ///
   /// In en, this message translates to:
-  /// **'hold back competing gestures until one wins'**
+  /// **'cancels other gestures started by the same input'**
   String get tooltip_actionConflicting_onDesc;
 
   /// No description provided for @tooltip_actionConflicting_offLabel.
@@ -3433,7 +3493,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_offDesc.
   ///
   /// In en, this message translates to:
-  /// **'fire immediately, no blocking'**
+  /// **'runs alongside them, cancelling nothing'**
   String get tooltip_actionConflicting_offDesc;
 
   /// No description provided for @tooltip_actionConflicting_sectionLabel.
@@ -3442,17 +3502,53 @@ abstract class AppLocalizations {
   /// **'Example'**
   String get tooltip_actionConflicting_sectionLabel;
 
-  /// No description provided for @tooltip_actionConflicting_exCode.
+  /// No description provided for @tooltip_actionConflicting_exFingersCode.
   ///
   /// In en, this message translates to:
-  /// **'2-finger swipe  +  3-finger swipe'**
-  String get tooltip_actionConflicting_exCode;
+  /// **'3-finger swipe left  +  3-finger swipe any'**
+  String get tooltip_actionConflicting_exFingersCode;
+
+  /// No description provided for @tooltip_actionConflicting_exMouseCode.
+  ///
+  /// In en, this message translates to:
+  /// **'right-button swipe left  +  right-button swipe any'**
+  String get tooltip_actionConflicting_exMouseCode;
 
   /// No description provided for @tooltip_actionConflicting_exLabel.
   ///
   /// In en, this message translates to:
-  /// **'daemon waits to see which one completes'**
+  /// **'both start; the first conflicting action to run cancels the other'**
   String get tooltip_actionConflicting_exLabel;
+
+  /// No description provided for @tooltip_actionConflicting_strokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A stroke is recognised on release: the closest match ends and every other stroke is cancelled.'**
+  String get tooltip_actionConflicting_strokeBody;
+
+  /// No description provided for @tooltip_actionConflicting_strokeOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'runs on End, only if this stroke is the match'**
+  String get tooltip_actionConflicting_strokeOnDesc;
+
+  /// No description provided for @tooltip_actionConflicting_strokeOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'can also run while drawing, before the match is known'**
+  String get tooltip_actionConflicting_strokeOffDesc;
+
+  /// No description provided for @tooltip_actionConflicting_strokeExCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Begin  +  Cancel'**
+  String get tooltip_actionConflicting_strokeExCode;
+
+  /// No description provided for @tooltip_actionConflicting_strokeExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'show a hint while drawing, clear it if this stroke is not the match'**
+  String get tooltip_actionConflicting_strokeExLabel;
 
   /// No description provided for @tooltip_actionLimit_body.
   ///

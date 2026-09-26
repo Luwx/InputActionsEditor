@@ -3,6 +3,7 @@ import 'package:input_actions_editor/domain/conflict/conflict_detector.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -211,14 +212,14 @@ void main() {
           GestureNode.leaf(
             TouchpadPinchGesture(
               common: TriggerCommon(),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               direction: PinchDirection.inward,
             ),
           ),
           GestureNode.leaf(
             TouchpadPinchGesture(
               common: TriggerCommon(),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               direction: PinchDirection.inward,
             ),
           ),
@@ -231,10 +232,16 @@ void main() {
       const config = Config(
         touchpadNodes: [
           GestureNode.leaf(
-            TouchpadTapGesture(common: TriggerCommon(), fingers: 2),
+            TouchpadTapGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 2, max: 2),
+            ),
           ),
           GestureNode.leaf(
-            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+            TouchpadTapGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 3, max: 3),
+            ),
           ),
         ],
       );
@@ -246,7 +253,10 @@ void main() {
         touchpadNodes: [
           GestureNode.leaf(TouchpadTapGesture(common: TriggerCommon())),
           GestureNode.leaf(
-            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+            TouchpadTapGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 3, max: 3),
+            ),
           ),
         ],
       );
@@ -257,10 +267,16 @@ void main() {
       const config = Config(
         touchpadNodes: [
           GestureNode.leaf(
-            TouchpadPinchGesture(common: TriggerCommon(), fingers: 2),
+            TouchpadPinchGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 2, max: 2),
+            ),
           ),
           GestureNode.leaf(
-            TouchpadRotateGesture(common: TriggerCommon(), fingers: 2),
+            TouchpadRotateGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 2, max: 2),
+            ),
           ),
         ],
       );

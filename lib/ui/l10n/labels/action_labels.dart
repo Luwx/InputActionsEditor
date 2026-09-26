@@ -1,6 +1,7 @@
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 
 typedef ModeOption = ({InputEntryMode mode, String label});
@@ -47,3 +48,22 @@ String tokenLabel(InputToken token, AppLocalizations l10n) => switch (token) {
   ),
   RawInputToken(:final token) => token,
 };
+
+String triggerOnLabel(TriggerOn on, AppLocalizations l10n) => switch (on) {
+  TriggerOn.begin => l10n.actionTriggerOnBegin,
+  TriggerOn.update => l10n.actionTriggerOnUpdate,
+  TriggerOn.end => l10n.actionTriggerOnEnd,
+  TriggerOn.cancel => l10n.actionTriggerOnCancel,
+  TriggerOn.endCancel => l10n.actionTriggerOnEndCancel,
+  TriggerOn.tick => l10n.actionTriggerOnTick,
+};
+
+String triggerOnDescription(TriggerOn on, AppLocalizations l10n) =>
+    switch (on) {
+      TriggerOn.begin => l10n.actionTriggerOnBeginDescription,
+      TriggerOn.update => l10n.actionTriggerOnUpdateDescription,
+      TriggerOn.end => l10n.actionTriggerOnEndDescription,
+      TriggerOn.cancel => l10n.actionTriggerOnCancelDescription,
+      TriggerOn.endCancel => l10n.actionTriggerOnEndCancelDescription,
+      TriggerOn.tick => l10n.actionTriggerOnTickDescription,
+    };

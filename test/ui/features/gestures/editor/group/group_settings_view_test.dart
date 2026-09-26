@@ -10,6 +10,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
@@ -360,7 +361,7 @@ touchpad:
       final fingers = withInheritedValues(
         container.read(draftConfigProvider),
       ).touchpadGestures.map((g) => g.fingers);
-      expect(fingers, everyElement(3));
+      expect(fingers, everyElement(const FingerRange(min: 3, max: 3)));
     });
   });
 }

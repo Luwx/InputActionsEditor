@@ -6,6 +6,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -368,7 +369,10 @@ mouse:
     test('fingers written only when set', () {
       expect(
         touchpadGestureToMap(
-          const TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+          const TouchpadTapGesture(
+            common: TriggerCommon(),
+            fingers: FingerRange(min: 3, max: 3),
+          ),
         ),
         {'type': 'tap', 'fingers': 3},
       );
@@ -383,7 +387,7 @@ mouse:
         touchpadGestureToMap(
           const TouchpadPinchGesture(
             common: TriggerCommon(),
-            fingers: 2,
+            fingers: FingerRange(min: 2, max: 2),
             direction: PinchDirection.inward,
             motion: MotionCommon(speed: TriggerSpeed.slow),
           ),
@@ -397,7 +401,7 @@ mouse:
         touchpadGestureToMap(
           const TouchpadStrokeGesture(
             common: TriggerCommon(),
-            fingers: 3,
+            fingers: FingerRange(min: 3, max: 3),
             strokes: [Stroke('AAA==')],
           ),
         ),

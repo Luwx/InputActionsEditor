@@ -5,6 +5,7 @@ import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -146,7 +147,8 @@ bool _buttonsOverlap(List<MouseButtonValue> a, List<MouseButtonValue> b) {
 
 /// A null finger count means "any number of fingers", so it overlaps any
 /// specific count.
-bool _fingersOverlap(int? a, int? b) => a == null || b == null || a == b;
+bool _fingersOverlap(FingerRange? a, FingerRange? b) =>
+    a == null || b == null || a.overlaps(b);
 
 bool _shortcutKeysEqual(Object a, Object b) {
   final ka = a is ShortcutGesture ? a.keys : const <String>[];
@@ -433,7 +435,7 @@ String _contextLabel(DeviceType device, _G x, _G y) {
     case DeviceType.touchscreen:
       final fingers = x.fingers ?? y.fingers;
       if (fingers == null) return 'the same finger count';
-      return '$fingers finger${fingers == 1 ? '' : 's'}';
+      return '${fingers.label} finger${fingers.max == 1 ? '' : 's'}';
     case DeviceType.keyboard:
       return 'the same shortcut';
     case DeviceType.pointer:
@@ -509,7 +511,7 @@ class _G {
   final Object gesture;
   final TriggerCommon common;
   final _Kind kind;
-  final int? fingers;
+  final FingerRange? fingers;
   final TriggerSpeed? speed;
   final bool? instant;
   final SwipeMode? swipeMode;
@@ -538,7 +540,7 @@ _Kind _kindOf(Object g) => switch (g) {
   _ => _Kind.hover,
 };
 
-int? _fingersOf(Object g) => switch (g) {
+FingerRange? _fingersOf(Object g) => switch (g) {
   TouchpadGesture(:final fingers) => fingers,
   TouchscreenGesture(:final fingers) => fingers,
   _ => null,

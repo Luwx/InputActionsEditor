@@ -10,6 +10,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -52,6 +53,38 @@ keyboard:
 
       expect(config2, config1);
     });
+  });
+
+  group('touch press alias', () {
+    for (final device in ['touchpad', 'touchscreen']) {
+      test('$device press loads as hold and saves as hold', () {
+        final source =
+            '''
+$device:
+  gestures:
+    - type: press
+      fingers: 3
+      actions:
+        - command: konsole
+''';
+        final config = decodeConfig(source);
+        expect(
+          device == 'touchpad'
+              ? config.touchpadGestures
+              : config.touchscreenGestures,
+          [
+            device == 'touchpad'
+                ? isA<TouchpadHoldGesture>()
+                : isA<TouchscreenHoldGesture>(),
+          ],
+        );
+
+        final saved = encodeConfig(config, source);
+        expect(saved, contains('type: hold'));
+        expect(saved, isNot(contains('type: press')));
+        expect(decodeConfig(saved), config);
+      });
+    }
   });
 
   group('fixture round-trip (decode -> encode -> decode)', () {
@@ -169,12 +202,15 @@ keyboard:
                   ),
                 ],
               ),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               direction: PinchDirection.inward,
             ),
           ),
           GestureNode.leaf(
-            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+            TouchpadTapGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 3, max: 3),
+            ),
           ),
         ],
         touchscreenNodes: [
@@ -185,7 +221,7 @@ keyboard:
                   TriggerAction(action: SleepAction(milliseconds: 200)),
                 ],
               ),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               mode: SwipeDirectionMode(direction: SwipeDirection.left),
             ),
           ),
@@ -964,6 +1000,38 @@ device_rules:
       expect(encoded, original);
     });
 
+    test('a finger range survives an edit to its section', () {
+      const original = '''
+touchpad:
+  gestures:
+    - type: swipe
+      fingers: 3-4
+      direction: left
+      actions:
+        - command: konsole
+    - type: tap
+      fingers: 2
+''';
+      final decoded = decodeConfig(original);
+      expect(
+        decoded.touchpadGestures.map((g) => g.fingers),
+        const [FingerRange(min: 3, max: 4), FingerRange(min: 2, max: 2)],
+      );
+
+      final tap = decoded.touchpadGestures.last as TouchpadTapGesture;
+      final edited = decoded.withNodesForDevice(DeviceType.touchpad, [
+        GestureNode.leaf(decoded.touchpadGestures.first),
+        GestureNode.leaf(tap.copyWith(fingers: null)),
+      ]);
+      final encoded = encodeConfig(edited, original);
+
+      expect(encoded, contains('fingers: 3-4\n'));
+      expect(decodeConfig(encoded).touchpadGestures.map((g) => g.fingers), [
+        const FingerRange(min: 3, max: 4),
+        null,
+      ]);
+    });
+
     test('editing one section leaves blank lines in the others', () {
       const original = '''
 mouse:
@@ -986,7 +1054,7 @@ touchpad:
       final edited = decoded.withNodesForDevice(DeviceType.touchpad, [
         GestureNode.leaf(
           (decoded.touchpadGestures.first as TouchpadTapGesture).copyWith(
-            fingers: 4,
+            fingers: const FingerRange(min: 4, max: 4),
           ),
         ),
       ]);

@@ -354,16 +354,15 @@ class ActionReplaceTextCommandTooltip extends StatelessWidget {
 }
 
 class ActionTriggerOnTooltip extends StatelessWidget {
-  const ActionTriggerOnTooltip({super.key});
+  const ActionTriggerOnTooltip({this.stroke = false, super.key});
+
+  final bool stroke;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
-    final mono = t.body.xs.copyWith(fontFamily: 'monospace');
-    final muted = t.body.xs.copyWith(color: colors.mutedForeground);
-    final codeBg = colors.muted.withValues(alpha: 0.5);
     return TooltipShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,59 +370,19 @@ class ActionTriggerOnTooltip extends StatelessWidget {
         spacing: 10,
         children: [
           Text(l10n.tooltip_actionTriggerOn_body),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: codeBg,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              spacing: 4,
-              children: [
-                _LifecycleRow(
-                  'begin',
-                  l10n.tooltip_actionTriggerOn_lifecycleBegin,
-                  mono,
-                  muted,
-                ),
-                _LifecycleRow(
-                  'update',
-                  l10n.tooltip_actionTriggerOn_lifecycleUpdate,
-                  mono,
-                  muted,
-                ),
-                _LifecycleRow(
-                  'end',
-                  l10n.tooltip_actionTriggerOn_lifecycleEnd,
-                  mono,
-                  muted,
-                  isDefault: true,
-                  colors: colors,
-                  t: t,
-                ),
-                _LifecycleRow(
-                  'cancel',
-                  l10n.tooltip_actionTriggerOn_lifecycleCancel,
-                  mono,
-                  muted,
-                ),
-                _LifecycleRow(
-                  'end_cancel',
-                  l10n.tooltip_actionTriggerOn_lifecycleEndCancel,
-                  mono,
-                  muted,
-                ),
-                _LifecycleRow(
-                  'tick',
-                  l10n.tooltip_actionTriggerOn_lifecycleTick,
-                  mono,
-                  muted,
-                ),
-              ],
-            ),
+          _Note(
+            l10n.tooltip_actionTriggerOn_intervalNote,
+            colors,
+            t,
+            icon: FLucideIcons.repeat,
           ),
+          _Note(l10n.tooltip_actionTriggerOn_thresholdNote, colors, t),
+          if (stroke)
+            _Note(
+              l10n.tooltip_actionTriggerOn_strokeNote,
+              colors,
+              t,
+            ),
         ],
       ),
     );
@@ -591,21 +550,48 @@ class ActionThresholdTooltip extends StatelessWidget {
   }
 }
 
+enum ConflictingTooltipKind { fingers, mouse, stroke, other }
+
 class ActionConflictingTooltip extends StatelessWidget {
-  const ActionConflictingTooltip({super.key});
+  const ActionConflictingTooltip({
+    this.kind = ConflictingTooltipKind.other,
+    super.key,
+  });
+
+  final ConflictingTooltipKind kind;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final t = context.theme.typography;
+    final stroke = kind == ConflictingTooltipKind.stroke;
+    final example = switch (kind) {
+      ConflictingTooltipKind.fingers => (
+        code: l10n.tooltip_actionConflicting_exFingersCode,
+        label: l10n.tooltip_actionConflicting_exLabel,
+      ),
+      ConflictingTooltipKind.mouse => (
+        code: l10n.tooltip_actionConflicting_exMouseCode,
+        label: l10n.tooltip_actionConflicting_exLabel,
+      ),
+      ConflictingTooltipKind.stroke => (
+        code: l10n.tooltip_actionConflicting_strokeExCode,
+        label: l10n.tooltip_actionConflicting_strokeExLabel,
+      ),
+      ConflictingTooltipKind.other => null,
+    };
     return TooltipShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         spacing: 10,
         children: [
-          Text(l10n.tooltip_actionConflicting_body),
+          Text(
+            stroke
+                ? l10n.tooltip_actionConflicting_strokeBody
+                : l10n.tooltip_actionConflicting_body,
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -614,7 +600,9 @@ class ActionConflictingTooltip extends StatelessWidget {
               _OutcomeRow(
                 icon: FLucideIcons.check,
                 label: l10n.tooltip_actionConflicting_onLabel,
-                description: l10n.tooltip_actionConflicting_onDesc,
+                description: stroke
+                    ? l10n.tooltip_actionConflicting_strokeOnDesc
+                    : l10n.tooltip_actionConflicting_onDesc,
                 iconColor: colors.primary,
                 colors: colors,
                 t: t,
@@ -622,25 +610,24 @@ class ActionConflictingTooltip extends StatelessWidget {
               _OutcomeRow(
                 icon: FLucideIcons.zap,
                 label: l10n.tooltip_actionConflicting_offLabel,
-                description: l10n.tooltip_actionConflicting_offDesc,
+                description: stroke
+                    ? l10n.tooltip_actionConflicting_strokeOffDesc
+                    : l10n.tooltip_actionConflicting_offDesc,
                 iconColor: colors.mutedForeground,
                 colors: colors,
                 t: t,
               ),
             ],
           ),
-          _SectionLabel(
-            l10n.tooltip_actionConflicting_sectionLabel,
-            FLucideIcons.lightbulb,
-            colors,
-            t,
-          ),
-          _ExRow(
-            l10n.tooltip_actionConflicting_exCode,
-            l10n.tooltip_actionConflicting_exLabel,
-            colors,
-            t,
-          ),
+          if (example != null) ...[
+            _SectionLabel(
+              l10n.tooltip_actionConflicting_sectionLabel,
+              FLucideIcons.lightbulb,
+              colors,
+              t,
+            ),
+            _ExRow(example.code, example.label, colors, t),
+          ],
         ],
       ),
     );

@@ -819,7 +819,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionTriggerOnLabel => 'Trigger on';
 
   @override
-  String get actionTriggerOnDefaultOption => 'end (default)';
+  String actionTriggerOnDefaultOption(String label) {
+    return '$label (default)';
+  }
+
+  @override
+  String get actionTriggerOnBegin => 'Begin';
+
+  @override
+  String get actionTriggerOnUpdate => 'Update';
+
+  @override
+  String get actionTriggerOnEnd => 'End';
+
+  @override
+  String get actionTriggerOnCancel => 'Cancel';
+
+  @override
+  String get actionTriggerOnEndCancel => 'End or cancel';
+
+  @override
+  String get actionTriggerOnTick => 'Tick';
+
+  @override
+  String get actionTriggerOnBeginDescription =>
+      'Once, as soon as the gesture starts';
+
+  @override
+  String get actionTriggerOnUpdateDescription =>
+      'Repeatedly, as the gesture progresses';
+
+  @override
+  String get actionTriggerOnEndDescription =>
+      'Once, when the gesture completes';
+
+  @override
+  String get actionTriggerOnCancelDescription =>
+      'Once, if aborted or another gesture wins';
+
+  @override
+  String get actionTriggerOnEndCancelDescription =>
+      'Once, when the gesture stops either way';
+
+  @override
+  String get actionTriggerOnTickDescription =>
+      'Repeatedly, at a fixed rate while active';
 
   @override
   String get actionIntervalLabel => 'Interval';
@@ -832,6 +876,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionConflictingLabel => 'Conflicting';
+
+  @override
+  String get actionConflictingDescription => 'Cancels other gestures';
 
   @override
   String get actionConditionsTitle => 'Action Conditions';
@@ -1838,30 +1885,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tooltip_actionTriggerOn_body =>
-      'When during the gesture lifecycle this action fires.';
+      'When during the gesture this action runs.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleBegin =>
-      'immediately on recognition';
+  String get tooltip_actionTriggerOn_intervalNote =>
+      'Update and Tick repeat the action; Interval sets how often.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleUpdate =>
-      'every input move while active';
+  String get tooltip_actionTriggerOn_thresholdNote =>
+      'Threshold works with every option except Begin.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleEnd =>
-      'gesture completes normally';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleCancel => 'gesture is aborted';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleEndCancel =>
-      'on both end AND cancel';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleTick =>
-      'at fixed time intervals while active';
+  String get tooltip_actionTriggerOn_strokeNote =>
+      'A stroke is only recognised on release, so a conflicting stroke action can only run on End. Turn Conflicting off to pick another option.';
 
   @override
   String get tooltip_actionInterval_body =>
@@ -1910,32 +1946,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tooltip_actionConflicting_body =>
-      'Whether this action holds back competing gestures.';
+      'Whether running this action claims the gesture.';
 
   @override
   String get tooltip_actionConflicting_onLabel => 'On';
 
   @override
   String get tooltip_actionConflicting_onDesc =>
-      'hold back competing gestures until one wins';
+      'cancels other gestures started by the same input';
 
   @override
   String get tooltip_actionConflicting_offLabel => 'Off';
 
   @override
   String get tooltip_actionConflicting_offDesc =>
-      'fire immediately, no blocking';
+      'runs alongside them, cancelling nothing';
 
   @override
   String get tooltip_actionConflicting_sectionLabel => 'Example';
 
   @override
-  String get tooltip_actionConflicting_exCode =>
-      '2-finger swipe  +  3-finger swipe';
+  String get tooltip_actionConflicting_exFingersCode =>
+      '3-finger swipe left  +  3-finger swipe any';
+
+  @override
+  String get tooltip_actionConflicting_exMouseCode =>
+      'right-button swipe left  +  right-button swipe any';
 
   @override
   String get tooltip_actionConflicting_exLabel =>
-      'daemon waits to see which one completes';
+      'both start; the first conflicting action to run cancels the other';
+
+  @override
+  String get tooltip_actionConflicting_strokeBody =>
+      'A stroke is recognised on release: the closest match ends and every other stroke is cancelled.';
+
+  @override
+  String get tooltip_actionConflicting_strokeOnDesc =>
+      'runs on End, only if this stroke is the match';
+
+  @override
+  String get tooltip_actionConflicting_strokeOffDesc =>
+      'can also run while drawing, before the match is known';
+
+  @override
+  String get tooltip_actionConflicting_strokeExCode => 'Begin  +  Cancel';
+
+  @override
+  String get tooltip_actionConflicting_strokeExLabel =>
+      'show a hint while drawing, clear it if this stroke is not the match';
 
   @override
   String get tooltip_actionLimit_body =>

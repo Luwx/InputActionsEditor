@@ -63,8 +63,10 @@ class ActionExpandedEditor extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     printBuild(7, 'expandedEditor build');
     final actionLocation = context.actionLocation;
-    final kind = ref.watch(
-      actionEditorProvider(actionLocation).select((vm) => vm.kind),
+    final (:kind, :repeats) = ref.watch(
+      actionEditorProvider(
+        actionLocation,
+      ).select((vm) => (kind: vm.kind, repeats: vm.showInterval)),
     );
     final optionsExpanded = useState(false);
     final available = List.of(
@@ -72,6 +74,11 @@ class ActionExpandedEditor extends HookConsumerWidget {
     );
     if (kind != ActionKind.input) {
       available.remove(ActionTriggerOptionField.inputDelay);
+    }
+    if (!nested &&
+        !repeats &&
+        !pinnedTriggerOptions.contains(ActionTriggerOptionField.limit)) {
+      available.remove(ActionTriggerOptionField.limit);
     }
     final pinned = pinnedTriggerOptions.where(available.contains).toSet();
     final accordionFields = available

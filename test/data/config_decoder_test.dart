@@ -5,6 +5,7 @@ import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -286,7 +287,7 @@ touchpad:
         - sleep: "50"
 ''');
       final gesture = c.touchpadGestures.single as TouchpadTapGesture;
-      expect(gesture.fingers, 3);
+      expect(gesture.fingers, const FingerRange(min: 3, max: 3));
       expect(gesture.common.resumeTimeout, 200);
       expect(
         gesture.common.actions.single.action,
@@ -1067,7 +1068,10 @@ touchpad:
         'hold',
         'stroke',
       ]);
-      expect(c.touchpadGestures[0].fingers, 3);
+      expect(
+        c.touchpadGestures[0].fingers,
+        const FingerRange(min: 3, max: 3),
+      );
       expect(
         (c.touchpadGestures[1] as TouchpadPinchGesture).direction,
         PinchDirection.inward,
@@ -1327,7 +1331,7 @@ touchpad:
 ''');
       final group = c.touchpadNodes.single as GestureGroupNode;
       expect(group.extra, {'direction': 'any'});
-      expect(group.fingers, 3);
+      expect(group.fingers, const FingerRange(min: 3, max: 3));
 
       final children = group.gestures.cast<TouchpadSwipeGesture>().toList();
       expect(children.map((g) => g.fingers), [null, null]);

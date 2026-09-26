@@ -59,6 +59,7 @@ const _flashPlain = TriggerCommon(
   actions: [
     TriggerAction(
       action: CommandAction(command: 'first'),
+      on: TriggerOn.update,
       editId: _flashActionEditId,
     ),
   ],
@@ -72,6 +73,7 @@ const _flashGrouped = TriggerCommon(
       action: ActionGroup(
         actions: [TriggerAction(action: CommandAction(command: 'inner'))],
       ),
+      on: TriggerOn.update,
       editId: _flashActionEditId,
     ),
   ],

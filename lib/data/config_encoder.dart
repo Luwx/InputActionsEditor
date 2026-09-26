@@ -8,6 +8,7 @@ import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -166,7 +167,7 @@ Map<String, dynamic> _groupToYaml(
     if (node.conditions != null)
       'conditions': conditionToYaml(node.conditions!),
     // Shared trigger properties, in the same key order gestures use.
-    'fingers': ?node.fingers,
+    if (node.fingers case final fingers?) 'fingers': _fingersToYaml(fingers),
     'instant': ?node.instant,
     'speed': ?node.speed?.toYaml(),
     'lock_pointer': ?node.lockPointer,
@@ -283,9 +284,12 @@ Map<String, dynamic> pointerGestureToMap(PointerGesture g) {
   return m;
 }
 
+Object _fingersToYaml(FingerRange fingers) =>
+    fingers.isExact ? fingers.min : '${fingers.min}-${fingers.max}';
+
 Map<String, dynamic> touchpadGestureToMap(TouchpadGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.toYaml()};
-  if (g.fingers != null) m['fingers'] = g.fingers;
+  if (g.fingers case final fingers?) m['fingers'] = _fingersToYaml(fingers);
   switch (g) {
     case TouchpadSwipeGesture(:final mode, :final motion):
       _writeSwipeMode(m, mode);
@@ -313,7 +317,7 @@ Map<String, dynamic> touchpadGestureToMap(TouchpadGesture g) {
 
 Map<String, dynamic> touchscreenGestureToMap(TouchscreenGesture g) {
   final m = <String, dynamic>{'type': g.triggerType.toYaml()};
-  if (g.fingers != null) m['fingers'] = g.fingers;
+  if (g.fingers case final fingers?) m['fingers'] = _fingersToYaml(fingers);
   switch (g) {
     case TouchscreenSwipeGesture(:final mode, :final motion):
       _writeSwipeMode(m, mode);

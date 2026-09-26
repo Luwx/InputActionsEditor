@@ -4,6 +4,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
@@ -122,8 +123,8 @@ enum SharedTriggerProperty {
         common.copyWith(mouseButtonsExactOrder: value as bool? ?? false),
       ),
       SharedTriggerProperty.fingers => switch (gesture) {
-        TouchpadGesture() => gesture.withFingers(value as int?),
-        TouchscreenGesture() => gesture.withFingers(value as int?),
+        TouchpadGesture() => gesture.withFingers(value as FingerRange?),
+        TouchscreenGesture() => gesture.withFingers(value as FingerRange?),
         _ => gesture,
       },
       SharedTriggerProperty.speed => withMotion(

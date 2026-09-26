@@ -100,7 +100,7 @@ List<({String label, String value})> actionMetaChips(
 ) {
   final chips = <({String label, String value})>[];
   if (t.on != null) {
-    chips.add((label: l10n.actionChipOn, value: t.on!.toYaml()));
+    chips.add((label: l10n.actionChipOn, value: triggerOnLabel(t.on!, l10n)));
   }
   if (t.interval != null) {
     chips.add((label: l10n.actionChipInterval, value: t.interval!));

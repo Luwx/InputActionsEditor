@@ -179,6 +179,10 @@ enum TriggerOn {
   cancel,
   tick;
 
+  bool get allowsInterval => this == update || this == tick;
+
+  bool get allowsThreshold => this != begin;
+
   String toYaml() => switch (this) {
     TriggerOn.endCancel => 'end_cancel',
     _ => name,

@@ -17,6 +17,7 @@ import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
@@ -526,16 +527,18 @@ final EditTree<Config> configTree = editTree<Config>(
 
 // cross-case select helpers
 
-int? _touchpadFingers(TouchpadGesture gesture) => gesture.fingers;
+FingerRange? _touchpadFingers(TouchpadGesture gesture) => gesture.fingers;
 
-TouchpadGesture _setTouchpadFingers(TouchpadGesture gesture, int? fingers) =>
-    gesture.withFingers(fingers);
+TouchpadGesture _setTouchpadFingers(
+  TouchpadGesture gesture,
+  FingerRange? fingers,
+) => gesture.withFingers(fingers);
 
-int? _touchscreenFingers(TouchscreenGesture gesture) => gesture.fingers;
+FingerRange? _touchscreenFingers(TouchscreenGesture gesture) => gesture.fingers;
 
 TouchscreenGesture _setTouchscreenFingers(
   TouchscreenGesture gesture,
-  int? fingers,
+  FingerRange? fingers,
 ) => gesture.withFingers(fingers);
 
 TriggerSpeed? _touchpadSpeed(TouchpadGesture gesture) =>

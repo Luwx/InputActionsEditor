@@ -16,6 +16,7 @@ import 'package:input_actions_editor/projections/dirty_saved_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_clipboard.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
+import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 
 part 'action_editor_notifier.freezed.dart';
 
@@ -222,9 +223,9 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
       location: location,
       action: action,
       kind: _kindOf(action?.action),
-      showInterval:
-          action?.on == TriggerOn.update || action?.on == TriggerOn.tick,
-      showThreshold: action?.on != null && action?.on != TriggerOn.begin,
+      showInterval: action?.on?.allowsInterval ?? false,
+      showThreshold:
+          action != null && (action.on ?? TriggerOn.end).allowsThreshold,
       hasNonDefaultTriggerOptions: actionHasNonDefaultTriggerOptions(action),
     );
   }
@@ -240,6 +241,37 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
           ),
           scope: const GesturesScope(),
         );
+  }
+
+  void setTriggerOn(TriggerOn on) => ref
+      .read(configControllerProvider.notifier)
+      .add(setActionTriggerOn(location, on), scope: const GesturesScope());
+
+  void setConflicting(bool conflicting) {
+    final draft = ref.read(configControllerProvider).requireValue.draft;
+    final gesture = gestureAt(draft, location.gesture);
+    final on = actionAt(draft, location)?.on ?? TriggerOn.end;
+    ref
+        .read(configControllerProvider.notifier)
+        .add(
+          BatchEdit([
+            SetLens<bool>(actionConflictingLens(location), conflicting),
+            if (gesture != null &&
+                !supportedTriggerOnOptions(
+                  gesture,
+                  conflicting: conflicting,
+                ).contains(on))
+              setActionTriggerOn(location, TriggerOn.end),
+          ], label: 'set conflicting'),
+          scope: const GesturesScope(),
+        );
+  }
+
+  void revertConflicting() {
+    final saved = ref.read(configControllerProvider).requireValue.saved;
+    final lens = actionConflictingLens(location);
+    if (saved == null || !lens.canGet(saved)) return;
+    setConflicting(lens.get(saved));
   }
 
   void replaceTextRules(List<TextSubstitutionRule> rules) {

@@ -2,6 +2,7 @@ import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
 /// Structural edits to the action tree of a single gesture. Actions are
@@ -194,3 +195,12 @@ final class MoveActions extends ConfigEdit {
   ConfigEdit inverse(Config config) =>
       RestoreGestures(config, label: 'move actions');
 }
+
+ConfigEdit setActionTriggerOn(ActionLocation location, TriggerOn on) =>
+    BatchEdit([
+      SetLens<TriggerOn>(actionTriggerOnLens(location), on),
+      if (!on.allowsInterval)
+        SetLens<String?>(actionIntervalLens(location), null),
+      if (!on.allowsThreshold)
+        SetLens<String?>(actionThresholdLens(location), null),
+    ], label: 'set trigger on');
