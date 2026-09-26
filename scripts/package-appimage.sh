@@ -15,6 +15,7 @@ rm -f "$APPDIR/bundle/data/flutter_assets/kernel_blob.bin"
   echo '#!/bin/bash'
   echo 'SELF=$(readlink -f "$0")'
   echo 'HERE=${SELF%/*}'
+  echo 'export XDG_DATA_DIRS="$HERE/bundle/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"'
   printf 'exec "$HERE/bundle/%s" "$@"\n' "$BINARY_NAME"
 } > "$APPDIR/AppRun"
 chmod +x "$APPDIR/AppRun"
