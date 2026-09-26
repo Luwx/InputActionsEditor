@@ -600,16 +600,21 @@ Condition _parseStringCondition(String raw) {
   final rest = body.substring(firstSpace + 1);
   final secondSpace = rest.indexOf(' ');
   if (secondSpace == -1) return RawCondition(raw: raw);
-  final operator = parseConditionOperator(rest.substring(0, secondSpace));
-  if (operator == null) return RawCondition(raw: raw);
+  final parsed = parseConditionOperator(rest.substring(0, secondSpace));
+  if (parsed == null) return RawCondition(raw: raw);
+  final type =
+      knownConditionVariable(variable)?.valueType ?? ConditionValueType.string;
+  // The daemon reads a flags list as one combined value, so one_of on it is ==.
+  final operator =
+      type == ConditionValueType.flags && parsed == ConditionOperator.oneOf
+      ? ConditionOperator.equals
+      : parsed;
   return VariableCondition(
     variable: parseConditionVariableRef(variable),
     operator: operator,
     value: parseConditionValue(
       rest.substring(secondSpace + 1),
-      type:
-          knownConditionVariable(variable)?.valueType ??
-          ConditionValueType.string,
+      type: type,
       operator: operator,
     ),
     negate: negate,

@@ -360,6 +360,23 @@ mouse:
       );
     });
 
+    test('one_of on a flags variable reads as ==', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      conditions: $keyboard_modifiers one_of [ ctrl, alt ]
+''');
+      expect(
+        c.mouseGestures.single.common.conditions,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('keyboard_modifiers'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.flags(['ctrl', 'alt']),
+        ),
+      );
+    });
+
     test('bool-only condition expands to == true', () {
       final c = decodeConfig(r'''
 mouse:

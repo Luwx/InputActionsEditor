@@ -353,7 +353,6 @@ const List<ConditionOperator> flagsConditionOperators = [
   .equals,
   .notEquals,
   .contains,
-  .oneOf,
 ];
 
 const List<ConditionOperator> pointConditionOperators = [
