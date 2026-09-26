@@ -74,8 +74,9 @@ final class RemoveActions extends ConfigEdit {
       RestoreGestures(config, label: 'add action');
 }
 
-/// Inserts a copy of each of [keys] right after it. The copies carry their
-/// source's editIds; `assignEditIds` re-keys them on the way into the draft.
+/// Inserts a copy of each of [keys] right after it. A key already covered by
+/// another one's subtree is skipped. The copies carry their source's editIds;
+/// `assignEditIds` re-keys them on the way into the draft.
 final class DuplicateActions extends ConfigEdit {
   DuplicateActions(this.location, this.keys);
 
@@ -88,8 +89,20 @@ final class DuplicateActions extends ConfigEdit {
 
   @override
   Config apply(Config config) => _updateCommon(config, location, (common) {
+    bool covered(int key) {
+      for (
+        var parent = parentOfAction(common, key);
+        parent != null;
+        parent = parentOfAction(common, parent)
+      ) {
+        if (keys.contains(parent)) return true;
+      }
+      return false;
+    }
+
     var next = common;
     for (final key in keys) {
+      if (covered(key)) continue;
       final source = actionByKey(next, key);
       if (source == null) continue;
       next = insertActionAfter(next, key, source.copyWith());

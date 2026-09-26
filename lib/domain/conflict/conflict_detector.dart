@@ -39,8 +39,27 @@ List<GestureConflict> detectConflicts(Config config) {
         device,
         effective.gesturesForDevice(device),
         _chainKeysForDevice(effective.nodesForDevice(device)),
+        _idsInDisabledGroups(effective.nodesForDevice(device)),
       ),
   ];
+}
+
+Set<int> _idsInDisabledGroups(List<GestureNode> nodes) {
+  final result = <int>{};
+  void walk(List<GestureNode> level, {required bool disabled}) {
+    for (final node in level) {
+      switch (node) {
+        case GestureLeaf(:final gesture):
+          final id = gesture.common.editId;
+          if (disabled && id != null) result.add(id);
+        case GestureGroupNode(:final enabled, :final children):
+          walk(children, disabled: disabled || !enabled);
+      }
+    }
+  }
+
+  walk(nodes, disabled: false);
+  return result;
 }
 
 /// Condition-key prefix each gesture inherits from its ancestor groups. Group
@@ -76,11 +95,13 @@ List<GestureConflict> _detectForDevice(
   DeviceType device,
   List<Object> raw, [
   Map<int, String> chainKeys = const {},
+  Set<int> disabledByGroup = const {},
 ]) {
   final items = <_G>[];
   for (final (i, g) in raw.indexed) {
     final common = gestureCommon(g);
     if (common.enabled == false) continue; // user has turned it off
+    if (disabledByGroup.contains(common.editId)) continue;
     // Live configs are normalized (assignEditIds), so the negative fallback
     // only keeps detached test fixtures addressable.
     items.add(

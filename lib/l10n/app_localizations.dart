@@ -1276,6 +1276,12 @@ abstract class AppLocalizations {
   /// **'e.g. 100 or 50-200'**
   String get triggerFieldThresholdHint;
 
+  /// No description provided for @triggerFieldThresholdInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a number or a range like 50-200'**
+  String get triggerFieldThresholdInvalid;
+
   /// No description provided for @triggerFieldResumeTimeoutLabel.
   ///
   /// In en, this message translates to:
@@ -4491,6 +4497,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lock pointer'**
   String get motionLockPointerLabel;
+
+  /// No description provided for @numberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get numberRequired;
 
   /// No description provided for @numberRangeBetween.
   ///

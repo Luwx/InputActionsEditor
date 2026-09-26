@@ -293,7 +293,7 @@ class _EmergencyCombinationSection extends HookWidget {
             child: FTextField(
               control: FTextFieldControl.managed(
                 controller: ctrl,
-                onChange: (_) {},
+                onChange: (value) => commit(value.text),
               ),
               hint: context.l10n.effectSettingsEmergencyComboKeysHint,
               label: UnsavedLabel(

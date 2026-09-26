@@ -15,6 +15,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/trigger/section
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/finger_count_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/gesture_editor_layout.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class TouchscreenGestureEditor extends StatelessWidget {
@@ -63,7 +64,11 @@ class _TouchscreenTriggerSection extends ConsumerWidget {
             field: ConfigDirtyField.touchscreenSwipeMode,
             child: SwipeModeSelector(
               mode: modeField.value,
-              onModeChanged: modeField.onChanged,
+              onModeChanged: (mode) => tagEdits(
+                context,
+                (touchscreenSwipeModeLens, location),
+                () => modeField.onChanged(mode),
+              ),
             ),
           );
         },

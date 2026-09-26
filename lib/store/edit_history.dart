@@ -76,6 +76,11 @@ class EditHistory {
     return entry.edit;
   }
 
+  void forget(EditScope scope) {
+    _undo.removeWhere((entry) => entry.scope == scope);
+    _redo.removeWhere((entry) => entry.scope == scope);
+  }
+
   static int? _indexOf(List<_EditEntry> entries, EditScope? scope) {
     if (scope == null) return entries.isEmpty ? null : entries.length - 1;
     for (var i = entries.length - 1; i >= 0; i--) {

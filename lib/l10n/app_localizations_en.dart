@@ -661,6 +661,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerFieldThresholdHint => 'e.g. 100 or 50-200';
 
   @override
+  String get triggerFieldThresholdInvalid =>
+      'Use a number or a range like 50-200';
+
+  @override
   String get triggerFieldResumeTimeoutLabel => 'Resume timeout';
 
   @override
@@ -2523,6 +2527,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motionLockPointerLabel => 'Lock pointer';
+
+  @override
+  String get numberRequired => 'Enter a number';
 
   @override
   String numberRangeBetween(String min, String max) {

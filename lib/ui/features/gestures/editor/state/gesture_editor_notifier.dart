@@ -95,11 +95,11 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void duplicate() {
-    _config.add(DuplicateGestures([location]));
+    _config.add(DuplicateGestures([location]), scope: const GesturesScope());
   }
 
   void delete() {
-    _config.add(RemoveGestures([location]));
+    _config.add(RemoveGestures([location]), scope: const GesturesScope());
   }
 
   void updateGesture(Object Function(Object) update) {

@@ -15,6 +15,8 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart'
+    show fieldErrorStyle;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
@@ -263,6 +265,12 @@ class ActionTriggerFields extends HookConsumerWidget {
                         controller: thresholdController,
                       ),
                       hint: context.l10n.triggerFieldThresholdHint,
+                      error: isCompleteThreshold(thresholdField.text)
+                          ? null
+                          : Text(
+                              context.l10n.triggerFieldThresholdInvalid,
+                              style: fieldErrorStyle(context),
+                            ),
                     ),
                   ),
                 ),

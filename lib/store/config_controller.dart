@@ -124,6 +124,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     final before = _draft;
     if (before == null) return;
     final applied = edit.apply(before);
+    if (applied == before) return;
     final adopted = withGroupValues(applied);
     // Group values also cleared gestures the edit never touched.
     final cleared = !identical(adopted, applied);
@@ -195,6 +196,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     if (session == null) return;
     final saved = session.saved;
     if (saved == null || !session.isDirty) return;
+    _editHistory = null;
     state = AsyncData(session.withDraft(saved));
   }
 
@@ -205,6 +207,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     if (session == null) return;
     final saved = session.saved;
     if (saved == null || !session.settingsDirty.isDirty) return;
+    _editHistory?.forget(const SettingsScope());
     state = AsyncData(
       session.withDraft(withGestureSliceFrom(saved, session.draft)),
     );
@@ -217,6 +220,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
     if (session == null) return;
     final saved = session.saved;
     if (saved == null || !session.gesturesDirty.isDirty) return;
+    _editHistory?.forget(const GesturesScope());
     state = AsyncData(
       session.withDraft(withGestureSliceFrom(session.draft, saved)),
     );
@@ -349,6 +353,7 @@ class ConfigController extends AsyncNotifier<EditSession> {
       touchscreenSpeed: current.touchscreenSpeed ?? incoming.touchscreenSpeed,
     );
     ref.read(configIssuesProvider.notifier).report(merged, text);
+    _editHistory = null;
     _applyConfig(merged);
   }
 

@@ -196,9 +196,11 @@ extension FieldAccess on WidgetRef {
       field.lens,
       fallbackValue:
           fallbackValue ??
-          (field.defaultValue == null
+          (field.defaultValue != null
+              ? () => field.defaultValue as T
+              : null is T
               ? () => null as T
-              : () => field.defaultValue as T),
+              : null),
     );
     return SchemaEditableField<T>(
       value: editable.value,

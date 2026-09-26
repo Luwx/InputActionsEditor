@@ -73,9 +73,10 @@ $device:
               ? config.touchpadGestures
               : config.touchscreenGestures,
           [
-            device == 'touchpad'
-                ? isA<TouchpadHoldGesture>()
-                : isA<TouchscreenHoldGesture>(),
+            if (device == 'touchpad')
+              isA<TouchpadHoldGesture>()
+            else
+              isA<TouchscreenHoldGesture>(),
           ],
         );
 

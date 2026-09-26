@@ -334,6 +334,7 @@
   "triggerFieldIdHint": "e.g. my_trigger",
   "triggerFieldThresholdLabel": "Threshold",
   "triggerFieldThresholdHint": "e.g. 100 or 50-200",
+  "triggerFieldThresholdInvalid": "Use a number or a range like 50-200",
   "triggerFieldResumeTimeoutLabel": "Resume timeout",
   "triggerFieldResumeTimeoutHint": "0 = disabled",
   "triggerFieldAcceleratedLabel": "Accelerated",
@@ -955,6 +956,7 @@
   "motionSpeedLabel": "Motion Speed",
   "motionSpeedTooltip": "Required speed for this gesture. \"Fast\" requires quick movement, \"Slow\" requires deliberate movement. \"Any\" matches both. The thresholds that separate fast from slow are set per device under Speed Settings.",
   "motionLockPointerLabel": "Lock pointer",
+  "numberRequired": "Enter a number",
   "numberRangeBetween": "Must be {min} to {max}",
   "@numberRangeBetween": {
     "placeholders": {

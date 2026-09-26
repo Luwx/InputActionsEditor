@@ -149,8 +149,7 @@ TreeTableGroup _groupNode(
         onChanged: child is ConditionGroup
             ? (updated) {
                 final asGroup = updated as ConditionGroup;
-                if (asGroup.children.isEmpty &&
-                    asGroup.mode == ConditionGroupMode.all) {
+                if (asGroup.children.isEmpty && child.children.isNotEmpty) {
                   removeChild();
                 } else {
                   updateChild(updated);
@@ -208,7 +207,7 @@ TreeTableLeaf _leafNode(
   final colors = context.theme.colors;
   final typography = context.theme.typography;
   final variableName = conditionVariableName(condition.variable);
-  final info = findVariable(variableName);
+  final info = findVariable(variableName, groups: groups ?? kVariableGroups);
   final operators =
       info?.operators ??
       const [ConditionOperator.equals, ConditionOperator.notEquals];

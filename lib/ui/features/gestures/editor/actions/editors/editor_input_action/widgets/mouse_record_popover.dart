@@ -4,6 +4,7 @@ import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/mouse_button_recorder.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/widgets/token_chip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MouseRecordPopover extends StatelessWidget {
@@ -70,7 +71,7 @@ class MouseRecordPopover extends StatelessWidget {
               onPress: recorder.tokens.isEmpty
                   ? null
                   : () async {
-                      onAppend(recorder.tokens.join(', '));
+                      onAppend(recorder.tokens.map(inputTokenText).join(', '));
                       recorder.clear();
                       await controller.hide();
                     },

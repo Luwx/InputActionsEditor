@@ -10,8 +10,8 @@ String formatNumber(double value) {
 
 final _partialNumber = RegExp(r'^-?\d*\.?\d*$');
 
-/// Rejects text that is not on its way to being a number. Out-of-range values
-/// are accepted and reported by [numberRangeError] instead.
+/// Rejects text that is not on its way to being a number. Incomplete and
+/// out-of-range values are accepted and reported by [numberRangeError] instead.
 final numberInputFormatters = <TextInputFormatter>[
   TextInputFormatter.withFunction(
     (old, next) => _partialNumber.hasMatch(next.text) ? next : old,
@@ -24,7 +24,8 @@ String? numberRangeError(
   AppLocalizations l10n,
 ) {
   final value = double.tryParse(text.trim());
-  if (range == null || value == null) return null;
+  if (value == null) return l10n.numberRequired;
+  if (range == null) return null;
 
   final min = range.min;
   final max = range.max;

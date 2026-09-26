@@ -316,9 +316,12 @@ enum ConditionVariableId {
 
   ConditionOperator get defaultOperator => ConditionOperator.equals;
 
-  ConditionValue get defaultValue => switch (range?.min) {
-    final min? when min != 0 => ConditionValue.number(min),
-    _ => defaultConditionValueForType(valueType),
+  ConditionValue get defaultValue => switch (this) {
+    cursorShape => const ConditionValue.text('default'),
+    _ => switch (range?.min) {
+      final min? when min != 0 => ConditionValue.number(min),
+      _ => defaultConditionValueForType(valueType),
+    },
   };
 }
 

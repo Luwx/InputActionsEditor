@@ -234,6 +234,10 @@ class MarqueeSelectionEngine<Id> {
       if (context == null) continue;
       final box = context.findRenderObject();
       if (box is! RenderBox || !box.hasSize) continue;
+      if (box.size.height == 0) {
+        _contentRects.remove(entry.key);
+        continue;
+      }
       final topLeft = box.localToGlobal(Offset.zero);
       _contentRects[entry.key] = Rect.fromLTWH(
         topLeft.dx - origin.dx,

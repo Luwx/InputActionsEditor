@@ -10,6 +10,8 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart'
+    show fieldErrorStyle;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
@@ -157,6 +159,9 @@ class TriggerAdvancedFields extends ConsumerWidget {
                             ),
                             inputFormatters: thresholdInputFormatters,
                             hint: l10n.triggerFieldThresholdHint,
+                            validate: (text) => isCompleteThreshold(text)
+                                ? null
+                                : l10n.triggerFieldThresholdInvalid,
                           ),
                         ),
                       ),
@@ -284,6 +289,7 @@ class _TextRow<T> extends HookWidget {
     required this.hint,
     this.inputFormatters,
     this.keyboardType,
+    this.validate,
   });
 
   final SchemaEditableField<T> field;
@@ -291,6 +297,7 @@ class _TextRow<T> extends HookWidget {
   final String hint;
   final List<TextInputFormatter>? inputFormatters;
   final TextInputType? keyboardType;
+  final String? Function(String text)? validate;
 
   @override
   Widget build(BuildContext context) {
@@ -309,6 +316,10 @@ class _TextRow<T> extends HookWidget {
       keyboardType: keyboardType,
       control: FTextFieldControl.managed(controller: controller),
       hint: hint,
+      error: switch (validate?.call(field.text)) {
+        final error? => Text(error, style: fieldErrorStyle(context)),
+        null => null,
+      },
     );
   }
 }

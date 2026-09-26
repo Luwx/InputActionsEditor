@@ -589,9 +589,15 @@ class GestureListSection extends HookConsumerWidget {
         (g) => g.copyWith(enabled: !g.enabled),
       ),
       onBulkEdit: () {
+        final groupKeys = {item.groupKey};
+        for (final row in viewModel.flatItems) {
+          if (row is _GroupHeaderItem && groupKeys.contains(row.parentKey)) {
+            groupKeys.add(row.groupKey);
+          }
+        }
         final locations = <GestureLocation>{
           for (final row in viewModel.flatItems)
-            if (row is _GestureRowItem && row.groupKey == item.groupKey)
+            if (row is _GestureRowItem && groupKeys.contains(row.groupKey))
               row.location,
         };
         if (locations.isEmpty) return;
@@ -673,6 +679,7 @@ class GestureListSection extends HookConsumerWidget {
           if (isMultiSelectMode) {
             multiSelect.toggle(location);
           } else {
+            ref.read(selectedGroupProvider.notifier).close();
             context.selectGesture(location);
           }
         },
