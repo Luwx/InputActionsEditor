@@ -17,6 +17,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_e
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/document_actions.dart';
+import 'package:input_actions_editor/ui/shell/ui_scale_intents.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 import 'package:linux_app_menu/linux_app_menu.dart';
 import 'package:window_manager/window_manager.dart';
@@ -290,6 +291,32 @@ class ApplicationMenu extends ConsumerWidget {
                 settings.colorTheme,
                 settingsController.setColorTheme,
               ),
+            ),
+            LinuxSubmenu(
+              label: l10n.menuZoom,
+              iconName: 'zoom',
+              menus: [
+                LinuxMenuItem(
+                  label: l10n.actionZoomIn,
+                  iconName: 'zoom-in',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.add,
+                    control: true,
+                  ),
+                  onSelected: () =>
+                      Actions.invoke(context, const ZoomInIntent()),
+                ),
+                LinuxMenuItem(
+                  label: l10n.actionZoomOut,
+                  iconName: 'zoom-out',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.minus,
+                    control: true,
+                  ),
+                  onSelected: () =>
+                      Actions.invoke(context, const ZoomOutIntent()),
+                ),
+              ],
             ),
             PlatformMenuItemGroup(
               members: [

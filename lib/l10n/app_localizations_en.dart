@@ -127,6 +127,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuAbout => 'About';
 
   @override
+  String get menuZoom => 'Zoom';
+
+  @override
+  String get actionZoomIn => 'Zoom in';
+
+  @override
+  String get actionZoomOut => 'Zoom out';
+
+  @override
   String get sidebarDeviceGesturesGroup => 'Device Gestures';
 
   @override

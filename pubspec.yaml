@@ -48,7 +48,6 @@ dependencies:
   linux_app_menu:
     git:
       url: https://github.com/Luwx/klutter
-      ref: feat/ext-background-effect-v1
       path: linux_app_menu
   flutter_animate: ^4.5.2
   animations: ^2.2.0

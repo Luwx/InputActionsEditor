@@ -328,6 +328,24 @@ abstract class AppLocalizations {
   /// **'About'**
   String get menuAbout;
 
+  /// No description provided for @menuZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get menuZoom;
+
+  /// No description provided for @actionZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get actionZoomIn;
+
+  /// No description provided for @actionZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get actionZoomOut;
+
   /// No description provided for @sidebarDeviceGesturesGroup.
   ///
   /// In en, this message translates to:

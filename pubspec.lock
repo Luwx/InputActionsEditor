@@ -46,7 +46,7 @@ packages:
     description:
       path: background_blur_linux
       ref: HEAD
-      resolved-ref: "7e778d47cafc79915992b048a0d5378f54f4503c"
+      resolved-ref: "82f85b4e5f88e919308bba4d0b880ca207c85c1a"
       url: "https://github.com/Luwx/klutter"
     source: git
     version: "0.0.2"
@@ -477,7 +477,7 @@ packages:
     description:
       path: kde_color_scheme
       ref: HEAD
-      resolved-ref: "7e778d47cafc79915992b048a0d5378f54f4503c"
+      resolved-ref: "82f85b4e5f88e919308bba4d0b880ca207c85c1a"
       url: "https://github.com/Luwx/klutter"
     source: git
     version: "0.1.0"
@@ -517,8 +517,8 @@ packages:
     dependency: "direct main"
     description:
       path: linux_app_menu
-      ref: "feat/ext-background-effect-v1"
-      resolved-ref: "3b6470c57f1180844e4ea58c760c4017ad2b14cd"
+      ref: HEAD
+      resolved-ref: "82f85b4e5f88e919308bba4d0b880ca207c85c1a"
       url: "https://github.com/Luwx/klutter"
     source: git
     version: "0.0.1"
