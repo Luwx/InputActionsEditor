@@ -53,6 +53,12 @@ ImageFilter _popupBarrier(BuildContext context, double animation) =>
 /// not just the KDE one.
 FThemeData withGlassPopups(FThemeData theme) {
   final popupSurface = theme.colors.card.withValues(alpha: _popupSurfaceAlpha);
+  final tooltipSurface = switch (theme.tooltipStyle.decoration) {
+    ShapeDecoration(:final color?) => color.withValues(
+      alpha: _popupSurfaceAlpha,
+    ),
+    _ => popupSurface,
+  };
 
   return theme.copyWith(
     popoverStyle: .delta(
@@ -94,7 +100,7 @@ FThemeData withGlassPopups(FThemeData theme) {
     ),
     // FTooltip takes a static filter rather than an animation-driven one.
     tooltipStyle: .delta(
-      decoration: .shapeDelta(color: popupSurface),
+      decoration: .shapeDelta(color: tooltipSurface),
       backgroundFilter: ImageFilter.blur(
         sigmaX: _popupBlurSigma,
         sigmaY: _popupBlurSigma,
