@@ -55,6 +55,8 @@ class DocumentShortcuts extends ConsumerWidget {
             NewDocumentIntent(),
         SingleActivator(LogicalKeyboardKey.keyO, control: true):
             OpenDocumentIntent(),
+        SingleActivator(LogicalKeyboardKey.keyO, control: true, shift: true):
+            OpenInTextEditorIntent(),
         SingleActivator(LogicalKeyboardKey.keyV, control: true, shift: true):
             LoadFromClipboardIntent(),
         SingleActivator(LogicalKeyboardKey.keyC, control: true, alt: true):
@@ -143,6 +145,12 @@ class DocumentShortcuts extends ConsumerWidget {
               if (hasConfig()) {
                 unawaited(copyConfigToClipboard(context, controller));
               }
+              return null;
+            },
+          ),
+          OpenInTextEditorIntent: CallbackAction<OpenInTextEditorIntent>(
+            onInvoke: (_) {
+              unawaited(openConfigInTextEditor(context, ref));
               return null;
             },
           ),

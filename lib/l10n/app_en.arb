@@ -7,6 +7,8 @@
   "actionDiscardChanges": "Discard changes",
   "actionLoadFromClipboard": "Load from clipboard",
   "actionCopyToClipboard": "Copy to clipboard",
+  "actionOpenInTextEditor": "Open in text editor",
+  "configOpenInTextEditorFailed": "Could not open configuration in text editor",
   "actionReload": "Reload",
   "actionOk": "OK",
   "actionCancel": "Cancel",

@@ -32,6 +32,10 @@ class CopyToClipboardIntent extends Intent {
   const CopyToClipboardIntent();
 }
 
+class OpenInTextEditorIntent extends Intent {
+  const OpenInTextEditorIntent();
+}
+
 class OpenSettingsIntent extends Intent {
   const OpenSettingsIntent();
 }

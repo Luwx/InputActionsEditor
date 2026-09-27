@@ -18,6 +18,10 @@ class ConfigRepository {
   Future<(Config, String)> loadFromPath(String path) =>
       config_file.loadConfigFromPath(path);
 
+  Future<bool> exists() => config_file.configExists();
+
+  Future<void> openInTextEditor() => config_file.openConfigInTextEditor();
+
   Future<String?> pickPath() => config_file.pickConfigFilePath();
 
   Future<String?> pickSavePath() => config_file.pickSaveFilePath();

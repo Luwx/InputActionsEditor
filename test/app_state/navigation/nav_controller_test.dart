@@ -275,8 +275,13 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      _controller(container).openSettings();
+      expect(
+        _state(container).current,
+        const SettingsDestination(SettingsSection.effectSettings),
+      );
+
       _controller(container)
-        ..openSettings()
         ..go(
           const SettingsDestination(SettingsSection.appearance),
           replace: true,

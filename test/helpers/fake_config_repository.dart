@@ -14,6 +14,19 @@ class FakeConfigRepository implements ConfigRepository {
 
   String text;
   int loads = 0;
+  bool fileExists = true;
+  final List<String> openedTexts = [];
+  Exception? failOpen;
+
+  @override
+  Future<bool> exists() async => fileExists;
+
+  @override
+  Future<void> openInTextEditor() async {
+    if (failOpen case final error?) throw error;
+    if (!fileExists) throw StateError('Config file does not exist');
+    openedTexts.add(text);
+  }
 
   /// Makes the next write fail, as a full disk or a read-only file would.
   Exception? failWrite;
@@ -34,6 +47,7 @@ class FakeConfigRepository implements ConfigRepository {
     BackupPolicy backups = const BackupPolicy.disabled(),
   }) async {
     if (failWrite case final error?) throw error;
+    fileExists = true;
     mergeBases.add(originalText);
     return text = encodeConfig(config, originalText);
   }

@@ -246,6 +246,17 @@ class ConfigController extends AsyncNotifier<EditSession> {
     }
   }
 
+  Future<void> openInTextEditor() async {
+    final session = state.value ?? await future;
+    if (!await _repository.exists()) {
+      await _write(session.draft);
+      state = AsyncData(
+        EditSession(draft: session.draft, saved: session.draft),
+      );
+    }
+    await _repository.openInTextEditor();
+  }
+
   /// Save only settings slice.
   /// Gesture data from disk stay as-is, draft gesture edits stay unsaved.
   /// Mirror of [saveGestures].

@@ -114,3 +114,18 @@ Future<void> saveConfigToPath(
   if (!file.parent.existsSync()) await file.parent.create(recursive: true);
   await file.writeAsString(encodeConfig(config, originalText));
 }
+
+Future<bool> configExists() async => File(configFilePath()).existsSync();
+
+Future<void> openConfigInTextEditor() async {
+  final path = configFilePath();
+  final result = await Process.run('xdg-open', [path]);
+  if (result.exitCode != 0) {
+    throw ProcessException(
+      'xdg-open',
+      [path],
+      '${result.stderr}',
+      result.exitCode,
+    );
+  }
+}

@@ -3,8 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  background_blur_linux
-  linux_app_menu
   screen_retriever_linux
   window_manager
 )

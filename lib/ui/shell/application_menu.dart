@@ -133,6 +133,17 @@ class ApplicationMenu extends ConsumerWidget {
                     copyConfigToClipboard(context, configController),
                   ),
                 ),
+                LinuxMenuItem(
+                  label: l10n.actionOpenInTextEditor,
+                  iconName: 'document-edit',
+                  shortcut: const SingleActivator(
+                    LogicalKeyboardKey.keyO,
+                    control: true,
+                    shift: true,
+                  ),
+                  onSelected: () =>
+                      unawaited(openConfigInTextEditor(context, ref)),
+                ),
               ],
             ),
             PlatformMenuItemGroup(

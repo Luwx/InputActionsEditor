@@ -30,6 +30,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
+  String get actionOpenInTextEditor => 'Open in text editor';
+
+  @override
+  String get configOpenInTextEditorFailed =>
+      'Could not open configuration in text editor';
+
+  @override
   String get actionReload => 'Reload';
 
   @override

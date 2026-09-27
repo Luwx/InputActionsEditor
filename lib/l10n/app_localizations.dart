@@ -136,6 +136,18 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get actionCopyToClipboard;
 
+  /// No description provided for @actionOpenInTextEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in text editor'**
+  String get actionOpenInTextEditor;
+
+  /// No description provided for @configOpenInTextEditorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open configuration in text editor'**
+  String get configOpenInTextEditorFailed;
+
   /// No description provided for @actionReload.
   ///
   /// In en, this message translates to:
