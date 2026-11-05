@@ -22,7 +22,8 @@ class TransitionConfig extends Equatable {
 int _mainSlot(AppDestination d) => switch (d) {
   GesturesDestination() => 0,
   HistoryDestination() => 1,
-  SettingsDestination() => 2,
+  ExceptionsDestination() => 2,
+  SettingsDestination() => 3,
 };
 
 TransitionConfig navTransition(AppDestination? from, AppDestination? to) {

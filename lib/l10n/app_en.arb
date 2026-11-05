@@ -39,6 +39,30 @@
   "actionRecord": "Record stroke...",
   "actionRecording": "Recording...",
   "navHistory": "History",
+  "navExceptions": "Exceptions",
+  "exceptionsTitle": "Gesture exceptions",
+  "exceptionsDescription": "Mouse gestures are turned off while the pointer is over these apps.",
+  "exceptionsNoGroup": "To use exceptions, put your mouse gestures in a group first. On the Mouse page, use the folder button at the top of the list.",
+  "exceptionsFieldHint": "App name, for example org.kde.konsole",
+  "exceptionsPick": "Pick from screen",
+  "exceptionsPickCountdown": "Hover over the app… {seconds}",
+  "@exceptionsPickCountdown": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "exceptionsAdd": "Add",
+  "exceptionsEmpty": "No exceptions yet. Gestures work in every app.",
+  "exceptionsAppliesTo": "{count, plural, =1{Applies to 1 gesture in \"{group}\".} other{Applies to {count} gestures in \"{group}\".}}",
+  "@exceptionsAppliesTo": {
+    "placeholders": { "count": { "type": "int" }, "group": { "type": "String" } }
+  },
+  "exceptionsOutside": "{count, plural, =1{1 mouse gesture is outside that group and keeps working in every app.} other{{count} mouse gestures are outside that group and keep working in every app.}}",
+  "@exceptionsOutside": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "exceptionsNoticeUnsaved": "Not saved yet, because you have other unsaved gesture changes. Press Ctrl+S to save everything.",
+  "exceptionsNoticeSaveFailed": "Could not save the change. It is still applied here, press Ctrl+S to try again.",
+  "exceptionsNoticePickFailed": "Could not read the app under the pointer. Is the InputActions plugin running?",
+  "exceptionsNoticePickedEditor": "The pointer was still over this window. Try again and hover over the other app.",
   "navSettings": "Settings",
   "menuFile": "File",
   "menuEdit": "Edit",

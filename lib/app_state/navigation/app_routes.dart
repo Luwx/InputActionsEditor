@@ -7,6 +7,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_transition.dart';
 import 'package:input_actions_editor/ui/common/fade_forwards_transition.dart';
 import 'package:input_actions_editor/ui/common/resize_divider.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
+import 'package:input_actions_editor/ui/features/exceptions/exceptions_screen.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
 import 'package:input_actions_editor/ui/features/history/history_screen.dart';
 import 'package:input_actions_editor/ui/features/settings/appearance_settings_screen.dart';
@@ -130,6 +131,16 @@ MiniRouter<AppDestination> buildAppRouter(
                     builder: (context, state) => _leaf(
                       key: const ValueKey('history'),
                       child: const HistoryScreen(),
+                    ),
+                  ),
+                  MiniRoute<AppDestination>(
+                    matches: (d) => switch (d) {
+                      ExceptionsDestination() => true,
+                      _ => false,
+                    },
+                    builder: (context, state) => _leaf(
+                      key: const ValueKey('exceptions'),
+                      child: const ExceptionsScreen(),
                     ),
                   ),
                 ],
