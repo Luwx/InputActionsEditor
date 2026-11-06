@@ -114,6 +114,9 @@ extension AppNavigation on BuildContext {
   void goToHistory() =>
       _container.read(navProvider.notifier).go(const HistoryDestination());
 
+  void goToExceptions() =>
+      _container.read(navProvider.notifier).go(const ExceptionsDestination());
+
   void openSettings() => _container.read(navProvider.notifier).openSettings();
 
   void closeSettings() => _container.read(navProvider.notifier).closeSettings();

@@ -292,6 +292,96 @@ abstract class AppLocalizations {
   /// **'History'**
   String get navHistory;
 
+  /// No description provided for @navExceptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Exceptions'**
+  String get navExceptions;
+
+  /// No description provided for @exceptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gesture exceptions'**
+  String get exceptionsTitle;
+
+  /// No description provided for @exceptionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse gestures are turned off while the pointer is over these apps.'**
+  String get exceptionsDescription;
+
+  /// No description provided for @exceptionsNoGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'To use exceptions, put your mouse gestures in a group first. On the Mouse page, use the folder button at the top of the list.'**
+  String get exceptionsNoGroup;
+
+  /// No description provided for @exceptionsFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'App name, for example org.kde.konsole'**
+  String get exceptionsFieldHint;
+
+  /// No description provided for @exceptionsPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick from screen'**
+  String get exceptionsPick;
+
+  /// No description provided for @exceptionsPickCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover over the app… {seconds}'**
+  String exceptionsPickCountdown(int seconds);
+
+  /// No description provided for @exceptionsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get exceptionsAdd;
+
+  /// No description provided for @exceptionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No exceptions yet. Gestures work in every app.'**
+  String get exceptionsEmpty;
+
+  /// No description provided for @exceptionsAppliesTo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Applies to 1 gesture in \"{group}\".} other{Applies to {count} gestures in \"{group}\".}}'**
+  String exceptionsAppliesTo(int count, String group);
+
+  /// No description provided for @exceptionsOutside.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 mouse gesture is outside that group and keeps working in every app.} other{{count} mouse gestures are outside that group and keep working in every app.}}'**
+  String exceptionsOutside(int count);
+
+  /// No description provided for @exceptionsNoticeUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved yet, because you have other unsaved gesture changes. Press Ctrl+S to save everything.'**
+  String get exceptionsNoticeUnsaved;
+
+  /// No description provided for @exceptionsNoticeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the change. It is still applied here, press Ctrl+S to try again.'**
+  String get exceptionsNoticeSaveFailed;
+
+  /// No description provided for @exceptionsNoticePickFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the app under the pointer. Is the InputActions plugin running?'**
+  String get exceptionsNoticePickFailed;
+
+  /// No description provided for @exceptionsNoticePickedEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'The pointer was still over this window. Try again and hover over the other app.'**
+  String get exceptionsNoticePickedEditor;
+
   /// No description provided for @navSettings.
   ///
   /// In en, this message translates to:

@@ -183,6 +183,12 @@ class DeviceSidebar extends HookConsumerWidget {
                         selected: currentView == AppView.history,
                         onPress: context.goToHistory,
                       ),
+                      AppSidebarItem(
+                        icon: const Icon(FLucideIcons.ban),
+                        label: Text(l10n.navExceptions),
+                        selected: currentView == AppView.exceptions,
+                        onPress: context.goToExceptions,
+                      ),
                     ],
                   ),
                 ],

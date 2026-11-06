@@ -3,7 +3,7 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 
-enum AppView { gestures, history, settings }
+enum AppView { gestures, history, exceptions, settings }
 
 sealed class AppDestination extends Equatable {
   const AppDestination();
@@ -24,6 +24,10 @@ class GesturesDestination extends AppDestination {
 
 class HistoryDestination extends AppDestination {
   const HistoryDestination();
+}
+
+class ExceptionsDestination extends AppDestination {
+  const ExceptionsDestination();
 }
 
 class SettingsDestination extends AppDestination {

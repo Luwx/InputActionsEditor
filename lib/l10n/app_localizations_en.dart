@@ -109,6 +109,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navHistory => 'History';
 
   @override
+  String get navExceptions => 'Exceptions';
+
+  @override
+  String get exceptionsTitle => 'Gesture exceptions';
+
+  @override
+  String get exceptionsDescription =>
+      'Mouse gestures are turned off while the pointer is over these apps.';
+
+  @override
+  String get exceptionsNoGroup =>
+      'To use exceptions, put your mouse gestures in a group first. On the Mouse page, use the folder button at the top of the list.';
+
+  @override
+  String get exceptionsFieldHint => 'App name, for example org.kde.konsole';
+
+  @override
+  String get exceptionsPick => 'Pick from screen';
+
+  @override
+  String exceptionsPickCountdown(int seconds) {
+    return 'Hover over the app… $seconds';
+  }
+
+  @override
+  String get exceptionsAdd => 'Add';
+
+  @override
+  String get exceptionsEmpty =>
+      'No exceptions yet. Gestures work in every app.';
+
+  @override
+  String exceptionsAppliesTo(int count, String group) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Applies to $count gestures in \"$group\".',
+      one: 'Applies to 1 gesture in \"$group\".',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String exceptionsOutside(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count mouse gestures are outside that group and keep working in every app.',
+      one:
+          '1 mouse gesture is outside that group and keeps working in every app.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get exceptionsNoticeUnsaved =>
+      'Not saved yet, because you have other unsaved gesture changes. Press Ctrl+S to save everything.';
+
+  @override
+  String get exceptionsNoticeSaveFailed =>
+      'Could not save the change. It is still applied here, press Ctrl+S to try again.';
+
+  @override
+  String get exceptionsNoticePickFailed =>
+      'Could not read the app under the pointer. Is the InputActions plugin running?';
+
+  @override
+  String get exceptionsNoticePickedEditor =>
+      'The pointer was still over this window. Try again and hover over the other app.';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
