@@ -13,6 +13,7 @@ import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/editor_context_menu.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_function.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/editor_input_action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_plasma_shortcut.dart';
@@ -123,6 +124,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
                   onAdd: onAddToGroup,
                   onRevealAction: onRevealAction,
                 ),
+                ActionKind.contextMenu => const EditorContextMenu(),
                 ActionKind.raw => const EditorRaw(),
                 ActionKind.missing => const SizedBox.shrink(),
               },

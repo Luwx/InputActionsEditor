@@ -883,6 +883,55 @@ mouse:
       ]);
     });
 
+    test('context_menu parses every item kind, nested', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - context_menu:
+            - text: "&Terminal"
+              icon: utilities-terminal
+              actions:
+                - command: konsole
+            - separator:
+            - section: Tools
+            - text: More
+              menu:
+                - text: Files
+                  actions:
+                    - command: dolphin
+''');
+
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const ContextMenuAction(
+          items: [
+            MenuItem.action(
+              text: '&Terminal',
+              icon: 'utilities-terminal',
+              actions: [
+                TriggerAction(action: CommandAction(command: 'konsole')),
+              ],
+            ),
+            MenuItem.separator(),
+            MenuItem.section(text: 'Tools'),
+            MenuItem.subMenu(
+              text: 'More',
+              items: [
+                MenuItem.action(
+                  text: 'Files',
+                  actions: [
+                    TriggerAction(action: CommandAction(command: 'dolphin')),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+
     test('sleep action parses milliseconds', () {
       final c = decodeConfig('''
 mouse:

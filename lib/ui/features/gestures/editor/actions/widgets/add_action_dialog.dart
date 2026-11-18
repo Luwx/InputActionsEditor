@@ -50,6 +50,7 @@ enum _ActionKind {
   replaceText,
   sleep,
   group,
+  contextMenu,
   function,
   raw;
 
@@ -73,6 +74,9 @@ enum _ActionKind {
     ),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
     _ActionKind.group => const ActionGroup(),
+    _ActionKind.contextMenu => const ContextMenuAction(
+      items: [MenuItem.action()],
+    ),
     _ActionKind.function => const FunctionAction(expression: '() => '),
     _ActionKind.raw => const RawAction(raw: ''),
   };

@@ -11,6 +11,7 @@
 //    (see config_tree_extra.dart).
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
+
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
@@ -29,6 +30,8 @@ import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+
+export 'package:input_actions_editor/domain/edit/schema/action_source.dart';
 
 part 'edit_schema.g.dart';
 
@@ -53,6 +56,35 @@ final TreeNode<SwipeMode> swipeModeNode = subtree<SwipeMode>(
         prop(SwipeAngleModeMeta.bidirectional),
       ],
     ),
+  ],
+);
+
+final TreeNode<MenuItem> menuItemNode = subtree<MenuItem>(
+  cases: [
+    valueCase<ActionMenuItem>(
+      'action',
+      fields: [
+        prop(ActionMenuItemMeta.text),
+        prop(ActionMenuItemMeta.icon, adapter: nullableText()),
+        prop(ActionMenuItemMeta.actions),
+      ],
+    ),
+    valueCase<SubMenuItem>(
+      'subMenu',
+      fields: [
+        prop('subMenuText', property: SubMenuItemMeta.text),
+        prop(
+          'subMenuIcon',
+          property: SubMenuItemMeta.icon,
+          adapter: nullableText(),
+        ),
+      ],
+    ),
+    valueCase<SectionMenuItem>(
+      'section',
+      fields: [prop('sectionText', property: SectionMenuItemMeta.text)],
+    ),
+    valueCase<SeparatorMenuItem>('separator'),
   ],
 );
 
@@ -90,6 +122,34 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
         valueCase<FunctionAction>(
           'function',
           fields: [prop(FunctionActionMeta.expression)],
+        ),
+        valueCase<ContextMenuAction>(
+          'contextMenu',
+          fields: [
+            list(
+              ContextMenuActionMeta.items,
+              of: menuItemNode,
+              scope: 'menuItem',
+              location: 'MenuItemLocation',
+              parentField: 'action',
+              indexField: 'itemId',
+              key: listKey<MenuItem, int>(
+                field: 'editId',
+                get: (item) => item.editId,
+                set: (item, key) => item.copyWith(editId: key),
+              ),
+              children: childList<MenuItem>(
+                get: (item) => switch (item) {
+                  SubMenuItem(:final items) => items,
+                  _ => null,
+                },
+                set: (item, children) => switch (item) {
+                  SubMenuItem() => item.copyWith(items: children),
+                  _ => item,
+                },
+              ),
+            ),
+          ],
         ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
         // The nested actions are the list's recursion, not a field here.
@@ -148,6 +208,7 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
       scope: 'action',
       location: 'ActionLocation',
       parentField: 'gesture',
+      source: 'ActionSource',
       key: listKey<TriggerAction, int>(
         field: 'editId',
         get: (action) => action.editId,
@@ -165,6 +226,14 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
           _ => action,
         },
       ),
+      alsoIn: [
+        listOwner<MenuItemLocation, GestureLocation, ActionMenuItem>(
+          variant: 'menuItem',
+          listLens: 'menuItemActionsLens',
+          property: ActionMenuItemMeta.actions,
+          parent: (location) => location.action.gesture,
+        ),
+      ],
     ),
   ],
   groups: [

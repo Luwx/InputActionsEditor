@@ -318,6 +318,9 @@ String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
     FunctionAction(:final expression) =>
       expression.trim().isEmpty ? 'function' : expression.trim(),
     ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
+    ContextMenuAction(:final items) => l10n.actionContextMenuSummary(
+      items.length,
+    ),
     RawAction() => 'raw yaml',
   };
 }

@@ -5,13 +5,18 @@ import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show
         ActionLocation,
+        ActionSource,
+        ActionSourceActions,
         GestureLocation,
         actionAt,
         comparableTriggerActionValue,
+        comparableTriggerCommonActionsSectionValue,
         gestureAt;
 import 'package:input_actions_editor/domain/edit/schema/edit_schema_extra.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
+import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
 // All providers here are single-hop selectors on the config controller; see
@@ -72,6 +77,11 @@ gestureSectionDirtyStateProvider =
       (ref, location) =>
           selectSession(ref, (s) => _gestureSectionDirtyState(s, location)),
     );
+
+final ProviderFamily<DirtyMarkState, ActionSource>
+actionListDirtyStateProvider = Provider.family<DirtyMarkState, ActionSource>(
+  (ref, source) => selectSession(ref, (s) => _actionListDirtyState(s, source)),
+);
 
 final ProviderFamily<DirtyMarkState, GestureLocation>
 gestureTriggerConfigDirtyStateProvider =
@@ -148,6 +158,22 @@ DirtyMarkState _gestureSectionDirtyState(
     ),
     saved: comparableGestureSectionValue(savedGesture?.common, location.field),
     hasSavedBacking: savedGesture != null,
+  );
+}
+
+DirtyMarkState _actionListDirtyState(
+  EditSession session,
+  ActionSource source,
+) {
+  Object? comparable(List<TriggerAction>? actions) =>
+      comparableTriggerCommonActionsSectionValue(
+        actions == null ? null : TriggerCommon(actions: actions),
+      );
+  final saved = source.read(session.saved);
+  return dirtyMarkState(
+    current: comparable(source.read(session.draft) ?? const []),
+    saved: comparable(saved),
+    hasSavedBacking: saved != null,
   );
 }
 

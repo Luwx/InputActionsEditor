@@ -35,6 +35,10 @@ String actionValueSummary(
         ? l10n.actionSummaryNotConfigured
         : expression.trim().split('\n').first,
   ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
+  ContextMenuAction(:final items) =>
+    items.isEmpty
+        ? l10n.actionSummaryNotConfigured
+        : l10n.actionContextMenuSummary(items.length),
   RawAction(:final raw) =>
     raw.trim().isEmpty ? l10n.actionSummaryEmpty : raw.trim().split('\n').first,
 };
@@ -54,6 +58,7 @@ String actionRowTitle(Action action, AppLocalizations l10n) => switch (action) {
   SleepAction() => l10n.actionMetaSleepLabel,
   FunctionAction() => l10n.actionMetaFunctionLabel,
   ActionGroup() => actionMeta(action, l10n).label,
+  ContextMenuAction() => l10n.actionMetaContextMenuLabel,
   RawAction() => l10n.actionMetaRawLabel,
 };
 

@@ -1834,6 +1834,108 @@ abstract class AppLocalizations {
   /// **'Run a JavaScript function'**
   String get actionMetaFunctionSubtitle;
 
+  /// No description provided for @actionMetaContextMenuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Context menu'**
+  String get actionMetaContextMenuLabel;
+
+  /// No description provided for @actionMetaContextMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a menu at the pointer'**
+  String get actionMetaContextMenuSubtitle;
+
+  /// No description provided for @actionContextMenuSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String actionContextMenuSummary(int count);
+
+  /// No description provided for @actionContextMenuHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Items run their actions when chosen. Put & before a letter to give it a mnemonic.'**
+  String get actionContextMenuHelp;
+
+  /// No description provided for @actionContextMenuAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get actionContextMenuAddItem;
+
+  /// No description provided for @actionContextMenuAddSubMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Submenu'**
+  String get actionContextMenuAddSubMenu;
+
+  /// No description provided for @actionContextMenuAddSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get actionContextMenuAddSection;
+
+  /// No description provided for @actionContextMenuAddSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator'**
+  String get actionContextMenuAddSeparator;
+
+  /// No description provided for @actionContextMenuTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get actionContextMenuTextLabel;
+
+  /// No description provided for @actionContextMenuIconLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get actionContextMenuIconLabel;
+
+  /// No description provided for @actionContextMenuIconHint.
+  ///
+  /// In en, this message translates to:
+  /// **'utilities-terminal'**
+  String get actionContextMenuIconHint;
+
+  /// No description provided for @actionContextMenuActionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actionContextMenuActionsLabel;
+
+  /// No description provided for @actionContextMenuShowActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show actions'**
+  String get actionContextMenuShowActions;
+
+  /// No description provided for @actionContextMenuSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get actionContextMenuSectionLabel;
+
+  /// No description provided for @actionContextMenuSeparatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator'**
+  String get actionContextMenuSeparatorLabel;
+
+  /// No description provided for @actionContextMenuEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item to start the menu.'**
+  String get actionContextMenuEmpty;
+
+  /// No description provided for @actionContextMenuNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'(no text)'**
+  String get actionContextMenuNoText;
+
   /// No description provided for @actionMetaRawLabel.
   ///
   /// In en, this message translates to:

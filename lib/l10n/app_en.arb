@@ -432,6 +432,30 @@
   "actionMetaSleepSubtitle": "Pause before continuing",
   "actionMetaFunctionLabel": "Function",
   "actionMetaFunctionSubtitle": "Run a JavaScript function",
+  "actionMetaContextMenuLabel": "Context menu",
+  "actionMetaContextMenuSubtitle": "Open a menu at the pointer",
+  "actionContextMenuSummary": "{count, plural, =1{1 item} other{{count} items}}",
+  "@actionContextMenuSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "actionContextMenuHelp": "Items run their actions when chosen. Put & before a letter to give it a mnemonic.",
+  "actionContextMenuAddItem": "Item",
+  "actionContextMenuAddSubMenu": "Submenu",
+  "actionContextMenuAddSection": "Section",
+  "actionContextMenuAddSeparator": "Separator",
+  "actionContextMenuTextLabel": "Text",
+  "actionContextMenuIconLabel": "Icon",
+  "actionContextMenuIconHint": "utilities-terminal",
+  "actionContextMenuActionsLabel": "Actions",
+  "actionContextMenuShowActions": "Show actions",
+  "actionContextMenuSectionLabel": "Section",
+  "actionContextMenuSeparatorLabel": "Separator",
+  "actionContextMenuEmpty": "Add an item to start the menu.",
+  "actionContextMenuNoText": "(no text)",
   "actionMetaRawLabel": "Raw YAML",
   "actionMetaRawSubtitle": "Hand-authored unsupported action config",
   "actionMetaGroupLabel": "First match",

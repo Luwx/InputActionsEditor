@@ -114,14 +114,14 @@ TreeMove<Id>? moveTreeNodes<Id>(
       if (index == null || !nodes[index].canContain) return null;
       if (_isMovedOrInside(nodes, indexOf, index, movedIds)) return null;
       parentId = id;
-      insertAt = _subtreeEnd(nodes, index);
+      insertAt = subtreeEnd(nodes, index);
     case MoveAfterSubtree<Id>(:final id):
       final index = indexOf[id];
       if (index == null || _isMovedOrInside(nodes, indexOf, index, movedIds)) {
         return null;
       }
       parentId = nodes[index].parentId;
-      insertAt = _subtreeEnd(nodes, index);
+      insertAt = subtreeEnd(nodes, index);
     case MoveToRootEnd<Id>():
       parentId = null;
       insertAt = nodes.length;
@@ -130,7 +130,7 @@ TreeMove<Id>? moveTreeNodes<Id>(
   final isMoving = List.filled(nodes.length, false);
   final moving = <TreeListNode<Id>>[];
   for (final root in roots) {
-    final end = _subtreeEnd(nodes, root);
+    final end = subtreeEnd(nodes, root);
     for (var i = root; i < end; i++) {
       isMoving[i] = true;
       moving.add(nodes[i]);
@@ -174,7 +174,7 @@ TreeMove<Id>? moveTreeNodes<Id>(
 
 /// Index just past the subtree rooted at [index]: the first following node no
 /// deeper than it.
-int _subtreeEnd<Id>(List<TreeListNode<Id>> nodes, int index) {
+int subtreeEnd<Id>(List<TreeListNode<Id>> nodes, int index) {
   final depth = nodes[index].depth;
   var end = index + 1;
   while (end < nodes.length && nodes[end].depth > depth) {

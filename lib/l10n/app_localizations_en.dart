@@ -965,6 +965,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionMetaFunctionSubtitle => 'Run a JavaScript function';
 
   @override
+  String get actionMetaContextMenuLabel => 'Context menu';
+
+  @override
+  String get actionMetaContextMenuSubtitle => 'Open a menu at the pointer';
+
+  @override
+  String actionContextMenuSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionContextMenuHelp =>
+      'Items run their actions when chosen. Put & before a letter to give it a mnemonic.';
+
+  @override
+  String get actionContextMenuAddItem => 'Item';
+
+  @override
+  String get actionContextMenuAddSubMenu => 'Submenu';
+
+  @override
+  String get actionContextMenuAddSection => 'Section';
+
+  @override
+  String get actionContextMenuAddSeparator => 'Separator';
+
+  @override
+  String get actionContextMenuTextLabel => 'Text';
+
+  @override
+  String get actionContextMenuIconLabel => 'Icon';
+
+  @override
+  String get actionContextMenuIconHint => 'utilities-terminal';
+
+  @override
+  String get actionContextMenuActionsLabel => 'Actions';
+
+  @override
+  String get actionContextMenuShowActions => 'Show actions';
+
+  @override
+  String get actionContextMenuSectionLabel => 'Section';
+
+  @override
+  String get actionContextMenuSeparatorLabel => 'Separator';
+
+  @override
+  String get actionContextMenuEmpty => 'Add an item to start the menu.';
+
+  @override
+  String get actionContextMenuNoText => '(no text)';
+
+  @override
   String get actionMetaRawLabel => 'Raw YAML';
 
   @override

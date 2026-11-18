@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:input_actions_editor/domain/diff/dirty_locations.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_ids.dart';
@@ -23,13 +22,13 @@ part 'action_editor_notifier.freezed.dart';
 final NotifierProviderFamily<
   ActionListEditorNotifier,
   ActionListEditorVm,
-  GestureLocation
+  ActionSource
 >
 actionListEditorProvider =
     NotifierProvider.family<
       ActionListEditorNotifier,
       ActionListEditorVm,
-      GestureLocation
+      ActionSource
     >(ActionListEditorNotifier.new);
 
 final NotifierProviderFamily<
@@ -82,13 +81,15 @@ enum ActionKind {
   sleep,
   function,
   group,
+  contextMenu,
   raw,
   missing,
 }
 
 class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
-  ActionListEditorNotifier(this.location);
+  ActionListEditorNotifier(this.source) : location = source.gesture;
 
+  final ActionSource source;
   final GestureLocation location;
 
   List<ActionRow> _rows = const [];
@@ -101,27 +102,19 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
 
   @override
   ActionListEditorVm build() {
-    final common = ref.watch(
-      configControllerProvider.select(
-        (state) => gestureAt(state.requireValue.draft, location)?.common,
-      ),
-    );
-    final dirtyState = ref.watch(
-      gestureSectionDirtyStateProvider(
-        GestureSectionLocation(
-          gesture: location,
-          field: GestureSectionDirtyField.actions,
-        ),
-      ),
-    );
-    final savedCommon = ref.watch(savedGestureCommonProvider(location));
-    final actions = common?.actions ?? const <TriggerAction>[];
+    final actions =
+        ref.watch(
+          configControllerProvider.select(
+            (state) => source.read(state.requireValue.draft),
+          ),
+        ) ??
+        const <TriggerAction>[];
     return ActionListEditorVm(
       location: location,
       actions: actions,
-      rows: _keepRows(flattenActionRows(location, actions)),
-      dirtyState: dirtyState,
-      savedActions: savedCommon?.actions,
+      rows: _keepRows(flattenActionRows(source, actions)),
+      dirtyState: ref.watch(actionListDirtyStateProvider(source)),
+      savedActions: ref.watch(savedActionListProvider(source)),
     );
   }
 
@@ -134,20 +127,20 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   void add(Action action, {int? parentKey}) {
     _dispatch(
       AddAction(
-        location,
+        source,
         TriggerAction(action: action, editId: reserveEditId()),
         parentKey: parentKey,
       ),
     );
   }
 
-  void remove(List<int> keys) => _dispatch(RemoveActions(location, keys));
+  void remove(List<int> keys) => _dispatch(RemoveActions(source, keys));
 
-  void duplicate(List<int> keys) => _dispatch(DuplicateActions(location, keys));
+  void duplicate(List<int> keys) => _dispatch(DuplicateActions(source, keys));
 
   void move(List<int> keys, {int? beforeKey, int? newParentKey}) => _dispatch(
     MoveActions(
-      location,
+      source,
       keys,
       beforeKey: beforeKey,
       newParentKey: newParentKey,
@@ -159,7 +152,12 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     int? afterKey,
     int? parentKey,
   }) => _dispatch(
-    InsertActions(location, actions, afterKey: afterKey, parentKey: parentKey),
+    InsertActions(
+      source,
+      actions,
+      afterKey: afterKey,
+      parentKey: parentKey,
+    ),
   );
 
   /// Puts [keys] on the clipboard, in the order they appear in the tree.
@@ -191,7 +189,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
   }
 
   void setEnabled(List<int> keys, {required bool enabled}) =>
-      _dispatch(SetActionsEnabled(location, keys, enabled: enabled));
+      _dispatch(SetActionsEnabled(source, keys, enabled: enabled));
 
   /// Restores the whole action list to its last-saved value as one undo step.
   void revert() {
@@ -199,7 +197,7 @@ class ActionListEditorNotifier extends Notifier<ActionListEditorVm> {
     if (savedActions == null) return;
     _dispatch(
       SetLens<List<TriggerAction>>(
-        gestureActionsLens(location),
+        source.lens,
         savedActions,
         label: 'Revert actions',
       ),
@@ -274,6 +272,69 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
     setConflicting(lens.get(saved));
   }
 
+  void _editMenu(
+    String label,
+    ContextMenuAction Function(ContextMenuAction menu) transform,
+  ) {
+    final draft = ref.read(configControllerProvider).requireValue.draft;
+    final menu = actionAt(draft, location)?.action;
+    if (menu is! ContextMenuAction) return;
+    final next = transform(menu);
+    if (next == menu) return;
+    ref
+        .read(configControllerProvider.notifier)
+        .add(
+          SetLens<List<MenuItem>>(
+            actionItemsLens(location),
+            next.items,
+            label: label,
+          ),
+          scope: const GesturesScope(),
+        );
+  }
+
+  /// Adds [item] inside the submenu [parentKey], or right after [afterKey], or
+  /// last. Returns the key it was given.
+  int addMenuItem(MenuItem item, {int? parentKey, int? afterKey}) {
+    final key = reserveEditId();
+    final keyed = item.copyWith(editId: key);
+    _editMenu(
+      'add menu item',
+      (menu) => switch ((parentKey, afterKey)) {
+        (final parent?, _) => addItemToParent(menu, parent, keyed),
+        (_, final after?) => insertItemAfter(menu, after, keyed),
+        _ => addItem(menu, keyed),
+      },
+    );
+    return key;
+  }
+
+  void removeMenuItem(int key) =>
+      _editMenu('remove menu item', (menu) => removeItem(menu, key));
+
+  void moveMenuItem(int key, {int? beforeKey, int? newParentKey}) => _editMenu(
+    'move menu item',
+    (menu) => moveItem(
+      menu,
+      key,
+      beforeKey: beforeKey,
+      newParentKey: newParentKey,
+    ),
+  );
+
+  void setMenuItemIcon(int key, String? icon) => _editMenu(
+    'set menu icon',
+    (menu) => updateItem(
+      menu,
+      key,
+      (item) => switch (item) {
+        final ActionMenuItem item => item.copyWith(icon: icon),
+        final SubMenuItem item => item.copyWith(icon: icon),
+        _ => item,
+      },
+    ),
+  );
+
   void replaceTextRules(List<TextSubstitutionRule> rules) {
     ref
         .read(configControllerProvider.notifier)
@@ -297,6 +358,7 @@ ActionKind _kindOf(Action? action) => switch (action) {
   SleepAction() => ActionKind.sleep,
   FunctionAction() => ActionKind.function,
   ActionGroup() => ActionKind.group,
+  ContextMenuAction() => ActionKind.contextMenu,
   RawAction() => ActionKind.raw,
   null => ActionKind.missing,
 };

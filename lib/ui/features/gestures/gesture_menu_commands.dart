@@ -42,7 +42,9 @@ Future<void> pasteFromClipboard(WidgetRef ref, GestureLocation? open) async {
   if (open != null) {
     if (holdsStrokes(ref, open) && await pasteStrokes(ref, open)) return;
     if ((await ActionClipboard.read()).isNotEmpty) {
-      ref.read(actionPasteRequestProvider.notifier).request(open);
+      ref
+          .read(actionPasteRequestProvider.notifier)
+          .request(ActionSource.gesture(open));
       return;
     }
   }

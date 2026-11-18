@@ -649,15 +649,19 @@ TriggerAction? _parseTriggerAction(dynamic node) {
 
 /// Parses a clipboard snippet written by `encodeActionsYaml`. Returns an empty
 /// list for anything that is not a readable action list.
-List<TriggerAction> decodeActionsYaml(String text) {
+List<TriggerAction> decodeActionsYaml(String text) =>
+    tryDecodeActionsYaml(text) ?? const [];
+
+/// Like [decodeActionsYaml], but null when [text] is not readable YAML.
+List<TriggerAction>? tryDecodeActionsYaml(String text) {
   if (text.trim().isEmpty) return const [];
   final Object? doc;
   try {
     doc = loadYaml(materializeDisabledYamlComments(text));
   } on Object {
-    return const [];
+    return null;
   }
-  if (doc is! YamlMap) return const [];
+  if (doc is! YamlMap) return null;
   return _parseActions(doc[actionsClipboardKey]);
 }
 
@@ -703,7 +707,40 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey(actionGroupYamlKey)) {
     return ActionGroup(actions: _parseActions(m[actionGroupYamlKey]));
   }
+  if (m.containsKey('context_menu')) {
+    return ContextMenuAction(items: _parseMenuItems(m['context_menu']));
+  }
   return RawAction(raw: dumpYamlNode(m));
+}
+
+List<MenuItem> _parseMenuItems(dynamic node) {
+  if (node is! YamlList) return [];
+  return node.map(_parseMenuItem).whereType<MenuItem>().toList();
+}
+
+MenuItem? _parseMenuItem(dynamic node) {
+  if (node is! YamlMap) return null;
+  final text = yamlString(node['text']) ?? '';
+  final icon = yamlString(node['icon']);
+  if (node.containsKey('actions')) {
+    return MenuItem.action(
+      text: text,
+      icon: icon,
+      actions: _parseActions(node['actions']),
+    );
+  }
+  if (node.containsKey('menu')) {
+    return MenuItem.subMenu(
+      text: text,
+      icon: icon,
+      items: _parseMenuItems(node['menu']),
+    );
+  }
+  if (node.containsKey('section')) {
+    return MenuItem.section(text: yamlString(node['section']) ?? '');
+  }
+  if (node.containsKey('separator')) return const MenuItem.separator();
+  return null;
 }
 
 List<TextSubstitutionRule> _parseTextSubstitutionRules(dynamic node) {

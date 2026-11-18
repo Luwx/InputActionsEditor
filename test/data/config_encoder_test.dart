@@ -568,6 +568,67 @@ mouse:
       );
     });
 
+    test('context_menu writes every item kind, nested', () {
+      expect(
+        actionToMap(
+          const ContextMenuAction(
+            items: [
+              MenuItem.action(
+                text: 'Terminal',
+                icon: 'utilities-terminal',
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'konsole')),
+                ],
+              ),
+              MenuItem.separator(),
+              MenuItem.section(text: 'Tools'),
+              MenuItem.subMenu(text: 'More', items: [MenuItem.separator()]),
+            ],
+          ),
+        ),
+        {
+          'context_menu': [
+            {
+              'text': 'Terminal',
+              'icon': 'utilities-terminal',
+              'actions': [
+                {'command': 'konsole'},
+              ],
+            },
+            {'separator': null},
+            {'section': 'Tools'},
+            {
+              'text': 'More',
+              'menu': [
+                {'separator': null},
+              ],
+            },
+          ],
+        },
+      );
+    });
+
+    test('context_menu survives a full config round trip', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - context_menu:
+            - text: Terminal
+              actions:
+                - command: konsole
+            - separator:
+            - section: Tools
+''';
+      final config = decodeConfig(source);
+      final reread = decodeConfig(encodeConfig(config, ''));
+      expect(
+        reread.mouseGestures.single.common.actions.single.action,
+        config.mouseGestures.single.common.actions.single.action,
+      );
+    });
+
     test('replace_text writes literal and command rules in order', () {
       expect(
         actionToMap(

@@ -63,8 +63,36 @@ sealed class Action with _$Action {
   const factory Action.group({@Default([]) List<TriggerAction> actions}) =
       ActionGroup;
 
+  const factory Action.contextMenu({@Default([]) List<MenuItem> items}) =
+      ContextMenuAction;
+
   /// Raw YAML for action types we don't model.
   const factory Action.raw({required String raw}) = RawAction;
+}
+
+@freezed
+@withMeta
+sealed class MenuItem with _$MenuItem {
+  const factory MenuItem.action({
+    @Default('') String text,
+    String? icon,
+    @Default([]) List<TriggerAction> actions,
+
+    /// In-memory identity, filled in by `assignEditIds`; never serialized.
+    int? editId,
+  }) = ActionMenuItem;
+
+  const factory MenuItem.subMenu({
+    @Default('') String text,
+    String? icon,
+    @Default([]) List<MenuItem> items,
+    int? editId,
+  }) = SubMenuItem;
+
+  const factory MenuItem.section({@Default('') String text, int? editId}) =
+      SectionMenuItem;
+
+  const factory MenuItem.separator({int? editId}) = SeparatorMenuItem;
 }
 
 @freezed

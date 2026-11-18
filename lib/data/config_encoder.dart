@@ -434,7 +434,25 @@ Map<String, dynamic> actionToMap(Action action) => switch (action) {
   ActionGroup(:final actions) => {
     actionGroupYamlKey: actions.map(triggerActionToMap).toList(),
   },
+  ContextMenuAction(:final items) => {
+    'context_menu': items.map(menuItemToMap).toList(),
+  },
   RawAction(:final raw) => {'__raw': raw},
+};
+
+Map<String, dynamic> menuItemToMap(MenuItem item) => switch (item) {
+  ActionMenuItem(:final text, :final icon, :final actions) => {
+    'text': text,
+    'icon': ?icon,
+    'actions': actions.map(triggerActionToMap).toList(),
+  },
+  SubMenuItem(:final text, :final icon, :final items) => {
+    'text': text,
+    'icon': ?icon,
+    'menu': items.map(menuItemToMap).toList(),
+  },
+  SectionMenuItem(:final text) => {'section': text},
+  SeparatorMenuItem() => {'separator': null},
 };
 
 Map<String, dynamic> textSubstitutionRuleToMap(TextSubstitutionRule rule) => {

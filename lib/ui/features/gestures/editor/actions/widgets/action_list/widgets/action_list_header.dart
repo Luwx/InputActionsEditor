@@ -10,7 +10,7 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ActionListHeader extends ConsumerWidget {
   const ActionListHeader({
-    required this.location,
+    required this.source,
     required this.selectMode,
     required this.selectionCount,
     required this.onExitSelection,
@@ -20,7 +20,7 @@ class ActionListHeader extends ConsumerWidget {
     super.key,
   });
 
-  final GestureLocation location;
+  final ActionSource source;
   final bool selectMode;
   final int selectionCount;
   final VoidCallback onExitSelection;
@@ -35,12 +35,10 @@ class ActionListHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dirtyState = ref.watch(
-      actionListEditorProvider(location).select((vm) => vm.dirtyState),
+      actionListEditorProvider(source).select((vm) => vm.dirtyState),
     );
     final canRevert = ref.watch(
-      actionListEditorProvider(
-        location,
-      ).select((vm) => vm.savedActions != null),
+      actionListEditorProvider(source).select((vm) => vm.savedActions != null),
     );
 
     final titleStyle = context.theme.typography.body.sm.copyWith(
@@ -76,7 +74,7 @@ class ActionListHeader extends ConsumerWidget {
           onRevert: !canRevert
               ? null
               : () => ref
-                    .read(actionListEditorProvider(location).notifier)
+                    .read(actionListEditorProvider(source).notifier)
                     .revert(),
           child: Text(context.l10n.actionsTitle, style: titleStyle),
         ),
