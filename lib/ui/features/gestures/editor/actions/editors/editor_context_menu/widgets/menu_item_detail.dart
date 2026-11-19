@@ -51,7 +51,7 @@ class MenuItemDetail extends ConsumerWidget {
         label: l10n.actionContextMenuTextLabel,
         text: text.value,
         onChanged: text.onChanged,
-        autofocus: focusText,
+        focusRequest: focusText ? location : null,
       );
     }
 
@@ -109,13 +109,15 @@ class _TextField extends HookWidget {
     required this.label,
     required this.text,
     required this.onChanged,
-    this.autofocus = false,
+    this.focusRequest,
   });
 
   final String label;
   final String text;
   final ValueChanged<String> onChanged;
-  final bool autofocus;
+
+  /// Takes focus whenever this changes to a non-null value.
+  final Object? focusRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -123,10 +125,15 @@ class _TextField extends HookWidget {
       text,
       (value) => onChanged(value.text),
     );
+    final focusNode = useFocusNode();
+    useEffect(() {
+      if (focusRequest != null) focusNode.requestFocus();
+      return null;
+    }, [focusRequest]);
     return FTextField(
       control: FTextFieldControl.managed(controller: controller),
+      focusNode: focusNode,
       label: Text(label),
-      autofocus: autofocus,
     );
   }
 }

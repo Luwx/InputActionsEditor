@@ -302,6 +302,44 @@ void main() {
       ]);
     });
 
+    testWidgets('switching items keeps the detail and edits the picked one', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        common: const TriggerCommon(
+          actions: [
+            TriggerAction(
+              action: ContextMenuAction(
+                items: [
+                  MenuItem.action(text: 'Copy'),
+                  MenuItem.action(text: 'Cut'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+      final detail = tester.element(find.byType(MenuItemDetail));
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(MenuTreeView),
+          matching: find.text('Cut'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.element(find.byType(MenuItemDetail)), same(detail));
+      expect(_field('Copy'), findsNothing);
+      await tester.enterText(_field('Cut'), 'Paste');
+      await tester.pumpAndSettle();
+      expect(
+        _entries(tester).map((item) => (item as ActionMenuItem).text),
+        ['Copy', 'Paste'],
+      );
+    });
+
     testWidgets('focuses the text field of a newly added item', (tester) async {
       await _pump(tester);
 

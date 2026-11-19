@@ -117,23 +117,20 @@ class EditorContextMenu extends HookConsumerWidget {
     final selectedLocation = selected == null
         ? null
         : MenuItemLocation(action: location, itemId: selected);
-    final detail = KeyedSubtree(
-      key: ValueKey(selected),
-      child: selectedLocation == null
-          ? Text(
-              context.l10n.actionContextMenuEmpty,
-              style: context.theme.typography.body.sm.copyWith(
-                color: context.theme.colors.mutedForeground,
-              ),
-            )
-          : MenuItemDetail(
-              location: selectedLocation,
-              item: selectedItem,
-              focusText: selected == focusKey.value,
-              onShowActions: () =>
-                  showMenuActionsSheet(context, item: selectedLocation),
+    final detail = selectedLocation == null
+        ? Text(
+            context.l10n.actionContextMenuEmpty,
+            style: context.theme.typography.body.sm.copyWith(
+              color: context.theme.colors.mutedForeground,
             ),
-    );
+          )
+        : MenuItemDetail(
+            location: selectedLocation,
+            item: selectedItem,
+            focusText: selected == focusKey.value,
+            onShowActions: () =>
+                showMenuActionsSheet(context, item: selectedLocation),
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
