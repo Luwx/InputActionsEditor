@@ -26,7 +26,9 @@ Future<Action?> showAddActionDialog(BuildContext context) {
               if (kind != .raw)
                 _KindCard(
                   kind: kind,
-                  onTap: () => Navigator.of(context).pop(kind.buildDefault()),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(kind.buildDefault(context.l10n)),
                 ),
           ],
         ),
@@ -50,10 +52,11 @@ enum _ActionKind {
   replaceText,
   sleep,
   group,
+  contextMenu,
   function,
   raw;
 
-  Action buildDefault() => switch (this) {
+  Action buildDefault(AppLocalizations l10n) => switch (this) {
     _ActionKind.command => const CommandAction(command: ''),
     _ActionKind.input => const InputAction(
       entries: [InputEntry(device: InputDevice.keyboard)],
@@ -73,10 +76,38 @@ enum _ActionKind {
     ),
     _ActionKind.sleep => const SleepAction(milliseconds: 500),
     _ActionKind.group => const ActionGroup(),
+    _ActionKind.contextMenu => ContextMenuAction(
+      items: [
+        _shortcutMenuItem('&${l10n.actionCopy}', 'edit-copy', [
+          'leftctrl',
+          'c',
+        ]),
+        _shortcutMenuItem(l10n.actionCut, 'edit-cut', ['leftctrl', 'x']),
+        _shortcutMenuItem(l10n.actionDelete, 'edit-delete', ['delete']),
+      ],
+    ),
     _ActionKind.function => const FunctionAction(expression: '() => '),
     _ActionKind.raw => const RawAction(raw: ''),
   };
 }
+
+MenuItem _shortcutMenuItem(String text, String icon, List<String> keys) =>
+    MenuItem.action(
+      text: text,
+      icon: icon,
+      actions: [
+        TriggerAction(
+          action: InputAction(
+            entries: [
+              InputEntry(
+                device: InputDevice.keyboard,
+                tokens: [InputToken.combo(keys)],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
 
 class _KindCard extends StatefulWidget {
   const _KindCard({required this.kind, required this.onTap});
@@ -96,7 +127,7 @@ class _KindCardState extends State<_KindCard> {
     final l10n = context.l10n;
     final colors = context.theme.colors;
     final typography = context.theme.typography;
-    final meta = actionMeta(widget.kind.buildDefault(), l10n);
+    final meta = actionMeta(widget.kind.buildDefault(l10n), l10n);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),

@@ -17,7 +17,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 // Maps a window variable name to the WindowProperties field it should detect.
 // Returns null for variables that don't map to a window property.
 String Function(WindowProperties)? _windowExtractor(String? varName) {
-  if (varName == null) return null;
+  if (varName == null || !varName.startsWith('window_')) return null;
   if (varName.endsWith('_title')) return (p) => p.title;
   if (varName.endsWith('_class')) return (p) => p.resourceClass;
   if (varName.endsWith('_name')) return (p) => p.resourceName;
@@ -122,9 +122,7 @@ class ValueInput extends ConsumerWidget {
       final enumValues = info!.enumValues!;
       final enumIcons = info!.enumIcons;
       final textValue = value.textOrEmpty;
-      final current = enumValues.contains(textValue)
-          ? textValue
-          : enumValues.first;
+      final current = enumValues.contains(textValue) ? textValue : null;
       if (enumIcons != null) {
         return FSelect<String>.rich(
           key: ValueKey(variable),
@@ -132,7 +130,7 @@ class ValueInput extends ConsumerWidget {
           format: (v) => v,
           prefixBuilder: (_, style, variants) => Padding(
             padding: const EdgeInsets.only(left: 8),
-            child: Icon(enumIcons[current] ?? FLucideIcons.tag, size: 14),
+            child: Icon(enumIcons[current ?? ''] ?? FLucideIcons.tag, size: 14),
           ),
           control: FSelectControl<String>.lifted(
             value: current,

@@ -1,24 +1,131 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
+  test('a trigger keeps its own raw key when its group sets it too', () {
+    const source = '''
+mouse:
+  gestures:
+    - custom: 1
+      gestures:
+        - type: swipe
+          direction: down
+          custom: 2
+        - type: swipe
+          direction: up
+''';
+    final config = decodeConfig(source);
+    for (final original in [source, '']) {
+      final saved = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final group = (saved['mouse']['gestures'] as YamlList).single as YamlMap;
+      final triggers = group['gestures'] as YamlList;
+      expect(group['custom'], 1);
+      expect(triggers[0]['custom'], 2);
+      expect((triggers[1] as YamlMap).containsKey('custom'), isFalse);
+    }
+  });
+
+  test('a typed key wins over a raw copy of it', () {
+    final gesture = decodeConfig('''
+mouse:
+  gestures:
+    - type: swipe
+      direction: down
+      threshold: '10'
+''').mouseGestures.single;
+    final edited = gesture.withCommon(
+      gesture.common.copyWith(
+        threshold: '20',
+        extra: {'threshold': '10', 'direction': 'up', 'custom': 1},
+      ),
+    );
+    final config = Config(mouseNodes: [GestureNode.leaf(edited)]);
+    for (final original in ['', encodeConfig(config, '')]) {
+      final saved = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final map = (saved['mouse']['gestures'] as YamlList).single as YamlMap;
+      expect(map['threshold'], '20');
+      expect(map['direction'], 'down');
+      expect(map['custom'], 1);
+      expect(map.keys.first, 'type');
+    }
+    final copied = mouseGestureToMap(edited);
+    expect(copied['threshold'], '20');
+    expect(copied['direction'], 'down');
+  });
+
+  test('unknown trigger keys and action events survive save and copy', () {
+    const source = '''
+mouse:
+  gestures:
+    - type: swipe
+      direction: down
+      mouse_buttons: [right]
+      motion_timeout: 100
+      experimental: {steps: [true, '100', null]}
+      actions:
+        - on: end
+          input:
+            - keyboard: [e]
+        - on: motion_timeout
+          input:
+            - keyboard: [m]
+    - type: stroke
+      strokes: 'LwAAMDRkZAA='
+      motion_timeout: 200
+      actions:
+        - on: motion_timeout
+          input:
+            - keyboard: [m]
+''';
+    final config = decodeConfig(source);
+    for (final original in [source, '']) {
+      final doc = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final gestures = doc['mouse']['gestures'] as YamlList;
+      expect(gestures[0]['motion_timeout'], 100);
+      expect(gestures[0]['experimental'], {
+        'steps': [true, '100', null],
+      });
+      expect(gestures[1]['motion_timeout'], 200);
+      expect(gestures[1]['actions'][0]['on'], 'motion_timeout');
+      expect(gestures[0]['actions'][0]['on'], 'end');
+      final action = gestures[0]['actions'][1] as YamlMap;
+      expect(action['on'], 'motion_timeout');
+      expect(action['input'], [
+        {
+          'keyboard': ['m'],
+        },
+      ]);
+    }
+
+    final actions = config.mouseGestures.first.common.actions;
+    final copied = decodeActionsYaml(encodeActionsYaml(actions));
+    expect(copied, actions);
+    final doc = loadYaml(encodeActionsYaml(actions)) as YamlMap;
+    expect(doc['actions'][1]['on'], 'motion_timeout');
+  });
+
   group('input items', () {
     const source = '''
 keyboard:
@@ -48,6 +155,39 @@ keyboard:
 
       expect(config2, config1);
     });
+  });
+
+  group('touch press alias', () {
+    for (final device in ['touchpad', 'touchscreen']) {
+      test('$device press loads as hold and saves as hold', () {
+        final source =
+            '''
+$device:
+  gestures:
+    - type: press
+      fingers: 3
+      actions:
+        - command: konsole
+''';
+        final config = decodeConfig(source);
+        expect(
+          device == 'touchpad'
+              ? config.touchpadGestures
+              : config.touchscreenGestures,
+          [
+            if (device == 'touchpad')
+              isA<TouchpadHoldGesture>()
+            else
+              isA<TouchscreenHoldGesture>(),
+          ],
+        );
+
+        final saved = encodeConfig(config, source);
+        expect(saved, contains('type: hold'));
+        expect(saved, isNot(contains('type: press')));
+        expect(decodeConfig(saved), config);
+      });
+    }
   });
 
   group('fixture round-trip (decode -> encode -> decode)', () {
@@ -101,7 +241,7 @@ keyboard:
                   MouseButtonValue.right,
                 ],
               ),
-              strokes: ['AAA=='],
+              strokes: [Stroke('AAA==')],
             ),
           ),
           GestureNode.leaf(
@@ -165,12 +305,15 @@ keyboard:
                   ),
                 ],
               ),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               direction: PinchDirection.inward,
             ),
           ),
           GestureNode.leaf(
-            TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+            TouchpadTapGesture(
+              common: TriggerCommon(),
+              fingers: FingerRange(min: 3, max: 3),
+            ),
           ),
         ],
         touchscreenNodes: [
@@ -181,7 +324,7 @@ keyboard:
                   TriggerAction(action: SleepAction(milliseconds: 200)),
                 ],
               ),
-              fingers: 2,
+              fingers: FingerRange(min: 2, max: 2),
               mode: SwipeDirectionMode(direction: SwipeDirection.left),
             ),
           ),
@@ -257,11 +400,13 @@ mouse:
       name: Navigation
   gestures:
     - type: press
-      name: A
+      _extra:
+        name: A
       group: grp_nav
     - type: wheel
       direction: up
-      name: B
+      _extra:
+        name: B
 ''';
       final encoded = encodeConfig(decodeConfig(original), original);
       expect(encoded.contains('groups:'), isFalse);
@@ -278,6 +423,115 @@ mouse:
 
       // Migrated text is a fixed point from here on.
       expect(encodeConfig(decoded, encoded), encoded);
+    });
+  });
+
+  group('editor keys', () {
+    test('name and enabled are kept under _extra', () {
+      const original = '''
+mouse:
+  gestures: []
+
+
+touchpad:
+  gestures:
+    - type: click
+      fingers: 2
+      _extra:
+        name: Click 2
+''';
+      final decoded = decodeConfig(original);
+      expect(decoded.touchpadGestures.single.common.name, 'Click 2');
+      expect(encodeConfig(decoded, original), original);
+    });
+
+    test('a disabled group comes back disabled from its comment', () {
+      const config = Config(
+        mouseNodes: [
+          GestureNode.group(
+            name: 'Nav',
+            enabled: false,
+            children: [GestureNode.leaf(PressGesture(common: TriggerCommon()))],
+          ),
+        ],
+      );
+      final encoded = encodeConfig(config, '');
+      expect(loadYaml(encoded)['mouse']['gestures'], isNull);
+
+      final group = decodeConfig(encoded).mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.enabled, isFalse);
+      expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
+    });
+
+    test('a group does not hand its _extra down to its gestures', () {
+      const original = '''
+mouse:
+  gestures:
+    - _extra:
+        name: Nav
+      gestures:
+        - type: press
+''';
+      final decoded = decodeConfig(original);
+      final group = decoded.mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.extra, isEmpty);
+      expect(decoded.mouseGestures.single.common.name, isNull);
+    });
+  });
+
+  group('legacy editor keys', () {
+    test('top-level name and enabled are read and moved on save', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      name: Old
+      actions:
+        - enabled: false
+          command: echo hi
+''';
+      final decoded = decodeConfig(original);
+      final common = decoded.mouseGestures.single.common;
+      expect(common.name, 'Old');
+      expect(common.actions.single.enabled, isFalse);
+
+      final encoded = encodeConfig(decoded, original);
+      final gesture = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+      expect(gesture.containsKey('name'), isFalse);
+      expect(gesture['_extra'], {'name': 'Old'});
+      expect(decodeConfig(encoded), decoded);
+    });
+
+    test('a top-level group name is read and not handed down', () {
+      const original = '''
+mouse:
+  gestures:
+    - name: Nav
+      enabled: false
+      gestures:
+        - type: press
+''';
+      final group =
+          decodeConfig(original).mouseNodes.single as GestureGroupNode;
+      expect(group.name, 'Nav');
+      expect(group.enabled, isFalse);
+      expect(group.extra, isEmpty);
+      expect(group.gestures.single.common.name, isNull);
+    });
+
+    test('a commented-out gesture in the old layout comes back disabled', () {
+      const original = '''
+mouse:
+  gestures:
+    # - type: press
+    #   name: Old
+    #   enabled: false
+''';
+      final common = decodeConfig(original).mouseGestures.single.common;
+      expect(common.name, 'Old');
+      expect(common.enabled, isFalse);
     });
   });
 
@@ -311,6 +565,20 @@ device_rules:
       final cleared = decodeConfig(original).copyWith(deviceRules: []);
       final encoded = encodeConfig(cleared, original);
       expect(encoded.contains('device_rules'), isFalse);
+    });
+
+    test('deleting every gesture of an optional section saves', () {
+      const original = '''
+mouse:
+  gestures: []
+keyboard:
+  gestures:
+    - type: shortcut
+      shortcut: [leftctrl+c]
+''';
+      final emptied = decodeConfig(original).copyWith(keyboardNodes: const []);
+      final encoded = encodeConfig(emptied, original);
+      expect(decodeConfig(encoded).keyboardGestures, isEmpty);
     });
 
     test('omits empty optional device sections', () {
@@ -384,7 +652,8 @@ mouse:
             - conditions: $c
               gestures:
                 - type: press
-                  name: Deep
+                  _extra:
+                    name: Deep
                   actions:
                     - command: echo important
 ''';
@@ -401,30 +670,6 @@ mouse:
       expect(encodeConfig(config2, yaml1), yaml1);
     });
 
-    test('group shared properties are re-emitted', () {
-      const original = '''
-mouse:
-  gestures:
-    - mouse_buttons:
-        - right
-      speed: fast
-      gestures:
-        - type: press
-''';
-      final encoded = encodeConfig(decodeConfig(original), original);
-      expect(encoded, contains('mouse_buttons'));
-      expect(encoded, contains('speed: fast'));
-      expect(
-        decodeConfig(
-          encoded,
-        ).mouseNodes.whereType<GestureGroupNode>().single.extra,
-        {
-          'mouse_buttons': ['right'],
-          'speed': 'fast',
-        },
-      );
-    });
-
     test('modelled shared trigger properties survive a round-trip', () {
       const original = '''
 mouse:
@@ -432,6 +677,8 @@ mouse:
     - id: shared
       resume_timeout: 250
       block_events: false
+      mouse_buttons: [ right ]
+      speed: fast
       gestures:
         - type: press
 ''';
@@ -442,7 +689,10 @@ mouse:
       expect(group.id, 'shared');
       expect(group.resumeTimeout, 250);
       expect(group.blockEvents, false);
+      expect(group.mouseButtons, [MouseButtonValue.right]);
+      expect(group.speed, TriggerSpeed.fast);
       expect(group.extra, isEmpty);
+      expect(group.gestures.single.common.mouseButtons, isEmpty);
       expect(encodeConfig(decodeConfig(encoded), encoded), encoded);
     });
 
@@ -453,10 +703,12 @@ mouse:
     - conditions: $a
       gestures:
         - type: press
-          name: In
+          _extra:
+            name: In
         - type: wheel
           direction: up
-          name: AlsoIn
+          _extra:
+            name: AlsoIn
 ''';
       final config = decodeConfig(original);
       final group = config.mouseNodes.single as GestureGroupNode;
@@ -479,6 +731,164 @@ mouse:
             .common
             .name,
         'AlsoIn',
+      );
+    });
+  });
+
+  group('typed trigger groups', () {
+    const original = r'''
+mouse:
+  gestures:
+    - conditions: $window_class == firefox
+      gestures:
+        - type: stroke
+          mouse_buttons: [ back ]
+          gestures:
+            - strokes: [ 'MGQA0DMnPMwwAGQA' ]
+              actions:
+                - input:
+                    - keyboard: [ leftctrl+t ]
+            - strokes: [ 'MAAAMTNkZAA=' ]
+              actions:
+                - input:
+                    - keyboard: [ leftctrl+n ]
+        - type: press
+          mouse_buttons: [ forward ]
+''';
+
+    GestureGroupNode strokeGroupOf(Config config) =>
+        (config.mouseNodes.single as GestureGroupNode).children.first
+            as GestureGroupNode;
+
+    test('children take the keys the group hands down', () {
+      final config = decodeConfig(original);
+      final strokeGroup = strokeGroupOf(config);
+      expect(strokeGroup.mouseButtons, [MouseButtonValue.back]);
+
+      final strokes = strokeGroup.gestures.cast<StrokeGesture>().toList();
+      expect(strokes.map((g) => g.strokes), const [
+        [Stroke('MGQA0DMnPMwwAGQA')],
+        [Stroke('MAAAMTNkZAA=')],
+      ]);
+      expect(strokes.map((g) => g.common.mouseButtons), everyElement(isEmpty));
+      expect(
+        strokeGroupOf(
+          withInheritedValues(config),
+        ).gestures.map((g) => g.common.mouseButtons),
+        everyElement([MouseButtonValue.back]),
+      );
+      expect(strokes.map((g) => g.common.actions.length), [1, 1]);
+    });
+
+    test('children do not repeat what they inherit', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+      expect(
+        plainYamlValue(loadYaml(encoded)),
+        equals(plainYamlValue(loadYaml(original))),
+      );
+    });
+
+    test(
+      'a child moved out of the group keeps its type, not the group keys',
+      () {
+        final config = decodeConfig(original);
+        final app = config.mouseNodes.single as GestureGroupNode;
+        final strokeGroup = strokeGroupOf(config);
+        final edited = config.withNodesForDevice(DeviceType.mouse, [
+          strokeGroup.children.first,
+          app.copyWith(
+            children: [
+              strokeGroup.copyWith(children: strokeGroup.children.sublist(1)),
+              ...app.children.skip(1),
+            ],
+          ),
+        ]);
+
+        final encoded = encodeConfig(edited, original);
+        final moved = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+        expect(moved['type'], 'stroke');
+        expect((moved as YamlMap).containsKey('mouse_buttons'), isFalse);
+
+        final gesture =
+            (decodeConfig(encoded).mouseNodes.first as GestureLeaf).gesture
+                as StrokeGesture;
+        expect(gesture.strokes, const [Stroke('MGQA0DMnPMwwAGQA')]);
+      },
+    );
+
+    YamlMap written(Config config) =>
+        (loadYaml(encodeConfig(config, '')) as YamlMap)['mouse']['gestures'][0]
+            as YamlMap;
+
+    test('a group whose gestures share a type writes it once', () {
+      final group = written(
+        decodeConfig('''
+mouse:
+  gestures:
+    - _extra:
+        name: Buttons
+      gestures:
+        - type: press
+          _extra:
+            name: A
+        - type: press
+          _extra:
+            name: B
+'''),
+      );
+      expect(group['type'], 'press');
+      expect(
+        (group['gestures'] as YamlList).map((g) => (g as YamlMap)['type']),
+        everyElement(isNull),
+      );
+    });
+
+    test('nested groups sharing a type write it on the outermost', () {
+      final outer = written(
+        decodeConfig('''
+mouse:
+  gestures:
+    - _extra:
+        name: Outer
+      gestures:
+        - _extra:
+            name: Inner
+          gestures:
+            - type: press
+              _extra:
+                name: A
+        - type: press
+          _extra:
+            name: B
+'''),
+      );
+      expect(outer['type'], 'press');
+      expect((outer['gestures'][0] as YamlMap).containsKey('type'), isFalse);
+    });
+
+    test('another type joining a group puts the type back on each', () {
+      final config = decodeConfig(original);
+      final strokeGroup = strokeGroupOf(config);
+      final app = config.mouseNodes.single as GestureGroupNode;
+      final edited = config.withNodesForDevice(DeviceType.mouse, [
+        app.copyWith(
+          children: [
+            strokeGroup.copyWith(
+              children: [
+                ...strokeGroup.children,
+                const GestureNode.leaf(PressGesture(common: TriggerCommon())),
+              ],
+            ),
+            ...app.children.skip(1),
+          ],
+        ),
+      ]);
+
+      final group = written(edited)['gestures'][0] as YamlMap;
+      expect(group.containsKey('type'), isFalse);
+      expect(
+        (group['gestures'] as YamlList).map((g) => (g as YamlMap)['type']),
+        ['stroke', 'stroke', 'press'],
       );
     });
   });
@@ -539,7 +949,7 @@ mouse:
       );
 
       final encoded = encodeConfig(edited, original);
-      expect(encoded, contains('# sleep: 5'));
+      expect(encoded, contains('# - sleep: 5'));
       expect(encoded, contains('- sleep: 10'));
 
       final reDecoded = decodeConfig(encoded);
@@ -548,6 +958,102 @@ mouse:
               as ActionGroup;
       expect(reGroup.actions.first.enabled, false);
       expect(reGroup.actions.last.enabled, isNull);
+    });
+
+    test('a note inside an action commented at key indent survives', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+      # - sleep: 5
+      #   # keep me
+        - sleep: 10
+''';
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(edited, original);
+      expect(encoded, contains('threshold:'));
+      expect(encoded, contains('# keep me'));
+    });
+
+    test('a note inside a disabled nested action survives an edit', () {
+      const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - one:
+            # - sleep: 5
+              # # keep me
+              # _extra:
+                # enabled: false
+            - sleep: 10
+''';
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+
+      final encoded = encodeConfig(edited, original);
+      expect(encoded, contains('threshold:'));
+      expect(encoded, contains('# # keep me'));
+    });
+  });
+
+  group('indentless lists', () {
+    const original = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+      # - sleep: 5
+      - sleep: 10
+      # - sleep: 6
+''';
+
+    List<(int, bool?)> actionsOf(Config config) => [
+      for (final action in config.mouseGestures.single.common.actions)
+        ((action.action as SleepAction).milliseconds, action.enabled),
+    ];
+
+    const expected = [(5, false), (10, null), (6, false)];
+
+    test('commented items at the list indent load as disabled', () {
+      expect(actionsOf(decodeConfig(original)), expected);
+    });
+
+    test('an unchanged list saves with its disabled items still commented', () {
+      final encoded = encodeConfig(decodeConfig(original), original);
+      final live = (loadYaml(encoded) as YamlMap)['mouse']['gestures'][0];
+      expect(live['actions'], hasLength(1));
+      expect(actionsOf(decodeConfig(encoded)), expected);
+    });
+
+    test('an edited gesture saves and reloads its disabled items', () {
+      final decoded = decodeConfig(original);
+      final gesture = decoded.mouseGestures.single;
+      final edited = decoded.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            gesture.withCommon(gesture.common.copyWith(threshold: '7')),
+          ),
+        ],
+      );
+      expect(actionsOf(decodeConfig(encodeConfig(edited, original))), expected);
     });
   });
 
@@ -583,7 +1089,8 @@ mouse:
   gestures:
 
     - type: press
-      name: A
+      _extra:
+        name: A
 
     - type: wheel
       direction: up
@@ -596,13 +1103,46 @@ device_rules:
       expect(encoded, original);
     });
 
+    test('a finger range survives an edit to its section', () {
+      const original = '''
+touchpad:
+  gestures:
+    - type: swipe
+      fingers: 3-4
+      direction: left
+      actions:
+        - command: konsole
+    - type: tap
+      fingers: 2
+''';
+      final decoded = decodeConfig(original);
+      expect(
+        decoded.touchpadGestures.map((g) => g.fingers),
+        const [FingerRange(min: 3, max: 4), FingerRange(min: 2, max: 2)],
+      );
+
+      final tap = decoded.touchpadGestures.last as TouchpadTapGesture;
+      final edited = decoded.withNodesForDevice(DeviceType.touchpad, [
+        GestureNode.leaf(decoded.touchpadGestures.first),
+        GestureNode.leaf(tap.copyWith(fingers: null)),
+      ]);
+      final encoded = encodeConfig(edited, original);
+
+      expect(encoded, contains('fingers: 3-4\n'));
+      expect(decodeConfig(encoded).touchpadGestures.map((g) => g.fingers), [
+        const FingerRange(min: 3, max: 4),
+        null,
+      ]);
+    });
+
     test('editing one section leaves blank lines in the others', () {
       const original = '''
 mouse:
   gestures:
 
     - type: press
-      name: A
+      _extra:
+        name: A
 
     - type: wheel
       direction: up
@@ -617,14 +1157,14 @@ touchpad:
       final edited = decoded.withNodesForDevice(DeviceType.touchpad, [
         GestureNode.leaf(
           (decoded.touchpadGestures.first as TouchpadTapGesture).copyWith(
-            fingers: 4,
+            fingers: const FingerRange(min: 4, max: 4),
           ),
         ),
       ]);
       final encoded = encodeConfig(edited, original);
 
       // The untouched mouse section keeps its internal blank lines...
-      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      expect(encoded, contains('        name: A\n\n    - type: wheel'));
       // ...while the edited touchpad section is rewritten with the new value.
       expect(encoded, contains('fingers: 4'));
     });
@@ -634,7 +1174,8 @@ touchpad:
 mouse:
   gestures:
     - type: press
-      name: A
+      _extra:
+        name: A
     - type: wheel
       direction: up
 touchpad:
@@ -651,7 +1192,7 @@ touchpad:
       ]);
       final encoded = encodeConfig(edited, original);
 
-      expect(encoded, contains('      name: A\n\n    - type: wheel'));
+      expect(encoded, contains('        name: A\n\n    - type: wheel'));
       expect(encoded, contains('      direction: up\n\n    - type: press'));
       expect(encoded, contains('\n\n\ntouchpad:'));
     });
@@ -671,7 +1212,13 @@ touchpad:
 
       expect(
         encodeConfig(config, ''),
-        contains('          name: A\n\n        - type: press'),
+        contains(
+          '        - _extra:\n'
+          '            name: A\n'
+          '\n'
+          '        - _extra:\n'
+          '            name: B',
+        ),
       );
     });
   });
@@ -705,6 +1252,31 @@ mouse:
               '}',
         ),
       );
+    });
+
+    test('a disabled body with a blank line comes back whole', () {
+      const config = Config(
+        mouseNodes: [
+          GestureNode.leaf(
+            PressGesture(
+              common: TriggerCommon(
+                actions: [
+                  TriggerAction(
+                    enabled: false,
+                    action: FunctionAction(expression: 'a()\n\nb()'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+
+      final action = decodeConfig(
+        encodeConfig(config, ''),
+      ).mouseGestures.single.common.actions.single;
+      expect(action.enabled, isFalse);
+      expect(action.action, const FunctionAction(expression: 'a()\n\nb()'));
     });
 
     test('re-encoding a written body changes nothing', () {
@@ -751,6 +1323,72 @@ mouse:
 
       expect(encoded, contains('- function: () => initialDirection = "l"'));
       expect(encoded, isNot(contains('|-')));
+    });
+  });
+
+  group('mouse button names', () {
+    List<MouseButtonValue> buttonsOf(String yaml) =>
+        decodeConfig(yaml).mouseGestures.single.common.mouseButtons;
+
+    test('legacy extra1..extra5 names map to their modern equivalents', () {
+      expect(
+        buttonsOf('''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ extra1, extra2, extra3, extra4, extra5 ]
+'''),
+        [
+          MouseButtonValue.back,
+          MouseButtonValue.forward,
+          MouseButtonValue.task,
+          MouseButtonValue.side,
+          MouseButtonValue.extra,
+        ],
+      );
+    });
+
+    test('names are matched case-insensitively, as the daemon does', () {
+      expect(
+        buttonsOf('''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ SIDE, Extra1 ]
+'''),
+        [MouseButtonValue.side, MouseButtonValue.back],
+      );
+    });
+
+    test('a legacy name is not dropped when the config is saved', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      mouse_buttons: [ extra1 ]
+      actions:
+        - command: echo hi
+''';
+      final encoded = encodeConfig(decodeConfig(source), source);
+      expect(encoded, contains('mouse_buttons'));
+      expect(decodeConfig(encoded).mouseGestures.single.common.mouseButtons, [
+        MouseButtonValue.back,
+      ]);
+    });
+
+    test("other enums accept the daemon's casing too", () {
+      final config = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - on: END_CANCEL
+          command: echo hi
+''');
+      expect(
+        config.mouseGestures.single.common.actions.single.on,
+        TriggerOn.endCancel,
+      );
     });
   });
 }

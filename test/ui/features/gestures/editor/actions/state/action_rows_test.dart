@@ -19,7 +19,7 @@ TriggerAction _group(int key, List<TriggerAction> children) => TriggerAction(
 
 void main() {
   test('flattens the tree in document order with depth and parents', () {
-    final rows = flattenActionRows(_gesture, [
+    final rows = flattenActionRows(const ActionSource.gesture(_gesture), [
       _sleep(10),
       _group(20, [
         _sleep(21),
@@ -55,13 +55,15 @@ void main() {
   });
 
   test('an empty group is still a container', () {
-    final rows = flattenActionRows(_gesture, [_group(20, const [])]);
+    final rows = flattenActionRows(const ActionSource.gesture(_gesture), [
+      _group(20, const []),
+    ]);
 
     expect(rows.single.isGroup, isTrue);
   });
 
   test('rail flags mark the levels that continue below a row', () {
-    final rows = flattenActionRows(_gesture, [
+    final rows = flattenActionRows(const ActionSource.gesture(_gesture), [
       _group(20, [
         _sleep(21),
         _group(22, [_sleep(23), _sleep(24)]),
@@ -79,7 +81,7 @@ void main() {
   });
 
   test('rows convert to move-algebra nodes', () {
-    final rows = flattenActionRows(_gesture, [
+    final rows = flattenActionRows(const ActionSource.gesture(_gesture), [
       _group(20, [_sleep(21)]),
       _sleep(30),
     ]);
@@ -112,7 +114,7 @@ void main() {
   });
 
   test('an action cannot be dropped into itself', () {
-    final rows = flattenActionRows(_gesture, [
+    final rows = flattenActionRows(const ActionSource.gesture(_gesture), [
       _group(20, [_sleep(21)]),
     ]);
     final nodes = actionTreeNodes(rows);

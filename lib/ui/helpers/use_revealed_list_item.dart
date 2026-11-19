@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:input_actions_editor/ui/helpers/use_animated_scroll_controller.dart';
 
 /// Creates a [ScrollController] for a list and a [GlobalKey] to hang on its
 /// selected item, wired so that item is scrolled into view whenever [index]
@@ -12,7 +13,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
   required int index,
   int? itemCount,
 }) {
-  final controller = useScrollController();
+  final controller = useAnimatedScrollController();
   final itemKey = useMemoized(GlobalKey.new);
 
   useEffect(() {

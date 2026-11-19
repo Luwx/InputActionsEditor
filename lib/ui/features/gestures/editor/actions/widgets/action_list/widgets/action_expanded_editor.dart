@@ -13,6 +13,7 @@ import 'package:input_actions_editor/ui/common/staggered_build.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_activate_window.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_command.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/editor_context_menu.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_function.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_input_action/editor_input_action.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_plasma_shortcut.dart';
@@ -41,6 +42,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
     this.onAddToGroup,
     this.onOptionsExpanded,
     this.onOptionsSettled,
+    this.onContentGrow,
     this.onRevealAction,
     super.key,
   });
@@ -55,6 +57,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
   final VoidCallback? onAddToGroup;
   final VoidCallback? onOptionsExpanded;
   final VoidCallback? onOptionsSettled;
+  final VoidCallback? onContentGrow;
 
   /// Brings an action into view by editId.
   final ValueChanged<int>? onRevealAction;
@@ -63,8 +66,10 @@ class ActionExpandedEditor extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     printBuild(7, 'expandedEditor build');
     final actionLocation = context.actionLocation;
-    final kind = ref.watch(
-      actionEditorProvider(actionLocation).select((vm) => vm.kind),
+    final (:kind, :repeats) = ref.watch(
+      actionEditorProvider(
+        actionLocation,
+      ).select((vm) => (kind: vm.kind, repeats: vm.showInterval)),
     );
     final optionsExpanded = useState(false);
     final available = List.of(
@@ -72,6 +77,11 @@ class ActionExpandedEditor extends HookConsumerWidget {
     );
     if (kind != ActionKind.input) {
       available.remove(ActionTriggerOptionField.inputDelay);
+    }
+    if (!nested &&
+        !repeats &&
+        !pinnedTriggerOptions.contains(ActionTriggerOptionField.limit)) {
+      available.remove(ActionTriggerOptionField.limit);
     }
     final pinned = pinnedTriggerOptions.where(available.contains).toSet();
     final accordionFields = available
@@ -115,6 +125,10 @@ class ActionExpandedEditor extends HookConsumerWidget {
                 ActionKind.group => _GroupActionEditor(
                   onAdd: onAddToGroup,
                   onRevealAction: onRevealAction,
+                ),
+                ActionKind.contextMenu => EditorContextMenu(
+                  onGrow: onContentGrow,
+                  onSettled: onOptionsSettled,
                 ),
                 ActionKind.raw => const EditorRaw(),
                 ActionKind.missing => const SizedBox.shrink(),

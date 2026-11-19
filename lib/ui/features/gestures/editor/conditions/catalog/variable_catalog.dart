@@ -718,8 +718,11 @@ const List<VariableGroup> kVariableGroups = [
   ),
 ];
 
-VariableInfo? findVariable(String name) {
-  for (final g in kVariableGroups) {
+VariableInfo? findVariable(
+  String name, {
+  List<VariableGroup> groups = kVariableGroups,
+}) {
+  for (final g in groups) {
     for (final v in g.variables) {
       if (v.name == name) return v;
     }

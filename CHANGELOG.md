@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.9.6] - 2026-11-18
+
+### Actions
+
+- Context menu action: build a menu of items, submenus, sections and separators, each item with its own icon, mnemonic and actions
+- Icon picker that browses the installed icon theme by category, with search
+- Desktop shortcuts are captured while recording a key sequence
+- Input device and action type are picked in one select
+
+### Triggers and conditions
+
+- YAML anchors are supported, and strokes can be renamed
+- Finger ranges for touchpad and touchscreen gestures
+- Trigger options and action events the editor doesn't know are kept on save and shown as RAW entries you can edit or delete
+- Condition operators handle flag variables correctly
+- The variable picker scrolls to the selected variable
+
+### Groups
+
+- A group limited to one window class shows that app's icon
+- Group keys are fully supported, and a row after a subgroup is set apart from it
+
+### Settings
+
+- Mouse stroke overlay setting
+- Interface zoom
+- Better mapping of the KDE color scheme
+
+### Files
+
+- Open the config in an external text editor
+- More robust YAML handling, including indentless lists and single stroke anchors
+
+### Interface
+
+- Paste gestures from the menu of an empty area, and pasted or duplicated gestures scroll into view
+
+### Fixes
+
+- Ctrl+V pastes into the right place
+- Home and End work in the key sequence field
+- The click that closes a select no longer reaches the widget below
+- A shortcut icon that fails to decode falls back to the generic icon
+- Tooltips are less intrusive
+
 ## [0.9.0] - 2026-08-30
 
 ### Actions

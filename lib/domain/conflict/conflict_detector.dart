@@ -1,9 +1,11 @@
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureLocation;
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_conflict.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -29,14 +31,36 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 ///   *equal*. Differing conditions (e.g. `$keyboard_modifiers == meta`) are
 ///   assumed to disambiguate, so they are never flagged, this avoids false
 ///   positives on the common "X normally / modifier+X otherwise" pattern.
-List<GestureConflict> detectConflicts(Config config) => [
-  for (final device in DeviceType.values)
-    ..._detectForDevice(
-      device,
-      config.gesturesForDevice(device),
-      _chainKeysForDevice(config.nodesForDevice(device)),
-    ),
-];
+List<GestureConflict> detectConflicts(Config config) {
+  final effective = withInheritedValues(config);
+  return [
+    for (final device in DeviceType.values)
+      ..._detectForDevice(
+        device,
+        effective.gesturesForDevice(device),
+        _chainKeysForDevice(effective.nodesForDevice(device)),
+        _idsInDisabledGroups(effective.nodesForDevice(device)),
+      ),
+  ];
+}
+
+Set<int> _idsInDisabledGroups(List<GestureNode> nodes) {
+  final result = <int>{};
+  void walk(List<GestureNode> level, {required bool disabled}) {
+    for (final node in level) {
+      switch (node) {
+        case GestureLeaf(:final gesture):
+          final id = gesture.common.editId;
+          if (disabled && id != null) result.add(id);
+        case GestureGroupNode(:final enabled, :final children):
+          walk(children, disabled: disabled || !enabled);
+      }
+    }
+  }
+
+  walk(nodes, disabled: false);
+  return result;
+}
 
 /// Condition-key prefix each gesture inherits from its ancestor groups. Group
 /// conditions apply to every member, so they take part in the "same
@@ -71,11 +95,13 @@ List<GestureConflict> _detectForDevice(
   DeviceType device,
   List<Object> raw, [
   Map<int, String> chainKeys = const {},
+  Set<int> disabledByGroup = const {},
 ]) {
   final items = <_G>[];
   for (final (i, g) in raw.indexed) {
     final common = gestureCommon(g);
     if (common.enabled == false) continue; // user has turned it off
+    if (disabledByGroup.contains(common.editId)) continue;
     // Live configs are normalized (assignEditIds), so the negative fallback
     // only keeps detached test fixtures addressable.
     items.add(
@@ -142,7 +168,8 @@ bool _buttonsOverlap(List<MouseButtonValue> a, List<MouseButtonValue> b) {
 
 /// A null finger count means "any number of fingers", so it overlaps any
 /// specific count.
-bool _fingersOverlap(int? a, int? b) => a == null || b == null || a == b;
+bool _fingersOverlap(FingerRange? a, FingerRange? b) =>
+    a == null || b == null || a.overlaps(b);
 
 bool _shortcutKeysEqual(Object a, Object b) {
   final ka = a is ShortcutGesture ? a.keys : const <String>[];
@@ -408,9 +435,11 @@ bool _strokesIdentical(Object a, Object b) {
 }
 
 List<String> _strokesOf(Object g) => switch (g) {
-  StrokeGesture(:final strokes) => strokes,
-  TouchpadStrokeGesture(:final strokes) => strokes,
-  TouchscreenStrokeGesture(:final strokes) => strokes,
+  StrokeGesture(:final strokes) ||
+  TouchpadStrokeGesture(:final strokes) ||
+  TouchscreenStrokeGesture(:final strokes) => [
+    for (final stroke in strokes) stroke.data,
+  ],
   _ => const [],
 };
 
@@ -427,7 +456,7 @@ String _contextLabel(DeviceType device, _G x, _G y) {
     case DeviceType.touchscreen:
       final fingers = x.fingers ?? y.fingers;
       if (fingers == null) return 'the same finger count';
-      return '$fingers finger${fingers == 1 ? '' : 's'}';
+      return '${fingers.label} finger${fingers.max == 1 ? '' : 's'}';
     case DeviceType.keyboard:
       return 'the same shortcut';
     case DeviceType.pointer:
@@ -503,7 +532,7 @@ class _G {
   final Object gesture;
   final TriggerCommon common;
   final _Kind kind;
-  final int? fingers;
+  final FingerRange? fingers;
   final TriggerSpeed? speed;
   final bool? instant;
   final SwipeMode? swipeMode;
@@ -532,7 +561,7 @@ _Kind _kindOf(Object g) => switch (g) {
   _ => _Kind.hover,
 };
 
-int? _fingersOf(Object g) => switch (g) {
+FingerRange? _fingersOf(Object g) => switch (g) {
   TouchpadGesture(:final fingers) => fingers,
   TouchscreenGesture(:final fingers) => fingers,
   _ => null,

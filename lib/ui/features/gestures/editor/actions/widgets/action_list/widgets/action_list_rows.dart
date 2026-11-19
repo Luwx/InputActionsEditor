@@ -85,17 +85,22 @@ class ActionListRows extends StatelessWidget {
                 flashTrigger: null,
               ),
             ),
-            ActionRowEntry(:final row) => CollapsibleListRow(
+            ActionRowEntry(:final row) => ValueListenableBuilder<int?>(
               key: ValueKey(
                 choreo.transitions.entering.contains(row.editId)
                     ? 'action-row-${row.editId}:enter'
                     : 'action-row-${row.editId}',
               ),
-              visible:
-                  !choreo.transitions.enteringHidden.contains(
-                    row.editId,
-                  ) &&
-                  !folded.contains(row.editId),
+              valueListenable: choreo.anchor.growing,
+              builder: (context, growing, child) => CollapsibleListRow(
+                followsChild: growing == row.editId,
+                visible:
+                    !choreo.transitions.enteringHidden.contains(
+                      row.editId,
+                    ) &&
+                    !folded.contains(row.editId),
+                child: child!,
+              ),
               child: KeyedSubtree(
                 key: choreo.marquee.measureKeyFor(row.editId),
                 child: _WatchedActionRow(
@@ -303,6 +308,8 @@ class ActionRowCard extends HookConsumerWidget {
                       onAddToGroup: row.isGroup ? onAddToGroup : null,
                       onOptionsExpanded: () => choreo.anchor.begin(editId),
                       onOptionsSettled: choreo.anchor.end,
+                      onContentGrow: () =>
+                          choreo.anchor.begin(editId, followsChild: true),
                       onRevealAction: choreo.reveal,
                       footerKey: ValueKey('action-footer-$editId'),
                       pinnedTriggerOptions:
@@ -537,8 +544,11 @@ class ActionRowHeader extends HookConsumerWidget {
               FButton.icon(
                 variant: .ghost,
                 onPress: onToggleExpanded,
-                child: Icon(
-                  expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+                child: AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: collapsibleDuration,
+                  curve: Easing.standard,
+                  child: const Icon(FLucideIcons.chevronDown),
                 ),
               ),
               FTappable(
@@ -703,7 +713,7 @@ List<FItemGroupMixin> _actionContextMenuItems(
     FItemGroup(
       children: [
         FItem(
-          prefix: const Icon(FLucideIcons.clipboardCopy),
+          prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.actionCopy),
           details: const MenuShortcutHint(copyShortcut),
           onPress: dismissThen(controller, onCopy),
@@ -715,7 +725,7 @@ List<FItemGroupMixin> _actionContextMenuItems(
           onPress: dismissThen(controller, onPaste),
         ),
         FItem(
-          prefix: const Icon(FLucideIcons.copy),
+          prefix: const Icon(FLucideIcons.copyPlus),
           title: Text(l10n.actionDuplicate),
           details: const MenuShortcutHint(duplicateShortcut),
           onPress: dismissThen(controller, onDuplicate),

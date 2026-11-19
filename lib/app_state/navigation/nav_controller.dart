@@ -37,8 +37,7 @@ class NavState extends Equatable {
 
 class NavController extends Notifier<NavState> {
   SettingsDestination _lastSettingsDestination = const SettingsDestination(
-    SettingsSection.deviceSettings,
-    device: DeviceSettingsSection.mouse,
+    SettingsSection.effectSettings,
   );
 
   /// The gesture last open under each filter, so coming back to a device (or

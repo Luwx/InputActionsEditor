@@ -16,9 +16,19 @@ const _tooltips = <String, Widget>{
   'ActionReplaceText': ActionReplaceTextTooltip(),
   'ActionReplaceTextCommand': ActionReplaceTextCommandTooltip(),
   'ActionTriggerOn': ActionTriggerOnTooltip(),
+  'ActionTriggerOnStroke': ActionTriggerOnTooltip(stroke: true),
   'ActionInterval': ActionIntervalTooltip(),
   'ActionThreshold': ActionThresholdTooltip(),
   'ActionConflicting': ActionConflictingTooltip(),
+  'ActionConflictingFingers': ActionConflictingTooltip(
+    kind: ConflictingTooltipKind.fingers,
+  ),
+  'ActionConflictingMouse': ActionConflictingTooltip(
+    kind: ConflictingTooltipKind.mouse,
+  ),
+  'ActionConflictingStroke': ActionConflictingTooltip(
+    kind: ConflictingTooltipKind.stroke,
+  ),
   'ActionLimit': ActionLimitTooltip(),
   'TriggerConditions': TriggerConditionsTooltip(),
   'TriggerEndConditions': TriggerEndConditionsTooltip(),

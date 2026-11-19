@@ -44,7 +44,7 @@ final class ActionRow extends Equatable {
 }
 
 List<ActionRow> flattenActionRows(
-  GestureLocation gesture,
+  ActionSource source,
   List<TriggerAction> actions,
 ) {
   final rows = <ActionRow>[];
@@ -67,7 +67,7 @@ List<ActionRow> flattenActionRows(
           : [...chain, index < level.length - 1];
       rows.add(
         ActionRow(
-          location: ActionLocation(gesture: gesture, editId: editId),
+          location: source.locationOf(editId),
           parentKey: parentKey,
           depth: depth,
           indexInLevel: index,

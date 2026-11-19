@@ -2,33 +2,19 @@ import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
-import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/model/enums.dart';
 
 /// Structural edits to the action tree of a single gesture. Actions are
 /// addressed by [ActionLocation] (identity, not position), so an edit keeps
 /// naming the same action at any depth. [RestoreConfig] is the inverse, since
 /// the precise reverse of a tree splice is tedious to derive.
 
-Config _updateCommon(
-  Config config,
-  GestureLocation location,
-  TriggerCommon Function(TriggerCommon common) transform,
-) {
-  final gesture = gestureAt(config, location);
-  if (gesture == null) return config;
-  return updateGesture(
-    config,
-    location,
-    (g) => g.withCommon(transform(g.common)),
-  );
-}
-
 /// Appends [action] to the gesture's action list, or to the actions of the
 /// group [parentKey] when given.
 final class AddAction extends ConfigEdit {
-  AddAction(this.location, this.action, {this.parentKey});
+  AddAction(this.source, this.action, {this.parentKey});
 
-  final GestureLocation location;
+  final ActionSource source;
   final TriggerAction action;
   final int? parentKey;
 
@@ -36,7 +22,7 @@ final class AddAction extends ConfigEdit {
   String get label => 'add action';
 
   @override
-  Config apply(Config config) => _updateCommon(config, location, (common) {
+  Config apply(Config config) => source.update(config, (common) {
     final parent = parentKey;
     return parent == null
         ? addAction(common, action)
@@ -51,16 +37,16 @@ final class AddAction extends ConfigEdit {
 /// Removes [keys], each together with its nested actions, as one edit. A key
 /// already covered by another one's subtree is a no-op.
 final class RemoveActions extends ConfigEdit {
-  RemoveActions(this.location, this.keys);
+  RemoveActions(this.source, this.keys);
 
-  final GestureLocation location;
+  final ActionSource source;
   final List<int> keys;
 
   @override
   String get label => keys.length == 1 ? 'remove action' : 'remove actions';
 
   @override
-  Config apply(Config config) => _updateCommon(config, location, (common) {
+  Config apply(Config config) => source.update(config, (common) {
     var next = common;
     for (final key in keys) {
       next = removeAction(next, key);
@@ -73,12 +59,13 @@ final class RemoveActions extends ConfigEdit {
       RestoreGestures(config, label: 'add action');
 }
 
-/// Inserts a copy of each of [keys] right after it. The copies carry their
-/// source's editIds; `assignEditIds` re-keys them on the way into the draft.
+/// Inserts a copy of each of [keys] right after it. A key already covered by
+/// another one's subtree is skipped. The copies carry their source's editIds;
+/// `assignEditIds` re-keys them on the way into the draft.
 final class DuplicateActions extends ConfigEdit {
-  DuplicateActions(this.location, this.keys);
+  DuplicateActions(this.source, this.keys);
 
-  final GestureLocation location;
+  final ActionSource source;
   final List<int> keys;
 
   @override
@@ -86,9 +73,21 @@ final class DuplicateActions extends ConfigEdit {
       keys.length == 1 ? 'duplicate action' : 'duplicate actions';
 
   @override
-  Config apply(Config config) => _updateCommon(config, location, (common) {
+  Config apply(Config config) => source.update(config, (common) {
+    bool covered(int key) {
+      for (
+        var parent = parentOfAction(common, key);
+        parent != null;
+        parent = parentOfAction(common, parent)
+      ) {
+        if (keys.contains(parent)) return true;
+      }
+      return false;
+    }
+
     var next = common;
     for (final key in keys) {
+      if (covered(key)) continue;
       final source = actionByKey(next, key);
       if (source == null) continue;
       next = insertActionAfter(next, key, source.copyWith());
@@ -103,9 +102,9 @@ final class DuplicateActions extends ConfigEdit {
 
 /// Enables or disables [keys] as one edit.
 final class SetActionsEnabled extends ConfigEdit {
-  SetActionsEnabled(this.location, this.keys, {required this.enabled});
+  SetActionsEnabled(this.source, this.keys, {required this.enabled});
 
-  final GestureLocation location;
+  final ActionSource source;
   final List<int> keys;
   final bool enabled;
 
@@ -113,7 +112,7 @@ final class SetActionsEnabled extends ConfigEdit {
   String get label => enabled ? 'enable actions' : 'disable actions';
 
   @override
-  Config apply(Config config) => _updateCommon(config, location, (common) {
+  Config apply(Config config) => source.update(config, (common) {
     var next = common;
     for (final key in keys) {
       next = updateAction(next, key, (a) => a.copyWith(enabled: enabled));
@@ -129,9 +128,9 @@ final class SetActionsEnabled extends ConfigEdit {
 /// Inserts [actions] after [afterKey] (keeping their order), or as the last
 /// children of [parentKey], or at the end of the root level.
 final class InsertActions extends ConfigEdit {
-  InsertActions(this.location, this.actions, {this.afterKey, this.parentKey});
+  InsertActions(this.source, this.actions, {this.afterKey, this.parentKey});
 
-  final GestureLocation location;
+  final ActionSource source;
   final List<TriggerAction> actions;
   final int? afterKey;
   final int? parentKey;
@@ -140,7 +139,7 @@ final class InsertActions extends ConfigEdit {
   String get label => actions.length == 1 ? 'paste action' : 'paste actions';
 
   @override
-  Config apply(Config config) => _updateCommon(config, location, (common) {
+  Config apply(Config config) => source.update(config, (common) {
     var next = common;
     final after = afterKey;
     if (after != null) {
@@ -168,9 +167,9 @@ final class InsertActions extends ConfigEdit {
 /// Moves [keys] (each with its nested actions) before [beforeKey], or to the
 /// end of [newParentKey]'s actions, or to the end of the root level.
 final class MoveActions extends ConfigEdit {
-  MoveActions(this.location, this.keys, {this.beforeKey, this.newParentKey});
+  MoveActions(this.source, this.keys, {this.beforeKey, this.newParentKey});
 
-  final GestureLocation location;
+  final ActionSource source;
   final List<int> keys;
   final int? beforeKey;
   final int? newParentKey;
@@ -179,9 +178,8 @@ final class MoveActions extends ConfigEdit {
   String get label => 'move actions';
 
   @override
-  Config apply(Config config) => _updateCommon(
+  Config apply(Config config) => source.update(
     config,
-    location,
     (common) => moveActions(
       common,
       keys,
@@ -194,3 +192,12 @@ final class MoveActions extends ConfigEdit {
   ConfigEdit inverse(Config config) =>
       RestoreGestures(config, label: 'move actions');
 }
+
+ConfigEdit setActionTriggerOn(ActionLocation location, TriggerOn on) =>
+    BatchEdit([
+      SetLens<TriggerOnValue>(actionTriggerOnLens(location), on),
+      if (!on.allowsInterval)
+        SetLens<String?>(actionIntervalLens(location), null),
+      if (!on.allowsThreshold)
+        SetLens<String?>(actionThresholdLens(location), null),
+    ], label: 'set trigger on');

@@ -44,17 +44,6 @@ class EffectSettingsScreen extends ConsumerWidget {
       ),
     );
 
-    final screenState =
-        [generalState, notificationsState, emergencyState].any(
-          (state) => state == DirtyMarkState.changedFromSaved,
-        )
-        ? DirtyMarkState.changedFromSaved
-        : [generalState, notificationsState, emergencyState].any(
-            (state) => state == DirtyMarkState.newUnsaved,
-          )
-        ? DirtyMarkState.newUnsaved
-        : DirtyMarkState.clean;
-
     void revertGlobalSettings(GlobalSettings next) => controller.add(
       SetLens<GlobalSettings>(globalSettingsLens(), next),
       scope: const SettingsScope(),
@@ -63,12 +52,28 @@ class EffectSettingsScreen extends ConsumerWidget {
     final externalVariableAccessField = ref.settingsField(
       globalSettingsExternalVariableAccessLens(),
     );
+    final mouseStrokeOverlayField = ref.settingsField(
+      globalSettingsMouseStrokeOverlayEnabledLens(),
+    );
+    final disabledOverlayValue =
+        savedSettings?.mouseStrokeOverlayEnabled == false ? false : null;
     final notificationsConfigErrorField = ref.settingsField(
       globalSettingsNotificationsConfigErrorLens(),
     );
     final emergencyCombinationField = ref.settingsField(
       globalSettingsEmergencyCombinationLens(),
     );
+    final sectionStates = [
+      generalState,
+      mouseStrokeOverlayField.dirty,
+      notificationsState,
+      emergencyState,
+    ];
+    final screenState = sectionStates.contains(DirtyMarkState.changedFromSaved)
+        ? DirtyMarkState.changedFromSaved
+        : sectionStates.contains(DirtyMarkState.newUnsaved)
+        ? DirtyMarkState.newUnsaved
+        : DirtyMarkState.clean;
 
     return ScrollbarMediaPadding(
       topInset: SliverFrostedAppBar.maxHeight,
@@ -140,6 +145,44 @@ class EffectSettingsScreen extends ConsumerWidget {
                         suffix: FSwitch(
                           value: externalVariableAccessField.value,
                           onChange: externalVariableAccessField.onChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(top: 20)),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: FTileGroup(
+                    divider: .full,
+                    label: UnsavedLabel(
+                      state: mouseStrokeOverlayField.dirty,
+                      onRevert: mouseStrokeOverlayField.onRevert,
+                      child: Text(context.l10n.effectSettingsOverlayTitle),
+                    ),
+                    children: [
+                      FTile(
+                        title: UnsavedLabel(
+                          state: mouseStrokeOverlayField.dirty,
+                          onRevert: mouseStrokeOverlayField.onRevert,
+                          child: Text(
+                            context.l10n.effectSettingsMouseStrokeOverlayLabel,
+                          ),
+                        ),
+                        subtitle: Text(
+                          context.l10n.effectSettingsMouseStrokeOverlaySubtitle,
+                        ),
+                        suffix: FSwitch(
+                          value: mouseStrokeOverlayField.value ?? false,
+                          onChange: (enabled) => mouseStrokeOverlayField
+                              .onChanged(enabled ? true : disabledOverlayValue),
                         ),
                       ),
                     ],
@@ -293,7 +336,7 @@ class _EmergencyCombinationSection extends HookWidget {
             child: FTextField(
               control: FTextFieldControl.managed(
                 controller: ctrl,
-                onChange: (_) {},
+                onChange: (value) => commit(value.text),
               ),
               hint: context.l10n.effectSettingsEmergencyComboKeysHint,
               label: UnsavedLabel(

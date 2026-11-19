@@ -19,13 +19,13 @@ import 'package:input_actions_editor/ui/common/tree_list/marquee_overlay.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_choreography.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/add_action_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_drop_targets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_header.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_paste_menu.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/widgets/action_list_rows.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/add_action_dialog.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Horizontal step per nesting level.
@@ -50,13 +50,13 @@ class ActionListEditor extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     printBuild(5, 'actionListEditor build');
-    final gestureLocation = context.gestureLocation;
+    final source = context.actionSource;
     final scope = AddActionScope.maybeOf(context);
     final listKey = useMemoized(GlobalKey.new);
     final choreo = useActionListChoreography(
       ref,
       context,
-      gestureLocation,
+      source,
       listKey: listKey,
     );
 
@@ -70,7 +70,7 @@ class ActionListEditor extends HookConsumerWidget {
     final colors = context.theme.colors;
     final typography = context.theme.typography;
     final rows = ref.watch(
-      actionListEditorProvider(gestureLocation).select((vm) => vm.rows),
+      actionListEditorProvider(source).select((vm) => vm.rows),
     );
     void onSelection(void Function(ActionLocation target) run) {
       final target = choreo.selectionTarget();
@@ -95,6 +95,7 @@ class ActionListEditor extends HookConsumerWidget {
         child: Stack(
           key: listKey,
           children: [
+            // HACK: nested FContextMenus both open, so this one sits behind.
             Positioned.fill(
               child: ActionListPasteMenu(
                 onPaste: () => unawaited(choreo.paste(null)),
@@ -106,7 +107,8 @@ class ActionListEditor extends HookConsumerWidget {
                 const SizedBox(height: 4),
                 ActionListHeader(
                   key: scope?.headerKey,
-                  location: gestureLocation,
+                  source: source,
+                  selectMode: choreo.selectMode,
                   selectionCount: choreo.selected.length,
                   onExitSelection: choreo.clearSelection,
                   onAdd: pickAndAdd,

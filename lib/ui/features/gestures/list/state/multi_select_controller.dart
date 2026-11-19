@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 
 class MultiSelectController extends Notifier<Set<GestureLocation>?> {
   @override
-  Set<GestureLocation>? build() => null;
+  Set<GestureLocation>? build() {
+    ref.watch(deviceFilterProvider);
+    return null;
+  }
 
   void enter(GestureLocation initial) {
     state = {initial};

@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
@@ -7,6 +9,7 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
+import 'package:input_actions_editor/ui/common/about_input_actions_dialog.dart';
 import 'package:input_actions_editor/ui/common/unsaved_changes_dialog.dart';
 import 'package:input_actions_editor/ui/features/settings/state/device_settings_section_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -46,6 +49,15 @@ class SettingsListSection extends ConsumerWidget {
             style: context.theme.typography.body.xl.copyWith(
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+      footer: FSidebarGroup(
+        children: [
+          FSidebarItem(
+            icon: const Icon(FLucideIcons.info),
+            label: Text(l10n.menuAbout),
+            onPress: () => unawaited(showAboutInputActionsDialog(context)),
           ),
         ],
       ),

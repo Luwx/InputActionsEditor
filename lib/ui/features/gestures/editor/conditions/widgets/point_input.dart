@@ -277,7 +277,7 @@ class _PixelReadout extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(context.l10n.pointPixelReadoutPrefix, style: muted),
-        const SizedBox(width: 2),
+        const SizedBox(width: 6),
         InlineMenuButton<Size>(
           isOpen: menuOpen,
           value: resolution,
@@ -294,6 +294,7 @@ class _PixelReadout extends ConsumerWidget {
             ),
           ),
         ),
+        const SizedBox(width: 4),
         Flexible(
           child: Text(
             ': ${_pixels(resolution)}',

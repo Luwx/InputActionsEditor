@@ -10,6 +10,7 @@ class SequenceFieldButton extends StatelessWidget {
     this.groupId,
     this.hideRegion = FPopoverHideRegion.excludeChild,
     this.constraints = const FPortalConstraints(),
+    this.onChange,
     super.key,
   });
 
@@ -19,25 +20,31 @@ class SequenceFieldButton extends StatelessWidget {
   final Object? groupId;
   final FPopoverHideRegion hideRegion;
   final FPortalConstraints constraints;
+  final ValueChanged<bool>? onChange;
 
   @override
   Widget build(BuildContext context) {
-    return AppTooltip(
-      tipBuilder: (context, _) => Text(
-        tooltip,
-        style: context.theme.typography.body.xs.copyWith(
-          color: context.theme.colors.mutedForeground,
+    return FPopover(
+      control: .managed(onChange: onChange),
+      groupId: groupId,
+      hideRegion: hideRegion,
+      constraints: constraints,
+      builder: (context, controller, child) => AppTooltip(
+        tipBuilder: (context, _) => Text(
+          tooltip,
+          style: context.theme.typography.body.xs.copyWith(
+            color: context.theme.colors.mutedForeground,
+          ),
+        ),
+        child: FButton.icon(
+          variant: .ghost,
+          size: .xs,
+          onPress: controller.toggle,
+          child: child,
         ),
       ),
-      child: FPopover(
-        groupId: groupId,
-        hideRegion: hideRegion,
-        constraints: constraints,
-        builder: (context, controller, child) =>
-            FButton.icon(size: .sm, onPress: controller.toggle, child: child),
-        popoverBuilder: popoverBuilder,
-        child: icon,
-      ),
+      popoverBuilder: popoverBuilder,
+      child: icon,
     );
   }
 }

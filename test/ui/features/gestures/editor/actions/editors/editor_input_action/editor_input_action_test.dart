@@ -18,6 +18,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/shell/document_shortcuts.dart';
 
+import '../../../../../../../helpers/load_fonts.dart';
 import '../../../../../../../helpers/seeded_config_controller.dart';
 import '../../../../../../../helpers/themed_app.dart';
 
@@ -209,6 +210,8 @@ void main() {
   });
 
   group('undo', () {
+    setUpAll(loadAppFonts);
+
     const gesture = GestureLocation(
       device: DeviceType.mouse,
       editId: _gestureEditId,
@@ -289,6 +292,71 @@ void main() {
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await tester.pumpAndSettle();
     }
+
+    testWidgets(
+      'recording Alt+Tab grabs and releases desktop shortcuts',
+      (
+        tester,
+      ) async {
+        const channel = MethodChannel(
+          'input_actions_editor/keyboard_recording',
+        );
+        final messenger = tester.binding.defaultBinaryMessenger;
+        final calls = <String>[];
+        messenger.setMockMethodCallHandler(channel, (call) async {
+          calls.add(call.method);
+          return null;
+        });
+        addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+        final container = await pumpEditor(tester);
+        final recordButton = find.widgetWithIcon(
+          FButton,
+          Icons.radio_button_checked,
+        );
+
+        Future<void> startRecording() async {
+          await tester.tap(recordButton);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Record stroke...'));
+          await tester.pumpAndSettle();
+        }
+
+        await startRecording();
+        expect(calls, ['grab']);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Stop & Add'));
+        await tester.pumpAndSettle();
+        expect(calls, ['grab', 'ungrab']);
+        expect(tokensOf(container), const [
+          InputToken.combo(['leftctrl', 'a']),
+          InputToken.combo(['leftalt', 'tab']),
+        ]);
+
+        calls.clear();
+        await startRecording();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(calls, ['grab', 'ungrab']);
+
+        calls.clear();
+        await startRecording();
+        await tester.tap(recordButton);
+        await tester.pumpAndSettle();
+        expect(find.text('Stop & Add'), findsNothing);
+        expect(calls, ['grab', 'ungrab']);
+
+        calls.clear();
+        await startRecording();
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(calls, ['grab', 'ungrab']);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
 
     testWidgets('typing an unrecognised key adds no undo step', (tester) async {
       final container = await pumpEditor(tester);

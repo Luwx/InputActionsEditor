@@ -31,6 +31,11 @@ savedGestureCommonProvider = Provider.family<TriggerCommon?, GestureLocation>(
       selectSession(ref, (s) => gestureAt(s.saved, location)?.common),
 );
 
+final ProviderFamily<List<TriggerAction>?, ActionSource>
+savedActionListProvider = Provider.family<List<TriggerAction>?, ActionSource>(
+  (ref, source) => selectSession(ref, (s) => source.read(s.saved)),
+);
+
 final ProviderFamily<TriggerAction?, ActionLocation> savedActionProvider =
     Provider.family<TriggerAction?, ActionLocation>(
       (ref, location) => selectSession(ref, (s) => actionAt(s.saved, location)),

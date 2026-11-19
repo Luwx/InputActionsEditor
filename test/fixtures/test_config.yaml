@@ -55,7 +55,8 @@ mouse:
 
   gestures:
     - type: stroke
-      name: Draw circle
+      _extra:
+        name: Draw circle
       id: stroke_circle
       mouse_buttons: [right]
       strokes:
@@ -63,10 +64,12 @@ mouse:
       actions:
         - plasma_shortcut: kwin,Window Close
 
-    - name: Navigation
+    - _extra:
+        name: Navigation
       gestures:
         - type: swipe
-          name: Meta + Swipe up
+          _extra:
+            name: Meta + Swipe up
           direction: up
           mouse_buttons: [left]
           speed: fast
@@ -84,11 +87,13 @@ mouse:
               input:
                 - keyboard: [leftctrl+home]
 
-    - name: Media
-      enabled: false
+    - _extra:
+        name: Media
+        enabled: false
       gestures:
         - type: circle
-          name: Volume circle
+          _extra:
+            name: Volume circle
           direction: clockwise
           mouse_buttons: [middle]
           actions:
@@ -99,11 +104,12 @@ mouse:
               wait: true
 
     - type: press
-      name: Instant back
+      _extra:
+        name: Instant back
+        enabled: false
       mouse_buttons: [right, left]
       mouse_buttons_exact_order: true
       instant: true
-      enabled: false
       threshold: 100-200
       conditions: $keyboard_modifiers == meta
       actions:
@@ -115,7 +121,8 @@ mouse:
             - keyboard: [+leftctrl, +f10, -f10, -leftctrl]
 
     - type: wheel
-      name: Wheel volume
+      _extra:
+        name: Wheel volume
       direction: up_down
       conditions:
         - $pointer_position_screen_percentage_x >= 0.99
@@ -135,12 +142,14 @@ mouse:
 keyboard:
   gestures:
     - type: shortcut
-      name: Copy
+      _extra:
+        name: Copy
       shortcut: [leftctrl, c]
       actions:
         - command: xdotool key ctrl+c
     - type: shortcut
-      name: Type signature
+      _extra:
+        name: Type signature
       shortcut: [leftctrl, leftalt, s]
       actions:
         - on: begin
@@ -151,7 +160,8 @@ keyboard:
 pointer:
   gestures:
     - type: hover
-      name: Hover top-left
+      _extra:
+        name: Hover top-left
       conditions: $pointer_position_screen_percentage <= 0.01,0.01
       actions:
         - command: dolphin
@@ -166,7 +176,8 @@ touchpad:
 
   gestures:
     - type: swipe
-      name: Swipe 3 drag
+      _extra:
+        name: Swipe 3 drag
       fingers: 3
       direction: any
       resume_timeout: 500
@@ -185,7 +196,8 @@ touchpad:
             - mouse: [-left]
 
     - type: swipe
-      name: Angle swipe
+      _extra:
+        name: Angle swipe
       fingers: 4
       angle: 30.0-60.0
       bidirectional: true
@@ -194,14 +206,16 @@ touchpad:
         - command: echo angle
 
     - type: pinch
-      name: Pinch 2 in
+      _extra:
+        name: Pinch 2 in
       fingers: 2
       direction: in
       actions:
         - plasma_shortcut: kwin,Window Close
 
     - type: rotate
-      name: Rotate 2
+      _extra:
+        name: Rotate 2
       fingers: 2
       direction: counterclockwise
       actions:
@@ -211,26 +225,30 @@ touchpad:
             - keyboard: [volumedown]
 
     - type: circle
-      name: Circle 2
+      _extra:
+        name: Circle 2
       fingers: 2
       direction: any
       actions:
         - sleep: 500
 
     - type: tap
-      name: Tap 3
+      _extra:
+        name: Tap 3
       fingers: 3
       actions:
         - command: echo tap
 
     - type: click
-      name: Click 2
+      _extra:
+        name: Click 2
       fingers: 2
       actions:
         - command: echo click
 
     - type: hold
-      name: Hold 2
+      _extra:
+        name: Hold 2
       fingers: 2
       conditions:
         - $finger_1_position_percentage_x between 0.4;0.6
@@ -241,7 +259,8 @@ touchpad:
             - keyboard: [a]
 
     - type: stroke
-      name: Touchpad stroke
+      _extra:
+        name: Touchpad stroke
       fingers: 3
       strokes:
         - OAMAAUkEBRZZEgwkYCARMmA6GUBSViRPQGMrYyNkNLAOVT3DAzhH0AUdUOkYC1j2OQBkAA==
@@ -251,47 +270,54 @@ touchpad:
 touchscreen:
   gestures:
     - type: swipe
-      name: TS swipe 2
+      _extra:
+        name: TS swipe 2
       fingers: 2
       direction: left
       actions:
         - command: echo ts-swipe
 
     - type: pinch
-      name: TS pinch
+      _extra:
+        name: TS pinch
       fingers: 2
       direction: out
       actions:
         - command: echo ts-pinch
 
     - type: rotate
-      name: TS rotate
+      _extra:
+        name: TS rotate
       fingers: 2
       direction: clockwise
       actions:
         - command: echo ts-rotate
 
     - type: circle
-      name: TS circle
+      _extra:
+        name: TS circle
       fingers: 2
       direction: any
       actions:
         - command: echo ts-circle
 
     - type: tap
-      name: TS tap
+      _extra:
+        name: TS tap
       fingers: 1
       actions:
         - command: echo ts-tap
 
     - type: hold
-      name: TS hold
+      _extra:
+        name: TS hold
       fingers: 2
       actions:
         - command: echo ts-hold
 
     - type: stroke
-      name: TS stroke
+      _extra:
+        name: TS stroke
       fingers: 3
       strokes:
         - OAMAAUkEBRZZEgwkYCARMmA6GUBSViRPQGMrYyNkNLAOVT3DAzhH0AUdUOkYC1j2OQBkAA==

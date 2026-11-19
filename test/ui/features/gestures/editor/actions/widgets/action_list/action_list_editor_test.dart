@@ -7,7 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -59,6 +60,7 @@ const _flashPlain = TriggerCommon(
   actions: [
     TriggerAction(
       action: CommandAction(command: 'first'),
+      on: TriggerOn.update,
       editId: _flashActionEditId,
     ),
   ],
@@ -72,6 +74,7 @@ const _flashGrouped = TriggerCommon(
       action: ActionGroup(
         actions: [TriggerAction(action: CommandAction(command: 'inner'))],
       ),
+      on: TriggerOn.update,
       editId: _flashActionEditId,
     ),
   ],
@@ -687,7 +690,7 @@ void main() {
         buttons: kSecondaryButton,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+      await tester.tap(find.byIcon(FLucideIcons.copy));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('root two'), buttons: kSecondaryButton);
@@ -923,7 +926,7 @@ void main() {
       await marqueeOver(tester, find.text('alpha'), find.text('beta'));
       await tester.tap(find.text('alpha'), buttons: kSecondaryButton);
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+      await tester.tap(find.byIcon(FLucideIcons.copy));
       await tester.pumpAndSettle();
 
       expect(clipboard, contains('alpha'));
@@ -980,7 +983,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // The menu closed behind the shortcut.
-      expect(find.byIcon(FLucideIcons.clipboardCopy), findsNothing);
+      expect(find.byIcon(FLucideIcons.copy), findsNothing);
 
       await tester.tap(find.text('gamma'), buttons: kSecondaryButton);
       await tester.pumpAndSettle();
@@ -1131,6 +1134,24 @@ void main() {
       await tester.tap(find.text('second'));
       await tester.pumpAndSettle();
       expect(find.byType(ActionExpandedEditor), findsNothing);
+    });
+
+    testWidgets('the header keeps its way out with nothing selected', (
+      tester,
+    ) async {
+      await pumpEditor(tester);
+
+      await longPressRow(tester, 'first');
+      await longPressRow(tester, 'first');
+
+      expect(find.text('Actions'), findsNothing);
+      expect(find.text('0 actions selected'), findsOneWidget);
+
+      await tester.tap(find.byIcon(FLucideIcons.x));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Actions'), findsOneWidget);
+      expect(find.byType(FCheckbox), findsNothing);
     });
 
     testWidgets('escape leaves selection mode', (tester) async {
@@ -1602,6 +1623,42 @@ void main() {
           tester,
           find.text('Action Conditions'),
           'The accordion footer should remain visible after opening.',
+        );
+      },
+    );
+
+    testWidgets(
+      'pasting below the viewport scrolls the pasted rows into view',
+      (
+        tester,
+      ) async {
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+        mockClipboard(tester);
+        await Clipboard.setData(
+          ClipboardData(
+            text: encodeActionsYaml([
+              for (final name in ['one', 'two', 'three'])
+                TriggerAction(action: CommandAction(command: 'pasted $name')),
+            ]),
+          ),
+        );
+
+        await tester.pumpWidget(_ActionsEditorHost(controller: controller));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(_lastRow);
+        await tester.pumpAndSettle();
+
+        await _tapRow(tester, _lastRow, buttons: kSecondaryButton);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+        await tester.pumpAndSettle();
+
+        expect(find.text('pasted three'), findsOneWidget);
+        _expectVisibleInViewport(
+          tester,
+          _lastRow,
+          'The last pasted action should scroll into view.',
         );
       },
     );

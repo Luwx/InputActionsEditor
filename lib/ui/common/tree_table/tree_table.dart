@@ -128,6 +128,9 @@ class _TreeTableState extends State<TreeTable> {
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.only(
+            bottom: layout.tableWidth > viewportWidth ? 8 : 0,
+          ),
           child: SizedBox(
             width: layout.tableWidth,
             child: Column(

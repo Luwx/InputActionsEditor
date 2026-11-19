@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:meta_generator/meta_generator.dart';
 
@@ -28,7 +29,7 @@ sealed class MouseGesture with _$MouseGesture implements Gesture {
   const factory MouseGesture.stroke({
     required TriggerCommon common,
     @Default(MotionCommon()) MotionCommon motion,
-    @Default([]) List<String> strokes,
+    @Default([]) List<Stroke> strokes,
   }) = StrokeGesture;
 
   const factory MouseGesture.swipe({

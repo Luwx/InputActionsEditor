@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'package:input_actions_editor/data/config_format.dart'
+    show editorExtraKey;
+import 'package:input_actions_editor/data/legacy_editor_keys.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
@@ -205,16 +208,7 @@ class _Locator {
   final List<String> lines;
   final YamlEditor editor;
 
-  static final YamlNode _absent = wrapAsYamlNode(null);
-
-  YamlNode? _nodeAt(List<Object?> path) {
-    try {
-      final node = editor.parseAt(path, orElse: () => _absent);
-      return identical(node, _absent) ? null : node;
-    } on Object {
-      return null;
-    }
-  }
+  YamlNode? _nodeAt(List<Object?> path) => yamlNodeAt(editor, path);
 
   /// Longest block shown before it is windowed around the offending line.
   static const _maxContext = 24;
@@ -241,7 +235,10 @@ class _Locator {
   ) {
     final name = issue.gestureName;
     if (name != null && gesturePath != null) {
-      if (_nodeAt([...gesturePath, 'name'])?.value != name) return null;
+      final written =
+          _nodeAt([...gesturePath, editorExtraKey, 'name']) ??
+          _nodeAt(legacyEditorPath(gesturePath, 'name'));
+      if (written?.value != name) return null;
     }
 
     final node = _nodeAt(path);

@@ -404,7 +404,8 @@ String? _actionVerb(Action action, AppLocalizations l10n) => switch (action) {
   ActivateWindowAction() ||
   ReplaceTextAction() ||
   SleepAction() ||
-  ActionGroup() => null,
+  ActionGroup() ||
+  ContextMenuAction() => null,
 };
 
 /// First unguarded action; everything after it is unreachable.

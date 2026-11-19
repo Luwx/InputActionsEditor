@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:meta_generator/meta_generator.dart';
 
@@ -16,45 +18,45 @@ sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
   const factory TouchscreenGesture.swipe({
     required TriggerCommon common,
     required SwipeMode mode,
-    int? fingers,
+    FingerRange? fingers,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenSwipeGesture;
 
   const factory TouchscreenGesture.pinch({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(PinchDirection.any) PinchDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenPinchGesture;
 
   const factory TouchscreenGesture.rotate({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenRotateGesture;
 
   const factory TouchscreenGesture.circle({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenCircleGesture;
 
   const factory TouchscreenGesture.tap({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
   }) = TouchscreenTapGesture;
 
   const factory TouchscreenGesture.hold({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
   }) = TouchscreenHoldGesture;
 
   const factory TouchscreenGesture.stroke({
     required TriggerCommon common,
-    int? fingers,
-    @Default([]) List<String> strokes,
+    FingerRange? fingers,
+    @Default([]) List<Stroke> strokes,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchscreenStrokeGesture;
 
@@ -79,7 +81,28 @@ sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
     final TouchscreenStrokeGesture g => g.copyWith(common: c),
   };
 
-  TouchscreenGesture withFingers(int? f) => switch (this) {
+  MotionCommon? get motionOrNull => switch (this) {
+    final TouchscreenSwipeGesture g => g.motion,
+    final TouchscreenPinchGesture g => g.motion,
+    final TouchscreenRotateGesture g => g.motion,
+    final TouchscreenCircleGesture g => g.motion,
+    final TouchscreenStrokeGesture g => g.motion,
+    TouchscreenTapGesture() => null,
+    TouchscreenHoldGesture() => null,
+  };
+
+  /// No-op for the kinds without motion.
+  TouchscreenGesture withMotion(MotionCommon m) => switch (this) {
+    final TouchscreenSwipeGesture g => g.copyWith(motion: m),
+    final TouchscreenPinchGesture g => g.copyWith(motion: m),
+    final TouchscreenRotateGesture g => g.copyWith(motion: m),
+    final TouchscreenCircleGesture g => g.copyWith(motion: m),
+    final TouchscreenStrokeGesture g => g.copyWith(motion: m),
+    TouchscreenTapGesture() => this,
+    TouchscreenHoldGesture() => this,
+  };
+
+  TouchscreenGesture withFingers(FingerRange? f) => switch (this) {
     final TouchscreenSwipeGesture g => g.copyWith(fingers: f),
     final TouchscreenPinchGesture g => g.copyWith(fingers: f),
     final TouchscreenRotateGesture g => g.copyWith(fingers: f),
@@ -88,6 +111,4 @@ sealed class TouchscreenGesture with _$TouchscreenGesture implements Gesture {
     final TouchscreenHoldGesture g => g.copyWith(fingers: f),
     final TouchscreenStrokeGesture g => g.copyWith(fingers: f),
   };
-
-  int? get fingersTest => fingers;
 }

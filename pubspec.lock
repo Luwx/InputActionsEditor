@@ -46,10 +46,10 @@ packages:
     description:
       path: background_blur_linux
       ref: HEAD
-      resolved-ref: "7e778d47cafc79915992b048a0d5378f54f4503c"
+      resolved-ref: b225b9cee9fdbaaf7c5437ed43711508edcac601
       url: "https://github.com/Luwx/klutter"
     source: git
-    version: "0.0.2"
+    version: "0.0.3"
   boolean_selector:
     dependency: transitive
     description:
@@ -138,6 +138,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: "83ccdaa064c980b5596c35dd64a8d3ecc68620174ab9b90b6343b753aa721687"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   collection:
     dependency: "direct main"
     description:
@@ -199,7 +207,7 @@ packages:
     description:
       path: edit_schema_generator
       ref: HEAD
-      resolved-ref: "18e179dde741e2a4eeb462b41a9ec41aea2f03d7"
+      resolved-ref: "304b32e0e66456b5d8d3f92b77627939b8f886cc"
       url: "https://github.com/Luwx/dart_generators"
     source: git
     version: "0.0.11"
@@ -408,6 +416,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "025f060e86d2d4c3c47b56e33caf7f93bf9283340f26d23424ebcfccf34f621e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   hooks_riverpod:
     dependency: "direct main"
     description:
@@ -477,10 +493,10 @@ packages:
     description:
       path: kde_color_scheme
       ref: HEAD
-      resolved-ref: "7e778d47cafc79915992b048a0d5378f54f4503c"
+      resolved-ref: b225b9cee9fdbaaf7c5437ed43711508edcac601
       url: "https://github.com/Luwx/klutter"
     source: git
-    version: "0.1.0"
+    version: "0.2.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -517,11 +533,11 @@ packages:
     dependency: "direct main"
     description:
       path: linux_app_menu
-      ref: "feat/ext-background-effect-v1"
-      resolved-ref: "3b6470c57f1180844e4ea58c760c4017ad2b14cd"
+      ref: HEAD
+      resolved-ref: b225b9cee9fdbaaf7c5437ed43711508edcac601
       url: "https://github.com/Luwx/klutter"
     source: git
-    version: "0.0.1"
+    version: "0.1.0"
   listen:
     dependency: transitive
     description:
@@ -567,7 +583,7 @@ packages:
     description:
       path: meta_generator
       ref: HEAD
-      resolved-ref: "6624c060af2a101b5e0dc0a1e97c64c41afa65ff"
+      resolved-ref: "304b32e0e66456b5d8d3f92b77627939b8f886cc"
       url: "https://github.com/Luwx/dart_generators"
     source: git
     version: "0.1.0"
@@ -595,6 +611,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: "6ba77bb18063eebe9de401f5e6437e95e1438af0a87a3a39084fbd37c90df572"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.6"
   node_preamble:
     dependency: transitive
     description:
@@ -723,6 +747,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  record_use:
+    dependency: transitive
+    description:
+      name: record_use
+      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   riverpod:
     dependency: "direct main"
     description:

@@ -11,9 +11,9 @@ import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/services/local_settings_service.dart';
-import 'package:input_actions_editor/services/ui_scale_binding.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/animated_scrollbar.dart';
+import 'package:input_actions_editor/ui/common/scaled_media_query.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/common/theme/kde_theme.dart';
 import 'package:input_actions_editor/ui/common/theme/popup_glass.dart';
@@ -23,6 +23,7 @@ import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/input_recording_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:input_actions_editor/ui/shell/sidebar/sidebar_collapse.dart';
+import 'package:input_actions_editor/ui/shell/ui_scale_shortcuts.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
 // cached once, kdeglobals either exists or it doesn't
@@ -86,7 +87,7 @@ class App extends ConsumerWidget {
               ref.read(navProvider.notifier).forward();
             }
           },
-          child: _ScaledMediaQuery(child: _ThemedShell(child: child!)),
+          child: ScaledMediaQuery(child: _ThemedShell(child: child!)),
         );
       },
     );
@@ -161,32 +162,6 @@ FThemeData _withAppChromeStyle(
   );
 }
 
-class _ScaledMediaQuery extends StatelessWidget {
-  const _ScaledMediaQuery({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final scale = UiScaleBinding.scale;
-    if (scale == 1) return child;
-
-    // MediaQueryData.fromView reads the raw view, so it misses the scale the
-    // binding applies to the render view's configuration.
-    final data = MediaQuery.of(context);
-    return MediaQuery(
-      data: data.copyWith(
-        size: data.size / scale,
-        devicePixelRatio: data.devicePixelRatio * scale,
-        padding: data.padding / scale,
-        viewPadding: data.viewPadding / scale,
-        viewInsets: data.viewInsets / scale,
-      ),
-      child: child,
-    );
-  }
-}
-
 class _ThemedShell extends ConsumerWidget {
   const _ThemedShell({required this.child});
 
@@ -214,7 +189,7 @@ class _ThemedShell extends ConsumerWidget {
       transparentSidebar: settings.transparentSidebar,
       child: FTheme(
         data: themeData,
-        child: FToaster(child: RepaintBoundary(child: child)),
+        child: UiScaleShortcuts(child: RepaintBoundary(child: child)),
       ),
     );
   }

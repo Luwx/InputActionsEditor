@@ -136,3 +136,19 @@ List<Condition> normalizeConditionChildren(List<Condition> children) {
 
   return [...nonGroups, ...groups];
 }
+
+extension ConditionWindowClass on Condition {
+  String? get soleWindowClass => switch (this) {
+    ConditionGroup(mode: != ConditionGroupMode.none, children: [final only]) =>
+      only.soleWindowClass,
+    VariableCondition(
+      variable: KnownConditionVariable(name: 'window_class'),
+      operator: ConditionOperator.equals,
+      negate: false,
+      value: TextConditionValue(:final value),
+    )
+        when value.trim().isNotEmpty =>
+      value.trim(),
+    _ => null,
+  };
+}

@@ -8,7 +8,7 @@ import 'package:input_actions_editor/ui/common/extensions.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
-import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/inheritable_field.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MouseButtonsField extends ConsumerWidget {
@@ -27,28 +27,32 @@ class MouseButtonsField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final buttonsField = ref.gestureField(
+    final buttonsField = ref.scopedSchemaField(
       context,
-      gestureMouseButtonsLens,
-      fallbackValue: () => const <MouseButtonValue>[],
+      field: gestureMouseButtonsField,
+      groupField: gestureGroupMouseButtonsField,
     );
-    final exactOrderField = ref.gestureField(
+    final exactOrderField = ref.scopedSchemaField(
       context,
-      gestureMouseButtonsExactOrderLens,
-      fallbackValue: () => false,
+      field: gestureMouseButtonsExactOrderField,
+      groupField: gestureGroupMouseButtonsExactOrderField,
     );
-    final buttons = buttonsField.value;
+    if (buttonsField == null || exactOrderField == null) {
+      return const SizedBox.shrink();
+    }
+    final buttons =
+        ref.inheritedField(context, gestureMouseButtonsField)?.value ??
+        buttonsField.value;
     final dirtyState = _combineDirty([
       buttonsField.dirty,
       exactOrderField.dirty,
     ]);
-    final mixed = buttonsField.mixed || exactOrderField.mixed;
 
     final l10n = context.l10n;
     return _Section(
       title: l10n.mouseButtonsSectionTitle,
       dirtyState: dirtyState,
-      mixed: mixed,
+      mixed: buttonsField.mixed || exactOrderField.mixed,
       onRevert: dirtyState.canRevert
           ? () {
               buttonsField.onRevert?.call();
@@ -59,21 +63,24 @@ class MouseButtonsField extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RevealedField(
-            field: ConfigDirtyField.gestureMouseButtons,
-            child: Wrap(
+          InheritableField(
+            field: gestureMouseButtonsField,
+            groupField: gestureGroupMouseButtonsField,
+            builder: (context, field) => Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
                 for (final btn in MouseButtonValue.values)
                   _ButtonChip(
                     label: _label(btn),
-                    order: buttons.indexOf(btn),
+                    order: field.value.indexOf(btn),
                     onTap: () {
-                      final next = buttons.contains(btn)
-                          ? buttons.where((b) => b != btn).toList()
-                          : [...buttons, btn];
-                      buttonsField.onChanged(next);
+                      final next = field.value.contains(btn)
+                          ? field.value.where((b) => b != btn).toList()
+                          : [...field.value, btn];
+                      field.onChanged(
+                        next.isEmpty ? const <MouseButtonValue>[] : next,
+                      );
                     },
                   ),
               ],
@@ -81,14 +88,15 @@ class MouseButtonsField extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 16),
-            child: RevealedField(
-              field: ConfigDirtyField.gestureMouseButtonsExactOrder,
-              child: FCheckbox(
-                value: exactOrderField.value,
-                onChange: exactOrderField.onChanged,
+            child: InheritableField(
+              field: gestureMouseButtonsExactOrderField,
+              groupField: gestureGroupMouseButtonsExactOrderField,
+              builder: (context, field) => FCheckbox(
+                value: field.value,
+                onChange: field.onChanged,
                 label: LabelWithTooltip(
-                  label: context.l10n.mouseButtonsExactOrderLabel,
-                  tooltip: context.l10n.mouseButtonsExactOrderTooltip,
+                  label: l10n.mouseButtonsExactOrderLabel,
+                  tooltip: l10n.mouseButtonsExactOrderTooltip,
                 ),
               ),
             ),

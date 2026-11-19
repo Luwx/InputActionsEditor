@@ -11,12 +11,14 @@
 //    (see config_tree_extra.dart).
 
 import 'package:edit_schema_generator/edit_schema_generator.dart';
+
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/effective_config_values.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
@@ -24,9 +26,12 @@ import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+
+export 'package:input_actions_editor/domain/edit/schema/action_source.dart';
 
 part 'edit_schema.g.dart';
 
@@ -51,6 +56,35 @@ final TreeNode<SwipeMode> swipeModeNode = subtree<SwipeMode>(
         prop(SwipeAngleModeMeta.bidirectional),
       ],
     ),
+  ],
+);
+
+final TreeNode<MenuItem> menuItemNode = subtree<MenuItem>(
+  cases: [
+    valueCase<ActionMenuItem>(
+      'action',
+      fields: [
+        prop(ActionMenuItemMeta.text),
+        prop(ActionMenuItemMeta.icon, adapter: nullableText()),
+        prop(ActionMenuItemMeta.actions),
+      ],
+    ),
+    valueCase<SubMenuItem>(
+      'subMenu',
+      fields: [
+        prop('subMenuText', property: SubMenuItemMeta.text),
+        prop(
+          'subMenuIcon',
+          property: SubMenuItemMeta.icon,
+          adapter: nullableText(),
+        ),
+      ],
+    ),
+    valueCase<SectionMenuItem>(
+      'section',
+      fields: [prop('sectionText', property: SectionMenuItemMeta.text)],
+    ),
+    valueCase<SeparatorMenuItem>('separator'),
   ],
 );
 
@@ -88,6 +122,34 @@ final TreeNode<TriggerAction> actionNode = subtree<TriggerAction>(
         valueCase<FunctionAction>(
           'function',
           fields: [prop(FunctionActionMeta.expression)],
+        ),
+        valueCase<ContextMenuAction>(
+          'contextMenu',
+          fields: [
+            list(
+              ContextMenuActionMeta.items,
+              of: menuItemNode,
+              scope: 'menuItem',
+              location: 'MenuItemLocation',
+              parentField: 'action',
+              indexField: 'itemId',
+              key: listKey<MenuItem, int>(
+                field: 'editId',
+                get: (item) => item.editId,
+                set: (item, key) => item.copyWith(editId: key),
+              ),
+              children: childList<MenuItem>(
+                get: (item) => switch (item) {
+                  SubMenuItem(:final items) => items,
+                  _ => null,
+                },
+                set: (item, children) => switch (item) {
+                  SubMenuItem() => item.copyWith(items: children),
+                  _ => item,
+                },
+              ),
+            ),
+          ],
         ),
         valueCase<RawAction>('raw', fields: [prop(RawActionMeta.raw)]),
         // The nested actions are the list's recursion, not a field here.
@@ -140,12 +202,14 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
     prop(TriggerCommonMeta.setLastTrigger, defaultsTo: true),
     prop(TriggerCommonMeta.threshold, adapter: nullableText()),
     prop(TriggerCommonMeta.accelerated, defaultsTo: false),
+    prop(TriggerCommonMeta.extra),
     list(
       TriggerCommonMeta.actions,
       of: actionNode,
       scope: 'action',
       location: 'ActionLocation',
       parentField: 'gesture',
+      source: 'ActionSource',
       key: listKey<TriggerAction, int>(
         field: 'editId',
         get: (action) => action.editId,
@@ -163,6 +227,14 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
           _ => action,
         },
       ),
+      alsoIn: [
+        listOwner<MenuItemLocation, GestureLocation, ActionMenuItem>(
+          variant: 'menuItem',
+          listLens: 'menuItemActionsLens',
+          property: ActionMenuItemMeta.actions,
+          parent: (location) => location.action.gesture,
+        ),
+      ],
     ),
   ],
   groups: [
@@ -189,6 +261,7 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
         TriggerCommonMeta.clearModifiers,
         TriggerCommonMeta.setLastTrigger,
         TriggerCommonMeta.endConditions,
+        TriggerCommonMeta.extra,
       ],
     ),
   ],
@@ -251,11 +324,7 @@ final TreeNode<PointerGesture> pointerNode = subtree<PointerGesture>(
   cases: [valueCase<HoverGesture>('hover')],
 );
 
-// Touchpad/touchscreen `fingers` and `motion` are cross-case: a single lens
-// (`touchpadFingersLens`/`touchpadMotionLens`) dispatches across every case via
-// a `select:`. `motion` keeps the projected comparable (effective lock-pointer
-// normalization) via `composed()`; the cases lacking motion read a default
-// through the select getter. The `id` scopes every name to `touchpad…`.
+// `fingers` and motion speed span every touch case through one `select:` lens.
 final TreeNode<TouchpadGesture> touchpadNode = subtree<TouchpadGesture>(
   id: 'touchpad',
   fields: [
@@ -264,9 +333,8 @@ final TreeNode<TouchpadGesture> touchpadNode = subtree<TouchpadGesture>(
       select: lens(get: _touchpadFingers, set: _setTouchpadFingers),
     ),
     prop(
-      'motion',
-      compare: composed(),
-      select: lens(get: _touchpadMotion, set: _setTouchpadMotion),
+      'motionSpeed',
+      select: lens(get: _touchpadSpeed, set: _setTouchpadSpeed),
     ),
   ],
   cases: [
@@ -313,9 +381,8 @@ final TreeNode<TouchscreenGesture> touchscreenNode =
           select: lens(get: _touchscreenFingers, set: _setTouchscreenFingers),
         ),
         prop(
-          'motion',
-          compare: composed(),
-          select: lens(get: _touchscreenMotion, set: _setTouchscreenMotion),
+          'motionSpeed',
+          select: lens(get: _touchscreenSpeed, set: _setTouchscreenSpeed),
         ),
       ],
       cases: [
@@ -381,6 +448,15 @@ final TreeNode<GestureGroupNode> gestureGroupSubtree =
         prop(GestureGroupNodeMeta.clearModifiers, defaultsTo: false),
         prop(GestureGroupNodeMeta.setLastTrigger, defaultsTo: true),
         prop(GestureGroupNodeMeta.endConditions),
+        prop(
+          GestureGroupNodeMeta.mouseButtons,
+          defaultsTo: const <MouseButtonValue>[],
+        ),
+        prop(GestureGroupNodeMeta.mouseButtonsExactOrder, defaultsTo: false),
+        prop(GestureGroupNodeMeta.fingers),
+        prop(GestureGroupNodeMeta.speed),
+        prop(GestureGroupNodeMeta.instant, defaultsTo: false),
+        prop(GestureGroupNodeMeta.lockPointer, defaultsTo: false),
       ],
     );
 
@@ -453,6 +529,7 @@ final EditTree<Config> configTree = editTree<Config>(
       fields: [
         prop(GlobalSettingsMeta.autoreload, defaultsTo: true),
         prop(GlobalSettingsMeta.externalVariableAccess, defaultsTo: true),
+        prop(GlobalSettingsMeta.mouseStrokeOverlayEnabled),
         prop(GlobalSettingsMeta.notificationsConfigError, defaultsTo: true),
         prop(GlobalSettingsMeta.emergencyCombination),
       ],
@@ -522,62 +599,38 @@ final EditTree<Config> configTree = editTree<Config>(
 
 // cross-case select helpers
 
-int? _touchpadFingers(TouchpadGesture gesture) => gesture.fingers;
+FingerRange? _touchpadFingers(TouchpadGesture gesture) => gesture.fingers;
 
-TouchpadGesture _setTouchpadFingers(TouchpadGesture gesture, int? fingers) =>
-    gesture.withFingers(fingers);
+TouchpadGesture _setTouchpadFingers(
+  TouchpadGesture gesture,
+  FingerRange? fingers,
+) => gesture.withFingers(fingers);
 
-int? _touchscreenFingers(TouchscreenGesture gesture) => gesture.fingers;
+FingerRange? _touchscreenFingers(TouchscreenGesture gesture) => gesture.fingers;
 
 TouchscreenGesture _setTouchscreenFingers(
   TouchscreenGesture gesture,
-  int? fingers,
+  FingerRange? fingers,
 ) => gesture.withFingers(fingers);
 
-MotionCommon _touchpadMotion(TouchpadGesture gesture) => switch (gesture) {
-  TouchpadSwipeGesture(:final motion) => motion,
-  TouchpadPinchGesture(:final motion) => motion,
-  TouchpadRotateGesture(:final motion) => motion,
-  TouchpadCircleGesture(:final motion) => motion,
-  TouchpadStrokeGesture(:final motion) => motion,
-  TouchpadTapGesture() ||
-  TouchpadClickGesture() ||
-  TouchpadHoldGesture() => const MotionCommon(),
-};
+TriggerSpeed? _touchpadSpeed(TouchpadGesture gesture) =>
+    gesture.motionOrNull?.speed;
 
-TouchpadGesture _setTouchpadMotion(
+TouchpadGesture _setTouchpadSpeed(
   TouchpadGesture gesture,
-  MotionCommon value,
-) => switch (gesture) {
-  TouchpadSwipeGesture() => gesture.copyWith(motion: value),
-  TouchpadPinchGesture() => gesture.copyWith(motion: value),
-  TouchpadRotateGesture() => gesture.copyWith(motion: value),
-  TouchpadCircleGesture() => gesture.copyWith(motion: value),
-  TouchpadStrokeGesture() => gesture.copyWith(motion: value),
-  TouchpadTapGesture() ||
-  TouchpadClickGesture() ||
-  TouchpadHoldGesture() => gesture,
+  TriggerSpeed? speed,
+) => switch (gesture.motionOrNull) {
+  final motion? => gesture.withMotion(motion.copyWith(speed: speed)),
+  null => gesture,
 };
 
-MotionCommon _touchscreenMotion(TouchscreenGesture gesture) =>
-    switch (gesture) {
-      TouchscreenSwipeGesture(:final motion) => motion,
-      TouchscreenPinchGesture(:final motion) => motion,
-      TouchscreenRotateGesture(:final motion) => motion,
-      TouchscreenCircleGesture(:final motion) => motion,
-      TouchscreenStrokeGesture(:final motion) => motion,
-      TouchscreenTapGesture() ||
-      TouchscreenHoldGesture() => const MotionCommon(),
-    };
+TriggerSpeed? _touchscreenSpeed(TouchscreenGesture gesture) =>
+    gesture.motionOrNull?.speed;
 
-TouchscreenGesture _setTouchscreenMotion(
+TouchscreenGesture _setTouchscreenSpeed(
   TouchscreenGesture gesture,
-  MotionCommon value,
-) => switch (gesture) {
-  TouchscreenSwipeGesture() => gesture.copyWith(motion: value),
-  TouchscreenPinchGesture() => gesture.copyWith(motion: value),
-  TouchscreenRotateGesture() => gesture.copyWith(motion: value),
-  TouchscreenCircleGesture() => gesture.copyWith(motion: value),
-  TouchscreenStrokeGesture() => gesture.copyWith(motion: value),
-  TouchscreenTapGesture() || TouchscreenHoldGesture() => gesture,
+  TriggerSpeed? speed,
+) => switch (gesture.motionOrNull) {
+  final motion? => gesture.withMotion(motion.copyWith(speed: speed)),
+  null => gesture,
 };

@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -34,9 +35,10 @@ double leftOf(WidgetTester tester, String command) =>
     tester.getTopLeft(rowFor(command).first).dx;
 
 class SeededActionsController extends ConfigController {
-  SeededActionsController(this.common);
+  SeededActionsController(this.common, {this.gesture = PressGesture.new});
 
   final TriggerCommon common;
+  final MouseGesture Function({required TriggerCommon common}) gesture;
 
   @override
   Future<EditSession> build() {
@@ -44,7 +46,7 @@ class SeededActionsController extends ConfigController {
       Config(
         mouseNodes: [
           GestureNode.leaf(
-            PressGesture(common: common.copyWith(editId: seedEditId)),
+            gesture(common: common.copyWith(editId: seedEditId)),
           ),
         ],
       ),
@@ -53,13 +55,19 @@ class SeededActionsController extends ConfigController {
   }
 }
 
-Widget actionListHost(TriggerCommon common) => MaterialApp(
+Widget actionListHost(
+  TriggerCommon common, {
+  List<Override> overrides = const [],
+  MouseGesture Function({required TriggerCommon common}) gesture =
+      PressGesture.new,
+}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: ProviderScope(
     overrides: [
+      ...overrides,
       configControllerProvider.overrideWith(
-        () => SeededActionsController(common),
+        () => SeededActionsController(common, gesture: gesture),
       ),
     ],
     child: FTheme(

@@ -136,6 +136,18 @@ abstract class AppLocalizations {
   /// **'Copy to clipboard'**
   String get actionCopyToClipboard;
 
+  /// No description provided for @actionOpenInTextEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in text editor'**
+  String get actionOpenInTextEditor;
+
+  /// No description provided for @configOpenInTextEditorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open configuration in text editor'**
+  String get configOpenInTextEditorFailed;
+
   /// No description provided for @actionReload.
   ///
   /// In en, this message translates to:
@@ -327,6 +339,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'About'**
   String get menuAbout;
+
+  /// No description provided for @menuZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get menuZoom;
+
+  /// No description provided for @actionZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get actionZoomIn;
+
+  /// No description provided for @actionZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get actionZoomOut;
 
   /// No description provided for @sidebarDeviceGesturesGroup.
   ///
@@ -1024,11 +1054,11 @@ abstract class AppLocalizations {
   /// **'Inherited from {group}: {value}'**
   String inheritedFieldFrom(String group, String value);
 
-  /// Warning under a trigger field that both the gesture and an ancestor group set.
+  /// Heading over the group keys the editor shows read-only, such as direction or strokes
   ///
   /// In en, this message translates to:
-  /// **'Also set by {group}. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.'**
-  String inheritedFieldConflict(String group);
+  /// **'Other trigger keys'**
+  String get groupOtherKeysTitle;
 
   /// Title of the panel editing properties every gesture in a group inherits.
   ///
@@ -1198,6 +1228,12 @@ abstract class AppLocalizations {
   /// **'Other Options'**
   String get triggerOtherOptions;
 
+  /// No description provided for @rawOptionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The editor doesn\'t recognize this YAML entry. It preserves the entry when you save.'**
+  String get rawOptionTooltip;
+
   /// No description provided for @triggerConditionsTitle.
   ///
   /// In en, this message translates to:
@@ -1275,6 +1311,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. 100 or 50-200'**
   String get triggerFieldThresholdHint;
+
+  /// No description provided for @triggerFieldThresholdInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a number or a range like 50-200'**
+  String get triggerFieldThresholdInvalid;
 
   /// No description provided for @triggerFieldResumeTimeoutLabel.
   ///
@@ -1567,8 +1609,80 @@ abstract class AppLocalizations {
   /// No description provided for @actionTriggerOnDefaultOption.
   ///
   /// In en, this message translates to:
-  /// **'end (default)'**
-  String get actionTriggerOnDefaultOption;
+  /// **'{label} (default)'**
+  String actionTriggerOnDefaultOption(String label);
+
+  /// No description provided for @actionTriggerOnBegin.
+  ///
+  /// In en, this message translates to:
+  /// **'Begin'**
+  String get actionTriggerOnBegin;
+
+  /// No description provided for @actionTriggerOnUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get actionTriggerOnUpdate;
+
+  /// No description provided for @actionTriggerOnEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get actionTriggerOnEnd;
+
+  /// No description provided for @actionTriggerOnCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get actionTriggerOnCancel;
+
+  /// No description provided for @actionTriggerOnEndCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'End or cancel'**
+  String get actionTriggerOnEndCancel;
+
+  /// No description provided for @actionTriggerOnTick.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick'**
+  String get actionTriggerOnTick;
+
+  /// No description provided for @actionTriggerOnBeginDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, as soon as the gesture starts'**
+  String get actionTriggerOnBeginDescription;
+
+  /// No description provided for @actionTriggerOnUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeatedly, as the gesture progresses'**
+  String get actionTriggerOnUpdateDescription;
+
+  /// No description provided for @actionTriggerOnEndDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, when the gesture completes'**
+  String get actionTriggerOnEndDescription;
+
+  /// No description provided for @actionTriggerOnCancelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, if aborted or another gesture wins'**
+  String get actionTriggerOnCancelDescription;
+
+  /// No description provided for @actionTriggerOnEndCancelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Once, when the gesture stops either way'**
+  String get actionTriggerOnEndCancelDescription;
+
+  /// No description provided for @actionTriggerOnTickDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeatedly, at a fixed rate while active'**
+  String get actionTriggerOnTickDescription;
 
   /// No description provided for @actionIntervalLabel.
   ///
@@ -1593,6 +1707,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Conflicting'**
   String get actionConflictingLabel;
+
+  /// No description provided for @actionConflictingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancels other gestures'**
+  String get actionConflictingDescription;
 
   /// No description provided for @actionConditionsTitle.
   ///
@@ -1719,6 +1839,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run a JavaScript function'**
   String get actionMetaFunctionSubtitle;
+
+  /// No description provided for @actionMetaContextMenuLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Context menu'**
+  String get actionMetaContextMenuLabel;
+
+  /// No description provided for @actionMetaContextMenuSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a menu at the pointer'**
+  String get actionMetaContextMenuSubtitle;
+
+  /// No description provided for @actionContextMenuSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String actionContextMenuSummary(int count);
+
+  /// No description provided for @actionContextMenuHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Items run their actions when chosen. Put & before a letter to give it a mnemonic.'**
+  String get actionContextMenuHelp;
+
+  /// No description provided for @actionContextMenuAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get actionContextMenuAddItem;
+
+  /// No description provided for @actionContextMenuAddSubMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Submenu'**
+  String get actionContextMenuAddSubMenu;
+
+  /// No description provided for @actionContextMenuAddSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get actionContextMenuAddSection;
+
+  /// No description provided for @actionContextMenuAddSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator'**
+  String get actionContextMenuAddSeparator;
+
+  /// No description provided for @actionContextMenuItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get actionContextMenuItemsLabel;
+
+  /// No description provided for @actionContextMenuTextLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get actionContextMenuTextLabel;
+
+  /// No description provided for @actionContextMenuIconLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get actionContextMenuIconLabel;
+
+  /// No description provided for @iconPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get iconPickerTitle;
+
+  /// No description provided for @iconPickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search icons…'**
+  String get iconPickerSearch;
+
+  /// No description provided for @iconPickerNoIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'No icon'**
+  String get iconPickerNoIcon;
+
+  /// No description provided for @iconPickerNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No icons found'**
+  String get iconPickerNoResults;
+
+  /// No description provided for @iconPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No installed icons available.'**
+  String get iconPickerEmpty;
+
+  /// No description provided for @iconPickerLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load installed icons.'**
+  String get iconPickerLoadError;
+
+  /// No description provided for @iconCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get iconCategoryAll;
+
+  /// No description provided for @iconCategoryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get iconCategoryActions;
+
+  /// No description provided for @iconCategoryApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get iconCategoryApplications;
+
+  /// No description provided for @iconCategoryCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get iconCategoryCategories;
+
+  /// No description provided for @iconCategoryDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get iconCategoryDevices;
+
+  /// No description provided for @iconCategoryEmblems.
+  ///
+  /// In en, this message translates to:
+  /// **'Emblems'**
+  String get iconCategoryEmblems;
+
+  /// No description provided for @iconCategoryEmotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotes'**
+  String get iconCategoryEmotes;
+
+  /// No description provided for @iconCategoryMimetypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mimetypes'**
+  String get iconCategoryMimetypes;
+
+  /// No description provided for @iconCategoryPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get iconCategoryPlaces;
+
+  /// No description provided for @iconCategoryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get iconCategoryStatus;
+
+  /// No description provided for @iconCategoryAnimations.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get iconCategoryAnimations;
+
+  /// No description provided for @iconCategoryInternational.
+  ///
+  /// In en, this message translates to:
+  /// **'International'**
+  String get iconCategoryInternational;
+
+  /// No description provided for @iconCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get iconCategoryOther;
+
+  /// No description provided for @actionCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut'**
+  String get actionCut;
+
+  /// No description provided for @actionContextMenuActionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actionContextMenuActionsLabel;
+
+  /// No description provided for @actionContextMenuSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get actionContextMenuSectionLabel;
+
+  /// No description provided for @actionContextMenuSeparatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Separator'**
+  String get actionContextMenuSeparatorLabel;
+
+  /// No description provided for @actionContextMenuEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item to start the menu.'**
+  String get actionContextMenuEmpty;
+
+  /// No description provided for @actionContextMenuNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'(no text)'**
+  String get actionContextMenuNoText;
 
   /// No description provided for @actionMetaRawLabel.
   ///
@@ -2788,6 +3124,24 @@ abstract class AppLocalizations {
   /// **'Allow dumping variables by running \"inputactions variables list\".'**
   String get effectSettingsExternalVarAccessSubtitle;
 
+  /// No description provided for @effectSettingsOverlayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get effectSettingsOverlayTitle;
+
+  /// No description provided for @effectSettingsMouseStrokeOverlayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse Stroke Overlay'**
+  String get effectSettingsMouseStrokeOverlayLabel;
+
+  /// No description provided for @effectSettingsMouseStrokeOverlaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw mouse strokes on screen as you perform them.'**
+  String get effectSettingsMouseStrokeOverlaySubtitle;
+
   /// No description provided for @effectSettingsNotificationsTitle.
   ///
   /// In en, this message translates to:
@@ -3295,44 +3649,26 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionTriggerOn_body.
   ///
   /// In en, this message translates to:
-  /// **'When during the gesture lifecycle this action fires.'**
+  /// **'When during the gesture this action runs.'**
   String get tooltip_actionTriggerOn_body;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleBegin.
+  /// No description provided for @tooltip_actionTriggerOn_intervalNote.
   ///
   /// In en, this message translates to:
-  /// **'immediately on recognition'**
-  String get tooltip_actionTriggerOn_lifecycleBegin;
+  /// **'Update and Tick repeat the action; Interval sets how often.'**
+  String get tooltip_actionTriggerOn_intervalNote;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleUpdate.
+  /// No description provided for @tooltip_actionTriggerOn_thresholdNote.
   ///
   /// In en, this message translates to:
-  /// **'every input move while active'**
-  String get tooltip_actionTriggerOn_lifecycleUpdate;
+  /// **'Threshold works with every option except Begin.'**
+  String get tooltip_actionTriggerOn_thresholdNote;
 
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleEnd.
+  /// No description provided for @tooltip_actionTriggerOn_strokeNote.
   ///
   /// In en, this message translates to:
-  /// **'gesture completes normally'**
-  String get tooltip_actionTriggerOn_lifecycleEnd;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'gesture is aborted'**
-  String get tooltip_actionTriggerOn_lifecycleCancel;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleEndCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'on both end AND cancel'**
-  String get tooltip_actionTriggerOn_lifecycleEndCancel;
-
-  /// No description provided for @tooltip_actionTriggerOn_lifecycleTick.
-  ///
-  /// In en, this message translates to:
-  /// **'at fixed time intervals while active'**
-  String get tooltip_actionTriggerOn_lifecycleTick;
+  /// **'A stroke is only recognised on release, so a conflicting stroke action can only run on End. Turn Conflicting off to pick another option.'**
+  String get tooltip_actionTriggerOn_strokeNote;
 
   /// No description provided for @tooltip_actionInterval_body.
   ///
@@ -3409,7 +3745,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_body.
   ///
   /// In en, this message translates to:
-  /// **'Whether this action holds back competing gestures.'**
+  /// **'Whether running this action claims the gesture.'**
   String get tooltip_actionConflicting_body;
 
   /// No description provided for @tooltip_actionConflicting_onLabel.
@@ -3421,7 +3757,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_onDesc.
   ///
   /// In en, this message translates to:
-  /// **'hold back competing gestures until one wins'**
+  /// **'cancels other gestures started by the same input'**
   String get tooltip_actionConflicting_onDesc;
 
   /// No description provided for @tooltip_actionConflicting_offLabel.
@@ -3433,7 +3769,7 @@ abstract class AppLocalizations {
   /// No description provided for @tooltip_actionConflicting_offDesc.
   ///
   /// In en, this message translates to:
-  /// **'fire immediately, no blocking'**
+  /// **'runs alongside them, cancelling nothing'**
   String get tooltip_actionConflicting_offDesc;
 
   /// No description provided for @tooltip_actionConflicting_sectionLabel.
@@ -3442,17 +3778,53 @@ abstract class AppLocalizations {
   /// **'Example'**
   String get tooltip_actionConflicting_sectionLabel;
 
-  /// No description provided for @tooltip_actionConflicting_exCode.
+  /// No description provided for @tooltip_actionConflicting_exFingersCode.
   ///
   /// In en, this message translates to:
-  /// **'2-finger swipe  +  3-finger swipe'**
-  String get tooltip_actionConflicting_exCode;
+  /// **'3-finger swipe left  +  3-finger swipe any'**
+  String get tooltip_actionConflicting_exFingersCode;
+
+  /// No description provided for @tooltip_actionConflicting_exMouseCode.
+  ///
+  /// In en, this message translates to:
+  /// **'right-button swipe left  +  right-button swipe any'**
+  String get tooltip_actionConflicting_exMouseCode;
 
   /// No description provided for @tooltip_actionConflicting_exLabel.
   ///
   /// In en, this message translates to:
-  /// **'daemon waits to see which one completes'**
+  /// **'both start; the first conflicting action to run cancels the other'**
   String get tooltip_actionConflicting_exLabel;
+
+  /// No description provided for @tooltip_actionConflicting_strokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A stroke is recognised on release: the closest match ends and every other stroke is cancelled.'**
+  String get tooltip_actionConflicting_strokeBody;
+
+  /// No description provided for @tooltip_actionConflicting_strokeOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'runs on End, only if this stroke is the match'**
+  String get tooltip_actionConflicting_strokeOnDesc;
+
+  /// No description provided for @tooltip_actionConflicting_strokeOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'can also run while drawing, before the match is known'**
+  String get tooltip_actionConflicting_strokeOffDesc;
+
+  /// No description provided for @tooltip_actionConflicting_strokeExCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Begin  +  Cancel'**
+  String get tooltip_actionConflicting_strokeExCode;
+
+  /// No description provided for @tooltip_actionConflicting_strokeExLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'show a hint while drawing, clear it if this stroke is not the match'**
+  String get tooltip_actionConflicting_strokeExLabel;
 
   /// No description provided for @tooltip_actionLimit_body.
   ///
@@ -4180,6 +4552,36 @@ abstract class AppLocalizations {
   /// **'Invalid stroke data'**
   String get strokeRowInvalidData;
 
+  /// No description provided for @strokeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke copied.'**
+  String get strokeCopied;
+
+  /// No description provided for @strokeRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename stroke'**
+  String get strokeRenameTitle;
+
+  /// No description provided for @strokeNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke name'**
+  String get strokeNameHint;
+
+  /// No description provided for @strokeNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A name cannot contain spaces, commas, brackets or braces.'**
+  String get strokeNameInvalid;
+
+  /// No description provided for @strokeNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Another stroke is already named {name}.'**
+  String strokeNameTaken(String name);
+
   /// No description provided for @inputDevicesLabel.
   ///
   /// In en, this message translates to:
@@ -4324,18 +4726,6 @@ abstract class AppLocalizations {
   /// **'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.'**
   String get inputDelayTooltip;
 
-  /// No description provided for @inputDeviceFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Device'**
-  String get inputDeviceFieldLabel;
-
-  /// No description provided for @inputDeviceFieldTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Whether to simulate keyboard or mouse input.'**
-  String get inputDeviceFieldTooltip;
-
   /// No description provided for @inputActionTypeLabel.
   ///
   /// In en, this message translates to:
@@ -4345,7 +4735,7 @@ abstract class AppLocalizations {
   /// No description provided for @inputActionTypeTooltip.
   ///
   /// In en, this message translates to:
-  /// **'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.'**
+  /// **'The device and kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.'**
   String get inputActionTypeTooltip;
 
   /// No description provided for @mouseDeltaMultiplierLabel.
@@ -4377,6 +4767,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lock pointer'**
   String get motionLockPointerLabel;
+
+  /// No description provided for @numberRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number'**
+  String get numberRequired;
 
   /// No description provided for @numberRangeBetween.
   ///

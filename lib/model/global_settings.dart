@@ -11,6 +11,7 @@ abstract class GlobalSettings with _$GlobalSettings {
     bool? autoreload,
     List<String>? emergencyCombination,
     bool? externalVariableAccess,
+    bool? mouseStrokeOverlayEnabled,
     bool? notificationsConfigError,
   }) = _GlobalSettings;
 }

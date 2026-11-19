@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/store/config_controller.dart';
 
 /// The group whose shared properties the detail pane is editing, or null when
 /// it is showing a gesture or the empty prompt.
@@ -10,9 +11,16 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 class SelectedGroupController extends Notifier<GestureGroupLocation?> {
   @override
   GestureGroupLocation? build() {
-    ref.listen(selectedGestureProvider, (previous, next) {
-      if (next != null) state = null;
-    });
+    ref
+      ..listen(selectedGestureProvider, (previous, next) {
+        if (next != null) state = null;
+      })
+      ..listen(draftConfigProvider, (previous, next) {
+        final location = state;
+        if (location != null && gestureGroupAt(next, location) == null) {
+          state = null;
+        }
+      });
     return null;
   }
 

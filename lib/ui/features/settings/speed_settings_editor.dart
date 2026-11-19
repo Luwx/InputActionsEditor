@@ -198,7 +198,10 @@ class _SpeedField extends HookWidget {
         child: FTextField(
           control: FTextFieldControl.managed(
             controller: controller,
-            onChange: (_) {},
+            onChange: (value) {
+              final text = value.text.trim();
+              if (text.isEmpty || double.tryParse(text) != null) commit(text);
+            },
           ),
           hint: hint,
           onSubmit: commit,

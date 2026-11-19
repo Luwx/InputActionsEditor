@@ -3,26 +3,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/domain/edit/edit_scope.dart';
+import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
+import 'package:input_actions_editor/services/kicon_service.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
+import 'package:input_actions_editor/ui/common/file_icon.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/add_gesture_button.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_tile.dart';
+import 'package:input_actions_editor/ui/features/gestures/list/widgets/gesture_group_header_row.dart';
 
+import '../../../../helpers/mock_clipboard.dart';
 import '../../../../helpers/seeded_config_controller.dart';
 
 /// [groupAt] is the slot a group sits in, so a test can add into a group that
@@ -72,25 +82,29 @@ Widget _host({
   bool preselected = false,
   int? groupAt,
   int groupSize = 2,
+  Config? config,
+  List<Override> overrides = const [],
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: ProviderScope(
     overrides: [
       configControllerProvider.overrideWith(
-        () => names == null
-            ? SeededController(_listConfig())
-            : SeededController(
-                _listConfig(
-                  names: names,
-                  groupAt: groupAt,
-                  groupSize: groupSize,
-                ),
-              ),
+        () => SeededController(
+          config ??
+              (names == null
+                  ? _listConfig()
+                  : _listConfig(
+                      names: names,
+                      groupAt: groupAt,
+                      groupSize: groupSize,
+                    )),
+        ),
       ),
       deviceFilterProvider.overrideWith(_MouseFilter.new),
       if (preselected)
         selectedGestureProvider.overrideWith(_PreselectedGesture.new),
+      ...overrides,
     ],
     child: FTheme(
       data: AppThemes.zinc.dark.desktop,
@@ -106,29 +120,6 @@ List<String> _order(WidgetTester tester) {
     for (final text in tester.widgetList<Text>(find.byType(Text)))
       if (names.contains(text.data)) text.data!,
   ];
-}
-
-/// Routes the platform clipboard through a local string for the test.
-void _mockClipboard(WidgetTester tester) {
-  String? clipboard;
-  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-    SystemChannels.platform,
-    (call) async {
-      if (call.method == 'Clipboard.setData') {
-        clipboard = (call.arguments as Map)['text'] as String;
-      }
-      if (call.method == 'Clipboard.getData') {
-        return <String, dynamic>{'text': clipboard};
-      }
-      return null;
-    },
-  );
-  addTearDown(
-    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      null,
-    ),
-  );
 }
 
 /// Opens the new-group dialog and confirms it with Enter.
@@ -148,6 +139,8 @@ Future<void> _pumpList(
   bool preselected = false,
   int? groupAt,
   int groupSize = 2,
+  Config? config,
+  List<Override> overrides = const [],
 }) async {
   tester.view
     ..physicalSize = const Size(900, 900)
@@ -159,6 +152,8 @@ Future<void> _pumpList(
       preselected: preselected,
       groupAt: groupAt,
       groupSize: groupSize,
+      config: config,
+      overrides: overrides,
     ),
   );
   await tester.pumpAndSettle();
@@ -216,6 +211,96 @@ void main() {
 
     expect(find.text('No gestures yet.'), findsNothing);
     expect(_order(tester), ['First', 'Second', 'Third']);
+  });
+
+  testWidgets('a group limited to one app wears its icon', (tester) async {
+    Condition windowClass(String value) => Condition.variable(
+      variable: const ConditionVariableRef.known('window_class'),
+      operator: ConditionOperator.equals,
+      value: ConditionValue.text(value),
+    );
+    GestureNode group(String name, Condition conditions) => GestureGroupNode(
+      name: name,
+      conditions: conditions,
+      children: [
+        GestureNode.leaf(PressGesture(common: TriggerCommon(name: '$name 1'))),
+      ],
+    );
+    const iconPath =
+        'linux/icons/128x128/apps/dev.luwx.input_actions_editor.png';
+
+    await _pumpList(
+      tester,
+      config: Config(
+        mouseNodes: [
+          group(
+            'Browser',
+            ConditionGroup(children: [windowClass('firefox')]),
+          ),
+          group(
+            'Mixed',
+            ConditionGroup(
+              children: [windowClass('firefox'), windowClass('konsole')],
+            ),
+          ),
+        ],
+      ),
+      overrides: [
+        appIconPathProvider.overrideWith(
+          (_, name) async => name == 'firefox' ? iconPath : null,
+        ),
+      ],
+    );
+
+    Finder iconIn(String group) => find.descendant(
+      of: find.ancestor(
+        of: find.text(group),
+        matching: find.byType(GestureGroupHeaderRow),
+      ),
+      matching: find.byType(FileIcon),
+    );
+    expect(iconIn('Browser'), findsOneWidget);
+    expect(tester.widget<FileIcon>(iconIn('Browser')).path, iconPath);
+    expect(iconIn('Mixed'), findsNothing);
+  });
+
+  testWidgets('a row after a subgroup is separated from it', (tester) async {
+    GestureNode leaf(String name) =>
+        GestureNode.leaf(PressGesture(common: TriggerCommon(name: name)));
+    await _pumpList(
+      tester,
+      config: Config(
+        mouseNodes: [
+          GestureGroupNode(
+            name: 'Outer',
+            children: [
+              GestureGroupNode(name: 'Inner', children: [leaf('Nested')]),
+              leaf('After'),
+            ],
+          ),
+          GestureGroupNode(name: 'Plain', children: [leaf('Lead')]),
+        ],
+      ),
+    );
+
+    Color topBorderOf(String name) {
+      final frame = tester
+          .widgetList<Container>(
+            find.ancestor(
+              of: find.text(name),
+              matching: find.byType(Container),
+            ),
+          )
+          .firstWhere(
+            (c) =>
+                c.decoration is BoxDecoration &&
+                (c.decoration! as BoxDecoration).border is Border,
+          );
+      return ((frame.decoration! as BoxDecoration).border! as Border).top.color;
+    }
+
+    expect(topBorderOf('After'), isNot(Colors.transparent));
+    expect(topBorderOf('Lead'), Colors.transparent);
   });
 
   testWidgets('a redirect parks the row under the header', (tester) async {
@@ -355,6 +440,85 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.getRect(_tileOf('G0')), before);
+  });
+
+  group('a group handing down a type and a button', () {
+    final config = decodeConfig('''
+mouse:
+  gestures:
+    - _extra:
+        name: Strokes
+      type: stroke
+      mouse_buttons: [ back ]
+      gestures:
+        - _extra:
+            name: Draw
+          strokes: [ 'MGQA0DMnPMwwAGQA' ]
+    - type: press
+      _extra:
+        name: Tap
+''');
+
+    GestureGroupNode groupOf(WidgetTester tester) =>
+        withInheritedValues(_draftOf(tester)).mouseNodes.first
+            as GestureGroupNode;
+
+    testWidgets('a gesture row shows the button its group hands down', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+      expect(find.text('1 stroke · back'), findsOneWidget);
+    });
+
+    testWidgets('offers every type to add, with the group keys', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+
+      await tester.tap(
+        find.descendant(
+          of: find
+              .ancestor(of: find.text('Strokes'), matching: find.byType(Row))
+              .first,
+          matching: find.byIcon(FLucideIcons.plus),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: find.byType(FTile), matching: find.text('Press')),
+      );
+      await tester.pumpAndSettle();
+
+      final added = groupOf(tester).gestures.last;
+      expect(added, isA<PressGesture>());
+      expect(added.common.mouseButtons, [MouseButtonValue.back]);
+    });
+
+    testWidgets('takes a dropped gesture of another type as it is', (
+      tester,
+    ) async {
+      await _pumpList(tester, config: config);
+
+      final tapY = tester.getCenter(find.text('Tap')).dy;
+      final handle = find
+          .byIcon(FLucideIcons.gripVertical)
+          .evaluate()
+          .map((e) => tester.getCenter(find.byWidget(e.widget)))
+          .reduce((a, b) => (a.dy - tapY).abs() < (b.dy - tapY).abs() ? a : b);
+      final gesture = await tester.startGesture(handle);
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.moveTo(tester.getCenter(find.text('Draw')));
+      await tester.pump(const Duration(milliseconds: 200));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final moved = groupOf(
+        tester,
+      ).gestures.firstWhere((g) => g.common.name == 'Tap');
+      expect(moved, isA<PressGesture>());
+      expect(moved.common.mouseButtons, [MouseButtonValue.back]);
+    });
   });
 
   testWidgets('a far target travels one way', (tester) async {
@@ -590,15 +754,103 @@ void main() {
     expect(tester.state(find.byType(AttentionFlash)), same(flashing));
   });
 
+  for (final names in [
+    <String>[],
+    ['First', 'Second', 'Third'],
+  ]) {
+    testWidgets('empty-space menu appends a gesture to $names', (tester) async {
+      mockClipboard(tester);
+      await _pumpList(tester, names: names);
+      await Clipboard.setData(
+        const ClipboardData(
+          text:
+              'mouse:\n  gestures:\n    - type: press\n'
+              '      _extra:\n        name: First\n',
+        ),
+      );
+
+      final bounds = tester.getRect(find.byType(GestureListSection));
+      await tester.tapAt(
+        bounds.bottomCenter - const Offset(0, 40),
+        buttons: kSecondaryButton,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(FLucideIcons.clipboardPaste), findsOneWidget);
+      await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+      await tester.pumpAndSettle();
+
+      expect(_order(tester), [...names, 'First']);
+    });
+  }
+
+  group('rows that land below the viewport come into view', () {
+    final names = [for (var i = 0; i < 40; i++) 'G$i'];
+
+    Future<void> scrollToEnd(WidgetTester tester) async {
+      await tester.drag(find.text('G5'), const Offset(0, -6000));
+      await tester.pumpAndSettle();
+      expect(find.text('G39'), findsOneWidget);
+    }
+
+    List<String?> draftNames(WidgetTester tester) => [
+      for (final gesture in ProviderScope.containerOf(
+        tester.element(find.byType(GestureListSection)),
+      ).read(draftConfigProvider).mouseGestures)
+        gesture.common.name,
+    ];
+
+    void expectInView(WidgetTester tester, Finder row) {
+      final viewport = tester.getRect(find.byType(Scrollable).first);
+      final rect = tester.getRect(row);
+      expect(rect.top, greaterThanOrEqualTo(viewport.top));
+      expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+    }
+
+    testWidgets('a pasted gesture', (tester) async {
+      mockClipboard(tester);
+      await _pumpList(tester, names: names);
+      await tester.tap(find.text('G0'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.copy));
+      await tester.pumpAndSettle();
+
+      await scrollToEnd(tester);
+      await tester.tap(find.text('G39'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(draftNames(tester).last, 'G0');
+      expectInView(tester, _tileOf('G0').last);
+    });
+
+    testWidgets('a duplicated gesture', (tester) async {
+      await _pumpList(tester, names: names);
+      await scrollToEnd(tester);
+      await tester.tap(find.text('G39'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.copyPlus));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(draftNames(tester).sublist(39), ['G39', 'G39-copy']);
+      expectInView(tester, _tileOf('G39-copy'));
+    });
+  });
+
   testWidgets('copy and paste land the gesture after the row pasted on', (
     tester,
   ) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
 
     await tester.tap(find.text('Second'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+    expect(find.byIcon(FLucideIcons.clipboardPaste), findsOneWidget);
+    await tester.tap(find.byIcon(FLucideIcons.copy));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Third'), buttons: kSecondaryButton);
@@ -610,7 +862,7 @@ void main() {
   });
 
   testWidgets('ctrl+c copies the row whose menu is open', (tester) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
@@ -621,7 +873,7 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(FLucideIcons.clipboardCopy), findsNothing);
+    expect(find.byIcon(FLucideIcons.copy), findsNothing);
 
     await tester.tap(find.text('Third'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
@@ -761,13 +1013,13 @@ void main() {
   testWidgets('the menu copies the selection and pastes after its last row', (
     tester,
   ) async {
-    _mockClipboard(tester);
+    mockClipboard(tester);
     await _pumpList(tester);
     await _selectRows(tester, ['First', 'Second']);
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.clipboardCopy));
+    await tester.tap(find.byIcon(FLucideIcons.copy));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
@@ -797,7 +1049,7 @@ void main() {
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.tap(find.byIcon(FLucideIcons.copyPlus));
     await tester.pumpAndSettle();
 
     expect(_draftNames(tester), [
@@ -820,6 +1072,70 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_order(tester), ['First', 'Second']);
+  });
+
+  testWidgets('the menu discards a changed gesture back to its saved one', (
+    tester,
+  ) async {
+    await _pumpList(tester);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GestureListSection)),
+    );
+    Config draft() =>
+        container.read(configControllerProvider).requireValue.draft;
+    final saved = draft().mouseGestures[1];
+    final location = gestureLocationAt(draft(), DeviceType.mouse, 1)!;
+    container
+        .read(configControllerProvider.notifier)
+        .add(
+          UpdateGestureCommon(
+            location,
+            (common) => common.copyWith(threshold: '42'),
+          ),
+          scope: const GesturesScope(),
+        );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard changes'));
+    await tester.pumpAndSettle();
+
+    expect(draft().mouseGestures[1], saved);
+  });
+
+  testWidgets('a gesture with one named stroke is summed up by its name', (
+    tester,
+  ) async {
+    await _pumpList(
+      tester,
+      config: decodeConfig('''
+anchors:
+  - &Top 'MGQA0DMnPMwwAGQA'
+
+mouse:
+  gestures:
+    - type: stroke
+      mouse_buttons: [ back ]
+      strokes: [ *Top ]
+    - type: stroke
+      mouse_buttons: [ back ]
+      strokes: [ *Top, 'MAAAMTNkZAA=' ]
+'''),
+    );
+
+    expect(find.text('Top · back'), findsOneWidget);
+    expect(find.text('2 strokes · back'), findsOneWidget);
+  });
+
+  testWidgets('an unchanged gesture offers no discard', (tester) async {
+    await _pumpList(tester);
+
+    await tester.tap(find.text('Second'), buttons: kSecondaryButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rename'), findsOneWidget);
+    expect(find.text('Discard changes'), findsNothing);
   });
 
   testWidgets('rename drops out of the menu over several rows', (tester) async {
@@ -875,7 +1191,7 @@ void main() {
 
     await tester.tap(find.text('First'), buttons: kSecondaryButton);
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(FLucideIcons.copy));
+    await tester.tap(find.byIcon(FLucideIcons.copyPlus));
     await tester.pumpAndSettle();
 
     _controllerOf(tester).undo();

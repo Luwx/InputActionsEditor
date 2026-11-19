@@ -52,12 +52,6 @@ migrate_working_dir/
 /scripts/stress_config.yaml
 /scripts/stress_gen.py
 
-# Generated Dart files in lib
-/lib/**/*.g.dart
-/lib/**/*.freezed.dart
-/lib/**/*.gen.dart
-/lib/**/*.gr.dart
-
 # Symbolication related
 app.*.symbols
 

@@ -30,6 +30,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCopyToClipboard => 'Copy to clipboard';
 
   @override
+  String get actionOpenInTextEditor => 'Open in text editor';
+
+  @override
+  String get configOpenInTextEditorFailed =>
+      'Could not open configuration in text editor';
+
+  @override
   String get actionReload => 'Reload';
 
   @override
@@ -125,6 +132,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuAbout => 'About';
+
+  @override
+  String get menuZoom => 'Zoom';
+
+  @override
+  String get actionZoomIn => 'Zoom in';
+
+  @override
+  String get actionZoomOut => 'Zoom out';
 
   @override
   String get sidebarDeviceGesturesGroup => 'Device Gestures';
@@ -499,9 +515,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String inheritedFieldConflict(String group) {
-    return 'Also set by $group. The daemon does not resolve this: it merges the group\'s value in without checking, and which one wins is undefined.';
-  }
+  String get groupOtherKeysTitle => 'Other trigger keys';
 
   @override
   String get groupSettingsTitle => 'Shared properties';
@@ -616,6 +630,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerOtherOptions => 'Other Options';
 
   @override
+  String get rawOptionTooltip =>
+      'The editor doesn\'t recognize this YAML entry. It preserves the entry when you save.';
+
+  @override
   String get triggerConditionsTitle => 'Trigger Conditions';
 
   @override
@@ -661,6 +679,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get triggerFieldThresholdHint => 'e.g. 100 or 50-200';
+
+  @override
+  String get triggerFieldThresholdInvalid =>
+      'Use a number or a range like 50-200';
 
   @override
   String get triggerFieldResumeTimeoutLabel => 'Resume timeout';
@@ -821,7 +843,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionTriggerOnLabel => 'Trigger on';
 
   @override
-  String get actionTriggerOnDefaultOption => 'end (default)';
+  String actionTriggerOnDefaultOption(String label) {
+    return '$label (default)';
+  }
+
+  @override
+  String get actionTriggerOnBegin => 'Begin';
+
+  @override
+  String get actionTriggerOnUpdate => 'Update';
+
+  @override
+  String get actionTriggerOnEnd => 'End';
+
+  @override
+  String get actionTriggerOnCancel => 'Cancel';
+
+  @override
+  String get actionTriggerOnEndCancel => 'End or cancel';
+
+  @override
+  String get actionTriggerOnTick => 'Tick';
+
+  @override
+  String get actionTriggerOnBeginDescription =>
+      'Once, as soon as the gesture starts';
+
+  @override
+  String get actionTriggerOnUpdateDescription =>
+      'Repeatedly, as the gesture progresses';
+
+  @override
+  String get actionTriggerOnEndDescription =>
+      'Once, when the gesture completes';
+
+  @override
+  String get actionTriggerOnCancelDescription =>
+      'Once, if aborted or another gesture wins';
+
+  @override
+  String get actionTriggerOnEndCancelDescription =>
+      'Once, when the gesture stops either way';
+
+  @override
+  String get actionTriggerOnTickDescription =>
+      'Repeatedly, at a fixed rate while active';
 
   @override
   String get actionIntervalLabel => 'Interval';
@@ -834,6 +900,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionConflictingLabel => 'Conflicting';
+
+  @override
+  String get actionConflictingDescription => 'Cancels other gestures';
 
   @override
   String get actionConditionsTitle => 'Action Conditions';
@@ -898,6 +967,123 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionMetaFunctionSubtitle => 'Run a JavaScript function';
+
+  @override
+  String get actionMetaContextMenuLabel => 'Context menu';
+
+  @override
+  String get actionMetaContextMenuSubtitle => 'Open a menu at the pointer';
+
+  @override
+  String actionContextMenuSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get actionContextMenuHelp =>
+      'Items run their actions when chosen. Put & before a letter to give it a mnemonic.';
+
+  @override
+  String get actionContextMenuAddItem => 'Item';
+
+  @override
+  String get actionContextMenuAddSubMenu => 'Submenu';
+
+  @override
+  String get actionContextMenuAddSection => 'Section';
+
+  @override
+  String get actionContextMenuAddSeparator => 'Separator';
+
+  @override
+  String get actionContextMenuItemsLabel => 'Items';
+
+  @override
+  String get actionContextMenuTextLabel => 'Text';
+
+  @override
+  String get actionContextMenuIconLabel => 'Icon';
+
+  @override
+  String get iconPickerTitle => 'Choose an icon';
+
+  @override
+  String get iconPickerSearch => 'Search icons…';
+
+  @override
+  String get iconPickerNoIcon => 'No icon';
+
+  @override
+  String get iconPickerNoResults => 'No icons found';
+
+  @override
+  String get iconPickerEmpty => 'No installed icons available.';
+
+  @override
+  String get iconPickerLoadError => 'Could not load installed icons.';
+
+  @override
+  String get iconCategoryAll => 'All';
+
+  @override
+  String get iconCategoryActions => 'Actions';
+
+  @override
+  String get iconCategoryApplications => 'Applications';
+
+  @override
+  String get iconCategoryCategories => 'Categories';
+
+  @override
+  String get iconCategoryDevices => 'Devices';
+
+  @override
+  String get iconCategoryEmblems => 'Emblems';
+
+  @override
+  String get iconCategoryEmotes => 'Emotes';
+
+  @override
+  String get iconCategoryMimetypes => 'Mimetypes';
+
+  @override
+  String get iconCategoryPlaces => 'Places';
+
+  @override
+  String get iconCategoryStatus => 'Status';
+
+  @override
+  String get iconCategoryAnimations => 'Animations';
+
+  @override
+  String get iconCategoryInternational => 'International';
+
+  @override
+  String get iconCategoryOther => 'Other';
+
+  @override
+  String get actionCut => 'Cut';
+
+  @override
+  String get actionContextMenuActionsLabel => 'Actions';
+
+  @override
+  String get actionContextMenuSectionLabel => 'Section';
+
+  @override
+  String get actionContextMenuSeparatorLabel => 'Separator';
+
+  @override
+  String get actionContextMenuEmpty => 'Add an item to start the menu.';
+
+  @override
+  String get actionContextMenuNoText => '(no text)';
 
   @override
   String get actionMetaRawLabel => 'Raw YAML';
@@ -1555,6 +1741,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow dumping variables by running \"inputactions variables list\".';
 
   @override
+  String get effectSettingsOverlayTitle => 'Overlay';
+
+  @override
+  String get effectSettingsMouseStrokeOverlayLabel => 'Mouse Stroke Overlay';
+
+  @override
+  String get effectSettingsMouseStrokeOverlaySubtitle =>
+      'Draw mouse strokes on screen as you perform them.';
+
+  @override
   String get effectSettingsNotificationsTitle => 'Notifications';
 
   @override
@@ -1840,30 +2036,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tooltip_actionTriggerOn_body =>
-      'When during the gesture lifecycle this action fires.';
+      'When during the gesture this action runs.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleBegin =>
-      'immediately on recognition';
+  String get tooltip_actionTriggerOn_intervalNote =>
+      'Update and Tick repeat the action; Interval sets how often.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleUpdate =>
-      'every input move while active';
+  String get tooltip_actionTriggerOn_thresholdNote =>
+      'Threshold works with every option except Begin.';
 
   @override
-  String get tooltip_actionTriggerOn_lifecycleEnd =>
-      'gesture completes normally';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleCancel => 'gesture is aborted';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleEndCancel =>
-      'on both end AND cancel';
-
-  @override
-  String get tooltip_actionTriggerOn_lifecycleTick =>
-      'at fixed time intervals while active';
+  String get tooltip_actionTriggerOn_strokeNote =>
+      'A stroke is only recognised on release, so a conflicting stroke action can only run on End. Turn Conflicting off to pick another option.';
 
   @override
   String get tooltip_actionInterval_body =>
@@ -1912,32 +2097,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tooltip_actionConflicting_body =>
-      'Whether this action holds back competing gestures.';
+      'Whether running this action claims the gesture.';
 
   @override
   String get tooltip_actionConflicting_onLabel => 'On';
 
   @override
   String get tooltip_actionConflicting_onDesc =>
-      'hold back competing gestures until one wins';
+      'cancels other gestures started by the same input';
 
   @override
   String get tooltip_actionConflicting_offLabel => 'Off';
 
   @override
   String get tooltip_actionConflicting_offDesc =>
-      'fire immediately, no blocking';
+      'runs alongside them, cancelling nothing';
 
   @override
   String get tooltip_actionConflicting_sectionLabel => 'Example';
 
   @override
-  String get tooltip_actionConflicting_exCode =>
-      '2-finger swipe  +  3-finger swipe';
+  String get tooltip_actionConflicting_exFingersCode =>
+      '3-finger swipe left  +  3-finger swipe any';
+
+  @override
+  String get tooltip_actionConflicting_exMouseCode =>
+      'right-button swipe left  +  right-button swipe any';
 
   @override
   String get tooltip_actionConflicting_exLabel =>
-      'daemon waits to see which one completes';
+      'both start; the first conflicting action to run cancels the other';
+
+  @override
+  String get tooltip_actionConflicting_strokeBody =>
+      'A stroke is recognised on release: the closest match ends and every other stroke is cancelled.';
+
+  @override
+  String get tooltip_actionConflicting_strokeOnDesc =>
+      'runs on End, only if this stroke is the match';
+
+  @override
+  String get tooltip_actionConflicting_strokeOffDesc =>
+      'can also run while drawing, before the match is known';
+
+  @override
+  String get tooltip_actionConflicting_strokeExCode => 'Begin  +  Cancel';
+
+  @override
+  String get tooltip_actionConflicting_strokeExLabel =>
+      'show a hint while drawing, clear it if this stroke is not the match';
 
   @override
   String get tooltip_actionLimit_body =>
@@ -2352,6 +2560,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strokeRowInvalidData => 'Invalid stroke data';
 
   @override
+  String get strokeCopied => 'Stroke copied.';
+
+  @override
+  String get strokeRenameTitle => 'Rename stroke';
+
+  @override
+  String get strokeNameHint => 'Stroke name';
+
+  @override
+  String get strokeNameInvalid =>
+      'A name cannot contain spaces, commas, brackets or braces.';
+
+  @override
+  String strokeNameTaken(String name) {
+    return 'Another stroke is already named $name.';
+  }
+
+  @override
   String get inputDevicesLabel => 'Input devices';
 
   @override
@@ -2426,18 +2652,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Milliseconds to wait between each item in the input sequence. Also a workaround for input methods that mishandle simulated keys.';
 
   @override
-  String get inputDeviceFieldLabel => 'Device';
-
-  @override
-  String get inputDeviceFieldTooltip =>
-      'Whether to simulate keyboard or mouse input.';
-
-  @override
   String get inputActionTypeLabel => 'Action type';
 
   @override
   String get inputActionTypeTooltip =>
-      'The kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.';
+      'The device and kind of simulated input: key combination, typed text, mouse movement, scroll wheel, etc.';
 
   @override
   String get mouseDeltaMultiplierLabel => 'Multiplier';
@@ -2455,6 +2674,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get motionLockPointerLabel => 'Lock pointer';
+
+  @override
+  String get numberRequired => 'Enter a number';
 
   @override
   String numberRangeBetween(String min, String max) {

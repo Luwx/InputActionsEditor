@@ -5,19 +5,27 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/touchpad_gesture.dart';
+import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/debug/print_build.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/conditions/condition_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widgets/text_value_input.dart'
+    show fieldErrorStyle;
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/raw_option_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
+import 'package:input_actions_editor/ui/l10n/labels/action_labels.dart';
 
 class ActionTriggerFields extends HookConsumerWidget {
   const ActionTriggerFields({
@@ -26,15 +34,6 @@ class ActionTriggerFields extends HookConsumerWidget {
   });
 
   final Iterable<ActionTriggerOptionField> fields;
-
-  static const Map<String, TriggerOn> onOptions = {
-    'begin': TriggerOn.begin,
-    'update': TriggerOn.update,
-    'end': TriggerOn.end,
-    'cancel': TriggerOn.cancel,
-    'end_cancel': TriggerOn.endCancel,
-    'tick': TriggerOn.tick,
-  };
 
   static Set<ActionTriggerOptionField> nonDefaultFields(TriggerAction action) =>
       {
@@ -92,20 +91,31 @@ class ActionTriggerFields extends HookConsumerWidget {
               );
       }),
     );
-    // The default item is the schema default, labelled as such.
     final defaultOn = actionTriggerOnField.defaultValue!;
-    final supportedOnOptions = {
-      for (final MapEntry(:key, :value) in onOptions.entries)
-        if (supportedOnValues.contains(value))
-          (value == defaultOn
-                  ? context.l10n.actionTriggerOnDefaultOption
-                  : key):
-              value,
-    };
+    String onLabel(TriggerOnValue on) {
+      final label = triggerOnLabel(on, context.l10n);
+      return on == defaultOn
+          ? context.l10n.actionTriggerOnDefaultOption(label)
+          : label;
+    }
+
     final triggerOnValue = triggerOnField.value;
-    final displayOnValue = supportedOnOptions.containsValue(triggerOnValue)
-        ? triggerOnValue
-        : defaultOn;
+    final rawOn = switch (triggerOnValue) {
+      final RawTriggerOn raw => raw,
+      _ => null,
+    };
+    final displayOnValue =
+        rawOn ??
+        (supportedOnValues.contains(triggerOnValue)
+            ? triggerOnValue
+            : defaultOn);
+    final tooltipKind = ref.watch(
+      configControllerProvider.select(
+        (s) => _conflictingTooltipKind(
+          gestureAt(s.requireValue.draft, gestureLocation),
+        ),
+      ),
+    );
     final conditionsField = ref.actionField(
       context,
       actionConditionsLens,
@@ -130,6 +140,88 @@ class ActionTriggerFields extends HookConsumerWidget {
     final delayController = useSyncedTextController(
       delayField?.text ?? '',
       delayField?.onTextChanged ?? (_) {},
+    );
+
+    final triggerOnSelect = FSelect<TriggerOnValue>.rich(
+      label: UnsavedLabel(
+        state: triggerOnField.dirty,
+        onRevert: triggerOnField.onRevert,
+        child: LabelWithTooltip(
+          label: context.l10n.actionTriggerOnLabel,
+          tooltipContent: ActionTriggerOnTooltip(
+            stroke: tooltipKind == ConflictingTooltipKind.stroke,
+          ),
+        ),
+      ),
+      key: ValueKey(displayOnValue),
+      format: onLabel,
+      enabled: rawOn != null || supportedOnValues.length > 1,
+      suffixBuilder: rawOn == null
+          ? FSelect.defaultIconBuilder
+          : (context, style, variants) => Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 6,
+              children: [
+                const Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: 6,
+                  ),
+                  child: RawOptionBadge(),
+                ),
+                FSelect.defaultIconBuilder(
+                  context,
+                  style,
+                  variants,
+                ),
+              ],
+            ),
+      contentConstraints: const FPortalConstraints(
+        maxWidth: 300,
+        maxHeight: 420,
+      ),
+      control: FSelectManagedControl<TriggerOnValue>(
+        initial: displayOnValue,
+        onChange: (value) {
+          if (value is TriggerOn) {
+            ref
+                .read(
+                  actionEditorProvider(
+                    actionLocation,
+                  ).notifier,
+                )
+                .setTriggerOn(value);
+          }
+        },
+      ),
+      children: [
+        if (rawOn != null)
+          FSelectItem<TriggerOnValue>(
+            value: rawOn,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                Flexible(
+                  child: Text(
+                    onLabel(rawOn),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const RawOptionBadge(),
+              ],
+            ),
+          ),
+        for (final on in kAllTriggerOnOptions)
+          if (supportedOnValues.contains(on))
+            FSelectItem<TriggerOnValue>(
+              value: on,
+              title: Text(onLabel(on)),
+              subtitle: Text(
+                triggerOnDescription(on, context.l10n),
+                overflow: TextOverflow.visible,
+              ),
+            ),
+      ],
     );
 
     return Column(
@@ -165,32 +257,17 @@ class ActionTriggerFields extends HookConsumerWidget {
           if (delayField != null) const SizedBox(height: 12),
           Wrap(
             spacing: 12,
-            runSpacing: 8,
+            runSpacing: 12,
             children: [
               if (visibleFields.contains(ActionTriggerOptionField.triggerOn))
                 revealable(
                   ActionTriggerOptionField.triggerOn,
-                  SizedBox(
-                    width: 180,
-                    child: FSelect<TriggerOn>(
-                      label: UnsavedLabel(
-                        state: triggerOnField.dirty,
-                        onRevert: triggerOnField.onRevert,
-                        child: LabelWithTooltip(
-                          label: context.l10n.actionTriggerOnLabel,
-                          tooltipContent: const ActionTriggerOnTooltip(),
+                  rawOn == null
+                      ? SizedBox(width: 180, child: triggerOnSelect)
+                      : ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 260),
+                          child: IntrinsicWidth(child: triggerOnSelect),
                         ),
-                      ),
-                      key: ValueKey(displayOnValue),
-                      items: supportedOnOptions,
-                      control: FSelectManagedControl<TriggerOn>(
-                        initial: displayOnValue,
-                        onChange: (value) {
-                          if (value != null) triggerOnField.onChanged(value);
-                        },
-                      ),
-                    ),
-                  ),
                 ),
               if (showInterval &&
                   visibleFields.contains(ActionTriggerOptionField.interval))
@@ -236,6 +313,12 @@ class ActionTriggerFields extends HookConsumerWidget {
                         controller: thresholdController,
                       ),
                       hint: context.l10n.triggerFieldThresholdHint,
+                      error: isCompleteThreshold(thresholdField.text)
+                          ? null
+                          : Text(
+                              context.l10n.triggerFieldThresholdInvalid,
+                              style: fieldErrorStyle(context),
+                            ),
                     ),
                   ),
                 ),
@@ -266,18 +349,25 @@ class ActionTriggerFields extends HookConsumerWidget {
           ),
         ],
         if (visibleFields.contains(ActionTriggerOptionField.conflicting)) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           revealable(
             ActionTriggerOptionField.conflicting,
             FCheckbox(
               value: conflictingField.value,
-              onChange: conflictingField.onChanged,
+              onChange: ref
+                  .read(actionEditorProvider(actionLocation).notifier)
+                  .setConflicting,
+              description: Text(context.l10n.actionConflictingDescription),
               label: UnsavedLabel(
                 state: conflictingField.dirty,
-                onRevert: conflictingField.onRevert,
+                onRevert: conflictingField.onRevert == null
+                    ? null
+                    : ref
+                          .read(actionEditorProvider(actionLocation).notifier)
+                          .revertConflicting,
                 child: LabelWithTooltip(
                   label: context.l10n.actionConflictingLabel,
-                  tooltipContent: const ActionConflictingTooltip(),
+                  tooltipContent: ActionConflictingTooltip(kind: tooltipKind),
                 ),
               ),
             ),
@@ -324,3 +414,14 @@ extension ActionTriggerOptionFieldSchema on ActionTriggerOptionField {
     ActionTriggerOptionField.inputDelay => ConfigDirtyField.actionInputDelay,
   };
 }
+
+ConflictingTooltipKind _conflictingTooltipKind(Gesture? gesture) =>
+    switch (gesture) {
+      StrokeGesture() ||
+      TouchpadStrokeGesture() ||
+      TouchscreenStrokeGesture() => ConflictingTooltipKind.stroke,
+      MouseGesture() => ConflictingTooltipKind.mouse,
+      TouchpadGesture() ||
+      TouchscreenGesture() => ConflictingTooltipKind.fingers,
+      _ => ConflictingTooltipKind.other,
+    };

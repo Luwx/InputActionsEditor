@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:input_actions_editor/domain/misc/key_sequence_parser.dart';
 import 'package:input_actions_editor/domain/misc/keyboard_physical_key_map.dart';
 import 'package:input_actions_editor/model/action.dart';
+import 'package:input_actions_editor/services/keyboard_recording_service.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/input_action_types.dart';
 
 class KeyboardRecorder {
@@ -29,14 +32,15 @@ KeyboardRecorder useKeyboardRecorder(ValueChanged<String> onCaptured) {
   // Held in a ref so cleanup always unregisters the handler it added.
   final handler = useRef<bool Function(KeyEvent)?>(null);
 
-  useEffect(() {
-    return () {
-      final registered = handler.value;
-      if (registered != null) {
-        HardwareKeyboard.instance.removeHandler(registered);
-      }
-    };
-  }, const []);
+  void release() {
+    final registered = handler.value;
+    if (registered == null) return;
+    HardwareKeyboard.instance.removeHandler(registered);
+    handler.value = null;
+    unawaited(setKeyboardRecordingGrab(false));
+  }
+
+  useEffect(() => release, const []);
 
   bool onKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyUpEvent) return true;
@@ -54,18 +58,17 @@ KeyboardRecorder useKeyboardRecorder(ValueChanged<String> onCaptured) {
   }
 
   void start() {
+    if (handler.value != null) return;
     isRecording.value = true;
     tokens.value = [];
     handler.value = onKeyEvent;
     HardwareKeyboard.instance.addHandler(onKeyEvent);
+    unawaited(setKeyboardRecordingGrab(true));
   }
 
   void stop({required bool append, bool convertToShortcut = false}) {
-    final registered = handler.value;
-    if (registered != null) {
-      HardwareKeyboard.instance.removeHandler(registered);
-      handler.value = null;
-    }
+    if (handler.value == null) return;
+    release();
     if (append && tokens.value.isNotEmpty) {
       onCaptured(
         convertToShortcut

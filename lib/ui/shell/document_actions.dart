@@ -207,3 +207,19 @@ Future<void> copyConfigToClipboard(
     duration: const Duration(seconds: 3),
   );
 }
+
+Future<void> openConfigInTextEditor(BuildContext context, WidgetRef ref) async {
+  try {
+    await ref.read(configControllerProvider.notifier).openInTextEditor();
+  } on Object catch (error) {
+    if (!context.mounted) return;
+    showFToast(
+      context: context,
+      variant: .destructive,
+      icon: const Icon(FLucideIcons.triangleAlert),
+      title: Text(context.l10n.configOpenInTextEditorFailed),
+      description: Text('$error'),
+      duration: const Duration(seconds: 8),
+    );
+  }
+}

@@ -28,6 +28,7 @@ import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_paste_request.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_rows.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_transitions.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_scroll_anchor.dart';
@@ -165,16 +166,26 @@ final class ActionListChoreography {
 ActionListChoreography useActionListChoreography(
   WidgetRef ref,
   BuildContext context,
-  GestureLocation location, {
+  ActionSource source, {
   required GlobalKey listKey,
 }) {
+  final location = source.gesture;
   final anchor = useActionScrollAnchor(context);
   final transitions = useListTransitions<ActionGhostRow>(context);
-  ref.listen(actionListEditorProvider(location), (previous, next) {
+  ref.listen(actionListEditorProvider(source), (previous, next) {
     if (previous != null) captureActionMotion(transitions, previous, next);
   });
   // Deliberately a notifier, not useState: a toggle must not rebuild the list.
-  final expanded = useValueNotifier(<int>{});
+  final expanded = useValueNotifier(
+    useMemoized(
+      () => source.menuItem == null
+          ? <int>{}
+          : {
+              for (final row in ref.read(actionListEditorProvider(source)).rows)
+                row.editId,
+            },
+    ),
+  );
   final collapsedGroups = useState(<int>{});
   // Groups whose children were unfolded by their card opening, so shutting the
   // card can put them back. A manual disclosure hands the fold back to the user
@@ -205,13 +216,13 @@ ActionListChoreography useActionListChoreography(
   useEffect(() => dragCursor.hide, [dragCursor]);
   final pinnedTriggerOptions = useState(
     _initialPinnedActionTriggerOptions(
-      ref.read(actionListEditorProvider(location)).actions,
+      ref.read(actionListEditorProvider(source)).actions,
     ),
   );
   final setDragPointer = useDragEscapeCancel();
 
   ActionListEditorNotifier notifier() =>
-      ref.read(actionListEditorProvider(location).notifier);
+      ref.read(actionListEditorProvider(source).notifier);
 
   // Selection captured when a marquee starts; covered rows are unioned onto it
   // (additive) or it stays empty (replace).
@@ -397,7 +408,7 @@ ActionListChoreography useActionListChoreography(
     );
   }
 
-  List<ActionRow> rows() => ref.read(actionListEditorProvider(location)).rows;
+  List<ActionRow> rows() => ref.read(actionListEditorProvider(source)).rows;
 
   /// The rows an action-level command applies to: the selection when [editId]
   /// is part of it, otherwise just that row.
@@ -415,7 +426,7 @@ ActionListChoreography useActionListChoreography(
       ..removeWhere((key, _) => keys.contains(key));
     selected.value = {...selected.value}..removeAll(keys);
     anchor.clear();
-    captureActionGhosts(transitions, ref, location, keys);
+    captureActionGhosts(transitions, ref, source, keys);
     notifier().remove(keys);
   }
 
@@ -459,7 +470,17 @@ ActionListChoreography useActionListChoreography(
       // Pasting into a folded group would otherwise drop the rows out of sight.
     }..remove(anchorKey);
     clearSelection();
+    final lastPasted = rows()
+        .where((row) => !before.contains(row.editId))
+        .lastOrNull;
+    if (lastPasted != null) {
+      scrollTo(marquee.measureKeyFor(lastPasted.editId));
+    }
   }
+
+  ref.listen(actionPasteRequestProvider, (_, next) {
+    if (next?.source == source) unawaited(paste(null));
+  });
 
   void duplicate(ActionLocation target) {
     final before = {for (final row in rows()) row.editId};
@@ -644,11 +665,11 @@ ActionListChoreography useActionListChoreography(
     revealedTicket.value = target.ticket;
     // A move shows itself where it lands; opening the card of the group it
     // shuffled would bury the row that travelled.
-    if (_revealedAMove(target, location)) return null;
+    if (_revealedAMove(target, source)) return null;
     final changed = changedActionFields(
       target.before,
       target.after,
-      ActionLocation(gesture: location, editId: actionEditId),
+      source.locationOf(actionEditId),
     );
     // The switch sits on the header, so its step has nothing to show inside.
     if (changed.isNotEmpty && changed.every(_headerFields.contains)) {
@@ -657,7 +678,8 @@ ActionListChoreography useActionListChoreography(
     // The rows for a freshly selected gesture land a frame later.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // The field marks and aims at itself; this only has to open the card.
-      if (context.mounted) {
+      final inThisList = rows().any((row) => row.editId == actionEditId);
+      if (context.mounted && inThisList) {
         unawaited(reveal(actionEditId, flash: false, scroll: false));
       }
     });
@@ -717,12 +739,9 @@ ActionListChoreography useActionListChoreography(
 
 const Set<ConfigDirtyField> _headerFields = {ConfigDirtyField.actionEnabled};
 
-bool _revealedAMove(EditReveal reveal, GestureLocation location) {
+bool _revealedAMove(EditReveal reveal, ActionSource source) {
   List<TreeListNode<int>> nodes(Config config) => actionTreeNodes(
-    flattenActionRows(
-      location,
-      gestureAt(config, location)?.common.actions ?? const [],
-    ),
+    flattenActionRows(source, source.read(config) ?? const []),
   );
 
   return findMovedNodes(

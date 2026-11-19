@@ -13,19 +13,18 @@ import 'package:input_actions_editor/ui/common/collapsible_section.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
 import 'package:input_actions_editor/ui/common/section_card.dart';
 import 'package:input_actions_editor/ui/common/staggered_build.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/group/group_offers.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/group/widgets/group_trigger_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/state/gesture_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/widgets/renameable_title.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 /// Editor for the properties every gesture in a group inherits.
-///
-/// A group node is the daemon's trigger group: at parse time it copies each of
-/// these keys onto every descendant that does not set it. Reuses the
-/// single-gesture controls through [TriggerAdvancedFields]'s group scope, so a
-/// property looks and behaves the same wherever it is set.
 class GroupSettingsView extends HookConsumerWidget {
   const GroupSettingsView({required this.location, super.key});
 
@@ -51,6 +50,16 @@ class GroupSettingsView extends HookConsumerWidget {
       if (inheritedConditions.isNotEmpty) TriggerAdvancedField.conditions,
     });
     final optionsExpanded = useState(true);
+    final speed = offersSpeed(group) ? const SpeedField() : null;
+    final lockPointer = offersLockPointer(group)
+        ? const LockPointerField()
+        : null;
+    final pinSpeed = useState(group.speed != null);
+    final pinLockPointer = useState(group.lockPointer != null);
+    final bodySpeed = pinSpeed.value ? speed : null;
+    final bodyLockPointer = pinLockPointer.value ? lockPointer : null;
+    final foldedSpeed = pinSpeed.value ? null : speed;
+    final foldedLockPointer = pinLockPointer.value ? null : lockPointer;
 
     final pinnedFields = TriggerAdvancedField.values
         .where(pinned.value.contains)
@@ -58,12 +67,20 @@ class GroupSettingsView extends HookConsumerWidget {
     final accordionFields = TriggerAdvancedField.values
         .where((field) => !pinned.value.contains(field))
         .toList();
+    final hasFolded =
+        accordionFields.isNotEmpty ||
+        foldedSpeed != null ||
+        foldedLockPointer != null;
 
     final revealed = ref.watch(revealedGroupFieldsProvider(location));
     useEffect(() {
       if (accordionFields.any(
-        (field) => revealed.contains(field.groupDirtyField),
-      )) {
+            (field) => revealed.contains(field.groupDirtyField),
+          ) ||
+          (foldedSpeed != null &&
+              revealed.contains(ConfigDirtyField.gestureGroupSpeed)) ||
+          (foldedLockPointer != null &&
+              revealed.contains(ConfigDirtyField.gestureGroupLockPointer))) {
         optionsExpanded.value = true;
       }
       return null;
@@ -73,7 +90,7 @@ class GroupSettingsView extends HookConsumerWidget {
       color: colors.card.withValues(alpha: 0.55),
       title: l10n.triggerConfigTitle,
       padding: const EdgeInsets.all(16),
-      footer: accordionFields.isEmpty
+      footer: !hasFolded
           ? null
           : CardFooter(
               expanded: optionsExpanded.value,
@@ -85,8 +102,9 @@ class GroupSettingsView extends HookConsumerWidget {
                   immediate: optionsExpanded.value,
                   child: TriggerAdvancedFields(
                     fields: accordionFields,
-                    group: location,
                     inheritedConditions: inheritedConditions,
+                    speed: foldedSpeed,
+                    lockPointer: foldedLockPointer,
                   ),
                 ),
               ),
@@ -102,19 +120,15 @@ class GroupSettingsView extends HookConsumerWidget {
             ),
           ),
           const SizedBox(height: 4),
-          if (pinnedFields.isNotEmpty)
+          GroupTriggerFields(device: location.device, group: group),
+          if (pinnedFields.isNotEmpty ||
+              bodySpeed != null ||
+              bodyLockPointer != null)
             TriggerAdvancedFields(
               fields: pinnedFields,
-              group: location,
               inheritedConditions: inheritedConditions,
-              onOpenGroup: (editId) => ref
-                  .read(selectedGroupProvider.notifier)
-                  .open(
-                    GestureGroupLocation(
-                      device: location.device,
-                      editId: editId,
-                    ),
-                  ),
+              speed: bodySpeed,
+              lockPointer: bodyLockPointer,
             ),
         ],
       ),

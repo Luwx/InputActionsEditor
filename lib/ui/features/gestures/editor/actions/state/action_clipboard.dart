@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 
 /// The clipboard boundary for actions: they travel as the same YAML a gesture's

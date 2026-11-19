@@ -6,11 +6,13 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
+import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/app_state/navigation/app_destination.dart';
 import 'package:input_actions_editor/app_state/navigation/nav_controller.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
@@ -22,14 +24,17 @@ import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/store/edit_reveal_provider.dart';
 import 'package:input_actions_editor/ui/common/app_tooltip.dart';
+import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
 import 'package:input_actions_editor/ui/common/layout/sliver_header_support.dart';
+import 'package:input_actions_editor/ui/common/menu_shortcut_hint.dart';
 import 'package:input_actions_editor/ui/common/rename_dialog.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/common/tree_list/list_transitions.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_motion.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/bulk_edit/state/bulk_edit_active_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_menu_commands.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
@@ -174,19 +179,31 @@ class GestureListSection extends HookConsumerWidget {
       if (byDevice.isNotEmpty) await GestureClipboard.write(byDevice);
     }
 
-    Future<void> pasteGestures(GestureLocation anchor) async {
-      final gestures = await GestureClipboard.read(anchor.device);
-      if (!context.mounted) return;
-      if (gestures.isEmpty) {
-        showFToast(
-          context: context,
-          title: Text(context.l10n.gesturePasteEmpty),
-          duration: const Duration(seconds: 3),
-        );
-        return;
-      }
-      listNotifier.insertGestures(anchor.device, gestures, after: anchor);
+    Future<void> pasteGestures(GestureLocation? anchor) async {
+      final inserted = await revealAddedGestures(
+        ref,
+        () => listNotifier.pasteGestures(
+          after: anchor,
+          devices: anchor != null
+              ? [anchor.device]
+              : deviceFilter != null
+              ? [deviceFilter]
+              : DeviceType.values,
+        ),
+      );
+      if (!context.mounted || inserted) return;
+      showFToast(
+        context: context,
+        title: Text(context.l10n.gesturePasteEmpty),
+        duration: const Duration(seconds: 3),
+      );
     }
+
+    final pasteMenu = useFPopoverController();
+    useListenable(pasteMenu);
+    useMenuShortcuts(pasteMenu, {
+      pasteShortcut: () => unawaited(pasteGestures(null)),
+    });
 
     void dropFromSelection(List<GestureLocation> targets) {
       if (multiSelect == null) return;
@@ -211,7 +228,12 @@ class GestureListSection extends HookConsumerWidget {
       targetsFor: targetsFor,
       copy: copyGestures,
       paste: pasteGestures,
-      duplicate: listNotifier.duplicateGestures,
+      duplicate: (targets) => unawaited(
+        revealAddedGestures(
+          ref,
+          () => listNotifier.duplicateGestures(targets),
+        ),
+      ),
       setEnabled: listNotifier.setGesturesEnabled,
       delete: deleteGestures,
     );
@@ -374,14 +396,45 @@ class GestureListSection extends HookConsumerWidget {
                   ),
                 ),
               ],
-              emptyPlaceholder: Center(
-                child: Text(
-                  'No gestures yet.',
-                  style: typography.body.sm.copyWith(
-                    color: colors.mutedForeground,
+              trailingSlivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: FContextMenu(
+                    control: FPopoverControl.managed(controller: pasteMenu),
+                    builder: dismissibleContextMenuBuilder,
+                    secondaryPress: !pasteMenu.isShown,
+                    longPress: false,
+                    menu: [
+                      FItemGroup(
+                        children: [
+                          FItem(
+                            prefix: const Icon(FLucideIcons.clipboardPaste),
+                            title: Text(context.l10n.actionPaste),
+                            details: const MenuShortcutHint(pasteShortcut),
+                            onPress: dismissThen(
+                              pasteMenu,
+                              () => unawaited(pasteGestures(null)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      child: withGhosts.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No gestures yet.',
+                                style: typography.body.sm.copyWith(
+                                  color: colors.mutedForeground,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.expand(),
+                    ),
                   ),
                 ),
-              ),
+              ],
               entries: withGhosts,
               borderColor: colors.border,
               groupHeaderExtent: kGestureGroupHeaderExtent,
@@ -516,6 +569,7 @@ class GestureListSection extends HookConsumerWidget {
       isCollapsed: item.isCollapsed,
       scrollBuilder: scrollBuilder,
       gestureCount: item.gestureCount,
+      appClass: item.appClass,
       borderColor: context.theme.colors.border,
       reorderHandle: reorderHandle,
       onToggleCollapse: () =>
@@ -543,9 +597,15 @@ class GestureListSection extends HookConsumerWidget {
         (g) => g.copyWith(enabled: !g.enabled),
       ),
       onBulkEdit: () {
+        final groupKeys = {item.groupKey};
+        for (final row in viewModel.flatItems) {
+          if (row is _GroupHeaderItem && groupKeys.contains(row.parentKey)) {
+            groupKeys.add(row.groupKey);
+          }
+        }
         final locations = <GestureLocation>{
           for (final row in viewModel.flatItems)
-            if (row is _GestureRowItem && row.groupKey == item.groupKey)
+            if (row is _GestureRowItem && groupKeys.contains(row.groupKey))
               row.location,
         };
         if (locations.isEmpty) return;
@@ -627,6 +687,7 @@ class GestureListSection extends HookConsumerWidget {
           if (isMultiSelectMode) {
             multiSelect.toggle(location);
           } else {
+            ref.read(selectedGroupProvider.notifier).close();
             context.selectGesture(location);
           }
         },
@@ -652,6 +713,8 @@ class GestureListSection extends HookConsumerWidget {
               false;
           rowCommands.setEnabled(targets(), enabled: !enabled);
         },
+        onDiscardChanges: () =>
+            ref.read(gestureEditorProvider(location).notifier).discardChanges(),
         onDelete: () => rowCommands.delete(targets()),
       ),
     );

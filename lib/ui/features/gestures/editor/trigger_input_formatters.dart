@@ -2,6 +2,7 @@ import 'package:flutter/services.dart' show TextInputFormatter;
 
 final _partialThreshold = RegExp(r'^\d*\.?\d*(-\d*\.?\d*)?$');
 final _partialInterval = RegExp(r'^[+-]?\d*\.?\d*$');
+final _completeThreshold = RegExp(r'^(\d+\.?\d*|\.\d+)(-(\d+\.?\d*|\.\d+))?$');
 
 /// Rejects text that is not on its way to a number or a `min-max` range.
 final thresholdInputFormatters = <TextInputFormatter>[
@@ -17,3 +18,6 @@ TextInputFormatter _accepting(RegExp pattern) =>
     TextInputFormatter.withFunction(
       (old, next) => pattern.hasMatch(next.text) ? next : old,
     );
+
+bool isCompleteThreshold(String text) =>
+    text.isEmpty || _completeThreshold.hasMatch(text);

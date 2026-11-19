@@ -1,16 +1,21 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
+import 'package:input_actions_editor/domain/edit/edits/stroke_edits.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor_actions.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 
 part 'gesture_editor_notifier.freezed.dart';
 
@@ -91,11 +96,11 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   }
 
   void duplicate() {
-    _config.add(DuplicateGestures([location]));
+    _config.add(DuplicateGestures([location]), scope: const GesturesScope());
   }
 
   void delete() {
-    _config.add(RemoveGestures([location]));
+    _config.add(RemoveGestures([location]), scope: const GesturesScope());
   }
 
   void updateGesture(Object Function(Object) update) {
@@ -105,8 +110,42 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
     );
   }
 
+  void removeRawOption(String option) {
+    final extra = state.common?.extra;
+    if (extra == null) return;
+    _config.add(
+      SetLens(
+        gestureExtraLens(location),
+        {...extra}..remove(option),
+        label: 'delete $option',
+      ),
+      scope: const GesturesScope(),
+    );
+  }
+
+  void renameStroke(String data, String? name) {
+    _config.add(RenameStroke(data, name), scope: const GesturesScope());
+  }
+
+  void insertStrokes(List<Stroke> strokes, {int? at}) {
+    _config.add(
+      InsertStrokes(location, strokes, at: at),
+      scope: const GesturesScope(),
+    );
+  }
+
   void updateMouse(MouseGesture Function(MouseGesture) update) =>
       updateGesture((g) => update(g as MouseGesture));
+
+  void discardChanges() {
+    final saved = state.savedGesture;
+    if (saved == null) return;
+    updateGesture(
+      (current) => saved.withCommon(
+        saved.common.copyWith(editId: (current as Gesture).common.editId),
+      ),
+    );
+  }
 
   void revertTriggerConfig(Gesture saved) {
     updateGesture((g) {
@@ -120,5 +159,20 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
         ),
       );
     });
+  }
+}
+
+extension ScopedGestureAccess on WidgetRef {
+  /// Null where there is no single gesture, such as a group's page.
+  T? selectScopedGesture<T>(
+    BuildContext context,
+    T? Function(Gesture? gesture) select,
+  ) {
+    final scope = EditLocationScope.maybeOf(context);
+    final location = scope?.gesture ?? scope?.action?.gesture;
+    if (location == null) return null;
+    return watch(
+      gestureEditorProvider(location).select((s) => select(s.gesture)),
+    );
   }
 }

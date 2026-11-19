@@ -1,16 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
 import 'package:input_actions_editor/model/speed_settings.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 
@@ -19,7 +21,10 @@ void main() {
     test('stroke writes strokes only when non-empty', () {
       expect(
         mouseGestureToMap(
-          const StrokeGesture(common: TriggerCommon(), strokes: ['AAA==']),
+          const StrokeGesture(
+            common: TriggerCommon(),
+            strokes: [Stroke('AAA==')],
+          ),
         ),
         {
           'type': 'stroke',
@@ -151,8 +156,9 @@ void main() {
               ),
         ),
       );
-      expect(map['name'], 'My Press');
-      expect(map['enabled'], false);
+      expect(map['_extra'], {'name': 'My Press', 'enabled': false});
+      expect(map, isNot(contains('name')));
+      expect(map, isNot(contains('enabled')));
       expect(map['id'], 'press_1');
       expect(map['mouse_buttons'], ['right', 'left']);
       expect(map['mouse_buttons_exact_order'], true);
@@ -174,6 +180,31 @@ void main() {
         const PressGesture(common: TriggerCommon()),
       );
       expect(map.keys, ['type']);
+    });
+
+    test('a saved gesture carries _extra above its actions', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - command: echo hi
+      _extra:
+        name: Old
+''';
+      final config = decodeConfig(source);
+      final press = config.mouseGestures.single as PressGesture;
+      final renamed = config.copyWith(
+        mouseNodes: [
+          GestureNode.leaf(
+            press.copyWith(common: press.common.copyWith(name: 'New')),
+          ),
+        ],
+      );
+      final saved = encodeConfig(renamed, source);
+
+      expect(saved.indexOf('_extra:'), lessThan(saved.indexOf('actions:')));
+      expect(decodeConfig(saved), renamed);
     });
 
     test('mouse_buttons_exact_order omitted when false', () {
@@ -232,8 +263,9 @@ void main() {
 
       final yaml = encodeConfig(config, '');
       expect(yaml, contains('- type: press'));
-      expect(yaml, contains('# - enabled: false'));
-      expect(yaml, contains('# command: echo hi'));
+      expect(yaml, contains('# - command: echo hi'));
+      expect(yaml, contains('# _extra:'));
+      expect(yaml, contains('# enabled: false'));
       expect(yaml, isNot(contains('# - type: press')));
     });
 
@@ -260,7 +292,7 @@ void main() {
 
         final disabledYaml = encodeConfig(disabledConfig, '');
         expect(disabledYaml, contains('# - type: press'));
-        expect(disabledYaml, contains('# # - enabled: false'));
+        expect(disabledYaml, contains('# # - command: echo hi'));
         final decoded = decodeConfig(disabledYaml);
         expect(decoded.mouseGestures.single.common.enabled, isFalse);
         expect(
@@ -279,8 +311,8 @@ void main() {
         final yaml = encodeConfig(reenabled, disabledYaml);
         expect(yaml, contains('- type: press'));
         expect(yaml, isNot(contains('# - type: press')));
-        expect(yaml, contains('# - enabled: false'));
-        expect(yaml, contains('# command: echo hi'));
+        expect(yaml, contains('# - command: echo hi'));
+        expect(yaml, contains('# enabled: false'));
       },
     );
 
@@ -291,7 +323,8 @@ void main() {
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
 ''');
 
@@ -299,7 +332,8 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
 ''');
         expect(yaml, contains('#   # threshold: 42'));
@@ -335,7 +369,10 @@ mouse:
     test('fingers written only when set', () {
       expect(
         touchpadGestureToMap(
-          const TouchpadTapGesture(common: TriggerCommon(), fingers: 3),
+          const TouchpadTapGesture(
+            common: TriggerCommon(),
+            fingers: FingerRange(min: 3, max: 3),
+          ),
         ),
         {'type': 'tap', 'fingers': 3},
       );
@@ -350,7 +387,7 @@ mouse:
         touchpadGestureToMap(
           const TouchpadPinchGesture(
             common: TriggerCommon(),
-            fingers: 2,
+            fingers: FingerRange(min: 2, max: 2),
             direction: PinchDirection.inward,
             motion: MotionCommon(speed: TriggerSpeed.slow),
           ),
@@ -364,8 +401,8 @@ mouse:
         touchpadGestureToMap(
           const TouchpadStrokeGesture(
             common: TriggerCommon(),
-            fingers: 3,
-            strokes: ['AAA=='],
+            fingers: FingerRange(min: 3, max: 3),
+            strokes: [Stroke('AAA==')],
           ),
         ),
         {
@@ -528,6 +565,67 @@ mouse:
           ),
         ),
         {'activate_window': r'$initial_window_under_pointer_id'},
+      );
+    });
+
+    test('context_menu writes every item kind, nested', () {
+      expect(
+        actionToMap(
+          const ContextMenuAction(
+            items: [
+              MenuItem.action(
+                text: 'Terminal',
+                icon: 'utilities-terminal',
+                actions: [
+                  TriggerAction(action: CommandAction(command: 'konsole')),
+                ],
+              ),
+              MenuItem.separator(),
+              MenuItem.section(text: 'Tools'),
+              MenuItem.subMenu(text: 'More', items: [MenuItem.separator()]),
+            ],
+          ),
+        ),
+        {
+          'context_menu': [
+            {
+              'text': 'Terminal',
+              'icon': 'utilities-terminal',
+              'actions': [
+                {'command': 'konsole'},
+              ],
+            },
+            {'separator': null},
+            {'section': 'Tools'},
+            {
+              'text': 'More',
+              'menu': [
+                {'separator': null},
+              ],
+            },
+          ],
+        },
+      );
+    });
+
+    test('context_menu survives a full config round trip', () {
+      const source = '''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - context_menu:
+            - text: Terminal
+              actions:
+                - command: konsole
+            - separator:
+            - section: Tools
+''';
+      final config = decodeConfig(source);
+      final reread = decodeConfig(encodeConfig(config, ''));
+      expect(
+        reread.mouseGestures.single.common.actions.single.action,
+        config.mouseGestures.single.common.actions.single.action,
       );
     });
 

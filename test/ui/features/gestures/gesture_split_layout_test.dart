@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/l10n/app_localizations.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
@@ -15,6 +16,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/gesture_editor.
 import 'package:input_actions_editor/ui/features/gestures/gesture_split_layout.dart';
 import 'package:input_actions_editor/ui/features/gestures/list/gesture_list_section.dart';
 
+import '../../../helpers/load_fonts.dart';
 import '../../../helpers/seeded_config_controller.dart';
 
 const _storedWidth = 600.0;
@@ -27,12 +29,12 @@ const _config = Config(
   ],
 );
 
-Widget _host() => MaterialApp(
+Widget _host([Config config = _config]) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: ProviderScope(
     overrides: [
-      configControllerProvider.overrideWith(() => SeededController(_config)),
+      configControllerProvider.overrideWith(() => SeededController(config)),
       initialAppStateProvider.overrideWithValue(
         const AppState(gestureListWidth: _storedWidth),
       ),
@@ -62,6 +64,8 @@ double _listWidth(WidgetTester tester) =>
     tester.getSize(find.byType(GestureListSection)).width;
 
 void main() {
+  setUpAll(loadAppFonts);
+
   testWidgets('the list keeps its width when the window widens', (
     tester,
   ) async {
@@ -124,5 +128,44 @@ void main() {
     await _resize(tester, 1400);
 
     expect(_listWidth(tester), _storedWidth);
+  });
+
+  testWidgets('a new config closes an editor showing an inherited field', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(1400, 1800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      _host(
+        decodeConfig('''
+mouse:
+  gestures:
+    - _extra:
+        name: Firefox
+      threshold: 5
+      gestures:
+        - type: press
+          _extra:
+            name: Back
+'''),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text('Back'));
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Inherited from Firefox: 5'), findsOneWidget);
+
+    ProviderScope.containerOf(
+      tester.element(find.byType(GestureSplitLayout)),
+      listen: false,
+    ).read(configControllerProvider.notifier).newConfig();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Inherited from Firefox: 5'), findsNothing);
   });
 }

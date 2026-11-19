@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
@@ -6,11 +8,15 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/services/dbus_client.dart';
 import 'package:input_actions_editor/ui/common/app_dialog.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/state/last_strokes_provider.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/state/stroke_recording_provider.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_commands.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_paste_menu.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/stroke/stroke_row.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 import 'package:pixel_snap/material.dart' show Icons;
@@ -25,8 +31,8 @@ class StrokesField extends HookConsumerWidget {
     super.key,
   });
 
-  final List<String> strokes;
-  final void Function(List<String>) onStrokesChanged;
+  final List<Stroke> strokes;
+  final void Function(List<Stroke>) onStrokesChanged;
   final DeviceType deviceType;
 
   @override
@@ -46,7 +52,9 @@ class StrokesField extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
-        ref.read(lastStrokesProvider.notifier).record(strokes);
+        ref.read(lastStrokesProvider.notifier).record([
+          for (final stroke in strokes) stroke.data,
+        ]);
       });
       return null;
     }, [strokes]);
@@ -88,45 +96,82 @@ class StrokesField extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        LabelWithTooltip(
-          label: context.l10n.strokesLabel,
-          tooltip: context.l10n.strokesTooltip,
-          textStyle: context.theme.typography.body.sm.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        if (strokes.isEmpty) ...[
-          Text(
-            context.l10n.strokesEmpty,
-            style: context.theme.typography.body.xs.copyWith(
-              color: context.theme.colors.mutedForeground,
+        // HACK: nested FContextMenus both open, so this one sits behind.
+        Stack(
+          children: [
+            Positioned.fill(
+              child: StrokePasteMenu(
+                onPaste: () =>
+                    unawaited(pasteStrokes(ref, context.gestureLocation)),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _StrokeInstructions(deviceType: deviceType),
-          const SizedBox(height: 4),
-        ] else
-          Wrap(
-            children: [
-              for (final (i, stroke) in strokes.indexed)
-                StrokeRow(
-                  key: ValueKey('stroke-$i-$stroke'),
-                  stroke: stroke,
-                  index: i,
-                  fromStroke: i < previousStrokes.length
-                      ? previousStrokes[i]
-                      : null,
-                  animatePath:
-                      animatedStroke.value == stroke &&
-                      animatedIndex.value == i,
-                  onDelete: () {
-                    final updated = List<String>.of(strokes)..removeAt(i);
-                    onStrokesChanged(updated);
-                  },
-                ),
-            ],
-          ),
+            SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LabelWithTooltip(
+                    label: context.l10n.strokesLabel,
+                    tooltip: context.l10n.strokesTooltip,
+                    textStyle: context.theme.typography.body.sm.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (strokes.isEmpty) ...[
+                    Text(
+                      context.l10n.strokesEmpty,
+                      style: context.theme.typography.body.xs.copyWith(
+                        color: context.theme.colors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _StrokeInstructions(deviceType: deviceType),
+                    const SizedBox(height: 4),
+                  ] else
+                    Wrap(
+                      children: [
+                        for (final (i, stroke) in strokes.indexed)
+                          StrokeRow(
+                            key: ValueKey('stroke-$i-${stroke.data}'),
+                            stroke: stroke,
+                            index: i,
+                            fromStroke: i < previousStrokes.length
+                                ? previousStrokes[i]
+                                : null,
+                            animatePath:
+                                animatedStroke.value == stroke.data &&
+                                animatedIndex.value == i,
+                            onDelete: () {
+                              final updated = List<Stroke>.of(strokes)
+                                ..removeAt(i);
+                              onStrokesChanged(updated);
+                            },
+                            onRename: () => unawaited(
+                              showStrokeRenameDialog(
+                                context,
+                                ref,
+                                context.gestureLocation,
+                                stroke,
+                              ),
+                            ),
+                            onCopy: () =>
+                                unawaited(copyStroke(context, stroke)),
+                            onPaste: () => unawaited(
+                              pasteStrokes(
+                                ref,
+                                context.gestureLocation,
+                                at: i + 1,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         FButton(
           variant: .outline,
@@ -140,7 +185,7 @@ class StrokesField extends HookConsumerWidget {
                   final appendedIndex = strokes.length;
                   animatedStroke.value = stroke;
                   animatedIndex.value = appendedIndex;
-                  onStrokesChanged([...strokes, stroke]);
+                  onStrokesChanged([...strokes, Stroke(stroke)]);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     animatedStroke.value = null;
                     animatedIndex.value = null;

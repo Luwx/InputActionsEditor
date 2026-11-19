@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Action;
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -6,6 +7,7 @@ import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/state/action_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
+import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class EditorReplaceText extends ConsumerWidget {
@@ -108,7 +110,7 @@ class EditorReplaceText extends ConsumerWidget {
                 Material(color: Colors.transparent, child: child),
             itemBuilder: (context, index) {
               return Column(
-                key: ValueKey('replace-text-rule-$index-${rules[index]}'),
+                key: ValueKey('replace-text-rule-$index'),
                 children: [
                   _ReplaceTextRuleEditor(
                     index: index,
@@ -127,7 +129,7 @@ class EditorReplaceText extends ConsumerWidget {
   }
 }
 
-class _ReplaceTextRuleEditor extends StatelessWidget {
+class _ReplaceTextRuleEditor extends HookWidget {
   const _ReplaceTextRuleEditor({
     required this.index,
     required this.rule,
@@ -153,12 +155,20 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
       LiteralText() => _ReplacementMode.literal,
       CommandText() => _ReplacementMode.command,
     };
-    final valueKey = [
-      'replace-text-value',
-      index,
-      replacementMode,
+    final regexController = useSyncedTextController(
+      rule.regex,
+      (value) => onChanged(rule.copyWith(regex: value.text)),
+    );
+    final replacementController = useSyncedTextController(
       replacementText,
-    ].join('-');
+      (value) => onChanged(
+        rule.copyWith(
+          replace: replacementMode == _ReplacementMode.literal
+              ? LiteralText(value.text)
+              : CommandText(value.text),
+        ),
+      ),
+    );
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -174,11 +184,8 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
             children: [
               Expanded(
                 child: FTextField(
-                  key: ValueKey('replace-text-regex-$index-${rule.regex}'),
                   control: FTextFieldControl.managed(
-                    initial: TextEditingValue(text: rule.regex),
-                    onChange: (value) =>
-                        onChanged(rule.copyWith(regex: value.text)),
+                    controller: regexController,
                   ),
                   label: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -281,18 +288,8 @@ class _ReplaceTextRuleEditor extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FTextField(
-                  key: ValueKey(valueKey),
                   control: FTextFieldControl.managed(
-                    initial: TextEditingValue(text: replacementText),
-                    onChange: (value) => onChanged(
-                      rule.copyWith(
-                        replace: replacementMode == _ReplacementMode.literal
-                            ? LiteralText(value.text)
-                            : CommandText(
-                                value.text,
-                              ),
-                      ),
-                    ),
+                    controller: replacementController,
                   ),
                   label: replacementMode == _ReplacementMode.literal
                       ? Text(l10n.actionReplaceTextTextMode)

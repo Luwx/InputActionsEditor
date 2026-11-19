@@ -4,8 +4,10 @@ import 'package:forui/forui.dart';
 import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/services/kicon_service.dart';
 import 'package:input_actions_editor/ui/common/attention_flash.dart';
 import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
+import 'package:input_actions_editor/ui/common/file_icon.dart';
 import 'package:input_actions_editor/ui/common/reorderable_groupable_list/reorderable_groupable_list.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/selected_group_provider.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
@@ -25,6 +27,7 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
     required this.isCollapsed,
     required this.scrollBuilder,
     required this.gestureCount,
+    required this.appClass,
     required this.borderColor,
     required this.reorderHandle,
     required this.onToggleCollapse,
@@ -50,6 +53,7 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
   /// so the frosted backing does not move.
   final ReorderableHeaderScrollBuilder scrollBuilder;
   final int gestureCount;
+  final String? appClass;
   final Color borderColor;
   final Widget? reorderHandle;
   final VoidCallback onToggleCollapse;
@@ -84,6 +88,15 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
     final isSelected = ref.watch(
       selectedGroupProvider.select((open) => open == location),
     );
+    final appClass = this.appClass;
+    final appIconPath = appClass == null
+        ? null
+        : ref.watch(appIconPathProvider(appClass)).value;
+    final folderColor = isDisabled
+        ? colors.mutedForeground
+        : isSelected
+        ? colors.primary
+        : colors.foreground;
 
     // The disabled dimming wraps only the content, or no blur
     final content = Opacity(
@@ -108,16 +121,27 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(
-                  FLucideIcons.folder,
-                  size: 15,
-                  color: isDisabled
-                      ? colors.mutedForeground
-                      : isSelected
-                      ? colors.primary
-                      : colors.foreground,
+                AnimatedCrossFade(
+                  firstChild: Icon(
+                    FLucideIcons.folder,
+                    size: 15,
+                    color: folderColor,
+                  ),
+                  secondChild: Icon(
+                    FLucideIcons.folderOpen,
+                    size: 15,
+                    color: folderColor,
+                  ),
+                  crossFadeState: isCollapsed
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: Durations.short4,
                 ),
                 const SizedBox(width: 8),
+                if (appIconPath != null) ...[
+                  FileIcon(path: appIconPath, size: 15),
+                  const SizedBox(width: 6),
+                ],
                 Expanded(
                   child: Text(
                     name.isEmpty ? context.l10n.gestureGroupUnnamed : name,
@@ -237,8 +261,8 @@ class GestureGroupHeaderRow extends HookConsumerWidget {
 }
 
 /// Backs the group header, blending the in-flow tint into the frosted app-bar
-/// look as [frostT] rises. The [BackdropFilter] is only inserted once the blur
-/// is visible, so an unfrosted header pays no blur cost.
+/// look as [frostT] rises. The [BackdropFilter] stays mounted and is disabled
+/// while unfrosted: dropping it remounts the header content mid-animation.
 class _PinnedHeaderBacking extends StatelessWidget {
   const _PinnedHeaderBacking({
     required this.frostT,
@@ -289,9 +313,11 @@ class _PinnedHeaderBacking extends StatelessWidget {
       ),
       child: child,
     );
-    if (frostT < 0.001) return decorated;
+    final frosted = frostT >= 0.001;
     return ClipRect(
+      clipBehavior: frosted ? Clip.hardEdge : Clip.none,
       child: BackdropFilter(
+        enabled: frosted,
         filterConfig: ImageFilterConfig.blur(
           sigmaX: 8 * frostT,
           sigmaY: 8 * frostT,

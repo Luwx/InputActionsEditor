@@ -1,3 +1,5 @@
+import 'package:equatable/equatable.dart';
+
 /// Matches a YAML token against [values], ignoring case as the daemon does.
 T? _fromYaml<T>(List<T> values, String s, String Function(T) toYaml) {
   final token = s.toLowerCase();
@@ -171,7 +173,13 @@ enum TriggerSpeed {
       _fromYaml(TriggerSpeed.values, s, (v) => v.name);
 }
 
-enum TriggerOn {
+sealed class TriggerOnValue {
+  bool get allowsInterval;
+  bool get allowsThreshold;
+  Object? toYaml();
+}
+
+enum TriggerOn implements TriggerOnValue {
   begin,
   update,
   end,
@@ -179,6 +187,13 @@ enum TriggerOn {
   cancel,
   tick;
 
+  @override
+  bool get allowsInterval => this == update || this == tick;
+
+  @override
+  bool get allowsThreshold => this != begin;
+
+  @override
   String toYaml() => switch (this) {
     TriggerOn.endCancel => 'end_cancel',
     _ => name,
@@ -186,4 +201,22 @@ enum TriggerOn {
 
   static TriggerOn? fromYaml(String s) =>
       _fromYaml(TriggerOn.values, s, (v) => v.toYaml());
+}
+
+final class RawTriggerOn extends Equatable implements TriggerOnValue {
+  const RawTriggerOn(this.value);
+
+  final Object? value;
+
+  @override
+  bool get allowsInterval => false;
+
+  @override
+  bool get allowsThreshold => true;
+
+  @override
+  Object? toYaml() => value;
+
+  @override
+  List<Object?> get props => [value];
 }

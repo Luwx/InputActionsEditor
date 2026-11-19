@@ -15,6 +15,7 @@ final class _GroupHeaderItem extends _FlatItem {
     required this.device,
     required this.isCollapsed,
     required this.gestureCount,
+    this.appClass,
     this.depth = 0,
     this.parentKey,
     this.isVisible = true,
@@ -33,6 +34,7 @@ final class _GroupHeaderItem extends _FlatItem {
 
   /// Gestures in the whole subtree, descendant groups included.
   final int gestureCount;
+  final String? appClass;
 
   /// Nesting level; 0 headers pin, deeper ones render as indented rows.
   final int depth;
@@ -57,6 +59,7 @@ final class _GroupHeaderItem extends _FlatItem {
     device,
     isCollapsed,
     gestureCount,
+    appClass,
     depth,
     parentKey,
     isVisible,

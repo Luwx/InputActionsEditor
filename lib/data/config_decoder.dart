@@ -1,4 +1,10 @@
-import 'package:input_actions_editor/data/yaml_helpers.dart';
+import 'dart:collection';
+
+import 'package:input_actions_editor/data/config_format.dart';
+import 'package:input_actions_editor/data/legacy_editor_keys.dart';
+import 'package:input_actions_editor/data/yaml/stroke_yaml.dart';
+import 'package:input_actions_editor/data/yaml/yaml_anchors.dart';
+import 'package:input_actions_editor/data/yaml/yaml_helpers.dart';
 import 'package:input_actions_editor/domain/actions/input_token_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_value_codec.dart';
 import 'package:input_actions_editor/domain/conditions/condition_variable_registry.dart';
@@ -7,6 +13,7 @@ import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/device_rule.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/global_settings.dart';
@@ -21,7 +28,7 @@ import 'package:yaml/yaml.dart';
 
 Config decodeConfig(String yamlText) {
   if (yamlText.trim().isEmpty) return const Config();
-  final parseText = materializeDisabledYamlCommentsRecursively(yamlText);
+  final parseText = materializeDisabledYamlComments(yamlText);
   if (parseText != yamlText) {
     try {
       return _decodeConfigText(parseText);
@@ -38,8 +45,12 @@ Config _decodeConfigText(String parseText) {
   final doc = loadYaml(parseText);
   if (doc == null) return const Config();
   final map = doc as YamlMap;
+  final anchors = anchorNamesByOffset(parseText);
 
-  final mouseNodes = _parseDeviceNodes(map['mouse'], _parseMouseGesture);
+  final mouseNodes = _parseDeviceNodes(
+    map['mouse'],
+    (m) => _parseMouseGesture(m, anchors),
+  );
   final keyboardNodes = _parseDeviceNodes(
     map['keyboard'],
     _parseKeyboardGesture,
@@ -47,11 +58,11 @@ Config _decodeConfigText(String parseText) {
   final pointerNodes = _parseDeviceNodes(map['pointer'], _parsePointerGesture);
   final touchpadNodes = _parseDeviceNodes(
     map['touchpad'],
-    _parseTouchpadGesture,
+    (m) => _parseTouchpadGesture(m, anchors),
   );
   final touchscreenNodes = _parseDeviceNodes(
     map['touchscreen'],
-    _parseTouchscreenGesture,
+    (m) => _parseTouchscreenGesture(m, anchors),
   );
 
   final deviceRules = _parseDeviceRules(map['device_rules']);
@@ -61,16 +72,13 @@ Config _decodeConfigText(String parseText) {
   final globalSettings = _parseGlobalSettings(map);
 
   const knownKeys = {
-    'mouse',
-    'keyboard',
-    'pointer',
-    'touchpad',
-    'touchscreen',
+    ...deviceSectionKeys,
     'device_rules',
     'autoreload',
     'emergency_combination',
     'external_variable_access',
     'notifications',
+    'overlay',
     'anchors',
   };
   final extra = <String, dynamic>{};
@@ -93,13 +101,7 @@ Config _decodeConfigText(String parseText) {
   );
 }
 
-/// Group keys the model holds as typed fields. Anything else on a group node
-/// lands in [GestureGroupNode.extra] and round-trips untouched.
-const _groupNodeKeys = {
-  'gestures',
-  'conditions',
-  'name',
-  'enabled',
+const _sharedKeys = {
   'id',
   'threshold',
   'resume_timeout',
@@ -108,13 +110,36 @@ const _groupNodeKeys = {
   'clear_modifiers',
   'set_last_trigger',
   'end_conditions',
+  'mouse_buttons',
+  'mouse_buttons_exact_order',
+  'fingers',
+  'speed',
+  'instant',
+  'lock_pointer',
 };
 
-/// Parses a device's `gestures:` list into the gesture tree. Untyped list
-/// items with a `gestures:` key are the daemon's trigger groups; they nest to
-/// any depth and become [GestureGroupNode]s. The pre-nesting flat format
-/// (`groups:` device key + `group:` refs on gestures) is migrated into
-/// nesting on the spot and never written back.
+/// Other group keys go to [GestureGroupNode.extra]; `type` to each gesture.
+const Set<String> _groupNodeKeys = {
+  'gestures',
+  'conditions',
+  editorExtraKey,
+  ...legacyEditorKeys,
+  ..._sharedKeys,
+};
+
+const Set<String> _triggerKeys = {
+  ..._groupNodeKeys,
+  'type',
+  'group',
+  'actions',
+  'direction',
+  'angle',
+  'bidirectional',
+  'shortcut',
+  strokesYamlKey,
+};
+
+/// Any item with `gestures:` is a group, typed or not, as `parseTriggerList`.
 List<GestureNode> _parseDeviceNodes(
   dynamic deviceNode,
   Gesture? Function(YamlMap) parseGesture,
@@ -125,88 +150,122 @@ List<GestureNode> _parseDeviceNodes(
 
   final legacyRefs = Map<GestureNode, String>.identity();
 
-  List<GestureNode> walk(YamlList list) {
+  List<GestureNode> walk(
+    YamlList list,
+    Map<String, YamlNode> inherited,
+    Set<String> shared,
+  ) {
     final out = <GestureNode>[];
     for (final item in list) {
       if (item is! YamlMap) continue;
-      if (item.containsKey('gestures') && !item.containsKey('type')) {
+      if (item.containsKey('gestures')) {
         final extra = <String, dynamic>{};
+        final handedDown = {...inherited};
+        final sharedBelow = {
+          ...shared,
+          for (final key in _sharedKeys)
+            if (item.containsKey(key) &&
+                !(key == 'mouse_buttons' &&
+                    _parseMouseButtons(item[key]).isEmpty))
+              key,
+        };
         for (final key in item.keys) {
-          if (!_groupNodeKeys.contains(key)) {
-            extra[key as String] = plainYamlValue(item[key]);
-          }
+          if (_groupNodeKeys.contains(key)) continue;
+          if (key != 'type') extra[key as String] = plainYamlValue(item[key]);
+          handedDown[key as String] = item.nodes[key]!;
         }
         final sub = item['gestures'];
         out.add(
           GestureNode.group(
-            name: item['name'] as String? ?? '',
-            enabled: item['enabled'] as bool? ?? true,
+            name: yamlString(_editorValue(item, 'name')) ?? '',
+            enabled: yamlBool(_editorValue(item, 'enabled')) ?? true,
             conditions: item.containsKey('conditions')
                 ? _parseCondition(item.nodes['conditions'])
                 : null,
-            id: item['id'] as String?,
+            id: yamlString(item['id']),
             threshold: item['threshold']?.toString(),
-            resumeTimeout: item['resume_timeout'] as int?,
-            accelerated: item['accelerated'] as bool?,
-            blockEvents: item['block_events'] as bool?,
-            clearModifiers: item['clear_modifiers'] as bool?,
-            setLastTrigger: item['set_last_trigger'] as bool?,
+            resumeTimeout: yamlInt(item['resume_timeout']),
+            accelerated: yamlBool(item['accelerated']),
+            blockEvents: yamlBool(item['block_events']),
+            clearModifiers: yamlBool(item['clear_modifiers']),
+            setLastTrigger: yamlBool(item['set_last_trigger']),
             endConditions: item.containsKey('end_conditions')
                 ? _parseCondition(item.nodes['end_conditions'])
                 : null,
+            mouseButtons: item.containsKey('mouse_buttons')
+                ? _parseMouseButtons(item['mouse_buttons'])
+                : null,
+            mouseButtonsExactOrder: yamlBool(item['mouse_buttons_exact_order']),
+            fingers: _parseFingers(item['fingers']),
+            speed: TriggerSpeed.fromYaml(yamlString(item['speed']) ?? ''),
+            instant: yamlBool(item['instant']),
+            lockPointer: yamlBool(item['lock_pointer']),
             extra: extra,
-            children: sub is YamlList ? walk(sub) : const [],
+            children: sub is YamlList
+                ? walk(sub, handedDown, sharedBelow)
+                : const [],
           ),
         );
         continue;
       }
-      final g = _parseGestureItem(item, parseGesture);
+      final g = parseGesture(
+        inherited.isEmpty && shared.isEmpty
+            ? item
+            : _InheritingYamlMap(item, inherited, shared),
+      );
       if (g == null) continue;
-      final node = GestureNode.leaf(g);
-      final legacyGroup = item['group'] as String?;
+      final extra = <String, Object?>{
+        for (final key in item.keys.whereType<String>())
+          if (!_triggerKeys.contains(key)) key: plainYamlValue(item[key]),
+      };
+      final node = GestureNode.leaf(
+        extra.isEmpty ? g : g.withCommon(g.common.copyWith(extra: extra)),
+      );
+      final legacyGroup = yamlString(item['group']);
       if (legacyGroup != null) legacyRefs[node] = legacyGroup;
       out.add(node);
     }
     return out;
   }
 
-  final nodes = walk(gesturesNode);
+  final nodes = walk(gesturesNode, const {}, const {});
   return _migrateLegacyGroups(nodes, deviceNode['groups'], legacyRefs);
 }
 
-/// Parses one typed gesture item. Nested conditional sub-gestures are
-/// flattened into per-action conditions so the rest of the model stays
-/// uniform.
-Gesture? _parseGestureItem(
-  YamlMap item,
-  Gesture? Function(YamlMap) parseGesture,
-) {
-  final g = parseGesture(item);
-  if (g == null) return null;
-  final subList = item.containsKey('type') ? item['gestures'] : null;
-  if (subList is! YamlList) return g;
-  final flatActions = <TriggerAction>[...g.common.actions];
-  for (final sub in subList) {
-    if (sub is! YamlMap) continue;
-    final subCond = sub.containsKey('conditions')
-        ? _parseCondition(sub.nodes['conditions'])
-        : null;
-    final subActions = _parseActions(sub['actions']);
-    if (subCond == null) {
-      flatActions.addAll(subActions);
-    } else {
-      flatActions.addAll(
-        subActions.map(
-          (a) => a.copyWith(
-            conditions: a.conditions == null
-                ? subCond
-                : ConditionGroup(children: [subCond, a.conditions!]),
-          ),
-        ),
+final class _InheritingYamlMap extends YamlMap {
+  _InheritingYamlMap(
+    YamlMap own,
+    Map<String, YamlNode> inherited,
+    Set<String> shared,
+  ) : super.internal(
+        _InheritingNodes(own.nodes, inherited, shared),
+        own.span,
+        own.style,
       );
-    }
+}
+
+/// A group's keys win over the child's own; shared properties it sets drop.
+final class _InheritingNodes extends UnmodifiableMapBase<dynamic, YamlNode> {
+  _InheritingNodes(this._own, this._inherited, this._shared);
+
+  final Map<dynamic, YamlNode> _own;
+  final Map<String, YamlNode> _inherited;
+  final Set<String> _shared;
+
+  @override
+  YamlNode? operator [](Object? key) {
+    final name = key is YamlNode ? key.value : key;
+    if (_shared.contains(name)) return null;
+    return _inherited[name] ?? _own[key];
   }
-  return g.withCommon(g.common.copyWith(actions: flatActions));
+
+  @override
+  Iterable<dynamic> get keys => [
+    for (final key in _own.keys)
+      if (!_shared.contains((key as YamlNode).value)) key,
+    for (final key in _inherited.keys)
+      if (!_own.containsKey(key)) YamlScalar.wrap(key),
+  ];
 }
 
 /// Folds the legacy flat grouping (`groups:` defs + `group:` refs) into
@@ -222,12 +281,12 @@ List<GestureNode> _migrateLegacyGroups(
   final defs = <String, GestureGroupNode>{};
   for (final item in groupsNode) {
     if (item is! YamlMap) continue;
-    final id = item['id'] as String?;
-    final name = item['name'] as String?;
+    final id = yamlString(item['id']);
+    final name = yamlString(item['name']);
     if (id == null || name == null) continue;
     defs[id] = GestureGroupNode(
       name: name,
-      enabled: item['enabled'] as bool? ?? true,
+      enabled: yamlBool(item['enabled']) ?? true,
     );
   }
   if (defs.isEmpty) return nodes;
@@ -258,8 +317,8 @@ List<GestureNode> _migrateLegacyGroups(
 }
 
 // Mouse
-MouseGesture? _parseMouseGesture(YamlMap m) {
-  final type = m['type'] as String?;
+MouseGesture? _parseMouseGesture(YamlMap m, Map<int, String> anchors) {
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
@@ -268,7 +327,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
     'stroke' => StrokeGesture(
       common: common,
       motion: motion,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
     ),
     'swipe' => SwipeGesture(
       common: common,
@@ -279,15 +338,15 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
       common: common,
       motion: motion,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
     ),
-    'press' => PressGesture(common: common, instant: m['instant'] as bool?),
+    'press' => PressGesture(common: common, instant: yamlBool(m['instant'])),
     'wheel' => WheelGesture(
       common: common,
       motion: motion,
       direction:
-          WheelDirection.fromYaml(m['direction'] as String? ?? '') ??
+          WheelDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           WheelDirection.any,
     ),
     _ => null,
@@ -296,7 +355,7 @@ MouseGesture? _parseMouseGesture(YamlMap m) {
 
 // Keyboard
 KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
 
@@ -311,7 +370,7 @@ KeyboardGesture? _parseKeyboardGesture(YamlMap m) {
 
 // Pointer
 PointerGesture? _parsePointerGesture(YamlMap m) {
-  final type = m['type'] as String?;
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
 
@@ -322,12 +381,12 @@ PointerGesture? _parsePointerGesture(YamlMap m) {
 }
 
 // Touchpad
-TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
-  final type = m['type'] as String?;
+TouchpadGesture? _parseTouchpadGesture(YamlMap m, Map<int, String> anchors) {
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = m['fingers'] as int?;
+  final fingers = _parseFingers(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchpadSwipeGesture(
@@ -340,7 +399,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          PinchDirection.fromYaml(m['direction'] as String? ?? '') ??
+          PinchDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           PinchDirection.any,
       motion: motion,
     ),
@@ -348,7 +407,7 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -356,17 +415,17 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
     'tap' => TouchpadTapGesture(common: common, fingers: fingers),
     'click' => TouchpadClickGesture(common: common, fingers: fingers),
-    'hold' => TouchpadHoldGesture(common: common, fingers: fingers),
+    'hold' || 'press' => TouchpadHoldGesture(common: common, fingers: fingers),
     'stroke' => TouchpadStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
       motion: motion,
     ),
     _ => null,
@@ -374,12 +433,15 @@ TouchpadGesture? _parseTouchpadGesture(YamlMap m) {
 }
 
 // Touchscreen
-TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
-  final type = m['type'] as String?;
+TouchscreenGesture? _parseTouchscreenGesture(
+  YamlMap m,
+  Map<int, String> anchors,
+) {
+  final type = yamlString(m['type']);
   if (type == null) return null;
   final common = _parseTriggerCommon(m);
   final motion = _parseMotionCommon(m);
-  final fingers = m['fingers'] as int?;
+  final fingers = _parseFingers(m['fingers']);
 
   return switch (type) {
     'swipe' => TouchscreenSwipeGesture(
@@ -392,7 +454,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          PinchDirection.fromYaml(m['direction'] as String? ?? '') ??
+          PinchDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           PinchDirection.any,
       motion: motion,
     ),
@@ -400,7 +462,7 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
@@ -408,16 +470,17 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
       common: common,
       fingers: fingers,
       direction:
-          RotationDirection.fromYaml(m['direction'] as String? ?? '') ??
+          RotationDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           RotationDirection.any,
       motion: motion,
     ),
     'tap' => TouchscreenTapGesture(common: common, fingers: fingers),
-    'hold' => TouchscreenHoldGesture(common: common, fingers: fingers),
+    'hold' ||
+    'press' => TouchscreenHoldGesture(common: common, fingers: fingers),
     'stroke' => TouchscreenStrokeGesture(
       common: common,
       fingers: fingers,
-      strokes: _parseStrokes(m['strokes']),
+      strokes: strokesFromYaml(m.nodes[strokesYamlKey], anchors),
       motion: motion,
     ),
     _ => null,
@@ -425,30 +488,36 @@ TouchscreenGesture? _parseTouchscreenGesture(YamlMap m) {
 }
 
 // Shared parse helpers
+dynamic _editorValue(YamlMap item, String key) =>
+    switch (item[editorExtraKey]) {
+      final YamlMap extra when extra.containsKey(key) => extra[key],
+      _ => legacyEditorValue(item, key),
+    };
+
 TriggerCommon _parseTriggerCommon(YamlMap m) => TriggerCommon(
-  name: m['name'] as String?,
-  enabled: m['enabled'] as bool?,
-  id: m['id'] as String?,
+  name: yamlString(_editorValue(m, 'name')),
+  enabled: yamlBool(_editorValue(m, 'enabled')),
+  id: yamlString(m['id']),
   mouseButtons: _parseMouseButtons(m['mouse_buttons']),
-  mouseButtonsExactOrder: m['mouse_buttons_exact_order'] as bool? ?? false,
+  mouseButtonsExactOrder: yamlBool(m['mouse_buttons_exact_order']) ?? false,
   conditions: m.containsKey('conditions')
       ? _parseCondition(m.nodes['conditions'])
       : null,
   endConditions: m.containsKey('end_conditions')
       ? _parseCondition(m.nodes['end_conditions'])
       : null,
-  blockEvents: m['block_events'] as bool?,
-  clearModifiers: m['clear_modifiers'] as bool?,
-  resumeTimeout: m['resume_timeout'] as int?,
-  setLastTrigger: m['set_last_trigger'] as bool?,
+  blockEvents: yamlBool(m['block_events']),
+  clearModifiers: yamlBool(m['clear_modifiers']),
+  resumeTimeout: yamlInt(m['resume_timeout']),
+  setLastTrigger: yamlBool(m['set_last_trigger']),
   threshold: m['threshold']?.toString(),
-  accelerated: m['accelerated'] as bool?,
+  accelerated: yamlBool(m['accelerated']),
   actions: _parseActions(m['actions']),
 );
 
 MotionCommon _parseMotionCommon(YamlMap m) => MotionCommon(
-  speed: TriggerSpeed.fromYaml(m['speed'] as String? ?? ''),
-  lockPointer: m['lock_pointer'] as bool?,
+  speed: TriggerSpeed.fromYaml(yamlString(m['speed']) ?? ''),
+  lockPointer: yamlBool(m['lock_pointer']),
 );
 
 List<MouseButtonValue> _parseMouseButtons(dynamic node) {
@@ -459,16 +528,24 @@ List<MouseButtonValue> _parseMouseButtons(dynamic node) {
       .toList();
 }
 
-List<String> _parseStrokes(dynamic node) {
-  if (node is YamlList) return node.map((e) => e.toString()).toList();
-  return [];
+FingerRange? _parseFingers(dynamic v) {
+  if (v == null) return null;
+  final parts = v.toString().split('-');
+  return switch (parts) {
+    [_] => FingerRange.exactly(yamlInt(v)!),
+    [final min, final max] => FingerRange(
+      min: yamlInt(min.trim())!,
+      max: yamlInt(max.trim())!,
+    ),
+    _ => throw FormatException('Value is not a finger count or range', v),
+  };
 }
 
 SwipeMode _parseSwipeMode(YamlMap m) {
   if (m.containsKey('direction')) {
     return SwipeDirectionMode(
       direction:
-          SwipeDirection.fromYaml(m['direction'] as String? ?? '') ??
+          SwipeDirection.fromYaml(yamlString(m['direction']) ?? '') ??
           SwipeDirection.any,
     );
   }
@@ -479,7 +556,7 @@ SwipeMode _parseSwipeMode(YamlMap m) {
   return SwipeAngleMode(
     minAngle: min,
     maxAngle: max,
-    bidirectional: m['bidirectional'] as bool? ?? false,
+    bidirectional: yamlBool(m['bidirectional']) ?? false,
   );
 }
 
@@ -542,21 +619,30 @@ Condition _parseStringCondition(String raw) {
   final rest = body.substring(firstSpace + 1);
   final secondSpace = rest.indexOf(' ');
   if (secondSpace == -1) return RawCondition(raw: raw);
-  final operator = parseConditionOperator(rest.substring(0, secondSpace));
-  if (operator == null) return RawCondition(raw: raw);
+  final parsed = parseConditionOperator(rest.substring(0, secondSpace));
+  if (parsed == null) return RawCondition(raw: raw);
+  final type =
+      knownConditionVariable(variable)?.valueType ?? ConditionValueType.string;
+  // The daemon reads a flags list as one combined value, so one_of on it is ==.
+  final operator =
+      type == ConditionValueType.flags && parsed == ConditionOperator.oneOf
+      ? ConditionOperator.equals
+      : parsed;
   return VariableCondition(
     variable: parseConditionVariableRef(variable),
     operator: operator,
     value: parseConditionValue(
       rest.substring(secondSpace + 1),
-      type:
-          knownConditionVariable(variable)?.valueType ??
-          ConditionValueType.string,
+      type: type,
       operator: operator,
     ),
     negate: negate,
   );
 }
+
+TriggerOnValue _parseTriggerOn(Object? value) =>
+    (value is String ? TriggerOn.fromYaml(value) : null) ??
+    RawTriggerOn(plainYamlValue(value));
 
 List<TriggerAction> _parseActions(dynamic node) {
   if (node is! YamlList) return [];
@@ -568,141 +654,36 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   final action = _parseAction(node);
   if (action == null) return null;
   return TriggerAction(
-    enabled: node['enabled'] as bool?,
-    on: node.containsKey('on')
-        ? TriggerOn.fromYaml(node['on'] as String? ?? '')
-        : null,
+    enabled: yamlBool(_editorValue(node, 'enabled')),
+    on: node.containsKey('on') ? _parseTriggerOn(node['on']) : null,
     conditions: node.containsKey('conditions')
         ? _parseCondition(node.nodes['conditions'])
         : null,
     action: action,
     interval: node['interval']?.toString(),
     threshold: node['threshold']?.toString(),
-    conflicting: node['conflicting'] as bool? ?? true,
-    id: node['id'] as String?,
-    limit: node['limit'] as int?,
+    conflicting: yamlBool(node['conflicting']) ?? true,
+    id: yamlString(node['id']),
+    limit: yamlInt(node['limit']),
   );
 }
 
-/// The YAML key holding an [ActionGroup]'s nested actions.
-const actionGroupYamlKey = 'one';
-
-/// Top-level key of a copied action snippet, so pasted text is recognisably
-/// ours and a stray YAML document is rejected.
-const actionsClipboardKey = 'actions';
-
 /// Parses a clipboard snippet written by `encodeActionsYaml`. Returns an empty
 /// list for anything that is not a readable action list.
-List<TriggerAction> decodeActionsYaml(String text) {
+List<TriggerAction> decodeActionsYaml(String text) =>
+    tryDecodeActionsYaml(text) ?? const [];
+
+/// Like [decodeActionsYaml], but null when [text] is not readable YAML.
+List<TriggerAction>? tryDecodeActionsYaml(String text) {
   if (text.trim().isEmpty) return const [];
   final Object? doc;
   try {
-    doc = loadYaml(materializeDisabledYamlCommentsRecursively(text));
+    doc = loadYaml(materializeDisabledYamlComments(text));
   } on Object {
-    return const [];
+    return null;
   }
-  if (doc is! YamlMap) return const [];
+  if (doc is! YamlMap) return null;
   return _parseActions(doc[actionsClipboardKey]);
-}
-
-/// Block keys whose list items carry an `enabled:` flag and are disabled by
-/// commenting them out.
-bool isDisableableItemList(String key) =>
-    key == 'gestures' || key == 'actions' || key == actionGroupYamlKey;
-
-String materializeDisabledYamlCommentsRecursively(String yamlText) {
-  var current = yamlText;
-  while (true) {
-    final next = materializeDisabledYamlComments(current);
-    if (next == current) return current;
-    current = next;
-  }
-}
-
-/// Converts fully commented-out gesture/action list items back into ordinary
-/// YAML before parsing, with `enabled: false` injected when absent.
-///
-/// YAML libraries intentionally discard comments, but disabled items are stored
-/// as comments so the runtime ignores them. This boundary helper recognizes
-/// only list items under `gestures:` and `actions:` blocks; ordinary comments
-/// elsewhere remain comments.
-String materializeDisabledYamlComments(String yamlText) {
-  final lines = yamlText.split('\n');
-  final out = <String>[];
-  final contexts = <YamlListContext>[];
-
-  var i = 0;
-  while (i < lines.length) {
-    final line = lines[i];
-    // A blank line has no indentation to read, so it must not close a block.
-    if (line.trim().isEmpty) {
-      out.add(line);
-      i++;
-      continue;
-    }
-    final uncommented = uncommentYamlLine(line);
-    final parseLine = uncommented ?? line;
-    final indent = indentOf(parseLine);
-
-    // Before popping, check if this is a commented list item aligned with
-    // its parent key (e.g., "      # - sleep: 1" when "      actions:" is at
-    // indent 6). Such items must not pop the parent context.
-    final peekParent = contexts.isEmpty ? null : contexts.last;
-    final commentedAtKeyIndent =
-        peekParent != null &&
-        !peekParent.commented &&
-        isDisableableItemList(peekParent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, peekParent.indent);
-
-    if (!commentedAtKeyIndent) popContexts(contexts, indent);
-
-    final parent = commentedAtKeyIndent
-        ? peekParent
-        : (contexts.isEmpty ? null : contexts.last);
-    final atNormalIndent =
-        parent != null &&
-        !parent.commented &&
-        isDisableableItemList(parent.key) &&
-        uncommented != null &&
-        isListItemAt(parseLine, parent.indent + 2);
-
-    if (atNormalIndent || commentedAtKeyIndent) {
-      final itemIndent = parent!.indent + 2;
-      // Re-indent lines when the comment was placed at the key level.
-      final indentOffset = commentedAtKeyIndent && !atNormalIndent ? 2 : 0;
-      final block = <String>[];
-      var j = i;
-      while (j < lines.length) {
-        final candidate = lines[j];
-        final candidateUncommented = uncommentYamlLine(candidate);
-        if (candidateUncommented == null) break;
-        final candidateIndent = indentOf(candidateUncommented);
-        if (j > i && candidateIndent <= parent.indent) break;
-        if (j > i && isListItemAt(candidateUncommented, itemIndent)) break;
-        block.add(' ' * indentOffset + candidateUncommented);
-        j++;
-      }
-      final hasEnabled = block.any(
-        (l) =>
-            listItemKeyAt(l, 'enabled', itemIndent) ||
-            (keyAt(l, 'enabled') && indentOf(l) == parent.indent + 4),
-      );
-      out.addAll(block);
-      if (!hasEnabled) {
-        out.add('${' '.padRight(parent.indent + 4)}enabled: false');
-      }
-      i = j;
-      continue;
-    }
-
-    final context = blockContext(parseLine, commented: uncommented != null);
-    if (context != null) contexts.add(context);
-    out.add(line);
-    i++;
-  }
-
-  return out.join('\n');
 }
 
 /// A `function:` body. The trailing newline a `|` block scalar carries is not
@@ -714,17 +695,17 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey('command')) {
     return CommandAction(
       command: m['command'].toString(),
-      wait: m['wait'] as bool?,
+      wait: yamlBool(m['wait']),
     );
   }
   if (m.containsKey('input')) {
     return InputAction(
       entries: _parseInputEntries(m['input']),
-      delay: m['delay'] as int?,
+      delay: yamlInt(m['delay']),
     );
   }
   if (m.containsKey('plasma_shortcut')) {
-    final parts = (m['plasma_shortcut'] as String).split(',');
+    final parts = (yamlString(m['plasma_shortcut']) ?? '').split(',');
     return PlasmaShortcutAction(
       component: parts.elementAtOrNull(0)?.trim() ?? '',
       shortcut: parts.elementAtOrNull(1)?.trim() ?? '',
@@ -739,7 +720,7 @@ Action? _parseAction(YamlMap m) {
     );
   }
   if (m.containsKey('sleep')) {
-    return SleepAction(milliseconds: m['sleep'] as int? ?? 0);
+    return SleepAction(milliseconds: yamlInt(m['sleep']) ?? 0);
   }
   if (m.containsKey('function')) {
     return FunctionAction(expression: _functionExpression(m['function']));
@@ -747,7 +728,40 @@ Action? _parseAction(YamlMap m) {
   if (m.containsKey(actionGroupYamlKey)) {
     return ActionGroup(actions: _parseActions(m[actionGroupYamlKey]));
   }
+  if (m.containsKey('context_menu')) {
+    return ContextMenuAction(items: _parseMenuItems(m['context_menu']));
+  }
   return RawAction(raw: dumpYamlNode(m));
+}
+
+List<MenuItem> _parseMenuItems(dynamic node) {
+  if (node is! YamlList) return [];
+  return node.map(_parseMenuItem).whereType<MenuItem>().toList();
+}
+
+MenuItem? _parseMenuItem(dynamic node) {
+  if (node is! YamlMap) return null;
+  final text = yamlString(node['text']) ?? '';
+  final icon = yamlString(node['icon']);
+  if (node.containsKey('actions')) {
+    return MenuItem.action(
+      text: text,
+      icon: icon,
+      actions: _parseActions(node['actions']),
+    );
+  }
+  if (node.containsKey('menu')) {
+    return MenuItem.subMenu(
+      text: text,
+      icon: icon,
+      items: _parseMenuItems(node['menu']),
+    );
+  }
+  if (node.containsKey('section')) {
+    return MenuItem.section(text: yamlString(node['section']) ?? '');
+  }
+  if (node.containsKey('separator')) return const MenuItem.separator();
+  return null;
 }
 
 List<TextSubstitutionRule> _parseTextSubstitutionRules(dynamic node) {
@@ -829,16 +843,16 @@ DeviceRuleProperties _parseDeviceRuleProperties(YamlMap m) {
       ? m['pressure_ranges'] as YamlMap
       : null;
   return DeviceRuleProperties(
-    grab: m['grab'] as bool?,
-    ignore: m['ignore'] as bool?,
+    grab: yamlBool(m['grab']),
+    ignore: yamlBool(m['ignore']),
     motionTimeout: yamlInt(m['motion_timeout']),
     motionThreshold: yamlDouble(m['motion_threshold']),
     pressTimeout: yamlInt(m['press_timeout']),
     swipeAngleTolerance: yamlDouble(swipeNode?['angle_tolerance']),
-    unblockButtonsOnTimeout: m['unblock_buttons_on_timeout'] as bool?,
-    buttonpad: m['buttonpad'] as bool?,
+    unblockButtonsOnTimeout: yamlBool(m['unblock_buttons_on_timeout']),
+    buttonpad: yamlBool(m['buttonpad']),
     clickTimeout: yamlInt(m['click_timeout']),
-    handleEvdevEvents: m['handle_evdev_events'] as bool?,
+    handleEvdevEvents: yamlBool(m['handle_evdev_events']),
     motionThreshold2: yamlDouble(m['motion_threshold_2']),
     motionThreshold3: yamlDouble(m['motion_threshold_3']),
     pressureRangesFinger: yamlInt(prNode?['finger']),
@@ -867,13 +881,20 @@ GlobalSettings _parseGlobalSettings(YamlMap doc) {
   final notifNode = doc['notifications'] is YamlMap
       ? doc['notifications'] as YamlMap
       : null;
+  final overlayNode = doc['overlay'];
+  final mouseStrokeNode = overlayNode is YamlMap
+      ? overlayNode['mouse_stroke']
+      : null;
   final combo = doc['emergency_combination'];
   return GlobalSettings(
-    autoreload: doc['autoreload'] as bool?,
+    autoreload: yamlBool(doc['autoreload']),
     emergencyCombination: combo is YamlList
         ? combo.map((e) => e.toString()).toList()
         : null,
-    externalVariableAccess: doc['external_variable_access'] as bool?,
-    notificationsConfigError: notifNode?['config_error'] as bool?,
+    externalVariableAccess: yamlBool(doc['external_variable_access']),
+    mouseStrokeOverlayEnabled: yamlBool(
+      mouseStrokeNode is YamlMap ? mouseStrokeNode['enable'] : null,
+    ),
+    notificationsConfigError: yamlBool(notifNode?['config_error']),
   );
 }

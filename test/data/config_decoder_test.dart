@@ -1,14 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/condition.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture_node.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
 import 'package:input_actions_editor/model/pointer_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/touchpad_gesture.dart';
 import 'package:input_actions_editor/model/touchscreen_gesture.dart';
 
@@ -42,7 +44,8 @@ void main() {
       final c = decodeConfig('''
 mouse:
   gestures:
-    - name: no type here
+    - _extra:
+        name: no type here
       actions:
         - command: echo hi
 ''');
@@ -68,7 +71,7 @@ mouse:
       strokes: [ AAA==, BBB== ]
 ''');
       final g = c.mouseGestures.single as StrokeGesture;
-      expect(g.strokes, ['AAA==', 'BBB==']);
+      expect(g.strokes, const [Stroke('AAA=='), Stroke('BBB==')]);
     });
 
     test('swipe with direction parses SwipeDirectionMode', () {
@@ -180,8 +183,9 @@ mouse:
 mouse:
   gestures:
     - type: press
-      name: My Press
-      enabled: false
+      _extra:
+        name: My Press
+        enabled: false
       id: press_1
       group: grp_a
       block_events: false
@@ -235,7 +239,8 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   name: Disabled Press
+    #   _extra:
+    #     name: Disabled Press
     #   # threshold: 42
     #   actions:
     #     - command: echo hi
@@ -255,16 +260,85 @@ mouse:
 mouse:
   gestures:
     # - type: press
-    #   enabled: false
     #   actions:
-    #     # - enabled: false
-    #       # command: echo hi
+    #     # - command: echo hi
+    #     #   _extra:
+    #     #     enabled: false
+    #   _extra:
+    #     enabled: false
 ''');
       final common = c.mouseGestures.single.common;
       expect(common.enabled, isFalse);
       final action = common.actions.single;
       expect(action.enabled, isFalse);
       expect(action.action, const CommandAction(command: 'echo hi'));
+    });
+  });
+
+  group('decodeConfig - scalars written the way the daemon reads them', () {
+    test('quoted numbers are numbers', () {
+      final c = decodeConfig('''
+touchpad:
+  gestures:
+    - type: tap
+      fingers: '3'
+      resume_timeout: "200"
+      actions:
+        - sleep: "50"
+''');
+      final gesture = c.touchpadGestures.single as TouchpadTapGesture;
+      expect(gesture.fingers, const FingerRange(min: 3, max: 3));
+      expect(gesture.common.resumeTimeout, 200);
+      expect(
+        gesture.common.actions.single.action,
+        const SleepAction(milliseconds: 50),
+      );
+    });
+
+    test('numbers are text where text is expected', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      id: 123
+      _extra:
+        name: 2024
+''');
+      final common = c.mouseGestures.single.common;
+      expect(common.id, '123');
+      expect(common.name, '2024');
+    });
+
+    test('a single stroke may be written without a list', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: stroke
+      strokes: 'MgAAAA=='
+''');
+      expect((c.mouseGestures.single as StrokeGesture).strokes, const [
+        Stroke('MgAAAA=='),
+      ]);
+    });
+
+    test('yes, on and their negatives are booleans', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      instant: on
+      block_events: yes
+      actions:
+        - command: echo hi
+          wait: no
+''');
+      final gesture = c.mouseGestures.single as PressGesture;
+      expect(gesture.instant, isTrue);
+      expect(gesture.common.blockEvents, isTrue);
+      expect(
+        gesture.common.actions.single.action,
+        const CommandAction(command: 'echo hi', wait: false),
+      );
     });
   });
 
@@ -282,6 +356,23 @@ mouse:
           variable: ConditionVariableRef.known('keyboard_modifiers'),
           operator: ConditionOperator.equals,
           value: ConditionValue.flags(['meta']),
+        ),
+      );
+    });
+
+    test('one_of on a flags variable reads as ==', () {
+      final c = decodeConfig(r'''
+mouse:
+  gestures:
+    - type: press
+      conditions: $keyboard_modifiers one_of [ ctrl, alt ]
+''');
+      expect(
+        c.mouseGestures.single.common.conditions,
+        const VariableCondition(
+          variable: ConditionVariableRef.known('keyboard_modifiers'),
+          operator: ConditionOperator.equals,
+          value: ConditionValue.flags(['ctrl', 'alt']),
         ),
       );
     });
@@ -792,6 +883,55 @@ mouse:
       ]);
     });
 
+    test('context_menu parses every item kind, nested', () {
+      final c = decodeConfig('''
+mouse:
+  gestures:
+    - type: press
+      actions:
+        - context_menu:
+            - text: "&Terminal"
+              icon: utilities-terminal
+              actions:
+                - command: konsole
+            - separator:
+            - section: Tools
+            - text: More
+              menu:
+                - text: Files
+                  actions:
+                    - command: dolphin
+''');
+
+      expect(
+        c.mouseGestures.single.common.actions.single.action,
+        const ContextMenuAction(
+          items: [
+            MenuItem.action(
+              text: '&Terminal',
+              icon: 'utilities-terminal',
+              actions: [
+                TriggerAction(action: CommandAction(command: 'konsole')),
+              ],
+            ),
+            MenuItem.separator(),
+            MenuItem.section(text: 'Tools'),
+            MenuItem.subMenu(
+              text: 'More',
+              items: [
+                MenuItem.action(
+                  text: 'Files',
+                  actions: [
+                    TriggerAction(action: CommandAction(command: 'dolphin')),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+
     test('sleep action parses milliseconds', () {
       final c = decodeConfig('''
 mouse:
@@ -949,7 +1089,8 @@ keyboard:
 pointer:
   gestures:
     - type: hover
-      name: Hover
+      _extra:
+        name: Hover
 ''');
       expect(c.pointerGestures.single, isA<HoverGesture>());
       expect(c.pointerGestures.single.common.name, 'Hover');
@@ -993,7 +1134,10 @@ touchpad:
         'hold',
         'stroke',
       ]);
-      expect(c.touchpadGestures[0].fingers, 3);
+      expect(
+        c.touchpadGestures[0].fingers,
+        const FingerRange(min: 3, max: 3),
+      );
       expect(
         (c.touchpadGestures[1] as TouchpadPinchGesture).direction,
         PinchDirection.inward,
@@ -1089,14 +1233,18 @@ mouse:
       name: Group One
   gestures:
     - type: press
-      name: before
+      _extra:
+        name: before
     - type: press
-      name: member a
+      _extra:
+        name: member a
       group: g1
     - type: press
-      name: between
+      _extra:
+        name: between
     - type: press
-      name: member b
+      _extra:
+        name: member b
       group: g1
 ''');
       expect(c.mouseNodes.length, 3);
@@ -1181,7 +1329,8 @@ mouse:
             - conditions: $c
               gestures:
                 - type: press
-                  name: Deep
+                  _extra:
+                    name: Deep
 ''');
       expect(c.mouseGestures.single.common.name, 'Deep');
       final outer = c.mouseNodes.single as GestureGroupNode;
@@ -1190,21 +1339,21 @@ mouse:
       expect(inner.children.single, isA<GestureLeaf>());
     });
 
-    test('unmodelled group properties are preserved in extra', () {
+    test('group keys decode onto typed fields, the rest into extra', () {
       final c = decodeConfig('''
 mouse:
   gestures:
     - mouse_buttons:
         - right
       speed: fast
+      direction: up
       gestures:
-        - type: press
+        - type: wheel
 ''');
       final group = c.mouseNodes.single as GestureGroupNode;
-      expect(group.extra, {
-        'mouse_buttons': ['right'],
-        'speed': 'fast',
-      });
+      expect(group.mouseButtons, [MouseButtonValue.right]);
+      expect(group.speed, TriggerSpeed.fast);
+      expect(group.extra, {'direction': 'up'});
     });
 
     test('shared trigger properties decode onto the group, not extra', () {
@@ -1232,16 +1381,13 @@ mouse:
       expect(group.extra, isEmpty);
     });
 
-    test('typed gesture with nested sub-gestures flattens into actions', () {
+    test('a typed item with nested gestures is a group, not a gesture', () {
       final c = decodeConfig(r'''
 touchpad:
   gestures:
     - type: swipe
       fingers: 3
       direction: any
-      actions:
-        - on: begin
-          command: base action
       gestures:
         - conditions: $window_maximized == true
           actions:
@@ -1249,14 +1395,20 @@ touchpad:
         - actions:
             - command: sub action b
 ''');
-      final g = c.touchpadGestures.single;
-      expect(g.common.actions.length, 3);
-      // Base action keeps no condition.
-      expect(g.common.actions[0].conditions, isNull);
-      // Sub action a is gated by the sub-gesture condition.
-      expect(g.common.actions[1].conditions, isNotNull);
-      // Sub action b had no condition.
-      expect(g.common.actions[2].conditions, isNull);
+      final group = c.touchpadNodes.single as GestureGroupNode;
+      expect(group.extra, {'direction': 'any'});
+      expect(group.fingers, const FingerRange(min: 3, max: 3));
+
+      final children = group.gestures.cast<TouchpadSwipeGesture>().toList();
+      expect(children.map((g) => g.fingers), [null, null]);
+      expect(children[0].common.conditions, isNotNull);
+      expect(children[1].common.conditions, isNull);
+      expect(
+        children.map(
+          (g) => (g.common.actions.single.action as CommandAction).command,
+        ),
+        ['sub action a', 'sub action b'],
+      );
     });
   });
 

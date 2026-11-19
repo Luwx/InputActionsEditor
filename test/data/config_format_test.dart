@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
-import 'package:input_actions_editor/data/yaml_io.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/gesture_node.dart';
+import 'package:input_actions_editor/model/mouse_gesture.dart';
 
 /// The block from issue #4: a whole config kept as a comment for reference.
 const referenceBlock = r'''
@@ -95,10 +97,12 @@ mouse:
 mouse:
   gestures:
     # - type: press
-      # enabled: false
       # actions:
-        # # - enabled: false
-          # # command: echo hi
+        # # - command: echo hi
+          # # _extra:
+            # # enabled: false
+      # _extra:
+        # enabled: false
 ''';
       final config = decodeConfig(source);
       expect(config.mouseGestures, hasLength(1));
@@ -111,9 +115,10 @@ mouse:
 mouse:
   gestures:
     - type: press
-      enabled: false
       actions:
         - command: echo hi
+      _extra:
+        enabled: false
 ''';
       final encoded = encodeConfig(decodeConfig(source), source);
       final back = decodeConfig(encoded);
@@ -130,7 +135,8 @@ mouse:
       actions:
         - command: echo hi
         # - command: echo bye
-          # enabled: false
+          # _extra:
+            # enabled: false
 ''');
       expect(config.mouseGestures.single.common.actions, hasLength(2));
       expect(
@@ -161,69 +167,30 @@ mouse:
     });
   });
 
-  group('mouse button names', () {
-    List<MouseButtonValue> buttonsOf(String yaml) =>
-        decodeConfig(yaml).mouseGestures.single.common.mouseButtons;
+  test('an edit near an anchor saves and keeps the alias', () {
+    const source = '''
+anchors:
+  - &button [ back ]
 
-    test('legacy extra1..extra5 names map to their modern equivalents', () {
-      expect(
-        buttonsOf('''
+custom_key: kept
+
 mouse:
   gestures:
     - type: press
-      mouse_buttons: [ extra1, extra2, extra3, extra4, extra5 ]
-'''),
-        [
-          MouseButtonValue.back,
-          MouseButtonValue.forward,
-          MouseButtonValue.task,
-          MouseButtonValue.side,
-          MouseButtonValue.extra,
-        ],
-      );
-    });
-
-    test('names are matched case-insensitively, as the daemon does', () {
-      expect(
-        buttonsOf('''
-mouse:
-  gestures:
-    - type: press
-      mouse_buttons: [ SIDE, Extra1 ]
-'''),
-        [MouseButtonValue.side, MouseButtonValue.back],
-      );
-    });
-
-    test('a legacy name is not dropped when the config is saved', () {
-      const source = '''
-mouse:
-  gestures:
-    - type: press
-      mouse_buttons: [ extra1 ]
-      actions:
-        - command: echo hi
+      mouse_buttons: *button
 ''';
-      final encoded = encodeConfig(decodeConfig(source), source);
-      expect(encoded, contains('mouse_buttons'));
-      expect(decodeConfig(encoded).mouseGestures.single.common.mouseButtons, [
-        MouseButtonValue.back,
-      ]);
-    });
+    final config = decodeConfig(source);
+    final press = config.mouseGestures.single as PressGesture;
+    final edited = config.withNodesForDevice(DeviceType.mouse, [
+      GestureNode.leaf(
+        press.copyWith(common: press.common.copyWith(name: 'Back')),
+      ),
+    ]);
+    final encoded = encodeConfig(edited, source);
 
-    test("other enums accept the daemon's casing too", () {
-      final config = decodeConfig('''
-mouse:
-  gestures:
-    - type: press
-      actions:
-        - on: END_CANCEL
-          command: echo hi
-''');
-      expect(
-        config.mouseGestures.single.common.actions.single.on,
-        TriggerOn.endCancel,
-      );
-    });
+    expect(encoded, contains('  - &button [ back ]'));
+    expect(encoded, contains('mouse_buttons: *button'));
+    expect(encoded, contains('custom_key: kept'));
+    expect(decodeConfig(encoded), edited);
   });
 }

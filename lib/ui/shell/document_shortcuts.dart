@@ -55,6 +55,8 @@ class DocumentShortcuts extends ConsumerWidget {
             NewDocumentIntent(),
         SingleActivator(LogicalKeyboardKey.keyO, control: true):
             OpenDocumentIntent(),
+        SingleActivator(LogicalKeyboardKey.keyO, control: true, shift: true):
+            OpenInTextEditorIntent(),
         SingleActivator(LogicalKeyboardKey.keyV, control: true, shift: true):
             LoadFromClipboardIntent(),
         SingleActivator(LogicalKeyboardKey.keyC, control: true, alt: true):
@@ -68,6 +70,7 @@ class DocumentShortcuts extends ConsumerWidget {
         renameShortcut: RenameGestureIntent(),
         duplicateShortcut: DuplicateGestureIntent(),
         copyYamlShortcut: CopyGestureYamlIntent(),
+        pasteShortcut: PasteIntent(),
         SingleActivator(LogicalKeyboardKey.arrowUp, alt: true):
             StepGestureIntent(-1, yieldsToTextField: true),
         SingleActivator(LogicalKeyboardKey.arrowDown, alt: true):
@@ -145,6 +148,12 @@ class DocumentShortcuts extends ConsumerWidget {
               return null;
             },
           ),
+          OpenInTextEditorIntent: CallbackAction<OpenInTextEditorIntent>(
+            onInvoke: (_) {
+              unawaited(openConfigInTextEditor(context, ref));
+              return null;
+            },
+          ),
           OpenSettingsIntent: CallbackAction<OpenSettingsIntent>(
             onInvoke: (_) {
               context.openSettings();
@@ -170,6 +179,15 @@ class DocumentShortcuts extends ConsumerWidget {
               if (selectedGesture() case final location?) {
                 duplicateGestureAndSelect(context, ref, location);
               }
+              return null;
+            },
+          ),
+          PasteIntent: _PasteAction(
+            enabled: () =>
+                hasConfig() &&
+                ref.read(currentViewProvider) == AppView.gestures,
+            onInvoke: (_) {
+              unawaited(pasteFromClipboard(ref, selectedGesture()));
               return null;
             },
           ),
@@ -218,14 +236,31 @@ class DocumentShortcuts extends ConsumerWidget {
   }
 }
 
+class _PasteAction extends CallbackAction<PasteIntent> {
+  _PasteAction({required this.enabled, required super.onInvoke});
+
+  final bool Function() enabled;
+
+  @override
+  bool isEnabled(PasteIntent intent) => enabled() && !_textFieldFocused();
+}
+
+// extended_text_field's editable state is a copy of EditableTextState, not a
+// subtype, so the field is recognised by the interface both implement.
+bool _textFieldFocused() {
+  var found = false;
+  primaryFocus?.context?.visitAncestorElements((element) {
+    found = element is StatefulElement && element.state is TextInputClient;
+    return !found;
+  });
+  return found;
+}
+
 class _NavigationAction<T extends NavigationIntent> extends CallbackAction<T> {
   _NavigationAction({required super.onInvoke});
 
   // A disabled action leaves the key unhandled, so it keeps travelling up to
   // the text field's own shortcuts instead of being swallowed here.
   @override
-  bool isEnabled(T intent) =>
-      !intent.yieldsToTextField ||
-      primaryFocus?.context?.findAncestorStateOfType<EditableTextState>() ==
-          null;
+  bool isEnabled(T intent) => !intent.yieldsToTextField || !_textFieldFocused();
 }

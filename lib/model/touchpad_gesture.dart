@@ -1,7 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/model/enums.dart';
+import 'package:input_actions_editor/model/finger_range.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/mouse_gesture.dart';
+import 'package:input_actions_editor/model/stroke.dart';
 import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:meta_generator/meta_generator.dart';
 
@@ -16,50 +18,50 @@ sealed class TouchpadGesture with _$TouchpadGesture implements Gesture {
   const factory TouchpadGesture.swipe({
     required TriggerCommon common,
     required SwipeMode mode,
-    int? fingers,
+    FingerRange? fingers,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadSwipeGesture;
 
   const factory TouchpadGesture.pinch({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(PinchDirection.any) PinchDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadPinchGesture;
 
   const factory TouchpadGesture.rotate({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadRotateGesture;
 
   const factory TouchpadGesture.circle({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
     @Default(RotationDirection.any) RotationDirection direction,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadCircleGesture;
 
   const factory TouchpadGesture.tap({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
   }) = TouchpadTapGesture;
 
   const factory TouchpadGesture.click({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
   }) = TouchpadClickGesture;
 
   const factory TouchpadGesture.hold({
     required TriggerCommon common,
-    int? fingers,
+    FingerRange? fingers,
   }) = TouchpadHoldGesture;
 
   const factory TouchpadGesture.stroke({
     required TriggerCommon common,
-    int? fingers,
-    @Default([]) List<String> strokes,
+    FingerRange? fingers,
+    @Default([]) List<Stroke> strokes,
     @Default(MotionCommon()) MotionCommon motion,
   }) = TouchpadStrokeGesture;
 
@@ -86,7 +88,30 @@ sealed class TouchpadGesture with _$TouchpadGesture implements Gesture {
     final TouchpadStrokeGesture g => g.copyWith(common: c),
   };
 
-  TouchpadGesture withFingers(int? f) => switch (this) {
+  MotionCommon? get motionOrNull => switch (this) {
+    final TouchpadSwipeGesture g => g.motion,
+    final TouchpadPinchGesture g => g.motion,
+    final TouchpadRotateGesture g => g.motion,
+    final TouchpadCircleGesture g => g.motion,
+    final TouchpadStrokeGesture g => g.motion,
+    TouchpadTapGesture() => null,
+    TouchpadClickGesture() => null,
+    TouchpadHoldGesture() => null,
+  };
+
+  /// No-op for the kinds without motion.
+  TouchpadGesture withMotion(MotionCommon m) => switch (this) {
+    final TouchpadSwipeGesture g => g.copyWith(motion: m),
+    final TouchpadPinchGesture g => g.copyWith(motion: m),
+    final TouchpadRotateGesture g => g.copyWith(motion: m),
+    final TouchpadCircleGesture g => g.copyWith(motion: m),
+    final TouchpadStrokeGesture g => g.copyWith(motion: m),
+    TouchpadTapGesture() => this,
+    TouchpadClickGesture() => this,
+    TouchpadHoldGesture() => this,
+  };
+
+  TouchpadGesture withFingers(FingerRange? f) => switch (this) {
     final TouchpadSwipeGesture g => g.copyWith(fingers: f),
     final TouchpadPinchGesture g => g.copyWith(fingers: f),
     final TouchpadRotateGesture g => g.copyWith(fingers: f),

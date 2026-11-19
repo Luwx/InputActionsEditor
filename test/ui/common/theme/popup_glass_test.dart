@@ -88,6 +88,41 @@ Widget _popoverHost({
   ),
 );
 
+Widget _selectHost({
+  required ValueChanged<String?> onChange,
+  required VoidCallback onOtherTap,
+}) => MaterialApp(
+  home: FTheme(
+    data: withGlassPopups(AppThemes.zinc.dark.desktop),
+    child: Scaffold(
+      body: Column(
+        children: [
+          SizedBox(
+            width: 200,
+            child: FSelect<String>(
+              items: const {'Apple': 'apple', 'Banana': 'banana'},
+              control: FSelectManagedControl(
+                initial: 'apple',
+                onChange: onChange,
+              ),
+            ),
+          ),
+          const SizedBox(height: 200),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onOtherTap,
+            child: const SizedBox(
+              width: 400,
+              height: 120,
+              child: Text('other'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+
 Future<void> _rightClick(WidgetTester tester, Finder finder) async {
   final gesture = await tester.startGesture(
     tester.getCenter(finder),
@@ -226,6 +261,48 @@ void main() {
       await _clickAt(tester, find.text('open'));
       await _clickAt(tester, find.text('inside'));
       expect(pressed, 1);
+    });
+  });
+  group('select', () {
+    testWidgets('click outside an open select closes it and goes no further', (
+      tester,
+    ) async {
+      var otherTaps = 0;
+      await tester.pumpWidget(
+        _selectHost(onChange: (_) {}, onOtherTap: () => otherTaps++),
+      );
+
+      await _clickAt(tester, find.text('Apple'));
+      expect(find.text('Banana'), findsOneWidget);
+
+      await _clickAt(tester, find.text('other'));
+      expect(find.text('Banana'), findsNothing, reason: 'select should close');
+      expect(otherTaps, 0, reason: 'the dismissing click is swallowed');
+
+      await _clickAt(tester, find.text('other'));
+      expect(otherTaps, 1, reason: 'the next click lands normally');
+    });
+
+    testWidgets('click on the field closes the select', (tester) async {
+      await tester.pumpWidget(
+        _selectHost(onChange: (_) {}, onOtherTap: () {}),
+      );
+
+      await _clickAt(tester, find.text('Apple'));
+      await _clickAt(tester, find.text('Apple').first);
+
+      expect(find.text('Banana'), findsNothing);
+    });
+
+    testWidgets('the select items still choose', (tester) async {
+      String? chosen;
+      await tester.pumpWidget(
+        _selectHost(onChange: (value) => chosen = value, onOtherTap: () {}),
+      );
+
+      await _clickAt(tester, find.text('Apple'));
+      await _clickAt(tester, find.text('Banana'));
+      expect(chosen, 'banana');
     });
   });
 }

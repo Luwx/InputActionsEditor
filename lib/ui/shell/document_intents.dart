@@ -32,6 +32,10 @@ class CopyToClipboardIntent extends Intent {
   const CopyToClipboardIntent();
 }
 
+class OpenInTextEditorIntent extends Intent {
+  const OpenInTextEditorIntent();
+}
+
 class OpenSettingsIntent extends Intent {
   const OpenSettingsIntent();
 }
@@ -50,6 +54,10 @@ class DuplicateGestureIntent extends Intent {
 
 class CopyGestureYamlIntent extends Intent {
   const CopyGestureYamlIntent();
+}
+
+class PasteIntent extends Intent {
+  const PasteIntent();
 }
 
 /// A move between gestures or devices.

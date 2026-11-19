@@ -31,8 +31,14 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Generate code
-        run: dart run build_runner build
+      - name: Check generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            echo "::error::Generated code is out of date. Run build_runner and commit the result."
+            exit 1
+          fi
 
       - name: Analyze
         run: flutter analyze

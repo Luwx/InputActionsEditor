@@ -79,7 +79,10 @@ class FSpinBox extends HookWidget {
     // Sync controller text when external value changes and field is not focused
     // (replaces didUpdateWidget).
     final prevValue = usePrevious(value);
-    if (prevValue != null && prevValue != value && !focusNode.hasFocus) {
+    final typedValue = double.tryParse(controller.text)?.clamp(min, max);
+    if (prevValue != null &&
+        prevValue != value &&
+        (!focusNode.hasFocus || typedValue != value)) {
       final text = _fmt(value);
       if (controller.text != text) {
         isSyncingText.value = true;

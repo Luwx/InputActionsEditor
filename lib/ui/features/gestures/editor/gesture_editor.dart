@@ -206,6 +206,7 @@ class _GestureEditorView extends HookConsumerWidget {
         final deviceLabel = gestureDeviceLabel(location.device, l10n);
         return (
           name: (common.name?.isNotEmpty ?? false) ? common.name! : typeLabel,
+          editingName: common.name ?? '',
           subtitle: isEnabled
               ? '$typeLabel · $deviceLabel'
               : '$typeLabel · $deviceLabel · ${l10n.gestureDisabledLabel}',
@@ -233,6 +234,7 @@ class _GestureEditorView extends HookConsumerWidget {
             delegate: GrowingFrostedHeaderDelegate(
               titleBuilder: (style) => RenameableTitle(
                 name: header.name,
+                editingName: header.editingName,
                 titleStyle: style,
                 onRename: gestureEditor.rename,
               ),

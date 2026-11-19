@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:input_actions_editor/data/yaml_codec.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
@@ -90,6 +90,39 @@ void main() {
 
       notifier.redo(scope: const SettingsScope());
       expect(configOf(c).mouseSpeed?.events, 4);
+    });
+
+    test('one undo brings back what a group value cleared', () async {
+      final c = seededContainer(
+        decodeConfig('''
+mouse:
+  gestures:
+    - gestures:
+        - type: press
+          mouse_buttons: [ left ]
+'''),
+      );
+      await c.read(configControllerProvider.future);
+      final group = sessionOf(c).draft.mouseNodes.single as GestureGroupNode;
+      List<MouseButtonValue> own() =>
+          sessionOf(c).draft.mouseGestures.single.common.mouseButtons;
+
+      notifierOf(c).add(
+        SetLens(
+          gestureGroupMouseButtonsLens(
+            GestureGroupLocation(
+              device: DeviceType.mouse,
+              editId: group.editId!,
+            ),
+          ),
+          [MouseButtonValue.right],
+        ),
+        scope: const GesturesScope(),
+      );
+      expect(own(), isEmpty);
+
+      notifierOf(c).undo(scope: const GesturesScope());
+      expect(own(), [MouseButtonValue.left]);
     });
 
     test('revert dispatches a saved-value edit', () async {
@@ -291,7 +324,8 @@ void main() {
   mouse:
     gestures:
       - type: press
-        name: first
+        _extra:
+          name: first
         threshold: 1
   ''';
 

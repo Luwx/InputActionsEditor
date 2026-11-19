@@ -5,12 +5,6 @@ import 'package:input_actions_editor/ui/common/theme/color_contrast.dart';
 import 'package:input_actions_editor/ui/common/theme/forui_color_themes.dart';
 import 'package:kde_color_scheme/kde_color_scheme.dart';
 
-/// Builds a [FThemeData] from a [KdeColorScheme].
-///
-/// Uses forui's zinc theme as the structural base (typography scale, border
-/// radii, sizes) then overlays the KDE colors on the parts that are
-/// color-dependent: text color, focus ring, icon color, and form field styles.
-/// No custom theme.dart is required.
 FThemeData buildKdeThemeData(KdeColorScheme kde) {
   final colors = _kdeToFColors(kde);
   final isDark = kde.isDark;
@@ -18,10 +12,6 @@ FThemeData buildKdeThemeData(KdeColorScheme kde) {
       ? AppThemes.zinc.dark.desktop
       : AppThemes.zinc.light.desktop;
 
-  // Rebuild all text styles with the KDE foreground color.
-  // Zinc's baked-in foreground (~white/black) would otherwise override
-  // whatever ForegroundNormal the scheme provides (e.g. MonochromeTint's
-  // muted 171,168,182 would render as zinc's pure white).
   final fg = colors.foreground;
   final body = base.typography.body.copyWith(
     xs3: base.typography.body.xs3.copyWith(color: fg),
@@ -57,33 +47,78 @@ FThemeData buildKdeThemeData(KdeColorScheme kde) {
   );
   final typography = base.typography.copyWith(body: body, display: display);
 
+  final style = FStyle(
+    formFieldStyle: FFormFieldStyle.inherit(
+      colors: colors,
+      typography: typography,
+      touch: false,
+    ),
+    focusedOutlineStyle: FFocusedOutlineStyle(
+      color: kde.window.decorationFocus,
+      borderRadius: base.style.focusedOutlineStyle.borderRadius,
+    ),
+    sizes: base.style.sizes,
+    iconStyle: IconThemeData(color: fg, size: typography.body.lg.fontSize),
+    tappableStyle: base.style.tappableStyle,
+    borderRadius: base.style.borderRadius,
+    borderWidth: base.style.borderWidth,
+    pagePadding: base.style.pagePadding,
+    shadow: base.style.shadow,
+  );
+  final buttonColors = colors.copyWith(card: kde.button.backgroundNormal);
+  final buttonFieldColors = buttonColors.copyWith(
+    foreground: kde.button.foregroundNormal,
+    mutedForeground: kde.button.foregroundInactive,
+    primary: kde.button.decorationFocus,
+  );
+  final viewColors = colors.copyWith(
+    foreground: kde.view.foregroundNormal,
+    mutedForeground: kde.view.foregroundInactive,
+    primary: kde.view.decorationFocus,
+    error: kde.view.foregroundNegative,
+  );
+  final select = FSelectStyle.inherit(
+    colors: colors,
+    icons: base.icons,
+    typography: typography,
+    style: style,
+    touch: false,
+  );
+
   return FThemeData(
     colors: colors,
     typography: typography,
     icons: base.icons,
     touch: false,
-    style: FStyle(
-      // Rebuilds border colors, label colors, helper text from KDE colors.
-      formFieldStyle: FFormFieldStyle.inherit(
-        colors: colors,
+    style: style,
+    buttonStyles: FButtonStyles.inherit(
+      colors: buttonColors,
+      typography: typography,
+      style: style,
+      touch: false,
+    ),
+    textFieldStyles: FTextFieldSizeStyles.inherit(
+      colors: viewColors,
+      typography: typography,
+      style: style,
+      touch: false,
+    ),
+    selectStyle: FSelectStyle(
+      fieldStyles: FTextFieldSizeStyles.inherit(
+        colors: buttonFieldColors,
         typography: typography,
+        style: style,
         touch: false,
       ),
-      // Focus ring uses the KDE accent color.
-      focusedOutlineStyle: FFocusedOutlineStyle(
-        color: colors.primary,
-        borderRadius: base.style.focusedOutlineStyle.borderRadius,
-      ),
-      sizes: base.style.sizes,
-      // Icons use the KDE foreground color.
-      iconStyle: IconThemeData(color: fg, size: typography.body.lg.fontSize),
-      tappableStyle: base.style.tappableStyle,
-      borderRadius: base.style.borderRadius,
-      borderWidth: base.style.borderWidth,
-      pagePadding: base.style.pagePadding,
-      shadow: base.style.shadow,
+      searchStyle: select.searchStyle,
+      contentStyle: select.contentStyle,
+      emptyTextStyle: select.emptyTextStyle,
     ),
   ).copyWith(
+    tooltipStyle: .delta(
+      decoration: .shapeDelta(color: kde.tooltip.backgroundNormal),
+      textStyle: .delta(color: kde.tooltip.foregroundNormal),
+    ),
     sidebarStyle: const .delta(
       groupStyle: .delta(
         padding: .delta(left: 12, right: 12),
@@ -95,7 +130,7 @@ FThemeData buildKdeThemeData(KdeColorScheme kde) {
 FColors _kdeToFColors(KdeColorScheme kde) {
   final isDark = kde.isDark;
   final border = kde.window.foregroundNormal.withAlpha(0x1A);
-  final secondary = _safeSurface(
+  final muted = _safeSurface(
     kde.window.backgroundNormal,
     kde.window.backgroundAlternate,
   );
@@ -108,11 +143,11 @@ FColors _kdeToFColors(KdeColorScheme kde) {
     barrier: isDark ? const Color(0x7A000000) : const Color(0x33000000),
     background: kde.window.backgroundNormal,
     foreground: kde.window.foregroundNormal,
-    primary: kde.accentColor,
+    primary: kde.selection.backgroundNormal,
     primaryForeground: kde.selection.foregroundNormal,
-    secondary: secondary,
-    secondaryForeground: kde.window.foregroundNormal,
-    muted: secondary,
+    secondary: kde.button.backgroundNormal,
+    secondaryForeground: kde.button.foregroundNormal,
+    muted: muted,
     mutedForeground: kde.window.foregroundInactive,
     destructive: kde.window.foregroundNegative,
     destructiveForeground: kde.selection.foregroundNormal,
@@ -123,10 +158,6 @@ FColors _kdeToFColors(KdeColorScheme kde) {
   );
 }
 
-/// Returns [alternate] if its contrast against [base] is ≤ 2.0.
-/// If the scheme used [alternate] as a high-contrast reference color
-/// (e.g. MonochromeTint's light gray on near-black), blends 25% toward it
-/// so the raised surface stays subtle.
 Color _safeSurface(Color base, Color alternate) {
   if (contrastRatio(base, alternate) <= 2.0) return alternate;
   return Color.lerp(base, alternate, 0.25)!;

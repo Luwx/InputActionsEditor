@@ -10,7 +10,8 @@ import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class ActionListHeader extends ConsumerWidget {
   const ActionListHeader({
-    required this.location,
+    required this.source,
+    required this.selectMode,
     required this.selectionCount,
     required this.onExitSelection,
     this.onAdd,
@@ -19,9 +20,8 @@ class ActionListHeader extends ConsumerWidget {
     super.key,
   });
 
-  final GestureLocation location;
-
-  /// Rows currently selected; 0 means the list is not in select mode.
+  final ActionSource source;
+  final bool selectMode;
   final int selectionCount;
   final VoidCallback onExitSelection;
   final Future<void> Function()? onAdd;
@@ -35,12 +35,13 @@ class ActionListHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dirtyState = ref.watch(
-      actionListEditorProvider(location).select((vm) => vm.dirtyState),
+      actionListEditorProvider(source).select((vm) => vm.dirtyState),
+    );
+    final count = ref.watch(
+      actionListEditorProvider(source).select((vm) => vm.actions.length),
     );
     final canRevert = ref.watch(
-      actionListEditorProvider(
-        location,
-      ).select((vm) => vm.savedActions != null),
+      actionListEditorProvider(source).select((vm) => vm.savedActions != null),
     );
 
     final titleStyle = context.theme.typography.body.sm.copyWith(
@@ -49,7 +50,7 @@ class ActionListHeader extends ConsumerWidget {
 
     // In select mode the section reads as the selection, with a way out of it,
     // the same shape the gesture list header takes.
-    if (selectionCount > 0) {
+    if (selectMode) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -76,9 +77,14 @@ class ActionListHeader extends ConsumerWidget {
           onRevert: !canRevert
               ? null
               : () => ref
-                    .read(actionListEditorProvider(location).notifier)
+                    .read(actionListEditorProvider(source).notifier)
                     .revert(),
-          child: Text(context.l10n.actionsTitle, style: titleStyle),
+          child: Text(
+            source.menuItem == null
+                ? context.l10n.actionsTitle
+                : context.l10n.actionGroupSummary(count),
+            style: titleStyle,
+          ),
         ),
         const Spacer(),
         if (onAdd != null)

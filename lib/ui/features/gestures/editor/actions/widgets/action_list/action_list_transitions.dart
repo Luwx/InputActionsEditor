@@ -49,13 +49,13 @@ List<ListGhost<ActionGhostRow>> _actionGhosts(
 void captureActionGhosts(
   ActionTransitions transitions,
   WidgetRef ref,
-  GestureLocation location,
+  ActionSource source,
   List<int> keys,
 ) {
   final draft = ref.read(draftConfigProvider);
   transitions.capture(
     _actionGhosts(
-      ref.read(actionListEditorProvider(location)).rows,
+      ref.read(actionListEditorProvider(source)).rows,
       keys.toSet(),
       (row) => actionAt(draft, row.location),
     ),

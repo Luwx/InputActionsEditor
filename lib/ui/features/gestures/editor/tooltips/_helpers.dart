@@ -270,57 +270,6 @@ class _UnitRow extends StatelessWidget {
   }
 }
 
-class _LifecycleRow extends StatelessWidget {
-  const _LifecycleRow(
-    this.name,
-    this.description,
-    this.mono,
-    this.muted, {
-    this.isDefault = false,
-    this.colors,
-    this.t,
-  });
-
-  final String name;
-  final String description;
-  final TextStyle mono;
-  final TextStyle muted;
-  final bool isDefault;
-  final FColors? colors;
-  final FTypography? t;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        SizedBox(width: 76, child: Text(name, style: mono)),
-        Text(description, style: muted),
-        if (isDefault && colors != null && t != null) ...[
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: colors!.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(
-              context.l10n.fieldDefaultHint,
-              style: t!.body.xs.copyWith(
-                fontSize: 9,
-                color: colors!.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 class _KeyChordRow extends StatelessWidget {
   const _KeyChordRow({
     required this.keys,

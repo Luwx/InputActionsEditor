@@ -161,7 +161,7 @@ void main() {
     notifier
       ..add(
         AddAction(
-          location,
+          ActionSource.gesture(location),
           const TriggerAction(
             action: CommandAction(command: 'new'),
             editId: 7001,
@@ -194,7 +194,7 @@ void main() {
     notifier
       ..add(
         AddAction(
-          location,
+          ActionSource.gesture(location),
           const TriggerAction(
             action: ActionGroup(
               actions: [

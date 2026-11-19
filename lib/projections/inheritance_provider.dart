@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart'
     show GestureGroupLocation, GestureLocation;
 import 'package:input_actions_editor/domain/inheritance/group_inheritance.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 
 /// Properties a gesture picks up from its ancestor groups.
@@ -32,3 +33,8 @@ groupInheritedConditionsProvider =
       (ref, location) =>
           inheritedConditionsForGroup(ref.watch(draftConfigProvider), location),
     );
+
+/// The draft with each gesture showing what its groups hand down.
+final Provider<Config> effectiveConfigProvider = Provider<Config>(
+  (ref) => withInheritedValues(ref.watch(draftConfigProvider)),
+);

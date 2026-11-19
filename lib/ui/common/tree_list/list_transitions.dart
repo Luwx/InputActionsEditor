@@ -184,14 +184,19 @@ class CollapsibleListRow extends StatelessWidget {
   const CollapsibleListRow({
     required this.visible,
     required this.child,
+    this.followsChild = false,
     super.key,
   });
 
   final bool visible;
   final Widget child;
 
+  /// Skips the cross-fade, which lags a frame. [child] needs a GlobalKey.
+  final bool followsChild;
+
   @override
   Widget build(BuildContext context) {
+    if (followsChild && visible) return child;
     return AnimatedCrossFade(
       firstChild: child,
       secondChild: const SizedBox(width: double.infinity),

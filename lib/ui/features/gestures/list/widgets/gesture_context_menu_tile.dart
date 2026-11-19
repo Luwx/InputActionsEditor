@@ -5,7 +5,9 @@ import 'package:forui/forui.dart';
 import 'package:forui_hooks/forui_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
+import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/projections/dirty_providers.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/dismissible_context_menu.dart';
 import 'package:input_actions_editor/ui/common/edit_shortcuts.dart';
@@ -28,6 +30,7 @@ class GestureContextMenuTile extends HookConsumerWidget {
     required this.onPaste,
     required this.onDuplicate,
     required this.onToggleEnabled,
+    required this.onDiscardChanges,
     required this.onDelete,
     super.key,
   });
@@ -51,6 +54,7 @@ class GestureContextMenuTile extends HookConsumerWidget {
   final VoidCallback onPaste;
   final VoidCallback onDuplicate;
   final VoidCallback onToggleEnabled;
+  final VoidCallback onDiscardChanges;
   final VoidCallback onDelete;
 
   @override
@@ -75,6 +79,9 @@ class GestureContextMenuTile extends HookConsumerWidget {
             false,
       ),
     );
+    final canDiscard =
+        targetCount == 1 &&
+        ref.watch(gestureDirtyStateProvider(location)).canRevert;
     final controller = useFPopoverController();
     useListenable(controller);
     useMenuShortcuts(controller, {
@@ -113,11 +120,13 @@ class GestureContextMenuTile extends HookConsumerWidget {
         controller: controller,
         isGestureEnabled: isGestureEnabled,
         canRename: targetCount == 1,
+        canDiscard: canDiscard,
         onRename: onRename,
         onCopy: onCopy,
         onPaste: onPaste,
         onDuplicate: onDuplicate,
         onToggleEnabled: onToggleEnabled,
+        onDiscardChanges: onDiscardChanges,
         onDelete: onDelete,
       ),
       child: Listener(
@@ -141,11 +150,13 @@ List<FItemGroupMixin> _gestureContextMenuItems(
   required FPopoverController controller,
   required bool isGestureEnabled,
   required bool canRename,
+  required bool canDiscard,
   required VoidCallback onRename,
   required VoidCallback onCopy,
   required VoidCallback onPaste,
   required VoidCallback onDuplicate,
   required VoidCallback onToggleEnabled,
+  required VoidCallback onDiscardChanges,
   required VoidCallback onDelete,
 }) {
   final l10n = context.l10n;
@@ -160,7 +171,7 @@ List<FItemGroupMixin> _gestureContextMenuItems(
             onPress: dismissThen(controller, onRename),
           ),
         FItem(
-          prefix: const Icon(FLucideIcons.clipboardCopy),
+          prefix: const Icon(FLucideIcons.copy),
           title: Text(l10n.actionCopy),
           details: const MenuShortcutHint(copyShortcut),
           onPress: dismissThen(controller, onCopy),
@@ -172,7 +183,7 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           onPress: dismissThen(controller, onPaste),
         ),
         FItem(
-          prefix: const Icon(FLucideIcons.copy),
+          prefix: const Icon(FLucideIcons.copyPlus),
           title: Text(l10n.gestureMenuDuplicate),
           details: const MenuShortcutHint(duplicateShortcut),
           onPress: dismissThen(controller, onDuplicate),
@@ -186,6 +197,12 @@ List<FItemGroupMixin> _gestureContextMenuItems(
           ),
           onPress: dismissThen(controller, onToggleEnabled),
         ),
+        if (canDiscard)
+          FItem(
+            prefix: const Icon(FLucideIcons.undo2),
+            title: Text(l10n.actionDiscardChanges),
+            onPress: dismissThen(controller, onDiscardChanges),
+          ),
       ],
     ),
     FItemGroup(

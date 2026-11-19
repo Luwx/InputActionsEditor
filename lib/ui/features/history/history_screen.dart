@@ -553,5 +553,6 @@ String _actionSummaryText(Action action, AppLocalizations l10n) =>
       FunctionAction(:final expression) =>
         expression.trim().isEmpty ? 'function' : expression.trim(),
       ActionGroup(:final actions) => 'one of ${actions.length}',
+      ContextMenuAction(:final items) => 'context menu (${items.length})',
       RawAction() => 'raw yaml',
     };
