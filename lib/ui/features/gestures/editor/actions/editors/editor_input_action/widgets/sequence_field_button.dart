@@ -10,6 +10,7 @@ class SequenceFieldButton extends StatelessWidget {
     this.groupId,
     this.hideRegion = FPopoverHideRegion.excludeChild,
     this.constraints = const FPortalConstraints(),
+    this.onChange,
     super.key,
   });
 
@@ -19,10 +20,12 @@ class SequenceFieldButton extends StatelessWidget {
   final Object? groupId;
   final FPopoverHideRegion hideRegion;
   final FPortalConstraints constraints;
+  final ValueChanged<bool>? onChange;
 
   @override
   Widget build(BuildContext context) {
     return FPopover(
+      control: .managed(onChange: onChange),
       groupId: groupId,
       hideRegion: hideRegion,
       constraints: constraints,

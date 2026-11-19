@@ -1,6 +1,9 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#endif
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -14,6 +17,87 @@ struct _MyApplication
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+struct KeyboardGrab
+{
+  GWeakRef window;
+  GdkSeat *seat = nullptr;
+  unsigned int recorders = 0;
+};
+
+static void release_keyboard_grab(KeyboardGrab *grab)
+{
+  if (grab->seat == nullptr)
+    return;
+  gdk_seat_ungrab(grab->seat);
+  g_clear_object(&grab->seat);
+}
+
+static void acquire_keyboard_grab(KeyboardGrab *grab)
+{
+#ifdef GDK_WINDOWING_WAYLAND
+  if (grab->seat != nullptr)
+    return;
+
+  g_autoptr(GObject) widget = G_OBJECT(g_weak_ref_get(&grab->window));
+  if (widget == nullptr)
+    return;
+
+  GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
+  if (window == nullptr)
+    return;
+
+  GdkDisplay *display = gdk_window_get_display(window);
+  if (!GDK_IS_WAYLAND_DISPLAY(display))
+    return;
+
+  GdkSeat *seat = gdk_display_get_default_seat(display);
+  if (seat != nullptr &&
+      gdk_seat_grab(seat, window, GDK_SEAT_CAPABILITY_KEYBOARD, TRUE, nullptr,
+                    nullptr, nullptr, nullptr) == GDK_GRAB_SUCCESS)
+    grab->seat = GDK_SEAT(g_object_ref(seat));
+#endif
+}
+
+static void keyboard_recording_call(FlMethodChannel *, FlMethodCall *call,
+                                    gpointer data)
+{
+  auto *grab = static_cast<KeyboardGrab *>(data);
+  const gchar *method = fl_method_call_get_name(call);
+  if (g_str_equal(method, "grab"))
+  {
+    ++grab->recorders;
+    acquire_keyboard_grab(grab);
+  }
+  else if (g_str_equal(method, "ungrab"))
+  {
+    if (grab->recorders > 0 && --grab->recorders == 0)
+      release_keyboard_grab(grab);
+  }
+  else
+  {
+    fl_method_call_respond_not_implemented(call, nullptr);
+    return;
+  }
+  fl_method_call_respond_success(call, nullptr, nullptr);
+}
+
+static void register_keyboard_recording_channel(FlView *view, GtkWindow *window)
+{
+  auto *grab = new KeyboardGrab();
+  g_weak_ref_init(&grab->window, G_OBJECT(window));
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  g_autoptr(FlMethodChannel) channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+      "input_actions_editor/keyboard_recording", FL_METHOD_CODEC(codec));
+  fl_method_channel_set_method_call_handler(
+      channel, keyboard_recording_call, grab, [](gpointer data) {
+        auto *grab = static_cast<KeyboardGrab *>(data);
+        release_keyboard_grab(grab);
+        g_weak_ref_clear(&grab->window);
+        delete grab;
+      });
+}
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication *self, FlView *view)
@@ -63,6 +147,7 @@ static void my_application_activate(GApplication *application)
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  register_keyboard_recording_channel(view, window);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

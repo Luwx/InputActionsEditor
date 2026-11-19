@@ -44,6 +44,9 @@ class KeyboardTimelineField extends HookWidget {
             icon: const Icon(Icons.radio_button_checked, size: 16),
             groupId: recorder.isRecording ? null : popoverGroup,
             hideRegion: recorder.isRecording ? .none : .excludeChild,
+            onChange: (shown) {
+              if (!shown) recorder.stop(append: false);
+            },
             constraints: const FPortalConstraints(maxWidth: 300),
             popoverBuilder: (context, controller) => KeyboardRecordPopover(
               controller: controller,
