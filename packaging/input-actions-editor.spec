@@ -9,7 +9,7 @@ Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      x86_64
 
-BuildRequires:  chrpath
+BuildRequires:  patchelf
 
 Requires:       gtk3
 Requires:       glib2
@@ -41,8 +41,12 @@ for size in 16 32 48 64 128 256 512; do
         %{buildroot}/usr/share/icons/hicolor/${size}x${size}/apps/dev.luwx.input_actions_editor.png
 done
 
-# Strip RPATHs that Flutter embeds pointing to the build machine's source tree
-find %{buildroot}/opt/%{name}/lib/ -name '*.so' -exec chrpath -d {} \;
+# libflutter_linux_gtk.so dlopens the native assets through its own RUNPATH.
+for lib in %{buildroot}/opt/%{name}/lib/*.so; do
+    if [ -n "$(patchelf --print-rpath "$lib")" ]; then
+        patchelf --set-rpath '$ORIGIN' "$lib"
+    fi
+done
 
 %files
 %dir /opt/%{name}
