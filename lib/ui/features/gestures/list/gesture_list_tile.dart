@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
-import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/model/gesture.dart';
 import 'package:input_actions_editor/model/keyboard_gesture.dart';
@@ -298,31 +297,7 @@ void _addTouchSummary(Object g, List<String> parts) {
 
 String _firstActionSummary(TriggerCommon common, AppLocalizations l10n) {
   if (common.actions.isEmpty) return l10n.actionSummaryNoAction;
-  final action = common.actions.first.action;
-  return switch (action) {
-    CommandAction(:final command) => command.isEmpty ? '(no command)' : command,
-    InputAction(:final entries) when entries.isEmpty => '(empty)',
-    InputAction(:final entries) =>
-      entries
-          .map((e) {
-            final seq = inputEntrySummary(e, l10n);
-            return '${e.device.name} $seq';
-          })
-          .join(' · '),
-    PlasmaShortcutAction(:final shortcut) =>
-      shortcut.isEmpty ? 'plasma shortcut' : shortcut,
-    ActivateWindowAction(:final windowId) =>
-      windowId.isEmpty ? 'activate window' : 'activate $windowId',
-    ReplaceTextAction() => l10n.actionReplaceTextFallbackSummary,
-    SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
-    FunctionAction(:final expression) =>
-      expression.trim().isEmpty ? 'function' : expression.trim(),
-    ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
-    ContextMenuAction(:final items) => l10n.actionContextMenuSummary(
-      items.length,
-    ),
-    RawAction() => 'raw yaml',
-  };
+  return actionLineSummary(common.actions.first.action, l10n);
 }
 
 class _SelectionCheckboxSlot extends StatelessWidget {

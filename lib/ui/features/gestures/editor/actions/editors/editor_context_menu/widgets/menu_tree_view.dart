@@ -1,16 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart' hide Action;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/ui/common/drag_cursor.dart';
+import 'package:input_actions_editor/ui/common/icon_picker/icon_picker_dialog.dart';
 import 'package:input_actions_editor/ui/common/tree_list/tree_move.dart';
 import 'package:input_actions_editor/ui/common/use_drag_escape_cancel.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/menu_tree.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/widgets/menu_item_icon.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/widgets/menu_row_drag.dart';
-import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class MenuTreeView extends HookWidget {
@@ -23,6 +21,7 @@ class MenuTreeView extends HookWidget {
     required this.onIcon,
     required this.onDelete,
     required this.onMove,
+    this.onResized,
     super.key,
   });
 
@@ -34,6 +33,10 @@ class MenuTreeView extends HookWidget {
   final void Function(int key, String? icon) onIcon;
   final ValueChanged<int> onDelete;
   final MenuMoveCallback onMove;
+  final VoidCallback? onResized;
+
+  // Two 30px rows and the 12px end drop target.
+  static const double _twoRowsHeight = 72;
 
   @override
   Widget build(BuildContext context) {
@@ -56,28 +59,37 @@ class MenuTreeView extends HookWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final row in visibleMenuRows(rows, collapsed))
-              _MenuTreeRow(
-                key: ValueKey(row.key),
-                row: row,
-                selected: selected == row.key,
-                collapsed: collapsed.contains(row.key),
-                chevronSlot: hasSubMenus,
-                resolve: resolve,
-                onMove: onMove,
-                onSelect: () => onSelect(row.key),
-                onToggle: () => onToggle(row.key),
-                onIcon: (icon) => onIcon(row.key, icon),
-                onDelete: () => onDelete(row.key),
-                onDragStarted: () => dragCursor.show(context),
-                onDragEnded: dragCursor.hide,
-                onPointerDown: setDragPointer,
-              ),
-            MenuEndDropTarget(resolve: resolve, onMove: onMove),
-          ],
+        child: AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOutCubic,
+          alignment: Alignment.topCenter,
+          onEnd: onResized,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _twoRowsHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final row in visibleMenuRows(rows, collapsed))
+                  _MenuTreeRow(
+                    key: ValueKey(row.key),
+                    row: row,
+                    selected: selected == row.key,
+                    collapsed: collapsed.contains(row.key),
+                    chevronSlot: hasSubMenus,
+                    resolve: resolve,
+                    onMove: onMove,
+                    onSelect: () => onSelect(row.key),
+                    onToggle: () => onToggle(row.key),
+                    onIcon: (icon) => onIcon(row.key, icon),
+                    onDelete: () => onDelete(row.key),
+                    onDragStarted: () => dragCursor.show(context),
+                    onDragEnded: dragCursor.hide,
+                    onPointerDown: setDragPointer,
+                  ),
+                MenuEndDropTarget(resolve: resolve, onMove: onMove),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -124,6 +136,7 @@ class _MenuTreeRow extends HookWidget {
     final item = row.item;
     final hovered = useState(false);
     final showDelete = hovered.value || selected;
+    final separatorColor = selected ? colors.mutedForeground : colors.border;
 
     final Widget label;
     final String dragLabel;
@@ -148,18 +161,31 @@ class _MenuTreeRow extends HookWidget {
               );
       case SectionMenuItem(:final text):
         dragLabel = text.isEmpty ? l10n.actionContextMenuSectionLabel : text;
-        label = Text(
-          dragLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: typography.body.xs.copyWith(
-            color: colors.mutedForeground,
-            fontWeight: FontWeight.w600,
+        label = LayoutBuilder(
+          builder: (context, constraints) => Row(
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: constraints.maxWidth * 0.6,
+                ),
+                child: Text(
+                  dragLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.body.xs.copyWith(
+                    color: colors.mutedForeground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Divider(height: 1, color: separatorColor)),
+            ],
           ),
         );
       case SeparatorMenuItem():
         dragLabel = l10n.actionContextMenuSeparatorLabel;
-        label = const FDivider();
+        label = Divider(height: 1, color: separatorColor);
     }
 
     final hasIcon = item is ActionMenuItem || item is SubMenuItem;
@@ -197,6 +223,7 @@ class _MenuTreeRow extends HookWidget {
                     onDragEnded: onDragEnded,
                     onPointerDown: onPointerDown,
                   ),
+                  const SizedBox(width: 8),
                   if (chevronSlot)
                     SizedBox(
                       width: 16,
@@ -265,49 +292,21 @@ class _IconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FPopover(
-      constraints: const FPortalConstraints(maxWidth: 240),
-      builder: (context, controller, child) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
+    return Semantics(
+      label: context.l10n.actionContextMenuIconLabel,
+      child: FButton.icon(
+        variant: .ghost,
+        size: .xs,
+        onPress: () async {
           onSelect();
-          unawaited(controller.toggle());
+          await showIconPickerDialog(
+            context,
+            selected: name,
+            onSelected: onChanged,
+          );
         },
-        child: MouseRegion(cursor: SystemMouseCursors.click, child: child),
+        child: MenuItemIcon(name: name, fallback: fallback),
       ),
-      popoverBuilder: (context, controller) => Padding(
-        padding: const EdgeInsets.all(12),
-        child: _IconField(name: name ?? '', onChanged: onChanged),
-      ),
-      child: SizedBox(
-        width: 20,
-        height: 20,
-        child: Center(
-          child: MenuItemIcon(name: name, fallback: fallback),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconField extends HookWidget {
-  const _IconField({required this.name, required this.onChanged});
-
-  final String name;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final controller = useSyncedTextController(
-      name,
-      (value) => onChanged(value.text.isEmpty ? null : value.text),
-    );
-    return FTextField(
-      control: FTextFieldControl.managed(controller: controller),
-      label: Text(l10n.actionContextMenuIconLabel),
-      hint: l10n.actionContextMenuIconHint,
-      autofocus: true,
     );
   }
 }

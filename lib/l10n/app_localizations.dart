@@ -1882,6 +1882,12 @@ abstract class AppLocalizations {
   /// **'Separator'**
   String get actionContextMenuAddSeparator;
 
+  /// No description provided for @actionContextMenuItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get actionContextMenuItemsLabel;
+
   /// No description provided for @actionContextMenuTextLabel.
   ///
   /// In en, this message translates to:
@@ -1894,23 +1900,131 @@ abstract class AppLocalizations {
   /// **'Icon'**
   String get actionContextMenuIconLabel;
 
-  /// No description provided for @actionContextMenuIconHint.
+  /// No description provided for @iconPickerTitle.
   ///
   /// In en, this message translates to:
-  /// **'utilities-terminal'**
-  String get actionContextMenuIconHint;
+  /// **'Choose an icon'**
+  String get iconPickerTitle;
+
+  /// No description provided for @iconPickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search icons…'**
+  String get iconPickerSearch;
+
+  /// No description provided for @iconPickerNoIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'No icon'**
+  String get iconPickerNoIcon;
+
+  /// No description provided for @iconPickerNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No icons found'**
+  String get iconPickerNoResults;
+
+  /// No description provided for @iconPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No installed icons available.'**
+  String get iconPickerEmpty;
+
+  /// No description provided for @iconPickerLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load installed icons.'**
+  String get iconPickerLoadError;
+
+  /// No description provided for @iconCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get iconCategoryAll;
+
+  /// No description provided for @iconCategoryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get iconCategoryActions;
+
+  /// No description provided for @iconCategoryApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get iconCategoryApplications;
+
+  /// No description provided for @iconCategoryCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get iconCategoryCategories;
+
+  /// No description provided for @iconCategoryDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get iconCategoryDevices;
+
+  /// No description provided for @iconCategoryEmblems.
+  ///
+  /// In en, this message translates to:
+  /// **'Emblems'**
+  String get iconCategoryEmblems;
+
+  /// No description provided for @iconCategoryEmotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Emotes'**
+  String get iconCategoryEmotes;
+
+  /// No description provided for @iconCategoryMimetypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mimetypes'**
+  String get iconCategoryMimetypes;
+
+  /// No description provided for @iconCategoryPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get iconCategoryPlaces;
+
+  /// No description provided for @iconCategoryStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get iconCategoryStatus;
+
+  /// No description provided for @iconCategoryAnimations.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get iconCategoryAnimations;
+
+  /// No description provided for @iconCategoryInternational.
+  ///
+  /// In en, this message translates to:
+  /// **'International'**
+  String get iconCategoryInternational;
+
+  /// No description provided for @iconCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get iconCategoryOther;
+
+  /// No description provided for @actionCut.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut'**
+  String get actionCut;
 
   /// No description provided for @actionContextMenuActionsLabel.
   ///
   /// In en, this message translates to:
   /// **'Actions'**
   String get actionContextMenuActionsLabel;
-
-  /// No description provided for @actionContextMenuShowActions.
-  ///
-  /// In en, this message translates to:
-  /// **'Show actions'**
-  String get actionContextMenuShowActions;
 
   /// No description provided for @actionContextMenuSectionLabel.
   ///

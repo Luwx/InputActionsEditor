@@ -43,6 +43,33 @@ String actionValueSummary(
     raw.trim().isEmpty ? l10n.actionSummaryEmpty : raw.trim().split('\n').first,
 };
 
+String actionLineSummary(Action action, AppLocalizations l10n) =>
+    switch (action) {
+      CommandAction(:final command) =>
+        command.isEmpty ? '(no command)' : command,
+      InputAction(:final entries) when entries.isEmpty => '(empty)',
+      InputAction(:final entries) =>
+        entries
+            .map((e) {
+              final seq = inputEntrySummary(e, l10n);
+              return '${e.device.name} $seq';
+            })
+            .join(' · '),
+      PlasmaShortcutAction(:final shortcut) =>
+        shortcut.isEmpty ? 'plasma shortcut' : shortcut,
+      ActivateWindowAction(:final windowId) =>
+        windowId.isEmpty ? 'activate window' : 'activate $windowId',
+      ReplaceTextAction() => l10n.actionReplaceTextFallbackSummary,
+      SleepAction(:final milliseconds) => 'sleep ${milliseconds}ms',
+      FunctionAction(:final expression) =>
+        expression.trim().isEmpty ? 'function' : expression.trim(),
+      ActionGroup(:final actions) => l10n.actionGroupSummary(actions.length),
+      ContextMenuAction(:final items) => l10n.actionContextMenuSummary(
+        items.length,
+      ),
+      RawAction() => 'raw yaml',
+    };
+
 /// A specific title for the collapsed row. For input actions this reflects the
 /// input mode (e.g. "Key sequence", "Text input") rather than the generic
 /// "Input" so the row reads like the screenshot.

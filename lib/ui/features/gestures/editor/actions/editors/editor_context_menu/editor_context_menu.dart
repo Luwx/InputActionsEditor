@@ -15,9 +15,12 @@ import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_loca
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
 class EditorContextMenu extends HookConsumerWidget {
-  const EditorContextMenu({super.key});
+  const EditorContextMenu({this.onGrow, this.onSettled, super.key});
 
-  static const double _treeWidth = 260;
+  final VoidCallback? onGrow;
+  final VoidCallback? onSettled;
+
+  static const double _treeWidth = 236;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,6 +52,7 @@ class EditorContextMenu extends HookConsumerWidget {
     }
 
     void add(MenuItem item) {
+      onGrow?.call();
       final key = switch (selectedItem) {
         SubMenuItem() => notifier.addMenuItem(item, parentKey: selected),
         _ => notifier.addMenuItem(item, afterKey: selected),
@@ -78,7 +82,10 @@ class EditorContextMenu extends HookConsumerWidget {
 
     void toggle(int key) {
       final next = {...collapsed.value};
-      if (!next.remove(key)) next.add(key);
+      if (!next.add(key)) {
+        next.remove(key);
+        onGrow?.call();
+      }
       collapsed.value = next;
     }
 
@@ -91,15 +98,20 @@ class EditorContextMenu extends HookConsumerWidget {
       onIcon: notifier.setMenuItemIcon,
       onDelete: delete,
       onMove: move,
+      onResized: onSettled,
     );
 
-    final treePane = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        tree,
-        const SizedBox(height: 8),
-        MenuAddRow(onAdd: add),
-      ],
+    final treePane = FLabel(
+      layout: .vertical,
+      label: Text(context.l10n.actionContextMenuItemsLabel),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          tree,
+          const SizedBox(height: 8),
+          MenuAddRow(onAdd: add),
+        ],
+      ),
     );
 
     final selectedLocation = selected == null
@@ -135,7 +147,7 @@ class EditorContextMenu extends HookConsumerWidget {
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
-            if (constraints.maxWidth < 560) {
+            if (constraints.maxWidth < 496) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [treePane, const SizedBox(height: 16), detail],

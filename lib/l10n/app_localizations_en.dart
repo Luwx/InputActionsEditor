@@ -998,19 +998,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionContextMenuAddSeparator => 'Separator';
 
   @override
+  String get actionContextMenuItemsLabel => 'Items';
+
+  @override
   String get actionContextMenuTextLabel => 'Text';
 
   @override
   String get actionContextMenuIconLabel => 'Icon';
 
   @override
-  String get actionContextMenuIconHint => 'utilities-terminal';
+  String get iconPickerTitle => 'Choose an icon';
+
+  @override
+  String get iconPickerSearch => 'Search icons…';
+
+  @override
+  String get iconPickerNoIcon => 'No icon';
+
+  @override
+  String get iconPickerNoResults => 'No icons found';
+
+  @override
+  String get iconPickerEmpty => 'No installed icons available.';
+
+  @override
+  String get iconPickerLoadError => 'Could not load installed icons.';
+
+  @override
+  String get iconCategoryAll => 'All';
+
+  @override
+  String get iconCategoryActions => 'Actions';
+
+  @override
+  String get iconCategoryApplications => 'Applications';
+
+  @override
+  String get iconCategoryCategories => 'Categories';
+
+  @override
+  String get iconCategoryDevices => 'Devices';
+
+  @override
+  String get iconCategoryEmblems => 'Emblems';
+
+  @override
+  String get iconCategoryEmotes => 'Emotes';
+
+  @override
+  String get iconCategoryMimetypes => 'Mimetypes';
+
+  @override
+  String get iconCategoryPlaces => 'Places';
+
+  @override
+  String get iconCategoryStatus => 'Status';
+
+  @override
+  String get iconCategoryAnimations => 'Animations';
+
+  @override
+  String get iconCategoryInternational => 'International';
+
+  @override
+  String get iconCategoryOther => 'Other';
+
+  @override
+  String get actionCut => 'Cut';
 
   @override
   String get actionContextMenuActionsLabel => 'Actions';
-
-  @override
-  String get actionContextMenuShowActions => 'Show actions';
 
   @override
   String get actionContextMenuSectionLabel => 'Section';

@@ -45,9 +45,7 @@ class _MenuActionsSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                const SizedBox(width: 12),
-                const Icon(FLucideIcons.panelRight, size: 24),
-                const SizedBox(width: 8),
+                const SizedBox(width: 16),
                 Text(
                   context.l10n.actionContextMenuActionsLabel,
                   style: context.theme.typography.body.md.copyWith(
@@ -64,8 +62,6 @@ class _MenuActionsSheet extends StatelessWidget {
                 const SizedBox(width: 8),
               ],
             ),
-            const SizedBox(height: 8),
-            Divider(height: 1, color: colors.border),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),

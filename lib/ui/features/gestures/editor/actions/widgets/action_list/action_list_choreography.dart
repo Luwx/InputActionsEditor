@@ -176,7 +176,16 @@ ActionListChoreography useActionListChoreography(
     if (previous != null) captureActionMotion(transitions, previous, next);
   });
   // Deliberately a notifier, not useState: a toggle must not rebuild the list.
-  final expanded = useValueNotifier(<int>{});
+  final expanded = useValueNotifier(
+    useMemoized(
+      () => source.menuItem == null
+          ? <int>{}
+          : {
+              for (final row in ref.read(actionListEditorProvider(source)).rows)
+                row.editId,
+            },
+    ),
+  );
   final collapsedGroups = useState(<int>{});
   // Groups whose children were unfolded by their card opening, so shutting the
   // card can put them back. A manual disclosure hands the fold back to the user

@@ -7,11 +7,14 @@ import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/domain/edit/schema/lens.dart';
 import 'package:input_actions_editor/model/action.dart';
 import 'package:input_actions_editor/model/config.dart';
+import 'package:input_actions_editor/ui/common/icon_picker/icon_picker_dialog.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/editors/editor_context_menu/widgets/menu_item_icon.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_meta.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_summary.dart';
 import 'package:input_actions_editor/ui/helpers/editable_field.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
 import 'package:input_actions_editor/ui/l10n/context_ext.dart';
 
-/// Edits one menu item through the generated menu item lenses.
 class MenuItemDetail extends ConsumerWidget {
   const MenuItemDetail({
     required this.location,
@@ -54,50 +57,43 @@ class MenuItemDetail extends ConsumerWidget {
 
     Widget iconField(Lens<Config, String?> lens) {
       final icon = field<String?>(lens, () => null);
-      return _TextField(
+      return _IconPickerField(
         label: l10n.actionContextMenuIconLabel,
-        hint: l10n.actionContextMenuIconHint,
-        text: icon.value ?? '',
-        onChanged: (value) => icon.onChanged(value.isEmpty ? null : value),
+        hint: l10n.iconPickerNoIcon,
+        name: icon.value,
+        onPick: () => showIconPickerDialog(
+          context,
+          selected: icon.value,
+          onSelected: icon.onChanged,
+        ),
       );
     }
+
+    Widget textAndIcon(
+      Lens<Config, String> textLens,
+      Lens<Config, String?> iconLens,
+    ) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 2, child: iconField(iconLens)),
+        const SizedBox(width: 12),
+        Expanded(flex: 3, child: textField(textLens)),
+      ],
+    );
 
     return switch (item) {
       null => Text(l10n.actionContextMenuEmpty, style: muted),
       ActionMenuItem(:final actions) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          textField(menuItemTextLens(location)),
+          textAndIcon(menuItemTextLens(location), menuItemIconLens(location)),
           const SizedBox(height: 12),
-          iconField(menuItemIconLens(location)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${l10n.actionContextMenuActionsLabel}: '
-                  '${l10n.actionGroupSummary(actions.length)}',
-                  style: muted,
-                ),
-              ),
-              FButton(
-                variant: .outline,
-                size: .sm,
-                onPress: onShowActions,
-                prefix: const Icon(FLucideIcons.panelRight, size: 14),
-                child: Text(l10n.actionContextMenuShowActions),
-              ),
-            ],
-          ),
+          _ActionsTile(actions: actions, onPress: onShowActions),
         ],
       ),
-      SubMenuItem() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          textField(menuItemSubMenuTextLens(location)),
-          const SizedBox(height: 12),
-          iconField(menuItemSubMenuIconLens(location)),
-        ],
+      SubMenuItem() => textAndIcon(
+        menuItemSubMenuTextLens(location),
+        menuItemSubMenuIconLens(location),
       ),
       SectionMenuItem() => textField(menuItemSectionTextLens(location)),
       SeparatorMenuItem() => Text(
@@ -113,14 +109,12 @@ class _TextField extends HookWidget {
     required this.label,
     required this.text,
     required this.onChanged,
-    this.hint,
     this.autofocus = false,
   });
 
   final String label;
   final String text;
   final ValueChanged<String> onChanged;
-  final String? hint;
   final bool autofocus;
 
   @override
@@ -132,8 +126,88 @@ class _TextField extends HookWidget {
     return FTextField(
       control: FTextFieldControl.managed(controller: controller),
       label: Text(label),
-      hint: hint,
       autofocus: autofocus,
+    );
+  }
+}
+
+class _IconPickerField extends HookWidget {
+  const _IconPickerField({
+    required this.label,
+    required this.hint,
+    required this.name,
+    required this.onPick,
+  });
+
+  final String label;
+  final String hint;
+  final String? name;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = useSyncedTextController(name ?? '', (_) {});
+    return FTextField(
+      control: FTextFieldControl.managed(controller: controller),
+      label: Text(label),
+      hint: hint,
+      readOnly: true,
+      mouseCursor: SystemMouseCursors.click,
+      onTap: onPick,
+      prefixBuilder: (context, style, states) => Padding(
+        padding: const EdgeInsetsDirectional.only(start: 10),
+        child: MenuItemIcon(
+          name: name,
+          fallback: const Icon(FLucideIcons.image, size: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionsTile extends StatelessWidget {
+  const _ActionsTile({required this.actions, required this.onPress});
+
+  final List<TriggerAction> actions;
+  final VoidCallback onPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final muted = context.theme.colors.mutedForeground;
+    final subtitleStyle = context.theme.typography.body.xs.copyWith(
+      color: muted,
+    );
+    return FTile(
+      onPress: onPress,
+      title: Text(l10n.actionGroupSummary(actions.length)),
+      subtitle: actions.isEmpty
+          ? Text(l10n.actionSummaryNoAction, style: subtitleStyle)
+          : Text.rich(
+              TextSpan(
+                children: [
+                  for (final (index, action) in actions.indexed) ...[
+                    if (index > 0) const TextSpan(text: ', '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 3),
+                        child: Icon(
+                          actionMeta(action.action, l10n).icon,
+                          size: 11,
+                          color: muted,
+                        ),
+                      ),
+                    ),
+                    TextSpan(text: actionLineSummary(action.action, l10n)),
+                  ],
+                ],
+              ),
+              style: subtitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+      suffix: const Icon(FLucideIcons.chevronRight),
     );
   }
 }

@@ -37,6 +37,9 @@ class ActionListHeader extends ConsumerWidget {
     final dirtyState = ref.watch(
       actionListEditorProvider(source).select((vm) => vm.dirtyState),
     );
+    final count = ref.watch(
+      actionListEditorProvider(source).select((vm) => vm.actions.length),
+    );
     final canRevert = ref.watch(
       actionListEditorProvider(source).select((vm) => vm.savedActions != null),
     );
@@ -76,7 +79,12 @@ class ActionListHeader extends ConsumerWidget {
               : () => ref
                     .read(actionListEditorProvider(source).notifier)
                     .revert(),
-          child: Text(context.l10n.actionsTitle, style: titleStyle),
+          child: Text(
+            source.menuItem == null
+                ? context.l10n.actionsTitle
+                : context.l10n.actionGroupSummary(count),
+            style: titleStyle,
+          ),
         ),
         const Spacer(),
         if (onAdd != null)

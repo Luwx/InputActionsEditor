@@ -124,7 +124,10 @@ class ActionExpandedEditor extends HookConsumerWidget {
                   onAdd: onAddToGroup,
                   onRevealAction: onRevealAction,
                 ),
-                ActionKind.contextMenu => const EditorContextMenu(),
+                ActionKind.contextMenu => EditorContextMenu(
+                  onGrow: onOptionsExpanded,
+                  onSettled: onOptionsSettled,
+                ),
                 ActionKind.raw => const EditorRaw(),
                 ActionKind.missing => const SizedBox.shrink(),
               },
