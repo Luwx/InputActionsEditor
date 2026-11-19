@@ -42,6 +42,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
     this.onAddToGroup,
     this.onOptionsExpanded,
     this.onOptionsSettled,
+    this.onContentGrow,
     this.onRevealAction,
     super.key,
   });
@@ -56,6 +57,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
   final VoidCallback? onAddToGroup;
   final VoidCallback? onOptionsExpanded;
   final VoidCallback? onOptionsSettled;
+  final VoidCallback? onContentGrow;
 
   /// Brings an action into view by editId.
   final ValueChanged<int>? onRevealAction;
@@ -125,7 +127,7 @@ class ActionExpandedEditor extends HookConsumerWidget {
                   onRevealAction: onRevealAction,
                 ),
                 ActionKind.contextMenu => EditorContextMenu(
-                  onGrow: onOptionsExpanded,
+                  onGrow: onContentGrow,
                   onSettled: onOptionsSettled,
                 ),
                 ActionKind.raw => const EditorRaw(),

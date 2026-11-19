@@ -430,19 +430,16 @@ void main() {
       await tester.pumpAndSettle();
 
       double addRowBottom() => tester.getBottomLeft(find.byType(MenuAddRow)).dy;
-      for (var i = 0; i < 6; i++) {
+      for (var i = 0; i < 5; i++) {
         final before = addRowBottom();
         await tester.tap(_add(FLucideIcons.plus));
         for (var frame = 0; frame < 30; frame++) {
           await tester.pump(const Duration(milliseconds: 16));
-          expect(addRowBottom(), lessThanOrEqualTo(height));
-          if (before + 30 > height) {
-            expect(
-              addRowBottom(),
-              moreOrLessEquals(before, epsilon: 0.1),
-              reason: 'add $i, frame $frame',
-            );
-          }
+          expect(
+            addRowBottom(),
+            moreOrLessEquals(before, epsilon: 0.1),
+            reason: 'add $i, frame $frame',
+          );
         }
         await tester.pumpAndSettle();
       }

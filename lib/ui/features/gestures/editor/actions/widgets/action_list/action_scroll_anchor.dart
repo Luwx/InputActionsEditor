@@ -16,6 +16,7 @@ final class ActionScrollAnchor {
     required this.anchorKey,
     required this.bottomKey,
     required this.activeKey,
+    required this.growing,
     required this.begin,
     required this.beginTwoPhase,
     required this.end,
@@ -35,8 +36,12 @@ final class ActionScrollAnchor {
   /// every row, only the one losing it and the one taking it.
   final ValueListenable<int?> activeKey;
 
+  /// EditId of the row anchored with `followsChild`, while its session runs.
+  final ValueListenable<int?> growing;
+
   /// Start anchoring a row that is expanding its trigger-options accordion.
-  final void Function(int editId) begin;
+  /// [followsChild] also drops the row's lagging size animation meanwhile.
+  final void Function(int editId, {bool followsChild}) begin;
 
   /// Two-phase expand: attach the anchor (row still collapsed), measure
   /// post-frame, then run [onMeasured] (which starts the size animation).
@@ -62,6 +67,7 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
   final anchorKey = useMemoized(GlobalKey.new);
   final bottomKey = useMemoized(GlobalKey.new);
   final anchorTarget = useValueNotifier<int?>(null);
+  final growing = useValueNotifier<int?>(null);
   final anchorRef = useRef<ScrollAnchorController?>(null)
     ..value = ScrollAnchorScope.maybeOf(context);
 
@@ -83,6 +89,7 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
   }
 
   void end() {
+    growing.value = null;
     anchorRef.value
       ?..isAnchoring = false
       ..belowExtent = null
@@ -94,8 +101,9 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
     end();
   }
 
-  void begin(int editId) {
+  void begin(int editId, {bool followsChild = false}) {
     anchorTarget.value = editId;
+    growing.value = followsChild ? editId : null;
     final anchor = anchorRef.value;
     if (anchor == null) return;
     anchor
@@ -115,6 +123,7 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
     // SliverSmartAnchor can correct even a large first-frame delta caused by
     // shader-compilation jank.
     anchorTarget.value = editId;
+    growing.value = null;
     final anchor = anchorRef.value;
     if (anchor == null) {
       onMeasured();
@@ -134,6 +143,7 @@ ActionScrollAnchor useActionScrollAnchor(BuildContext context) {
     anchorKey: anchorKey,
     bottomKey: bottomKey,
     activeKey: anchorTarget,
+    growing: growing,
     begin: begin,
     beginTwoPhase: beginTwoPhase,
     end: end,

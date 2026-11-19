@@ -85,17 +85,22 @@ class ActionListRows extends StatelessWidget {
                 flashTrigger: null,
               ),
             ),
-            ActionRowEntry(:final row) => CollapsibleListRow(
+            ActionRowEntry(:final row) => ValueListenableBuilder<int?>(
               key: ValueKey(
                 choreo.transitions.entering.contains(row.editId)
                     ? 'action-row-${row.editId}:enter'
                     : 'action-row-${row.editId}',
               ),
-              visible:
-                  !choreo.transitions.enteringHidden.contains(
-                    row.editId,
-                  ) &&
-                  !folded.contains(row.editId),
+              valueListenable: choreo.anchor.growing,
+              builder: (context, growing, child) => CollapsibleListRow(
+                followsChild: growing == row.editId,
+                visible:
+                    !choreo.transitions.enteringHidden.contains(
+                      row.editId,
+                    ) &&
+                    !folded.contains(row.editId),
+                child: child!,
+              ),
               child: KeyedSubtree(
                 key: choreo.marquee.measureKeyFor(row.editId),
                 child: _WatchedActionRow(
@@ -303,6 +308,8 @@ class ActionRowCard extends HookConsumerWidget {
                       onAddToGroup: row.isGroup ? onAddToGroup : null,
                       onOptionsExpanded: () => choreo.anchor.begin(editId),
                       onOptionsSettled: choreo.anchor.end,
+                      onContentGrow: () =>
+                          choreo.anchor.begin(editId, followsChild: true),
                       onRevealAction: choreo.reveal,
                       footerKey: ValueKey('action-footer-$editId'),
                       pinnedTriggerOptions:
