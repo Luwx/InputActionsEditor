@@ -544,8 +544,11 @@ class ActionRowHeader extends HookConsumerWidget {
               FButton.icon(
                 variant: .ghost,
                 onPress: onToggleExpanded,
-                child: Icon(
-                  expanded ? FLucideIcons.chevronUp : FLucideIcons.chevronDown,
+                child: AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: collapsibleDuration,
+                  curve: Easing.standard,
+                  child: const Icon(FLucideIcons.chevronDown),
                 ),
               ),
               FTappable(

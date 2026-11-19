@@ -783,6 +783,64 @@ mouse:
     });
   }
 
+  group('rows that land below the viewport come into view', () {
+    final names = [for (var i = 0; i < 40; i++) 'G$i'];
+
+    Future<void> scrollToEnd(WidgetTester tester) async {
+      await tester.drag(find.text('G5'), const Offset(0, -6000));
+      await tester.pumpAndSettle();
+      expect(find.text('G39'), findsOneWidget);
+    }
+
+    List<String?> draftNames(WidgetTester tester) => [
+      for (final gesture in ProviderScope.containerOf(
+        tester.element(find.byType(GestureListSection)),
+      ).read(draftConfigProvider).mouseGestures)
+        gesture.common.name,
+    ];
+
+    void expectInView(WidgetTester tester, Finder row) {
+      final viewport = tester.getRect(find.byType(Scrollable).first);
+      final rect = tester.getRect(row);
+      expect(rect.top, greaterThanOrEqualTo(viewport.top));
+      expect(rect.bottom, lessThanOrEqualTo(viewport.bottom));
+    }
+
+    testWidgets('a pasted gesture', (tester) async {
+      mockClipboard(tester);
+      await _pumpList(tester, names: names);
+      await tester.tap(find.text('G0'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.copy));
+      await tester.pumpAndSettle();
+
+      await scrollToEnd(tester);
+      await tester.tap(find.text('G39'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(draftNames(tester).last, 'G0');
+      expectInView(tester, _tileOf('G0').last);
+    });
+
+    testWidgets('a duplicated gesture', (tester) async {
+      await _pumpList(tester, names: names);
+      await scrollToEnd(tester);
+      await tester.tap(find.text('G39'), buttons: kSecondaryButton);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(FLucideIcons.copyPlus));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+
+      expect(draftNames(tester).sublist(39), ['G39', 'G39-copy']);
+      expectInView(tester, _tileOf('G39-copy'));
+    });
+  });
+
   testWidgets('copy and paste land the gesture after the row pasted on', (
     tester,
   ) async {

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:forui/forui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:input_actions_editor/app_state/app_router.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
+import 'package:input_actions_editor/model/config.dart';
 import 'package:input_actions_editor/model/enums.dart';
 import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/rename_dialog.dart';
@@ -37,6 +40,35 @@ Future<void> copyGestureYaml(
   );
 }
 
+/// Runs [change] and scrolls the last gesture it added into view.
+Future<T> revealAddedGestures<T>(
+  WidgetRef ref,
+  FutureOr<T> Function() change,
+) async {
+  Iterable<(DeviceType, int, int?)> gestures(Config config) sync* {
+    for (final device in DeviceType.values) {
+      for (final (index, gesture) in config.gesturesForDevice(device).indexed) {
+        yield (device, index, gesture.common.editId);
+      }
+    }
+  }
+
+  final before = {
+    for (final (_, _, id) in gestures(ref.read(draftConfigProvider))) id,
+  };
+  final result = await change();
+  final draft = ref.read(draftConfigProvider);
+  final added = gestures(draft).where((g) => !before.contains(g.$3)).lastOrNull;
+  if (added != null) {
+    ref.read(gestureRedirectTargetProvider.notifier).state = gestureLocationAt(
+      draft,
+      added.$1,
+      added.$2,
+    );
+  }
+  return result;
+}
+
 /// Pastes strokes or actions into [open], or else gestures after it.
 Future<void> pasteFromClipboard(WidgetRef ref, GestureLocation? open) async {
   if (open != null) {
@@ -49,12 +81,15 @@ Future<void> pasteFromClipboard(WidgetRef ref, GestureLocation? open) async {
     }
   }
   final filter = ref.read(deviceFilterProvider);
-  await ref
-      .read(gestureCommandsProvider)
-      .pasteGestures(
-        after: open,
-        devices: filter != null ? [filter] : DeviceType.values,
-      );
+  await revealAddedGestures(
+    ref,
+    () => ref
+        .read(gestureCommandsProvider)
+        .pasteGestures(
+          after: open,
+          devices: filter != null ? [filter] : DeviceType.values,
+        ),
+  );
 }
 
 void duplicateGestureAndSelect(
@@ -70,7 +105,7 @@ void duplicateGestureAndSelect(
   final copy = index == null
       ? null
       : gestureLocationAt(draft, location.device, index + 1);
-  if (copy != null) context.selectGesture(copy);
+  if (copy != null) context.redirectToGesture(copy);
 }
 
 Future<void> showGestureRenameDialog(

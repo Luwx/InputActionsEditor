@@ -123,8 +123,13 @@ void main() {
     await tester.tap(category('Actions'));
     await tester.pumpAndSettle();
     expect(find.text('No icons found'), findsOneWidget);
-    await tester.enterText(find.byType(EditableText), '');
+    final clear = find.descendant(
+      of: find.byType(FTextField),
+      matching: find.byType(FButton),
+    );
+    await tester.tap(clear);
     await tester.pumpAndSettle();
+    expect(clear, findsNothing);
     expect(icon('edit-copy'), findsOneWidget);
     await tester.tap(category('Other'));
     await tester.pumpAndSettle();

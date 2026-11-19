@@ -94,6 +94,7 @@ class IconPickerDialog extends HookConsumerWidget {
                 FTextField(
                   control: FTextFieldControl.managed(controller: controller),
                   hint: l10n.iconPickerSearch,
+                  clearable: (value) => value.text.isNotEmpty,
                   prefixBuilder: (context, style, states) => const Padding(
                     padding: EdgeInsets.only(left: 10),
                     child: Icon(FLucideIcons.search, size: 16),

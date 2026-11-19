@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:input_actions_editor/app_state/app/app_state_provider.dart';
 import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
@@ -1622,6 +1623,42 @@ void main() {
           tester,
           find.text('Action Conditions'),
           'The accordion footer should remain visible after opening.',
+        );
+      },
+    );
+
+    testWidgets(
+      'pasting below the viewport scrolls the pasted rows into view',
+      (
+        tester,
+      ) async {
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+        mockClipboard(tester);
+        await Clipboard.setData(
+          ClipboardData(
+            text: encodeActionsYaml([
+              for (final name in ['one', 'two', 'three'])
+                TriggerAction(action: CommandAction(command: 'pasted $name')),
+            ]),
+          ),
+        );
+
+        await tester.pumpWidget(_ActionsEditorHost(controller: controller));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(_lastRow);
+        await tester.pumpAndSettle();
+
+        await _tapRow(tester, _lastRow, buttons: kSecondaryButton);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(FLucideIcons.clipboardPaste));
+        await tester.pumpAndSettle();
+
+        expect(find.text('pasted three'), findsOneWidget);
+        _expectVisibleInViewport(
+          tester,
+          _lastRow,
+          'The last pasted action should scroll into view.',
         );
       },
     );

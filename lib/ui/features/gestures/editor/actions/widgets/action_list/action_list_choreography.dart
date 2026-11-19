@@ -470,6 +470,12 @@ ActionListChoreography useActionListChoreography(
       // Pasting into a folded group would otherwise drop the rows out of sight.
     }..remove(anchorKey);
     clearSelection();
+    final lastPasted = rows()
+        .where((row) => !before.contains(row.editId))
+        .lastOrNull;
+    if (lastPasted != null) {
+      scrollTo(marquee.measureKeyFor(lastPasted.editId));
+    }
   }
 
   ref.listen(actionPasteRequestProvider, (_, next) {

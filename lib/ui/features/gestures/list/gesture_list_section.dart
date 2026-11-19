@@ -180,13 +180,16 @@ class GestureListSection extends HookConsumerWidget {
     }
 
     Future<void> pasteGestures(GestureLocation? anchor) async {
-      final inserted = await listNotifier.pasteGestures(
-        after: anchor,
-        devices: anchor != null
-            ? [anchor.device]
-            : deviceFilter != null
-            ? [deviceFilter]
-            : DeviceType.values,
+      final inserted = await revealAddedGestures(
+        ref,
+        () => listNotifier.pasteGestures(
+          after: anchor,
+          devices: anchor != null
+              ? [anchor.device]
+              : deviceFilter != null
+              ? [deviceFilter]
+              : DeviceType.values,
+        ),
       );
       if (!context.mounted || inserted) return;
       showFToast(
@@ -225,7 +228,12 @@ class GestureListSection extends HookConsumerWidget {
       targetsFor: targetsFor,
       copy: copyGestures,
       paste: pasteGestures,
-      duplicate: listNotifier.duplicateGestures,
+      duplicate: (targets) => unawaited(
+        revealAddedGestures(
+          ref,
+          () => listNotifier.duplicateGestures(targets),
+        ),
+      ),
       setEnabled: listNotifier.setGesturesEnabled,
       delete: deleteGestures,
     );
