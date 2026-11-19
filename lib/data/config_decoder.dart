@@ -127,6 +127,18 @@ const Set<String> _groupNodeKeys = {
   ..._sharedKeys,
 };
 
+const Set<String> _triggerKeys = {
+  ..._groupNodeKeys,
+  'type',
+  'group',
+  'actions',
+  'direction',
+  'angle',
+  'bidirectional',
+  'shortcut',
+  strokesYamlKey,
+};
+
 /// Any item with `gestures:` is a group, typed or not, as `parseTriggerList`.
 List<GestureNode> _parseDeviceNodes(
   dynamic deviceNode,
@@ -202,7 +214,13 @@ List<GestureNode> _parseDeviceNodes(
             : _InheritingYamlMap(item, inherited, shared),
       );
       if (g == null) continue;
-      final node = GestureNode.leaf(g);
+      final extra = <String, Object?>{
+        for (final key in item.keys.whereType<String>())
+          if (!_triggerKeys.contains(key)) key: plainYamlValue(item[key]),
+      };
+      final node = GestureNode.leaf(
+        extra.isEmpty ? g : g.withCommon(g.common.copyWith(extra: extra)),
+      );
       final legacyGroup = yamlString(item['group']);
       if (legacyGroup != null) legacyRefs[node] = legacyGroup;
       out.add(node);
@@ -622,6 +640,10 @@ Condition _parseStringCondition(String raw) {
   );
 }
 
+TriggerOnValue _parseTriggerOn(Object? value) =>
+    (value is String ? TriggerOn.fromYaml(value) : null) ??
+    RawTriggerOn(plainYamlValue(value));
+
 List<TriggerAction> _parseActions(dynamic node) {
   if (node is! YamlList) return [];
   return node.map(_parseTriggerAction).whereType<TriggerAction>().toList();
@@ -633,9 +655,7 @@ TriggerAction? _parseTriggerAction(dynamic node) {
   if (action == null) return null;
   return TriggerAction(
     enabled: yamlBool(_editorValue(node, 'enabled')),
-    on: node.containsKey('on')
-        ? TriggerOn.fromYaml(yamlString(node['on']) ?? '')
-        : null,
+    on: node.containsKey('on') ? _parseTriggerOn(node['on']) : null,
     conditions: node.containsKey('conditions')
         ? _parseCondition(node.nodes['conditions'])
         : null,

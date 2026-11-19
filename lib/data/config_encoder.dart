@@ -151,6 +151,7 @@ List<dynamic> _nodesToYaml(
       GestureLeaf(:final gesture) => _withoutInherited(
         toMap(gesture),
         inherited,
+        keep: gesture.common.extra.keys,
       ),
       GestureGroupNode() => _groupToYaml(node, toMap, inherited),
     },
@@ -204,12 +205,14 @@ String? _hoistedType(
   return type == inherited['type'] ? null : type;
 }
 
+// A trigger's own raw keys stay even when its group sets the same key.
 Map<String, dynamic> _withoutInherited(
   Map<String, dynamic> map,
-  Map<String, dynamic> inherited,
-) => {
+  Map<String, dynamic> inherited, {
+  Iterable<String> keep = const [],
+}) => {
   for (final MapEntry(:key, :value) in map.entries)
-    if (!inherited.containsKey(key)) key: value,
+    if (!inherited.containsKey(key) || keep.contains(key)) key: value,
 };
 
 void _saveDeviceSection(
@@ -375,6 +378,9 @@ void _writeCommon(
   if (c.setLastTrigger != null) m['set_last_trigger'] = c.setLastTrigger;
   if (c.threshold != null) m['threshold'] = c.threshold;
   if (c.accelerated != null) m['accelerated'] = c.accelerated;
+  for (final MapEntry(:key, :value) in c.extra.entries) {
+    m.putIfAbsent(key, () => value);
+  }
   m.addAll(_editorExtra({'name': ?c.name, 'enabled': ?c.enabled}));
   if (c.actions.isNotEmpty) {
     m['actions'] = c.actions.map(triggerActionToMap).toList();
@@ -400,7 +406,7 @@ String encodeActionsYaml(List<TriggerAction> actions) {
 
 Map<String, dynamic> triggerActionToMap(TriggerAction ta) {
   final m = <String, dynamic>{};
-  if (ta.on != null) m['on'] = ta.on!.toYaml();
+  if (ta.on case final on?) m['on'] = on.toYaml();
   if (ta.conditions != null) m['conditions'] = conditionToYaml(ta.conditions!);
   if (!ta.conflicting) m['conflicting'] = false;
   if (ta.interval != null) m['interval'] = ta.interval;

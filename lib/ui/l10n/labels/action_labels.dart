@@ -49,7 +49,8 @@ String tokenLabel(InputToken token, AppLocalizations l10n) => switch (token) {
   RawInputToken(:final token) => token,
 };
 
-String triggerOnLabel(TriggerOn on, AppLocalizations l10n) => switch (on) {
+String triggerOnLabel(TriggerOnValue on, AppLocalizations l10n) => switch (on) {
+  RawTriggerOn(:final value) => '$value',
   TriggerOn.begin => l10n.actionTriggerOnBegin,
   TriggerOn.update => l10n.actionTriggerOnUpdate,
   TriggerOn.end => l10n.actionTriggerOnEnd,

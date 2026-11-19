@@ -1,6 +1,10 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
+import 'package:input_actions_editor/data/config_decoder.dart';
+import 'package:input_actions_editor/data/config_encoder.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/schema/edit_schema.dart';
 import 'package:input_actions_editor/model/action.dart';
@@ -11,6 +15,7 @@ import 'package:input_actions_editor/store/config_controller.dart';
 import 'package:input_actions_editor/ui/common/label_with_tooltip.dart';
 import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/actions/widgets/action_list/action_list_editor.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/raw_option_badge.dart';
 
 import '../../../../../../helpers/action_list_harness.dart';
 import '../../../../../../helpers/load_fonts.dart';
@@ -55,6 +60,94 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('end_cancel'), findsNothing);
+    expect(find.text('RAW'), findsNothing);
+  });
+
+  testWidgets('an unknown stroke action event is shown with a RAW option', (
+    tester,
+  ) async {
+    final common = decodeConfig('''
+mouse:
+  gestures:
+    - type: stroke
+      actions:
+        - on: motion_timeout
+          command: only
+''').mouseGestures.single.common;
+    await tester.pumpWidget(actionListHost(common, gesture: StrokeGesture.new));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('only'));
+    await tester.pumpAndSettle();
+
+    final badge = find.byType(RawOptionBadge);
+    final select = find.byWidgetPredicate(
+      (widget) => widget is FSelect<TriggerOnValue>,
+    );
+    final value = find.text('motion_timeout');
+    expect(badge, findsOneWidget);
+    final editable = tester.state<EditableTextState>(
+      find.descendant(of: select, matching: find.byType(EditableText)),
+    );
+    final render = editable.renderEditable;
+    final endOfValue = render.localToGlobal(
+      render
+          .getLocalRectForCaret(
+            TextPosition(offset: editable.widget.controller.text.length),
+          )
+          .topRight,
+    );
+    expect(
+      tester.getTopLeft(badge).dx - endOfValue.dx,
+      inInclusiveRange(0, 12),
+    );
+    await tester.tap(badge);
+    await tester.pumpAndSettle();
+    expect(badge, findsNWidgets(2));
+    final option = find.ancestor(
+      of: value,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is FSelectItem<TriggerOnValue>,
+      ),
+    );
+    final optionBadge = find.descendant(of: option, matching: badge);
+    expect(
+      tester.getTopLeft(optionBadge).dx -
+          tester.getTopRight(find.descendant(of: option, matching: value)).dx,
+      inInclusiveRange(0, 12),
+    );
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: tester.getCenter(optionBadge));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining("The editor doesn't recognize this YAML entry."),
+      findsOneWidget,
+    );
+    await mouse.removePointer();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    await tester.tap(find.text('End (default)'));
+    await tester.pumpAndSettle();
+    expect(find.text('RAW'), findsNothing);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ActionListEditor)),
+    );
+    String yaml() => encodeConfig(
+      container.read(configControllerProvider).requireValue.draft,
+      '',
+    );
+    expect(yaml(), isNot(contains('on: motion_timeout')));
+
+    container
+        .read(configControllerProvider.notifier)
+        .undo(
+          scope: const GesturesScope(),
+        );
+    await tester.pumpAndSettle();
+    expect(find.text('RAW'), findsOneWidget);
+    expect(yaml(), contains('on: motion_timeout'));
   });
 
   testWidgets('leaving update drops the interval, and one undo restores it', (
@@ -102,8 +195,8 @@ void main() {
 
   group('trigger on with a single option', () {
     bool triggerOnEnabled(WidgetTester tester) => tester
-        .widget<FSelect<TriggerOn>>(
-          find.byWidgetPredicate((widget) => widget is FSelect<TriggerOn>),
+        .widget<FSelect<TriggerOnValue>>(
+          find.byWidgetPredicate((widget) => widget is FSelect<TriggerOnValue>),
         )
         .enabled;
 

@@ -29,6 +29,7 @@ abstract class TriggerCommon with _$TriggerCommon {
     /// Either a single number or "min-max" string.
     String? threshold,
     bool? accelerated,
+    @Default({}) Map<String, Object?> extra,
     @Default([]) List<TriggerAction> actions,
 
     /// In-memory only, never serialized. A stable identity assigned by

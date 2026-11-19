@@ -1228,6 +1228,12 @@ abstract class AppLocalizations {
   /// **'Other Options'**
   String get triggerOtherOptions;
 
+  /// No description provided for @rawOptionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The editor doesn\'t recognize this YAML entry. It preserves the entry when you save.'**
+  String get rawOptionTooltip;
+
   /// No description provided for @triggerConditionsTitle.
   ///
   /// In en, this message translates to:

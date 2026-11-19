@@ -195,7 +195,7 @@ final class MoveActions extends ConfigEdit {
 
 ConfigEdit setActionTriggerOn(ActionLocation location, TriggerOn on) =>
     BatchEdit([
-      SetLens<TriggerOn>(actionTriggerOnLens(location), on),
+      SetLens<TriggerOnValue>(actionTriggerOnLens(location), on),
       if (!on.allowsInterval)
         SetLens<String?>(actionIntervalLens(location), null),
       if (!on.allowsThreshold)

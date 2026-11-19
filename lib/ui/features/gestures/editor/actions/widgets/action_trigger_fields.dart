@@ -20,6 +20,7 @@ import 'package:input_actions_editor/ui/features/gestures/editor/conditions/widg
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/tooltips/tooltip_widgets.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger_input_formatters.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/widgets/raw_option_badge.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/widgets/revealed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
 import 'package:input_actions_editor/ui/helpers/use_synced_text_controller.dart';
@@ -91,7 +92,7 @@ class ActionTriggerFields extends HookConsumerWidget {
       }),
     );
     final defaultOn = actionTriggerOnField.defaultValue!;
-    String onLabel(TriggerOn on) {
+    String onLabel(TriggerOnValue on) {
       final label = triggerOnLabel(on, context.l10n);
       return on == defaultOn
           ? context.l10n.actionTriggerOnDefaultOption(label)
@@ -99,9 +100,15 @@ class ActionTriggerFields extends HookConsumerWidget {
     }
 
     final triggerOnValue = triggerOnField.value;
-    final displayOnValue = supportedOnValues.contains(triggerOnValue)
-        ? triggerOnValue
-        : defaultOn;
+    final rawOn = switch (triggerOnValue) {
+      final RawTriggerOn raw => raw,
+      _ => null,
+    };
+    final displayOnValue =
+        rawOn ??
+        (supportedOnValues.contains(triggerOnValue)
+            ? triggerOnValue
+            : defaultOn);
     final tooltipKind = ref.watch(
       configControllerProvider.select(
         (s) => _conflictingTooltipKind(
@@ -133,6 +140,88 @@ class ActionTriggerFields extends HookConsumerWidget {
     final delayController = useSyncedTextController(
       delayField?.text ?? '',
       delayField?.onTextChanged ?? (_) {},
+    );
+
+    final triggerOnSelect = FSelect<TriggerOnValue>.rich(
+      label: UnsavedLabel(
+        state: triggerOnField.dirty,
+        onRevert: triggerOnField.onRevert,
+        child: LabelWithTooltip(
+          label: context.l10n.actionTriggerOnLabel,
+          tooltipContent: ActionTriggerOnTooltip(
+            stroke: tooltipKind == ConflictingTooltipKind.stroke,
+          ),
+        ),
+      ),
+      key: ValueKey(displayOnValue),
+      format: onLabel,
+      enabled: rawOn != null || supportedOnValues.length > 1,
+      suffixBuilder: rawOn == null
+          ? FSelect.defaultIconBuilder
+          : (context, style, variants) => Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 6,
+              children: [
+                const Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: 6,
+                  ),
+                  child: RawOptionBadge(),
+                ),
+                FSelect.defaultIconBuilder(
+                  context,
+                  style,
+                  variants,
+                ),
+              ],
+            ),
+      contentConstraints: const FPortalConstraints(
+        maxWidth: 300,
+        maxHeight: 420,
+      ),
+      control: FSelectManagedControl<TriggerOnValue>(
+        initial: displayOnValue,
+        onChange: (value) {
+          if (value is TriggerOn) {
+            ref
+                .read(
+                  actionEditorProvider(
+                    actionLocation,
+                  ).notifier,
+                )
+                .setTriggerOn(value);
+          }
+        },
+      ),
+      children: [
+        if (rawOn != null)
+          FSelectItem<TriggerOnValue>(
+            value: rawOn,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                Flexible(
+                  child: Text(
+                    onLabel(rawOn),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const RawOptionBadge(),
+              ],
+            ),
+          ),
+        for (final on in kAllTriggerOnOptions)
+          if (supportedOnValues.contains(on))
+            FSelectItem<TriggerOnValue>(
+              value: on,
+              title: Text(onLabel(on)),
+              subtitle: Text(
+                triggerOnDescription(on, context.l10n),
+                overflow: TextOverflow.visible,
+              ),
+            ),
+      ],
     );
 
     return Column(
@@ -173,53 +262,12 @@ class ActionTriggerFields extends HookConsumerWidget {
               if (visibleFields.contains(ActionTriggerOptionField.triggerOn))
                 revealable(
                   ActionTriggerOptionField.triggerOn,
-                  SizedBox(
-                    width: 180,
-                    child: FSelect<TriggerOn>.rich(
-                      label: UnsavedLabel(
-                        state: triggerOnField.dirty,
-                        onRevert: triggerOnField.onRevert,
-                        child: LabelWithTooltip(
-                          label: context.l10n.actionTriggerOnLabel,
-                          tooltipContent: ActionTriggerOnTooltip(
-                            stroke:
-                                tooltipKind == ConflictingTooltipKind.stroke,
-                          ),
+                  rawOn == null
+                      ? SizedBox(width: 180, child: triggerOnSelect)
+                      : ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 260),
+                          child: IntrinsicWidth(child: triggerOnSelect),
                         ),
-                      ),
-                      key: ValueKey(displayOnValue),
-                      format: onLabel,
-                      enabled: supportedOnValues.length > 1,
-                      contentConstraints: const FPortalConstraints(
-                        maxWidth: 300,
-                        maxHeight: 420,
-                      ),
-                      control: FSelectManagedControl<TriggerOn>(
-                        initial: displayOnValue,
-                        onChange: (value) {
-                          if (value != null) {
-                            ref
-                                .read(
-                                  actionEditorProvider(actionLocation).notifier,
-                                )
-                                .setTriggerOn(value);
-                          }
-                        },
-                      ),
-                      children: [
-                        for (final on in kAllTriggerOnOptions)
-                          if (supportedOnValues.contains(on))
-                            FSelectItem(
-                              value: on,
-                              title: Text(onLabel(on)),
-                              subtitle: Text(
-                                triggerOnDescription(on, context.l10n),
-                                overflow: TextOverflow.visible,
-                              ),
-                            ),
-                      ],
-                    ),
-                  ),
                 ),
               if (showInterval &&
                   visibleFields.contains(ActionTriggerOptionField.interval))

@@ -24,6 +24,108 @@ import 'package:input_actions_editor/model/trigger_common.dart';
 import 'package:yaml/yaml.dart';
 
 void main() {
+  test('a trigger keeps its own raw key when its group sets it too', () {
+    const source = '''
+mouse:
+  gestures:
+    - custom: 1
+      gestures:
+        - type: swipe
+          direction: down
+          custom: 2
+        - type: swipe
+          direction: up
+''';
+    final config = decodeConfig(source);
+    for (final original in [source, '']) {
+      final saved = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final group = (saved['mouse']['gestures'] as YamlList).single as YamlMap;
+      final triggers = group['gestures'] as YamlList;
+      expect(group['custom'], 1);
+      expect(triggers[0]['custom'], 2);
+      expect((triggers[1] as YamlMap).containsKey('custom'), isFalse);
+    }
+  });
+
+  test('a typed key wins over a raw copy of it', () {
+    final gesture = decodeConfig('''
+mouse:
+  gestures:
+    - type: swipe
+      direction: down
+      threshold: '10'
+''').mouseGestures.single;
+    final edited = gesture.withCommon(
+      gesture.common.copyWith(
+        threshold: '20',
+        extra: {'threshold': '10', 'direction': 'up', 'custom': 1},
+      ),
+    );
+    final config = Config(mouseNodes: [GestureNode.leaf(edited)]);
+    for (final original in ['', encodeConfig(config, '')]) {
+      final saved = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final map = (saved['mouse']['gestures'] as YamlList).single as YamlMap;
+      expect(map['threshold'], '20');
+      expect(map['direction'], 'down');
+      expect(map['custom'], 1);
+      expect(map.keys.first, 'type');
+    }
+    final copied = mouseGestureToMap(edited);
+    expect(copied['threshold'], '20');
+    expect(copied['direction'], 'down');
+  });
+
+  test('unknown trigger keys and action events survive save and copy', () {
+    const source = '''
+mouse:
+  gestures:
+    - type: swipe
+      direction: down
+      mouse_buttons: [right]
+      motion_timeout: 100
+      experimental: {steps: [true, '100', null]}
+      actions:
+        - on: end
+          input:
+            - keyboard: [e]
+        - on: motion_timeout
+          input:
+            - keyboard: [m]
+    - type: stroke
+      strokes: 'LwAAMDRkZAA='
+      motion_timeout: 200
+      actions:
+        - on: motion_timeout
+          input:
+            - keyboard: [m]
+''';
+    final config = decodeConfig(source);
+    for (final original in [source, '']) {
+      final doc = loadYaml(encodeConfig(config, original)) as YamlMap;
+      final gestures = doc['mouse']['gestures'] as YamlList;
+      expect(gestures[0]['motion_timeout'], 100);
+      expect(gestures[0]['experimental'], {
+        'steps': [true, '100', null],
+      });
+      expect(gestures[1]['motion_timeout'], 200);
+      expect(gestures[1]['actions'][0]['on'], 'motion_timeout');
+      expect(gestures[0]['actions'][0]['on'], 'end');
+      final action = gestures[0]['actions'][1] as YamlMap;
+      expect(action['on'], 'motion_timeout');
+      expect(action['input'], [
+        {
+          'keyboard': ['m'],
+        },
+      ]);
+    }
+
+    final actions = config.mouseGestures.first.common.actions;
+    final copied = decodeActionsYaml(encodeActionsYaml(actions));
+    expect(copied, actions);
+    final doc = loadYaml(encodeActionsYaml(actions)) as YamlMap;
+    expect(doc['actions'][1]['on'], 'motion_timeout');
+  });
+
   group('input items', () {
     const source = '''
 keyboard:

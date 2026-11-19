@@ -255,6 +255,7 @@ class ActionEditorNotifier extends Notifier<ActionEditorVm> {
           BatchEdit([
             SetLens<bool>(actionConflictingLens(location), conflicting),
             if (gesture != null &&
+                on is TriggerOn &&
                 !supportedTriggerOnOptions(
                   gesture,
                   conflicting: conflicting,

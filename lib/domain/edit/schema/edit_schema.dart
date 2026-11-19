@@ -202,6 +202,7 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
     prop(TriggerCommonMeta.setLastTrigger, defaultsTo: true),
     prop(TriggerCommonMeta.threshold, adapter: nullableText()),
     prop(TriggerCommonMeta.accelerated, defaultsTo: false),
+    prop(TriggerCommonMeta.extra),
     list(
       TriggerCommonMeta.actions,
       of: actionNode,
@@ -260,6 +261,7 @@ final TreeNode<TriggerCommon> commonNode = subtree<TriggerCommon>(
         TriggerCommonMeta.clearModifiers,
         TriggerCommonMeta.setLastTrigger,
         TriggerCommonMeta.endConditions,
+        TriggerCommonMeta.extra,
       ],
     ),
   ],

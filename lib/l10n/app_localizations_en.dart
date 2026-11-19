@@ -630,6 +630,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get triggerOtherOptions => 'Other Options';
 
   @override
+  String get rawOptionTooltip =>
+      'The editor doesn\'t recognize this YAML entry. It preserves the entry when you save.';
+
+  @override
   String get triggerConditionsTitle => 'Trigger Conditions';
 
   @override

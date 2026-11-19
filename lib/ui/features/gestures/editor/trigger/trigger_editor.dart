@@ -22,6 +22,7 @@ import 'package:input_actions_editor/ui/common/unsaved_marker.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/edit_location_scope.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/state/gesture_editor_notifier.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/lock_pointer_field.dart';
+import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/raw_trigger_option.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/speed_field.dart';
 import 'package:input_actions_editor/ui/features/gestures/editor/trigger/sections/trigger_advanced_fields.dart';
 import 'package:input_actions_editor/ui/features/gestures/gesture_support.dart';
@@ -72,6 +73,11 @@ class TriggerEditor extends HookConsumerWidget {
       gestureEditorProvider(location).select((s) => speedTargetFor(s.gesture)),
     );
 
+    final rawOptions = ref.watch(
+      gestureEditorProvider(location).select(
+        (s) => s.gesture?.common.extra ?? const <String, Object?>{},
+      ),
+    );
     final pinLockPointer = useState(
       (lockPointer?.isSet ?? false) ||
           inherits(SharedTriggerProperty.lockPointer),
@@ -186,6 +192,8 @@ class TriggerEditor extends HookConsumerWidget {
               lockPointer: bodyLockPointer ? const LockPointerField() : null,
               speed: bodySpeed ? const SpeedField() : null,
             ),
+          for (final option in rawOptions.keys)
+            RawTriggerOption(key: ValueKey(option), option: option),
         ],
       ),
     );

@@ -15,7 +15,7 @@ abstract class TriggerAction with _$TriggerAction {
 
     /// Null means the `on:` key was absent in YAML (daemon defaults to
     /// `end`).
-    TriggerOn? on,
+    TriggerOnValue? on,
     Condition? conditions,
     String? interval,
     String? threshold,

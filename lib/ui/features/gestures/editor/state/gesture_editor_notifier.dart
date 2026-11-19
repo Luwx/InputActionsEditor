@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:input_actions_editor/domain/diff/dirty_semantics.dart';
+import 'package:input_actions_editor/domain/edit/config_edit.dart';
 import 'package:input_actions_editor/domain/edit/edit_scope.dart';
 import 'package:input_actions_editor/domain/edit/edits/gesture_edits.dart';
 import 'package:input_actions_editor/domain/edit/edits/stroke_edits.dart';
@@ -105,6 +106,19 @@ class GestureEditorNotifier extends Notifier<GestureEditorState> {
   void updateGesture(Object Function(Object) update) {
     _config.add(
       UpdateGesture(location, (gesture) => update(gesture) as Gesture),
+      scope: const GesturesScope(),
+    );
+  }
+
+  void removeRawOption(String option) {
+    final extra = state.common?.extra;
+    if (extra == null) return;
+    _config.add(
+      SetLens(
+        gestureExtraLens(location),
+        {...extra}..remove(option),
+        label: 'delete $option',
+      ),
       scope: const GesturesScope(),
     );
   }

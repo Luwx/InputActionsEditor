@@ -58,7 +58,7 @@ void main() {
 
     test('actionTriggerOnLens collapses unset and end onto the default', () {
       final lens = actionTriggerOnLens(location);
-      TriggerOn? rawOn(Config c) =>
+      TriggerOnValue? rawOn(Config c) =>
           c.mouseGestures.first.common.actions.first.on;
 
       // Unset reads as end and writing end keeps the key out of the config.
