@@ -1737,6 +1737,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow dumping variables by running \"inputactions variables list\".';
 
   @override
+  String get effectSettingsOverlayTitle => 'Overlay';
+
+  @override
+  String get effectSettingsMouseStrokeOverlayLabel => 'Mouse Stroke Overlay';
+
+  @override
+  String get effectSettingsMouseStrokeOverlaySubtitle =>
+      'Draw mouse strokes on screen as you perform them.';
+
+  @override
   String get effectSettingsNotificationsTitle => 'Notifications';
 
   @override

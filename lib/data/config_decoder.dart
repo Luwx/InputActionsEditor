@@ -78,6 +78,7 @@ Config _decodeConfigText(String parseText) {
     'emergency_combination',
     'external_variable_access',
     'notifications',
+    'overlay',
     'anchors',
   };
   final extra = <String, dynamic>{};
@@ -860,6 +861,10 @@ GlobalSettings _parseGlobalSettings(YamlMap doc) {
   final notifNode = doc['notifications'] is YamlMap
       ? doc['notifications'] as YamlMap
       : null;
+  final overlayNode = doc['overlay'];
+  final mouseStrokeNode = overlayNode is YamlMap
+      ? overlayNode['mouse_stroke']
+      : null;
   final combo = doc['emergency_combination'];
   return GlobalSettings(
     autoreload: yamlBool(doc['autoreload']),
@@ -867,6 +872,9 @@ GlobalSettings _parseGlobalSettings(YamlMap doc) {
         ? combo.map((e) => e.toString()).toList()
         : null,
     externalVariableAccess: yamlBool(doc['external_variable_access']),
+    mouseStrokeOverlayEnabled: yamlBool(
+      mouseStrokeNode is YamlMap ? mouseStrokeNode['enable'] : null,
+    ),
     notificationsConfigError: yamlBool(notifNode?['config_error']),
   );
 }

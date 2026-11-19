@@ -527,6 +527,7 @@ final EditTree<Config> configTree = editTree<Config>(
       fields: [
         prop(GlobalSettingsMeta.autoreload, defaultsTo: true),
         prop(GlobalSettingsMeta.externalVariableAccess, defaultsTo: true),
+        prop(GlobalSettingsMeta.mouseStrokeOverlayEnabled),
         prop(GlobalSettingsMeta.notificationsConfigError, defaultsTo: true),
         prop(GlobalSettingsMeta.emergencyCombination),
       ],

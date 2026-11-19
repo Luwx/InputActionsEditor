@@ -244,6 +244,7 @@ void _saveGlobalSettings(_Document doc, Config config) {
     ..sync(['autoreload'], gs.autoreload)
     ..sync(['emergency_combination'], gs.emergencyCombination)
     ..sync(['external_variable_access'], gs.externalVariableAccess)
+    ..sync(['overlay', 'mouse_stroke', 'enable'], gs.mouseStrokeOverlayEnabled)
     ..sync(['notifications', 'config_error'], gs.notificationsConfigError);
 }
 

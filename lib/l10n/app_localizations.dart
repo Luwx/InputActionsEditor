@@ -3118,6 +3118,24 @@ abstract class AppLocalizations {
   /// **'Allow dumping variables by running \"inputactions variables list\".'**
   String get effectSettingsExternalVarAccessSubtitle;
 
+  /// No description provided for @effectSettingsOverlayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get effectSettingsOverlayTitle;
+
+  /// No description provided for @effectSettingsMouseStrokeOverlayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse Stroke Overlay'**
+  String get effectSettingsMouseStrokeOverlayLabel;
+
+  /// No description provided for @effectSettingsMouseStrokeOverlaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw mouse strokes on screen as you perform them.'**
+  String get effectSettingsMouseStrokeOverlaySubtitle;
+
   /// No description provided for @effectSettingsNotificationsTitle.
   ///
   /// In en, this message translates to:
